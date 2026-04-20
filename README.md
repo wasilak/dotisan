@@ -194,8 +194,9 @@ dotisan apply --backup    # Create backups before modifying
 
 ```bash
 dotisan state list                   # Show all managed resources
-dotisan state import BrewPackages core-tools ripgrep   # Import existing
-dotisan state remove BrewPackages core-tools         # Remove from state
+dotisan state import homebrew core-tools ripgrep     # Import existing package
+dotisan state import homebrew apps another-redis-desktop-manager  # Import cask
+dotisan state remove homebrew core-tools             # Remove from state
 dotisan state pull                   # Download from S3 backend
 dotisan state push                   # Upload to S3 backend
 ```
