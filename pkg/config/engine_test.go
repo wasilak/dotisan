@@ -119,7 +119,7 @@ user:
   name: "{{ .Env.DOTISAN_TEST_USER }}"
   home: "{{ .Env.HOME }}"
 paths:
-  dotfiles: "{{ .Env.HOME }}/.dotfiles"
+  dotfiles: "{{ .Env.HOME }}/.config/dotisan"
 `
 
 	if err := os.WriteFile(valuesPath, []byte(valuesContent), 0644); err != nil {

@@ -76,7 +76,7 @@ graph TD
 ### 4.1 Directory layout
 
 ```
-~/.dotfiles/
+~/.config/dotisan/
 ├── values.yaml              # global variables, goes through template rendering itself
 ├── brew/
 │   ├── core.yaml
@@ -108,7 +108,7 @@ user:
   machine: "{{ .Env.HOSTNAME }}"
 
 paths:
-  dotfiles: "{{ .Env.HOME }}/.dotfiles"
+  dotfiles: "{{ .Env.HOME }}/.config/dotisan"
   claude: "{{ .Env.HOME }}/.claude"
 ```
 
@@ -531,7 +531,7 @@ Two separate config files:
 | File | Purpose |
 |---|---|
 | `~/.dotisan/config.yaml` | Tool config: state backend, dotfiles root path |
-| `~/.dotfiles/values.yaml` | Dotfiles values: user vars, paths, machine-specific |
+| `~/.config/dotisan/values.yaml` | Dotfiles values: user vars, paths, machine-specific |
 
 `config.yaml` is never templated. `values.yaml` is always templated.
 

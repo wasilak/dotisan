@@ -112,7 +112,7 @@ func runEject(kind, name string) error {
 	fmt.Printf("%s Removed from state\n", greenStyle.Render("✓"))
 
 	// 6. Check for config file and warn
-	dotfilesDir := os.ExpandEnv("$HOME/.dotfiles")
+	dotfilesDir := os.ExpandEnv("$HOME/.config/dotisan")
 	files, err := os.ReadDir(dotfilesDir)
 	if err == nil {
 		for _, file := range files {

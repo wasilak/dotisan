@@ -30,8 +30,8 @@ func TestNewLoader(t *testing.T) {
 		t.Errorf("DotisanConfigPath %q does not contain '.dotisan'", loader.DotisanConfigPath)
 	}
 
-	if !contains(loader.DotfilesRoot, ".dotfiles") {
-		t.Errorf("DotfilesRoot %q does not contain '.dotfiles'", loader.DotfilesRoot)
+	if !contains(loader.DotfilesRoot, ".config/dotisan") {
+		t.Errorf("DotfilesRoot %q does not contain '.config/dotisan'", loader.DotfilesRoot)
 	}
 }
 
@@ -51,7 +51,7 @@ func TestLoader_Load(t *testing.T) {
 	// Create temporary directories and files
 	tmpDir := t.TempDir()
 	dotisanDir := filepath.Join(tmpDir, ".dotisan")
-	dotfilesDir := filepath.Join(tmpDir, ".dotfiles")
+	dotfilesDir := filepath.Join(tmpDir, ".config/dotisan")
 
 	if err := os.MkdirAll(dotisanDir, 0755); err != nil {
 		t.Fatalf("Failed to create dotisan dir: %v", err)
@@ -141,7 +141,7 @@ func TestLoader_Load_NoValuesFile(t *testing.T) {
 	// Create temporary directories without values.yaml
 	tmpDir := t.TempDir()
 	dotisanDir := filepath.Join(tmpDir, ".dotisan")
-	dotfilesDir := filepath.Join(tmpDir, ".dotfiles")
+	dotfilesDir := filepath.Join(tmpDir, ".config/dotisan")
 
 	if err := os.MkdirAll(dotisanDir, 0755); err != nil {
 		t.Fatalf("Failed to create dotisan dir: %v", err)

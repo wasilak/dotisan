@@ -16,8 +16,8 @@ func TestNewLoader(t *testing.T) {
 		t.Fatal("NewLoader() returned nil")
 	}
 
-	if loader.dotfilesPath != "/tmp/dotfiles" {
-		t.Errorf("dotfilesPath = %q, want %q", loader.dotfilesPath, "/tmp/dotfiles")
+	if loader.config/dotisanPath != "/tmp/dotfiles" {
+		t.Errorf("dotfilesPath = %q, want %q", loader.config/dotisanPath, "/tmp/dotfiles")
 	}
 
 	if loader.engine == nil {

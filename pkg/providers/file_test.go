@@ -25,8 +25,8 @@ func TestNewFileProvider(t *testing.T) {
 		t.Error("diffEngine not set correctly")
 	}
 
-	if p.dotfilesRoot != "/tmp/dotfiles" {
-		t.Errorf("dotfilesRoot = %q, want %q", p.dotfilesRoot, "/tmp/dotfiles")
+	if p.config/dotisanRoot != "/tmp/dotfiles" {
+		t.Errorf("dotfilesRoot = %q, want %q", p.config/dotisanRoot, "/tmp/dotfiles")
 	}
 }
 
@@ -63,7 +63,7 @@ func TestFileProvider_Available(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := NewFileProvider(nil, nil, tt.dotfilesRoot)
+			p := NewFileProvider(nil, nil, tt.config/dotisanRoot)
 			available, msg := p.Available()
 
 			if available != tt.wantAvailable {

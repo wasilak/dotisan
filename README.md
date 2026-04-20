@@ -48,10 +48,10 @@ curl -fsSL https://github.com/wasilak/dotisan/releases/latest/download/dotisan-$
 
 ```bash
 # Create the dotfiles directory
-mkdir -p ~/.dotfiles
+mkdir -p ~/.config/dotisan
 
 # Create your values file (optional but recommended)
-cat > ~/.dotfiles/values.yaml << 'EOF'
+cat > ~/.config/dotisan/values.yaml << 'EOF'
 # Your personal values - use Go templates with {{ .Env.HOME }}, {{ .OS.Arch }}, etc.
 email: "your.email@example.com"
 github_username: "yourusername"
@@ -60,7 +60,7 @@ EOF
 
 ### 3. Define Your First Resource
 
-Create `~/.dotfiles/shell.yaml`:
+Create `~/.config/dotisan/shell.yaml`:
 
 ```yaml
 ---
@@ -107,7 +107,7 @@ $ dotisan apply --confirm
 
 #### Homebrew Packages
 
-Create `~/.dotfiles/brew.yaml`:
+Create `~/.config/dotisan/brew.yaml`:
 
 ```yaml
 ---
@@ -146,7 +146,7 @@ kind: ManagedDirectory
 metadata:
   name: config-dir
 spec:
-  source: ~/.dotfiles/config/
+  source: ~/.config/dotisan/config/
   destination: ~/.config/
   recursive: true
   clean: true  # Remove files at destination not in source
@@ -202,7 +202,7 @@ dotisan eject KIND NAME   # Stop managing a resource
 ### `~/.dotisan/config.yaml`
 
 ```yaml
-# Dotfiles location (default: ~/.dotfiles)
+# Dotfiles location (default: ~/.config/dotisan)
 dotfiles_root: ~/projects/dotfiles
 
 # State backend (local or S3)
@@ -246,7 +246,7 @@ Available context:
 A complete macOS development environment:
 
 ```yaml
-# ~/.dotfiles/macos.yaml
+# ~/.config/dotisan/macos.yaml
 ---
 apiVersion: dotisan.io/v1
 kind: BrewPackages

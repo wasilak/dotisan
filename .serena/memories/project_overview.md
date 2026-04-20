@@ -1,7 +1,7 @@
 # dotisan — Project Overview
 
 ## Purpose
-`dotisan` is a declarative dotfiles management CLI tool written in Go. It treats a local developer environment like Terraform treats cloud infrastructure: declare desired state in version-controlled config files, compute a diff against current state, and apply changes — including **removals**.
+`dotisan` is a declarative dotisan management CLI tool written in Go. It treats a local developer environment like Terraform treats cloud infrastructure: declare desired state in version-controlled config files, compute a diff against current state, and apply changes — including **removals**.
 
 Unlike `chezmoi` which applies changes forward but never cleans up, dotisan tracks managed resources explicitly and handles removals as first-class operations.
 
@@ -40,8 +40,8 @@ Two backends:
 
 ### Config Files
 - `~/.dotisan/config.yaml` — Tool configuration (backend, paths)
-- `~/.dotfiles/values.yaml` — Templated values (user vars, paths)
-- `~/.dotfiles/*.yaml` — Resource declarations (Kubernetes-style)
+- `~/.dotisan/values.yaml` — Templated values (user vars, paths)
+- `~/.dotisan/*.yaml` — Resource declarations (Kubernetes-style)
 
 ## Key Design Principles
 1. **Declarative over imperative** — describe what should exist

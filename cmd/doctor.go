@@ -106,8 +106,8 @@ func runDoctor() error {
 		}
 	}
 
-	// Check ~/.dotfiles/values.yaml
-	valuesPath := os.ExpandEnv("$HOME/.dotfiles/values.yaml")
+	// Check ~/.config/dotisan/values.yaml
+	valuesPath := os.ExpandEnv("$HOME/.config/dotisan/values.yaml")
 	_, err = os.Stat(valuesPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -129,21 +129,21 @@ func runDoctor() error {
 		}
 	}
 
-	// Check ~/.dotfiles/ directory
-	dotfilesPath := os.ExpandEnv("$HOME/.dotfiles")
-	_, err = os.Stat(dotfilesPath)
+	// Check ~/.config/dotisan/ directory
+	configDir := os.ExpandEnv("$HOME/.config/dotisan")
+	_, err = os.Stat(configDir)
 	if err != nil {
 		if os.IsNotExist(err) {
-			fmt.Printf("  %s .dotfiles/ directory not found\n", redStyle.Render("✗"))
+			fmt.Printf("  %s ~/.config/dotisan/ directory not found\n", redStyle.Render("✗"))
 			hasErrors = true
-			issues = append(issues, ".dotfiles/ directory not found - this is where your resource definitions should be stored")
+			issues = append(issues, "~/.config/dotisan/ directory not found - this is where your resource definitions should be stored")
 		} else {
-			fmt.Printf("  %s Cannot read .dotfiles/: %s\n", redStyle.Render("✗"), err)
+			fmt.Printf("  %s Cannot read ~/.config/dotisan/: %s\n", redStyle.Render("✗"), err)
 			hasErrors = true
-			issues = append(issues, fmt.Sprintf("Cannot read .dotfiles/: %s", err))
+			issues = append(issues, fmt.Sprintf("Cannot read ~/.config/dotisan/: %s", err))
 		}
 	} else {
-		fmt.Printf("  %s .dotfiles/ directory exists\n", greenStyle.Render("✓"))
+		fmt.Printf("  %s ~/.config/dotisan/ directory exists\n", greenStyle.Render("✓"))
 	}
 	fmt.Println()
 

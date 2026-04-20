@@ -31,7 +31,7 @@ type StateConfig struct {
 
 // Config holds the complete dotisan tool configuration from ~/.dotisan/config.yaml
 type Config struct {
-	// DotfilesRoot is the path to the dotfiles directory (default: ~/.dotfiles)
+	// DotfilesRoot is the path to the dotfiles directory (default: ~/.config/dotisan)
 	DotfilesRoot string `yaml:"dotfiles_root"`
 
 	// State holds state backend configuration
@@ -42,7 +42,7 @@ type Config struct {
 func DefaultConfig() *Config {
 	homeDir, _ := os.UserHomeDir()
 	return &Config{
-		DotfilesRoot: filepath.Join(homeDir, ".dotfiles"),
+		DotfilesRoot: filepath.Join(homeDir, ".config/dotisan"),
 		State: StateConfig{
 			Backend: "local",
 			Path:    filepath.Join(homeDir, ".dotisan", "state.json"),
@@ -91,7 +91,7 @@ func LoadConfigFromDefaultPath() (*Config, error) {
 	return LoadConfig(configPath)
 }
 
-// LoadValues loads values from a YAML file (like ~/.dotfiles/values.yaml).
+// LoadValues loads values from a YAML file (like ~/.config/dotisan/values.yaml).
 // It returns the parsed values as a map[string]interface{}.
 func LoadValues(path string) (map[string]interface{}, error) {
 	// Check if file exists

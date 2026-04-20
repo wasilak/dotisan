@@ -3,7 +3,7 @@
 // This file provides a high-level loader that orchestrates the two-pass templating:
 // 1. Load config.yaml (no templating needed)
 // 2. Create TemplateContext with Env/OS
-// 3. Load and render ~/.dotfiles/values.yaml
+// 3. Load and render ~/.config/dotisan/values.yaml
 // 4. Return fully prepared context ready for resource file rendering
 package config
 
@@ -19,7 +19,7 @@ type Loader struct {
 	// DotisanConfigPath is the path to ~/.dotisan/config.yaml
 	DotisanConfigPath string
 
-	// DotfilesRoot is the path to the dotfiles directory (e.g., ~/.dotfiles)
+	// DotfilesRoot is the path to the dotfiles directory (e.g., ~/.config/dotisan)
 	DotfilesRoot string
 }
 
@@ -32,7 +32,7 @@ func NewLoader() (*Loader, error) {
 
 	return &Loader{
 		DotisanConfigPath: filepath.Join(homeDir, ".dotisan", "config.yaml"),
-		DotfilesRoot:      filepath.Join(homeDir, ".dotfiles"),
+		DotfilesRoot:      filepath.Join(homeDir, ".config/dotisan"),
 	}, nil
 }
 
@@ -47,7 +47,7 @@ func NewLoaderWithPaths(dotisanConfigPath, dotfilesRoot string) *Loader {
 // Load performs the complete configuration loading workflow:
 // 1. Loads ~/.dotisan/config.yaml
 // 2. Creates TemplateContext with Env/OS
-// 3. Loads and renders ~/.dotfiles/values.yaml
+// 3. Loads and renders ~/.config/dotisan/values.yaml
 // 4. Returns the prepared TemplateContext
 func (l *Loader) Load() (*Config, *TemplateContext, error) {
 	// Step 1: Load dotisan config

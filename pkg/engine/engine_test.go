@@ -6,11 +6,11 @@ import (
 )
 
 func TestNewEngine(t *testing.T) {
-	// This test may fail if ~/.dotfiles doesn't exist
+	// This test may fail if ~/.config/dotisan doesn't exist
 	// That's expected in a fresh environment
 	eng, err := NewEngine()
 	if err != nil {
-		t.Logf("NewEngine() returned error (may be expected without ~/.dotfiles): %v", err)
+		t.Logf("NewEngine() returned error (may be expected without ~/.config/dotisan): %v", err)
 		return
 	}
 
