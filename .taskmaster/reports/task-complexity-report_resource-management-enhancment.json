@@ -1,0 +1,93 @@
+{
+	"meta": {
+		"generatedAt": "2026-04-20T19:57:00.216Z",
+		"tasksAnalyzed": 10,
+		"totalTasks": 10,
+		"analysisCount": 10,
+		"thresholdScore": 5,
+		"projectName": "Task Master",
+		"usedResearch": true
+	},
+	"complexityAnalysis": [
+		{
+			"taskId": 1,
+			"taskTitle": "Refactor PlanWarning Structure and Plan Output",
+			"complexityScore": 8,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Break down the task into defining the `PlanWarning` struct, integrating it into `Plan`, modifying `pkg/engine/engine.go` for output formatting, updating `pkg/provider/provider.go` for warning generation, and comprehensive testing.",
+			"reasoning": "This task involves fundamental structural changes (`PlanWarning` struct, integration), significant modifications to the user-facing output logic (formatting, suggested snippets), and requires careful consideration of user experience. The output formatting, especially ensuring copy-pasteable suggestions and adherence to a specific 'After' format, can be intricate. Extensive unit and integration testing across various scenarios is crucial."
+		},
+		{
+			"taskId": 2,
+			"taskTitle": "Fix ManagedFile Reconcile Logic for Unmanaged Files",
+			"complexityScore": 6,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Detail the steps for modifying the `FileProvider` reconcile logic, generating the specific `PlanWarning` with the import suggestion, and creating a dedicated integration test case.",
+			"reasoning": "This is a targeted bug fix, but it requires understanding existing reconcile logic, correctly implementing the new `PlanWarning` (dependent on Task 1), and ensuring the warning message and suggestion are accurate and user-friendly. The integration test strategy is clear, but the logic modification needs precision."
+		},
+		{
+			"taskId": 3,
+			"taskTitle": "Implement Homebrew Package Status Checker",
+			"complexityScore": 7,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Outline subtasks for constructing the `brew info --json v1` command, executing it, parsing the JSON output to extract installation status, implementing robust error handling, and writing comprehensive unit tests including mocking.",
+			"reasoning": "This task involves interacting with an external command-line tool, which introduces complexities like command execution, argument handling, and parsing potentially large or malformed JSON output. Robust error handling for both command execution and JSON parsing is critical. Performance considerations for `brew info` also add to the complexity."
+		},
+		{
+			"taskId": 4,
+			"taskTitle": "Integrate Homebrew Drift Detection into Reconcile",
+			"complexityScore": 7,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Break down the integration into modifying `BrewProvider.Reconcile` to call `checkFormulaeStatus`, comparing the results with dotisan's state, generating `PlanWarning` for uninstalled packages, and developing thorough integration tests for drift scenarios.",
+			"reasoning": "This task integrates two new components (Task 1 and Task 3) into a critical part of the application (`Reconcile` logic). It requires careful state comparison, accurate warning generation, and ensuring that only relevant packages are checked. The integration testing needs to cover various drift scenarios to ensure reliability."
+		},
+		{
+			"taskId": 5,
+			"taskTitle": "Implement CLI Parsing for Indexed Resource References",
+			"complexityScore": 5,
+			"recommendedSubtasks": 2,
+			"expansionPrompt": "Detail the implementation of `parseResourceRef` using regular expressions or string manipulation, and specify unit test cases for all expected input formats.",
+			"reasoning": "This is a self-contained string parsing task. While regular expressions can be tricky, the requirements are well-defined. The primary complexity lies in ensuring all edge cases and formats are correctly handled and thoroughly unit tested."
+		},
+		{
+			"taskId": 6,
+			"taskTitle": "Extend Provider Interface for Item-Level Import",
+			"complexityScore": 2,
+			"recommendedSubtasks": 0,
+			"expansionPrompt": "No expansion needed; this task is a single interface definition.",
+			"reasoning": "This task is purely an interface definition, which is a straightforward code change. Its complexity is low, though it serves as a critical dependency for subsequent tasks."
+		},
+		{
+			"taskId": 7,
+			"taskTitle": "Implement Item-Level Import for ManagedFile and BrewPackages",
+			"complexityScore": 8,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Break down the implementation for `ManagedFileProvider.ImportItem` and `BrewProvider.ImportItem` separately, including logic for locating items by `itemKey`, generating `ResourceState` for individual items, updating state tracking, and comprehensive integration testing for both providers.",
+			"reasoning": "This task involves implementing a new, complex interface method for *two* different providers. It requires intricate logic to identify and extract specific items from list-based resources, generate their individual state, and correctly integrate this into the existing state management. This is a significant feature that impacts core state operations and requires extensive integration testing."
+		},
+		{
+			"taskId": 8,
+			"taskTitle": "Migrate ManagedFile to List-Based Structure",
+			"complexityScore": 7,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Detail the steps for modifying the `ManagedFile` struct, implementing backward compatibility logic for reading old configurations, updating `Reconcile` and `Apply` methods, and creating unit tests for both old and new syntax.",
+			"reasoning": "This is a substantial refactoring of a core resource structure. The primary complexity comes from ensuring full backward compatibility for existing configurations while transitioning to a new list-based model. This impacts serialization/deserialization, and the `Reconcile` and `Apply` methods of the provider, requiring careful implementation and thorough testing to prevent regressions."
+		},
+		{
+			"taskId": 9,
+			"taskTitle": "Migrate ManagedDirectory to List-Based Structure",
+			"complexityScore": 6,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Outline the steps for modifying the `ManagedDirectory` struct, implementing backward compatibility logic, updating the `ManagedDirectoryProvider`'s methods, and creating unit tests for both old and new syntax, leveraging patterns from Task 8.",
+			"reasoning": "This task is very similar to Task 8, but for a different resource. The dependency on Task 8 suggests that much of the pattern for backward compatibility and provider updates can be reused, slightly reducing its individual complexity compared to Task 8. However, it still involves structural changes and backward compatibility, which are inherently non-trivial."
+		},
+		{
+			"taskId": 10,
+			"taskTitle": "Consolidate `eject` and `state remove` Commands",
+			"complexityScore": 4,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Break down the task into deprecating `dotisan eject` with a warning, adding the `--force` flag to `dotisan state remove`, ensuring functional parity between the commands, and updating relevant documentation.",
+			"reasoning": "This task involves modifying CLI commands, adding a flag, and ensuring consistent behavior. While straightforward, it requires careful attention to user experience (deprecation message, `--force` behavior) and documentation updates. The functional changes are relatively contained."
+		}
+	]
+}
