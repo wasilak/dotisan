@@ -373,7 +373,7 @@
           "5",
           "6"
         ],
-        "status": "in-progress",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -457,15 +457,16 @@
               6
             ],
             "details": "Refine the `Reconcile` methods of both `ManagedFile` and `ManagedDirectory` to fully integrate the embedded `DiffEngine` (Task 3). This includes calculating `source_hash` from the desired state and `dest_hash` from the actual state (Task 6), feeding these into the diff engine, and interpreting its output to generate the final `Plan`. Ensure `checksum` is consistently used for content comparison.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Enhance existing `Reconcile` tests for both providers to explicitly verify `DiffEngine` interaction and correct `source_hash`/`dest_hash` usage. Test scenarios where only mode changes, content changes, or path changes are detected by the diff engine.",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2026-04-20T09:41:42.700Z"
           }
         ],
         "complexity": 8,
         "recommendedSubtasks": 6,
         "expansionPrompt": "Detail the implementation of the `ManagedFile` provider (including templating, destination path resolution, file mode, checksums, and backup logic) and the `ManagedDirectory` provider (recursive copy, cleanup logic). Focus on their `Reconcile` and `Apply` methods, and integration with the templating and diff engines.",
-        "updatedAt": "2026-04-20T09:39:50.245Z"
+        "updatedAt": "2026-04-20T09:41:42.700Z"
       },
       {
         "id": "8",
@@ -792,9 +793,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-04-20T09:39:50.245Z",
+      "lastModified": "2026-04-20T09:41:42.700Z",
       "taskCount": 10,
-      "completedCount": 6,
+      "completedCount": 7,
       "tags": [
         "master"
       ]
