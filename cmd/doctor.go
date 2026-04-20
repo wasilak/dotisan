@@ -82,8 +82,8 @@ func runDoctor() error {
 	// 3. Check Config Files
 	fmt.Println("Checking configuration files...")
 
-	// Check ~/.dotisan/config.yaml
-	configPath := os.ExpandEnv("$HOME/.dotisan/config.yaml")
+	// Check ~/.config/dotisan/config.yaml
+	configPath := os.ExpandEnv("$HOME/.config/dotisan/config.yaml")
 	_, err := os.Stat(configPath)
 	if err != nil {
 		if os.IsNotExist(err) {

@@ -44,19 +44,20 @@ curl -fsSL https://github.com/wasilak/dotisan/releases/latest/download/dotisan-$
   -o /usr/local/bin/dotisan && chmod +x /usr/local/bin/dotisan
 ```
 
-### 2. Initialize Your Dotfiles
+### 2. Initialize Your Configuration
 
 ```bash
-# Create the dotfiles directory
-mkdir -p ~/.config/dotisan
+# Create the default configuration directory and files
+dotisan init
 
-# Create your values file (optional but recommended)
-cat > ~/.config/dotisan/values.yaml << 'EOF'
-# Your personal values - use Go templates with {{ .Env.HOME }}, {{ .OS.Arch }}, etc.
-email: "your.email@example.com"
-github_username: "yourusername"
-EOF
+# Edit your personal values
+code ~/.config/dotisan/values.yaml
 ```
+
+This creates:
+- `~/.config/dotisan/` - Configuration directory
+- `~/.config/dotisan/config.yaml` - Tool settings
+- `~/.config/dotisan/values.yaml` - Your personal variables
 
 ### 3. Define Your First Resource
 
@@ -169,6 +170,13 @@ spec:
 
 ## Commands Reference
 
+### Setup
+
+```bash
+dotisan init              # Initialize configuration directory
+dotisan doctor            # Check system prerequisites
+```
+
 ### Core Workflow
 
 ```bash
@@ -191,7 +199,6 @@ dotisan state push                   # Upload to S3 backend
 ### Maintenance
 
 ```bash
-dotisan doctor            # Check system prerequisites
 dotisan eject KIND NAME   # Stop managing a resource
 ```
 
