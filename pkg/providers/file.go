@@ -991,10 +991,16 @@ func (p *FileProvider) Import(ctx context.Context, id string) (provider.Resource
 	// Get file mode
 	mode := fmt.Sprintf("%04o", fileInfo.Mode().Perm())
 
+	// Get the base name and clean it up (remove leading dot if present)
+	baseName := filepath.Base(id)
+	if strings.HasPrefix(baseName, ".") {
+		baseName = baseName[1:] // Remove leading dot for cleaner resource names
+	}
+
 	return provider.ResourceState{
-		ID:         fmt.Sprintf("file/default/%s", filepath.Base(id)),
+		ID:         fmt.Sprintf("file/default/%s", baseName),
 		Kind:       "ManagedFile",
-		Name:       filepath.Base(id),
+		Name:       baseName,
 		Namespace:  "default",
 		DestHash:   checksum,
 		Extra: map[string]interface{}{
