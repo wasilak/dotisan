@@ -204,7 +204,7 @@
           "1",
           "2"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -212,9 +212,10 @@
             "description": "Create the `State` Go struct based on the `state.json` schema, define the `StateBackend` interface with Load and Save methods, and implement the `LocalBackend` for file-based state management.",
             "dependencies": [],
             "details": "Define the `State` Go struct matching the `state.json` schema (version, timestamps, resources array). Define the `StateBackend` interface with `Load(ctx context.Context) (*State, error)` and `Save(ctx context.Context, s *State) error` methods. Implement `LocalBackend` to read/write JSON to `~/.dotisan/state.json` (configurable path) using `encoding/json` for serialization/deserialization.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Write unit tests for `LocalBackend`: save a sample state, load it, verify content. Test edge cases like file not found, invalid JSON, and permission issues.",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2026-04-20T08:45:09.016Z"
           },
           {
             "id": 2,
@@ -224,9 +225,10 @@
               1
             ],
             "details": "Implement `S3Backend` using `github.com/minio/minio-go/v7` for S3-compatible storage. Configure S3 endpoint, bucket, key, region, and credentials (from environment variables or `~/.dotisan/config.yaml`). Ensure robust error handling for network operations and S3 API calls.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Write integration tests for `S3Backend` using a local MinIO instance or mock S3 client: save/load state, verify connectivity, authentication, and data integrity. Test error scenarios like connection failures, invalid credentials, or permission issues.",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2026-04-20T08:46:28.772Z"
           },
           {
             "id": 3,
@@ -237,14 +239,16 @@
               2
             ],
             "details": "Implement a factory function that reads `~/.dotisan/config.yaml` to determine which `StateBackend` to instantiate. The factory should return an initialized `StateBackend` instance (either `LocalBackend` or `S3Backend`). Handle cases where no backend is specified or configuration is invalid, providing clear error messages.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Write unit tests for the factory function: verify it returns `LocalBackend` when S3 configuration is absent, and `S3Backend` when S3 configuration is present and valid. Test error handling for malformed or incomplete configuration settings.",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2026-04-20T08:47:08.149Z"
           }
         ],
         "complexity": 6,
         "recommendedSubtasks": 3,
-        "expansionPrompt": "Break down the definition of the State struct and the StateBackend interface, the implementation of the LocalBackend (JSON file), the implementation of the S3Backend using `minio-go/v7`, and the factory function for selecting the appropriate backend."
+        "expansionPrompt": "Break down the definition of the State struct and the StateBackend interface, the implementation of the LocalBackend (JSON file), the implementation of the S3Backend using `minio-go/v7`, and the factory function for selecting the appropriate backend.",
+        "updatedAt": "2026-04-20T08:47:08.149Z"
       },
       {
         "id": "5",
@@ -778,9 +782,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-04-20T08:32:01.142Z",
+      "lastModified": "2026-04-20T08:47:08.149Z",
       "taskCount": 10,
-      "completedCount": 4,
+      "completedCount": 5,
       "tags": [
         "master"
       ]
