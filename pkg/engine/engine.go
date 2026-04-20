@@ -12,6 +12,7 @@ package engine
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/wasilak/dotisan/pkg/config"
 	"github.com/wasilak/dotisan/pkg/diff"
@@ -180,6 +181,44 @@ func (e *Engine) Plan(ctx context.Context) (*PlanResult, error) {
 		result.TotalDrifted += len(plan.Drifted)
 	}
 
+	// Check for orphaned state resources (in state but not in config)
+	// These should be marked for removal - Terraform-style workflow
+	orphanedRemovals := e.findOrphanedStateResources(currentState.Resources, resourcesByProvider)
+	if len(orphanedRemovals) > 0 {
+		for _, orphaned := range orphanedRemovals {
+			result.TotalRemovals++
+			
+			// Get provider name from the resource's kind
+			var providerName string
+			switch orphaned.(type) {
+			case *resource.ManagedFile, *resource.ManagedDirectory:
+				providerName = "file"
+			case *resource.BrewPackages:
+				providerName = "homebrew"
+			case *resource.NpmPackages:
+				providerName = "npm"
+			case *resource.GoPackages:
+				providerName = "go"
+			case *resource.CargoPackages:
+				providerName = "cargo"
+			default:
+				continue
+			}
+			
+			// Update plan with orphaned resource
+			if plan, exists := providerPlans[providerName]; exists {
+				// Add to existing plan's removals
+				plan.Removals = append(plan.Removals, orphaned)
+				providerPlans[providerName] = plan
+			} else {
+				// Create new plan with just this removal
+				providerPlans[providerName] = provider.Plan{
+					Removals: []resource.Resource{orphaned},
+				}
+			}
+		}
+	}
+
 	result.HasChanges = result.TotalAdditions > 0 || result.TotalModifications > 0 || result.TotalRemovals > 0
 
 	return result, nil
@@ -201,7 +240,7 @@ func (e *Engine) groupResourcesByProvider(resources []resource.Resource) map[str
 		case *resource.ManagedFile, *resource.ManagedDirectory:
 			providerName = "file"
 		case *resource.BrewPackages:
-			providerName = "brew"
+			providerName = "homebrew"
 		case *resource.NpmPackages:
 			providerName = "npm"
 		case *resource.GoPackages:
@@ -230,6 +269,77 @@ func (e *Engine) filterStateForProvider(stateMap map[string]provider.ResourceSta
 	}
 
 	return filtered
+}
+
+// findOrphanedStateResources finds state entries that are not in the config.
+// These are resources that were previously managed but no longer have YAML definitions.
+// Returns the orphaned resources converted to resource.Resource for display.
+func (e *Engine) findOrphanedStateResources(stateResources []provider.ResourceState, resourcesByProvider map[string][]resource.Resource) []resource.Resource {
+	// Build set of config resource IDs
+	configIDs := make(map[string]bool)
+	for providerName, providerResources := range resourcesByProvider {
+		for _, res := range providerResources {
+			meta := res.GetMetadata()
+			id := fmt.Sprintf("%s/%s/%s", providerName, meta.GetNamespace(), meta.Name)
+			configIDs[id] = true
+		}
+	}
+
+	// Find state resources NOT in config (orphaned) and convert to Resource
+	var orphaned []resource.Resource
+	for _, s := range stateResources {
+		if !configIDs[s.ID] {
+			// Convert ResourceState to appropriate Resource type
+			orphanedRes := e.stateToResource(s)
+			if orphanedRes != nil {
+				orphaned = append(orphaned, orphanedRes)
+			}
+		}
+	}
+
+	return orphaned
+}
+
+// stateToResource converts a ResourceState to a Resource object.
+// This is used for orphaned resources that need to be displayed in plan output.
+func (e *Engine) stateToResource(s provider.ResourceState) resource.Resource {
+	// Create base resource with metadata
+	base := resource.BaseResource{
+		APIVersion: resource.SupportedAPIVersion,
+		Kind:       s.Kind,
+		Metadata: resource.Metadata{
+			Name:      s.Name,
+			Namespace: s.Namespace,
+		},
+	}
+
+	switch s.Kind {
+	case "ManagedFile":
+		return &resource.ManagedFile{BaseResource: base}
+	case "ManagedDirectory":
+		return &resource.ManagedDirectory{BaseResource: base}
+	case "BrewPackages", "homebrew":
+		return &resource.BrewPackages{BaseResource: base}
+	case "NpmPackages":
+		return &resource.NpmPackages{BaseResource: base}
+	case "GoPackages":
+		return &resource.GoPackages{BaseResource: base}
+	case "CargoPackages":
+		return &resource.CargoPackages{BaseResource: base}
+	default:
+		// For unknown kinds, return nil (won't be shown in plan)
+		return nil
+	}
+}
+
+// getProviderNameFromStateID extracts provider name from state ID.
+// State ID format: "provider/namespace/name"
+func (e *Engine) getProviderNameFromStateID(stateID string) string {
+	parts := strings.Split(stateID, "/")
+	if len(parts) > 0 {
+		return parts[0]
+	}
+	return ""
 }
 
 // DisplayPlan outputs the plan result in a formatted way.
