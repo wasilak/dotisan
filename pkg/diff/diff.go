@@ -80,11 +80,15 @@ func (e *Engine) GenerateDiff(oldContent, newContent string) []LineChange {
 
 		switch prefix {
 		case '+':
-			if !strings.HasPrefix(content, "+++") {
+			// Skip "+++ filename" header lines but keep actual additions
+			// Check if content starts with "++" (the remaining part of "+++")
+			if !strings.HasPrefix(line, "+++") {
 				changes = append(changes, LineChange{Type: LineAdded, Content: content})
 			}
 		case '-':
-			if !strings.HasPrefix(content, "---") {
+			// Skip "--- filename" header lines but keep actual deletions
+			// Check if content starts with "--" (the remaining part of "---")
+			if !strings.HasPrefix(line, "---") {
 				changes = append(changes, LineChange{Type: LineDeleted, Content: content})
 			}
 		case ' ':

@@ -74,17 +74,52 @@ func (f *PlanFormatter) FormatInSync(resourceName string) string {
 }
 
 // FormatDrift formats a drift detection message.
+// The description can be multiline (for diffs), and will be properly indented.
 func (f *PlanFormatter) FormatDrift(resourceName, description string) string {
 	prefix := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("208")). // Orange
 		Bold(true).
 		Render("!")
 
-	if description != "" {
+	if description == "" {
+		return fmt.Sprintf("%s %s (drift detected)", prefix, resourceName)
+	}
+
+	// Check if description is multiline (contains \n)
+	if !strings.Contains(description, "\n") {
+		// Single line - use simple format
 		return fmt.Sprintf("%s %s (drift: %s)", prefix, resourceName, description)
 	}
 
-	return fmt.Sprintf("%s %s (drift detected)", prefix, resourceName)
+	// Multiline description (likely a diff) - format with proper indentation
+	lines := strings.Split(description, "\n")
+	var formattedLines []string
+	
+	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+		
+		// Apply color based on diff prefix
+		if strings.HasPrefix(line, "+") {
+			// Addition - green
+			colored := lipgloss.NewStyle().
+				Foreground(lipgloss.Color("42")). // Green
+				Render(line)
+			formattedLines = append(formattedLines, "    "+colored)
+		} else if strings.HasPrefix(line, "-") {
+			// Deletion - red
+			colored := lipgloss.NewStyle().
+				Foreground(lipgloss.Color("196")). // Red
+				Render(line)
+			formattedLines = append(formattedLines, "    "+colored)
+		} else {
+			// Context line
+			formattedLines = append(formattedLines, "    "+line)
+		}
+	}
+
+	return fmt.Sprintf("%s %s (drift detected):\n%s", prefix, resourceName, strings.Join(formattedLines, "\n"))
 }
 
 // FormatSummary formats a plan summary with counts.
