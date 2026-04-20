@@ -139,7 +139,7 @@ func (p *FileProvider) reconcileManagedFile(
 	// Render source content (either from inline Source or external SourceFile)
 	var content string
 	var sourcePath string
-	
+
 	if mf.Spec.Source != "" {
 		// Inline content
 		sourcePath = "" // No source file for inline content
@@ -189,7 +189,7 @@ func (p *FileProvider) reconcileManagedFile(
 		Name:       mf.GetMetadata().Name,
 		Namespace:  mf.GetMetadata().GetNamespace(),
 		Checksum:   checksum,
-		DestHash:   checksum, // For files, dest_hash is the rendered content hash
+		DestHash:   checksum,                              // For files, dest_hash is the rendered content hash
 		SourceHash: calculateChecksumFromFile(sourcePath), // Hash of source file
 		Extra: map[string]interface{}{
 			"source_path": sourcePath,
@@ -206,24 +206,21 @@ func (p *FileProvider) reconcileManagedFile(
 	}
 
 	if !hasSavedState {
-		// File exists but wasn't managed by us - check if it matches desired
-		actualContent, err := os.ReadFile(destPath)
-		if err != nil {
-			return
-		}
-		actualChecksum := calculateChecksum(string(actualContent))
+		// File exists but wasn't managed by us - treat as addition and warn the user
+		// This avoids silently marking unmanaged files as in-sync and gives a clear
+		// suggestion to import the resource into state.
+		if fileExists {
+			plan.Additions = append(plan.Additions, mf)
 
-		if actualChecksum != checksum {
-			// File exists with different content - drift
-			plan.Modifications = append(plan.Modifications, provider.Modification{
-				Resource:  mf,
-				OldState:  provider.ResourceState{ID: id, DestHash: actualChecksum},
-				NewState:  desiredState,
-				Diff:      p.generateDiff(string(actualContent), content),
-			})
-		} else {
-			// File exists with same content - in sync
-			plan.InSync = append(plan.InSync, mf)
+			// Build a copy-pasteable suggestion for importing this resource
+			suggestion := fmt.Sprintf("dotisan state import ManagedFile %s %s", mf.GetMetadata().Name, destPath)
+			warning := provider.PlanWarning{
+				ResourceID: id,
+				Severity:   "warning",
+				Message:    fmt.Sprintf("Destination file already exists at %s", destPath),
+				Suggestion: suggestion,
+			}
+			plan.Warnings = append(plan.Warnings, warning)
 		}
 		return
 	}
@@ -264,7 +261,7 @@ func (p *FileProvider) reconcileManagedFile(
 		// File has been modified outside of dotisan
 		// The expected content is our rendered content (what the file SHOULD be)
 		// actualContent is what the file currently IS
-		
+
 		plan.Drifted = append(plan.Drifted, provider.Drift{
 			Resource:      mf,
 			ExpectedState: savedState,
@@ -393,10 +390,10 @@ func (p *FileProvider) reconcileManagedDirectory(
 		// Directory exists but wasn't managed by us
 		if hasChanges {
 			plan.Modifications = append(plan.Modifications, provider.Modification{
-				Resource:  md,
-				OldState:  provider.ResourceState{ID: id},
-				NewState:  desiredState,
-				Diff:      fmt.Sprintf("directory %s has changes", destPath),
+				Resource: md,
+				OldState: provider.ResourceState{ID: id},
+				NewState: desiredState,
+				Diff:     fmt.Sprintf("directory %s has changes", destPath),
 			})
 		} else {
 			plan.InSync = append(plan.InSync, md)
@@ -567,10 +564,10 @@ func calculateChecksumFromFile(path string) string {
 func (p *FileProvider) generateDiff(oldContent, newContent string) string {
 	oldLines := strings.Split(strings.TrimSpace(oldContent), "\n")
 	newLines := strings.Split(strings.TrimSpace(newContent), "\n")
-	
+
 	var result []string
 	maxLines := 20 // Limit diff output
-	
+
 	// Find removed lines (in old but not in new)
 	for _, oldLine := range oldLines {
 		if oldLine == "" {
@@ -591,11 +588,11 @@ func (p *FileProvider) generateDiff(oldContent, newContent string) string {
 			}
 		}
 	}
-	
+
 	if len(result) >= maxLines {
 		return strings.Join(result, "\n")
 	}
-	
+
 	// Find added lines (in new but not in old)
 	for _, newLine := range newLines {
 		if newLine == "" {
@@ -616,7 +613,7 @@ func (p *FileProvider) generateDiff(oldContent, newContent string) string {
 			}
 		}
 	}
-	
+
 	return strings.Join(result, "\n")
 }
 
@@ -693,7 +690,7 @@ func (p *FileProvider) applyFileAddition(ctx context.Context, mf *resource.Manag
 
 	// Render content (from inline Source or external SourceFile)
 	var content string
-	
+
 	if mf.Spec.Source != "" {
 		// Inline content
 		if mf.Spec.Template && p.templateContext != nil {
@@ -787,7 +784,7 @@ func (p *FileProvider) applyFileModification(ctx context.Context, mf *resource.M
 
 	// Render content (from inline Source or external SourceFile)
 	var content string
-	
+
 	if mf.Spec.Source != "" {
 		// Inline content
 		if mf.Spec.Template && p.templateContext != nil {
@@ -1022,10 +1019,10 @@ func (p *FileProvider) Import(ctx context.Context, id string) (provider.Resource
 	}
 
 	return provider.ResourceState{
-		ID:         fmt.Sprintf("ManagedFile/%s", baseName),
-		Kind:       "ManagedFile",
-		Name:       baseName,
-		DestHash:   checksum,
+		ID:       fmt.Sprintf("ManagedFile/%s", baseName),
+		Kind:     "ManagedFile",
+		Name:     baseName,
+		DestHash: checksum,
 		Extra: map[string]interface{}{
 			"source_path": "",
 			"dest_path":   filePath,
