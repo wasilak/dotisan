@@ -141,9 +141,22 @@ func (p *FileProvider) reconcileManagedFile(
 	var sourcePath string
 	
 	if mf.Spec.Source != "" {
-		// Inline content - use directly
-		content = mf.Spec.Source
+		// Inline content
 		sourcePath = "" // No source file for inline content
+		if mf.Spec.Template && p.templateContext != nil {
+			// Apply templating to inline content
+			engine := config.NewTemplateEngine(p.templateContext)
+			var renderErr error
+			content, renderErr = engine.RenderTemplate("inline", mf.Spec.Source)
+			if renderErr != nil {
+				// Template rendering failed
+				plan.Additions = append(plan.Additions, mf)
+				return
+			}
+		} else {
+			// Use inline content directly without templating
+			content = mf.Spec.Source
+		}
 	} else if mf.Spec.SourceFile != "" {
 		// External file path
 		sourcePath = filepath.Join(p.dotfilesRoot, mf.Spec.SourceFile)
@@ -615,17 +628,37 @@ func (p *FileProvider) applyFileAddition(ctx context.Context, mf *resource.Manag
 		return err
 	}
 
-	// Resolve paths
-	sourcePath := filepath.Join(p.dotfilesRoot, mf.Spec.Source)
+	// Resolve destination path
 	destPath, err := p.resolveDestination(mf.Spec.Destination)
 	if err != nil {
 		return err
 	}
 
-	// Render content
-	content, err := p.renderSource(sourcePath, mf.Spec.Template)
-	if err != nil {
-		return err
+	// Render content (from inline Source or external SourceFile)
+	var content string
+	
+	if mf.Spec.Source != "" {
+		// Inline content
+		if mf.Spec.Template && p.templateContext != nil {
+			// Apply templating to inline content
+			engine := config.NewTemplateEngine(p.templateContext)
+			content, err = engine.RenderTemplate("inline", mf.Spec.Source)
+			if err != nil {
+				return fmt.Errorf("failed to render template: %w", err)
+			}
+		} else {
+			// Use inline content directly
+			content = mf.Spec.Source
+		}
+	} else if mf.Spec.SourceFile != "" {
+		// External file path
+		sourcePath := filepath.Join(p.dotfilesRoot, mf.Spec.SourceFile)
+		content, err = p.renderSource(sourcePath, mf.Spec.Template)
+		if err != nil {
+			return err
+		}
+	} else {
+		return fmt.Errorf("neither source nor sourceFile specified")
 	}
 
 	// Ensure parent directory exists
@@ -689,17 +722,37 @@ func (p *FileProvider) applyFileModification(ctx context.Context, mf *resource.M
 		return err
 	}
 
-	// Resolve paths
-	sourcePath := filepath.Join(p.dotfilesRoot, mf.Spec.Source)
+	// Resolve destination path
 	destPath, err := p.resolveDestination(mf.Spec.Destination)
 	if err != nil {
 		return err
 	}
 
-	// Render content
-	content, err := p.renderSource(sourcePath, mf.Spec.Template)
-	if err != nil {
-		return err
+	// Render content (from inline Source or external SourceFile)
+	var content string
+	
+	if mf.Spec.Source != "" {
+		// Inline content
+		if mf.Spec.Template && p.templateContext != nil {
+			// Apply templating to inline content
+			engine := config.NewTemplateEngine(p.templateContext)
+			content, err = engine.RenderTemplate("inline", mf.Spec.Source)
+			if err != nil {
+				return fmt.Errorf("failed to render template: %w", err)
+			}
+		} else {
+			// Use inline content directly
+			content = mf.Spec.Source
+		}
+	} else if mf.Spec.SourceFile != "" {
+		// External file path
+		sourcePath := filepath.Join(p.dotfilesRoot, mf.Spec.SourceFile)
+		content, err = p.renderSource(sourcePath, mf.Spec.Template)
+		if err != nil {
+			return err
+		}
+	} else {
+		return fmt.Errorf("neither source nor sourceFile specified")
 	}
 
 	// Write file (this overwrites existing content)
