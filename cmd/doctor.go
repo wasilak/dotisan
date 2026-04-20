@@ -4,21 +4,28 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/wasilak/dotisan/pkg/config"
 	"github.com/wasilak/dotisan/pkg/provider"
+	"github.com/wasilak/dotisan/pkg/resource"
 	"github.com/wasilak/dotisan/pkg/state"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 )
 
+var doctorValidateFlag bool
+
 // doctorCmd represents the doctor command
 var doctorCmd = &cobra.Command{
 	Use:   "doctor",
 	Short: "Check system prerequisites",
 	Long: `doctor checks each provider's Available() status, state backend connectivity,
-config file validity, and template rendering. Reports issues and suggests fixes.`,
+config file validity, and template rendering. Reports issues and suggests fixes.
+
+Use --validate to also validate all resource YAML files for schema errors.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runDoctor()
 	},
@@ -53,7 +60,7 @@ func runDoctor() error {
 
 	// 2. Check State Backend
 	fmt.Println("Checking state backend...")
-	dotisanDir := os.ExpandEnv("$HOME/.dotisan")
+	dotisanDir := os.ExpandEnv("$HOME/.config/dotisan")
 	if err := os.MkdirAll(dotisanDir, 0755); err != nil {
 		fmt.Printf("  %s Cannot create dotisan directory: %s\n", redStyle.Render("✗"), err)
 		hasErrors = true
@@ -147,7 +154,23 @@ func runDoctor() error {
 	}
 	fmt.Println()
 
-	// 4. Summary
+	// 4. Validate Resources (if requested)
+	if doctorValidateFlag {
+		fmt.Println("Validating resource files...")
+		validationErrors := validateResources(configDir, valuesPath)
+		if len(validationErrors) > 0 {
+			hasErrors = true
+			for _, err := range validationErrors {
+				fmt.Printf("  %s %s\n", redStyle.Render("✗"), err)
+				issues = append(issues, err)
+			}
+		} else {
+			fmt.Printf("  %s All resource files valid\n", greenStyle.Render("✓"))
+		}
+		fmt.Println()
+	}
+
+	// 5. Summary
 	fmt.Println(headerStyle.Render("Summary"))
 	if hasErrors {
 		fmt.Printf("  %s Issues found: %d\n", redStyle.Render("✗"), len(issues))
@@ -173,6 +196,87 @@ func runDoctor() error {
 	return nil
 }
 
+// validateResources scans all YAML files in the resources directory and validates them.
+// It returns a list of validation errors with file paths.
+func validateResources(configDir, valuesPath string) []string {
+	var errors []string
+
+	// Load values for templating
+	values, _ := config.LoadValues(valuesPath)
+
+	// Create template context
+	envVars := make(map[string]string)
+	for _, e := range os.Environ() {
+		if i := strings.Index(e, "="); i > 0 {
+			envVars[e[:i]] = e[i+1:]
+		}
+	}
+	hostname, _ := os.Hostname()
+	ctx := &config.TemplateContext{
+		Env:    envVars,
+		OS:     config.OSInfo{Hostname: hostname},
+		Values: values,
+	}
+
+	// Create loader
+	loader := resource.NewLoader(configDir, ctx)
+	_ = loader // Not used directly, but we walk manually below
+
+	// Walk the directory manually to validate each file
+	resourcesDir := filepath.Join(configDir, "resources")
+	_, err := os.Stat(resourcesDir)
+	if os.IsNotExist(err) {
+		// No resources directory yet - that's OK
+		return errors
+	}
+
+	err = filepath.Walk(resourcesDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Skip directories
+		if info.IsDir() {
+			return nil
+		}
+
+		// Only process YAML files
+		ext := strings.ToLower(filepath.Ext(path))
+		if ext != ".yaml" && ext != ".yml" {
+			return nil
+		}
+
+		// Read file
+		data, err := os.ReadFile(path)
+		if err != nil {
+			errors = append(errors, fmt.Sprintf("%s: cannot read file: %v", path, err))
+			return nil
+		}
+
+		// Try to unmarshal (this validates apiVersion and kind)
+		res, err := resource.UnmarshalYAML(data)
+		if err != nil {
+			errors = append(errors, fmt.Sprintf("%s: %v", path, err))
+			return nil
+		}
+
+		// Validate the resource struct
+		if err := res.Validate(); err != nil {
+			errors = append(errors, fmt.Sprintf("%s: %v", path, err))
+			return nil
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		errors = append(errors, fmt.Sprintf("failed to walk resources directory: %v", err))
+	}
+
+	return errors
+}
+
 func init() {
 	rootCmd.AddCommand(doctorCmd)
+	doctorCmd.Flags().BoolVar(&doctorValidateFlag, "validate", false, "Also validate all resource YAML files")
 }
