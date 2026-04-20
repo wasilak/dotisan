@@ -576,13 +576,25 @@ func (p *FileProvider) Apply(ctx context.Context, plan provider.Plan) error {
 	return nil
 }
 
-// applyAddition creates a new file.
+// applyAddition creates a new resource (file or directory).
 func (p *FileProvider) applyAddition(ctx context.Context, res resource.Resource) error {
-	mf, ok := res.(*resource.ManagedFile)
-	if !ok {
-		return fmt.Errorf("not a ManagedFile resource")
+	// Check context cancellation
+	if err := ctx.Err(); err != nil {
+		return err
 	}
 
+	switch r := res.(type) {
+	case *resource.ManagedFile:
+		return p.applyFileAddition(ctx, r)
+	case *resource.ManagedDirectory:
+		return p.applyDirectoryAddition(ctx, r)
+	default:
+		return fmt.Errorf("unsupported resource type for addition: %T", res)
+	}
+}
+
+// applyFileAddition creates a new file.
+func (p *FileProvider) applyFileAddition(ctx context.Context, mf *resource.ManagedFile) error {
 	// Check context cancellation
 	if err := ctx.Err(); err != nil {
 		return err
@@ -615,13 +627,48 @@ func (p *FileProvider) applyAddition(ctx context.Context, res resource.Resource)
 	return nil
 }
 
-// applyModification updates an existing file.
-func (p *FileProvider) applyModification(ctx context.Context, mod provider.Modification) error {
-	mf, ok := mod.Resource.(*resource.ManagedFile)
-	if !ok {
-		return fmt.Errorf("not a ManagedFile resource")
+// applyDirectoryAddition creates a new directory by copying from source.
+func (p *FileProvider) applyDirectoryAddition(ctx context.Context, md *resource.ManagedDirectory) error {
+	// Check context cancellation
+	if err := ctx.Err(); err != nil {
+		return err
 	}
 
+	// Resolve paths
+	sourcePath := filepath.Join(p.dotfilesRoot, md.Spec.Source)
+	destPath, err := p.resolveDestination(md.Spec.Destination)
+	if err != nil {
+		return err
+	}
+
+	// Ensure destination directory exists
+	if err := os.MkdirAll(destPath, 0755); err != nil {
+		return fmt.Errorf("failed to create destination directory %s: %w", destPath, err)
+	}
+
+	// Copy all files from source to destination
+	return p.syncDirectory(ctx, sourcePath, destPath, md.Spec.Recursive, md.Spec.Exclude, md.Spec.Clean)
+}
+
+// applyModification updates an existing resource.
+func (p *FileProvider) applyModification(ctx context.Context, mod provider.Modification) error {
+	// Check context cancellation
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	switch r := mod.Resource.(type) {
+	case *resource.ManagedFile:
+		return p.applyFileModification(ctx, r)
+	case *resource.ManagedDirectory:
+		return p.applyDirectoryModification(ctx, r)
+	default:
+		return fmt.Errorf("unsupported resource type for modification: %T", mod.Resource)
+	}
+}
+
+// applyFileModification updates an existing file.
+func (p *FileProvider) applyFileModification(ctx context.Context, mf *resource.ManagedFile) error {
 	// Check context cancellation
 	if err := ctx.Err(); err != nil {
 		return err
@@ -648,18 +695,43 @@ func (p *FileProvider) applyModification(ctx context.Context, mod provider.Modif
 	return nil
 }
 
-// applyRemoval deletes a file.
-func (p *FileProvider) applyRemoval(ctx context.Context, res resource.Resource) error {
-	mf, ok := res.(*resource.ManagedFile)
-	if !ok {
-		return fmt.Errorf("not a ManagedFile resource")
-	}
-
+// applyDirectoryModification updates an existing directory.
+func (p *FileProvider) applyDirectoryModification(ctx context.Context, md *resource.ManagedDirectory) error {
 	// Check context cancellation
 	if err := ctx.Err(); err != nil {
 		return err
 	}
 
+	// Resolve paths
+	sourcePath := filepath.Join(p.dotfilesRoot, md.Spec.Source)
+	destPath, err := p.resolveDestination(md.Spec.Destination)
+	if err != nil {
+		return err
+	}
+
+	// Sync directory contents
+	return p.syncDirectory(ctx, sourcePath, destPath, md.Spec.Recursive, md.Spec.Exclude, md.Spec.Clean)
+}
+
+// applyRemoval deletes a resource.
+func (p *FileProvider) applyRemoval(ctx context.Context, res resource.Resource) error {
+	// Check context cancellation
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	switch r := res.(type) {
+	case *resource.ManagedFile:
+		return p.applyFileRemoval(ctx, r)
+	case *resource.ManagedDirectory:
+		return p.applyDirectoryRemoval(ctx, r)
+	default:
+		return fmt.Errorf("unsupported resource type for removal: %T", res)
+	}
+}
+
+// applyFileRemoval deletes a file.
+func (p *FileProvider) applyFileRemoval(ctx context.Context, mf *resource.ManagedFile) error {
 	// Resolve destination path
 	destPath, err := p.resolveDestination(mf.Spec.Destination)
 	if err != nil {
@@ -675,6 +747,94 @@ func (p *FileProvider) applyRemoval(ctx context.Context, res resource.Resource) 
 	// Delete the file
 	if err := os.Remove(destPath); err != nil {
 		return fmt.Errorf("failed to remove file %s: %w", destPath, err)
+	}
+
+	return nil
+}
+
+// applyDirectoryRemoval deletes a directory.
+func (p *FileProvider) applyDirectoryRemoval(ctx context.Context, md *resource.ManagedDirectory) error {
+	// Resolve destination path
+	destPath, err := p.resolveDestination(md.Spec.Destination)
+	if err != nil {
+		return err
+	}
+
+	// Check if directory exists
+	if _, err := os.Stat(destPath); os.IsNotExist(err) {
+		// Directory doesn't exist, nothing to do
+		return nil
+	}
+
+	// Delete the directory and all contents
+	if err := os.RemoveAll(destPath); err != nil {
+		return fmt.Errorf("failed to remove directory %s: %w", destPath, err)
+	}
+
+	return nil
+}
+
+// syncDirectory synchronizes files from source to destination directory.
+func (p *FileProvider) syncDirectory(ctx context.Context, sourcePath, destPath string, recursive bool, exclude []string, clean bool) error {
+	// Build list of source files
+	sourceFiles := make(map[string]string)
+	if err := p.walkSourceDir(sourcePath, "", recursive, exclude, sourceFiles); err != nil {
+		return fmt.Errorf("failed to walk source directory: %w", err)
+	}
+
+	// Build list of destination files
+	destFiles := make(map[string]string)
+	if err := p.walkDestDir(destPath, "", recursive, destFiles); err != nil {
+		// Destination might not exist yet, that's ok
+	}
+
+	// Copy new and modified files
+	for relPath, sourceChecksum := range sourceFiles {
+		// Check context cancellation
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+
+		destFilePath := filepath.Join(destPath, relPath)
+		destChecksum, exists := destFiles[relPath]
+
+		if !exists || sourceChecksum != destChecksum {
+			// File needs to be copied
+			sourceFilePath := filepath.Join(sourcePath, relPath)
+			content, err := os.ReadFile(sourceFilePath)
+			if err != nil {
+				return fmt.Errorf("failed to read source file %s: %w", sourceFilePath, err)
+			}
+
+			// Ensure parent directory exists
+			parentDir := filepath.Dir(destFilePath)
+			if err := os.MkdirAll(parentDir, 0755); err != nil {
+				return fmt.Errorf("failed to create parent directory %s: %w", parentDir, err)
+			}
+
+			// Write file
+			if err := os.WriteFile(destFilePath, content, 0644); err != nil {
+				return fmt.Errorf("failed to write file %s: %w", destFilePath, err)
+			}
+		}
+	}
+
+	// Clean up extra files if requested
+	if clean {
+		for relPath := range destFiles {
+			// Check context cancellation
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+
+			if _, exists := sourceFiles[relPath]; !exists {
+				// File exists in dest but not in source - remove it
+				destFilePath := filepath.Join(destPath, relPath)
+				if err := os.Remove(destFilePath); err != nil {
+					return fmt.Errorf("failed to remove file %s: %w", destFilePath, err)
+				}
+			}
+		}
 	}
 
 	return nil
