@@ -325,8 +325,163 @@ func (p *FileProvider) generateDiff(oldContent, newContent string) string {
 
 // Apply executes the given plan.
 func (p *FileProvider) Apply(ctx context.Context, plan provider.Plan) error {
-	// TODO: Implement in subtask 7.3 and 7.5
+	// Check context cancellation
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	// Process additions
+	for _, res := range plan.Additions {
+		if err := p.applyAddition(ctx, res); err != nil {
+			return fmt.Errorf("failed to add %s: %w", res.GetMetadata().ResourceID(), err)
+		}
+	}
+
+	// Check context cancellation
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	// Process modifications
+	for _, mod := range plan.Modifications {
+		if err := p.applyModification(ctx, mod); err != nil {
+			return fmt.Errorf("failed to modify %s: %w", mod.Resource.GetMetadata().ResourceID(), err)
+		}
+	}
+
+	// Check context cancellation
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	// Process removals
+	for _, res := range plan.Removals {
+		if err := p.applyRemoval(ctx, res); err != nil {
+			return fmt.Errorf("failed to remove %s: %w", res.GetMetadata().ResourceID(), err)
+		}
+	}
+
 	return nil
+}
+
+// applyAddition creates a new file.
+func (p *FileProvider) applyAddition(ctx context.Context, res resource.Resource) error {
+	mf, ok := res.(*resource.ManagedFile)
+	if !ok {
+		return fmt.Errorf("not a ManagedFile resource")
+	}
+
+	// Check context cancellation
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	// Resolve paths
+	sourcePath := filepath.Join(p.dotfilesRoot, mf.Spec.Source)
+	destPath, err := p.resolveDestination(mf.Spec.Destination)
+	if err != nil {
+		return err
+	}
+
+	// Render content
+	content, err := p.renderSource(sourcePath, mf.Spec.Template)
+	if err != nil {
+		return err
+	}
+
+	// Ensure parent directory exists
+	parentDir := filepath.Dir(destPath)
+	if err := os.MkdirAll(parentDir, 0755); err != nil {
+		return fmt.Errorf("failed to create parent directory %s: %w", parentDir, err)
+	}
+
+	// Write file
+	if err := os.WriteFile(destPath, []byte(content), p.parseMode(mf.Spec.Mode)); err != nil {
+		return fmt.Errorf("failed to write file %s: %w", destPath, err)
+	}
+
+	return nil
+}
+
+// applyModification updates an existing file.
+func (p *FileProvider) applyModification(ctx context.Context, mod provider.Modification) error {
+	mf, ok := mod.Resource.(*resource.ManagedFile)
+	if !ok {
+		return fmt.Errorf("not a ManagedFile resource")
+	}
+
+	// Check context cancellation
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	// Resolve paths
+	sourcePath := filepath.Join(p.dotfilesRoot, mf.Spec.Source)
+	destPath, err := p.resolveDestination(mf.Spec.Destination)
+	if err != nil {
+		return err
+	}
+
+	// Render content
+	content, err := p.renderSource(sourcePath, mf.Spec.Template)
+	if err != nil {
+		return err
+	}
+
+	// Write file (this overwrites existing content)
+	if err := os.WriteFile(destPath, []byte(content), p.parseMode(mf.Spec.Mode)); err != nil {
+		return fmt.Errorf("failed to write file %s: %w", destPath, err)
+	}
+
+	return nil
+}
+
+// applyRemoval deletes a file.
+func (p *FileProvider) applyRemoval(ctx context.Context, res resource.Resource) error {
+	mf, ok := res.(*resource.ManagedFile)
+	if !ok {
+		return fmt.Errorf("not a ManagedFile resource")
+	}
+
+	// Check context cancellation
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	// Resolve destination path
+	destPath, err := p.resolveDestination(mf.Spec.Destination)
+	if err != nil {
+		return err
+	}
+
+	// Check if file exists
+	if _, err := os.Stat(destPath); os.IsNotExist(err) {
+		// File doesn't exist, nothing to do
+		return nil
+	}
+
+	// Delete the file
+	if err := os.Remove(destPath); err != nil {
+		return fmt.Errorf("failed to remove file %s: %w", destPath, err)
+	}
+
+	return nil
+}
+
+// parseMode parses a file mode string (e.g., "0644") into os.FileMode.
+// Returns 0644 (rw-r--r--) if mode is empty or invalid.
+func (p *FileProvider) parseMode(mode string) os.FileMode {
+	if mode == "" {
+		return 0644
+	}
+
+	// Parse octal mode
+	var m uint32
+	if _, err := fmt.Sscanf(mode, "%o", &m); err != nil {
+		return 0644
+	}
+
+	return os.FileMode(m)
 }
 
 // Import discovers an existing resource on the system and returns its state.

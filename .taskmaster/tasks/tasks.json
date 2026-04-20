@@ -413,9 +413,10 @@
               2
             ],
             "details": "Based on the `Plan` from `Reconcile`, implement logic to: 1. Create new files with the rendered content and specified mode. 2. Update existing files, optionally backing up the original file if `--backup` is enabled. 3. Set the correct file permissions (mode). Handle potential I/O errors during file operations.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Write integration tests for `ManagedFile.Apply`: new file creation, content update, mode change, backup creation on update, and error handling for permission issues. Verify file content and permissions post-apply.",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2026-04-20T09:20:26.763Z"
           },
           {
             "id": 4,
@@ -462,7 +463,7 @@
         "complexity": 8,
         "recommendedSubtasks": 6,
         "expansionPrompt": "Detail the implementation of the `ManagedFile` provider (including templating, destination path resolution, file mode, checksums, and backup logic) and the `ManagedDirectory` provider (recursive copy, cleanup logic). Focus on their `Reconcile` and `Apply` methods, and integration with the templating and diff engines.",
-        "updatedAt": "2026-04-20T09:11:37.648Z"
+        "updatedAt": "2026-04-20T09:20:26.763Z"
       },
       {
         "id": "8",
@@ -789,7 +790,7 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-04-20T09:11:37.648Z",
+      "lastModified": "2026-04-20T09:20:26.763Z",
       "taskCount": 10,
       "completedCount": 6,
       "tags": [
