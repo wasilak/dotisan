@@ -33,15 +33,23 @@ const (
 	IconInSync       = "✓"
 )
 
+// Pastel color palette (softer, easier on the eyes)
+const (
+	ColorPastelGreen  = "114" // Soft mint green
+	ColorPastelRed    = "174" // Soft salmon/coral
+	ColorPastelYellow = "222" // Soft cream yellow  
+	ColorPastelOrange = "216" // Soft peach
+	ColorGray         = "240" // Neutral gray
+)
+
 // FormatAddition formats an addition message.
 func (f *PlanFormatter) FormatAddition(resourceName string) string {
 	icon := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("42")).
-		Bold(true).
+		Foreground(lipgloss.Color(ColorPastelGreen)).
 		Render(IconAddition)
 	
 	nameStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("42")).
+		Foreground(lipgloss.Color(ColorPastelGreen)).
 		Render(resourceName)
 
 	return fmt.Sprintf("%s %s", icon, nameStyle)
@@ -50,12 +58,11 @@ func (f *PlanFormatter) FormatAddition(resourceName string) string {
 // FormatDeletion formats a deletion message.
 func (f *PlanFormatter) FormatDeletion(resourceName string) string {
 	icon := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("196")).
-		Bold(true).
+		Foreground(lipgloss.Color(ColorPastelRed)).
 		Render(IconDeletion)
 	
 	nameStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("196")).
+		Foreground(lipgloss.Color(ColorPastelRed)).
 		Render(resourceName)
 
 	return fmt.Sprintf("%s %s", icon, nameStyle)
@@ -64,12 +71,11 @@ func (f *PlanFormatter) FormatDeletion(resourceName string) string {
 // FormatModification formats a modification message with optional diff.
 func (f *PlanFormatter) FormatModification(resourceName string, diff string) string {
 	icon := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("226")).
-		Bold(true).
+		Foreground(lipgloss.Color(ColorPastelYellow)).
 		Render(IconModification)
 	
 	nameStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("226")).
+		Foreground(lipgloss.Color(ColorPastelYellow)).
 		Render(resourceName)
 
 	if diff != "" {
@@ -84,11 +90,11 @@ func (f *PlanFormatter) FormatModification(resourceName string, diff string) str
 // FormatInSync formats an in-sync message.
 func (f *PlanFormatter) FormatInSync(resourceName string) string {
 	icon := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("240")).
+		Foreground(lipgloss.Color(ColorGray)).
 		Render(IconInSync)
 	
 	nameStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("240")).
+		Foreground(lipgloss.Color(ColorGray)).
 		Render(resourceName)
 
 	return fmt.Sprintf("%s %s", icon, nameStyle)
@@ -98,12 +104,11 @@ func (f *PlanFormatter) FormatInSync(resourceName string) string {
 // The description can be multiline (for diffs), and will be properly indented.
 func (f *PlanFormatter) FormatDrift(resourceName, description string) string {
 	icon := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("208")).
-		Bold(true).
+		Foreground(lipgloss.Color(ColorPastelOrange)).
 		Render(IconDrift)
 	
 	nameStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("208")).
+		Foreground(lipgloss.Color(ColorPastelOrange)).
 		Render(resourceName)
 
 	if description == "" {
@@ -131,21 +136,21 @@ func (f *PlanFormatter) formatMultilineDiff(diff, indent string) string {
 			continue
 		}
 
-		// Apply color based on diff prefix
+		// Apply color based on diff prefix (pastel colors)
 		if strings.HasPrefix(line, "+") {
-			// Addition - green
+			// Addition - soft mint green
 			colored := lipgloss.NewStyle().
-				Foreground(lipgloss.Color("42")). // Green
+				Foreground(lipgloss.Color(ColorPastelGreen)).
 				Render(line)
 			formattedLines = append(formattedLines, indent+colored)
 		} else if strings.HasPrefix(line, "-") {
-			// Deletion - red
+			// Deletion - soft salmon
 			colored := lipgloss.NewStyle().
-				Foreground(lipgloss.Color("196")). // Red
+				Foreground(lipgloss.Color(ColorPastelRed)).
 				Render(line)
 			formattedLines = append(formattedLines, indent+colored)
 		} else {
-			// Context line - dim
+			// Context line - soft gray
 			colored := lipgloss.NewStyle().
 				Foreground(lipgloss.Color("250")).
 				Render(line)
@@ -162,28 +167,25 @@ func (f *PlanFormatter) FormatSummary(add, modify, remove, inSync int) string {
 
 	if add > 0 {
 		addStyle := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("42")).
-			Bold(true)
+			Foreground(lipgloss.Color(ColorPastelGreen))
 		parts = append(parts, addStyle.Render(fmt.Sprintf("+%d to add", add)))
 	}
 
 	if modify > 0 {
 		modifyStyle := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("226")).
-			Bold(true)
+			Foreground(lipgloss.Color(ColorPastelYellow))
 		parts = append(parts, modifyStyle.Render(fmt.Sprintf("~%d to change", modify)))
 	}
 
 	if remove > 0 {
 		removeStyle := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("196")).
-			Bold(true)
+			Foreground(lipgloss.Color(ColorPastelRed))
 		parts = append(parts, removeStyle.Render(fmt.Sprintf("-%d to remove", remove)))
 	}
 
 	if inSync > 0 {
 		syncStyle := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("240"))
+			Foreground(lipgloss.Color(ColorGray))
 		parts = append(parts, syncStyle.Render(fmt.Sprintf("=%d unchanged", inSync)))
 	}
 
