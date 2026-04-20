@@ -238,11 +238,15 @@ func (p *FileProvider) reconcileManagedFile(
 	// Check if file has drifted (changed outside of dotisan)
 	if actualChecksum != savedState.DestHash {
 		// File has been modified outside of dotisan
+		// The expected content is our rendered content (what the file SHOULD be)
+		// actualContent is what the file currently IS
+		
 		plan.Drifted = append(plan.Drifted, provider.Drift{
 			Resource:      mf,
 			ExpectedState: savedState,
 			ActualState:   provider.ResourceState{ID: id, DestHash: actualChecksum},
 			Description:   "file content has changed",
+			Diff:          p.generateDiff(content, string(actualContent)),
 		})
 		return
 	}

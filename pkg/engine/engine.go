@@ -388,7 +388,11 @@ func (e *Engine) DisplayPlan(result *PlanResult) {
 	for providerName, plan := range result.ProviderPlans {
 		for _, drift := range plan.Drifted {
 			resourceID := fmt.Sprintf("%s/%s/%s", providerName, drift.Resource.GetMetadata().GetNamespace(), drift.Resource.GetMetadata().Name)
-			fmt.Println(e.PlanFormatter.FormatDrift(resourceID, drift.Description))
+			displayText := drift.Description
+			if drift.Diff != "" {
+				displayText = drift.Diff
+			}
+			fmt.Println(e.PlanFormatter.FormatDrift(resourceID, displayText))
 		}
 	}
 

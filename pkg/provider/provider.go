@@ -64,6 +64,9 @@ type Drift struct {
 
 	// Description explains what changed
 	Description string
+
+	// Diff is a human-readable diff showing the changes
+	Diff string
 }
 
 // ResourceState represents the state of a resource as tracked by dotisan.
