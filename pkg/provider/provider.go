@@ -24,7 +24,7 @@ type Plan struct {
 	Additions []resource.Resource
 
 	// Modifications are resources that need to be updated
-	Modifications []resource.Modification
+	Modifications []Modification
 
 	// Removals are resources that need to be deleted
 	Removals []resource.Resource
@@ -33,7 +33,7 @@ type Plan struct {
 	InSync []resource.Resource
 
 	// Drifted are resources that have changed outside of dotisan's management
-	Drifted []resource.Drift
+	Drifted []Drift
 }
 
 // Modification represents a change to an existing resource.
@@ -42,10 +42,10 @@ type Modification struct {
 	Resource resource.Resource
 
 	// OldState is the current state from the system
-	OldState resource.ResourceState
+	OldState ResourceState
 
 	// NewState is the desired state to be applied
-	NewState resource.ResourceState
+	NewState ResourceState
 
 	// Diff is a human-readable description of the changes
 	Diff string
@@ -57,10 +57,10 @@ type Drift struct {
 	Resource resource.Resource
 
 	// ExpectedState is what dotisan thinks the state should be
-	ExpectedState resource.ResourceState
+	ExpectedState ResourceState
 
 	// ActualState is what's actually on the system
-	ActualState resource.ResourceState
+	ActualState ResourceState
 
 	// Description explains what changed
 	Description string

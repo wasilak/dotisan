@@ -13,8 +13,12 @@ package providers
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"dotisan/pkg/config"
 	"dotisan/pkg/diff"
@@ -74,9 +78,249 @@ func (p *FileProvider) Available() (bool, string) {
 
 // Reconcile compares the desired resources with the current system state
 // and returns a plan of changes needed.
-func (p *FileProvider) Reconcile(desired []resource.Resource, state []provider.ResourceState) provider.Plan {
-	// TODO: Implement in subtask 7.2 and 7.4
-	return provider.Plan{}
+func (p *FileProvider) Reconcile(desired []resource.Resource, currentState []provider.ResourceState) provider.Plan {
+	plan := provider.Plan{}
+
+	// Build a map of current state for quick lookup
+	stateMap := make(map[string]provider.ResourceState)
+	for _, s := range currentState {
+		stateMap[s.ID] = s
+	}
+
+	// Track which resources are in the desired state
+	desiredIDs := make(map[string]bool)
+
+	for _, res := range desired {
+		switch r := res.(type) {
+		case *resource.ManagedFile:
+			p.reconcileManagedFile(r, stateMap, &plan, desiredIDs)
+		case *resource.ManagedDirectory:
+			// TODO: Implement in subtask 7.4
+		}
+	}
+
+	// Check for resources that should be removed (in state but not in desired)
+	for id, s := range stateMap {
+		if !desiredIDs[id] && (s.Kind == "ManagedFile" || s.Kind == "ManagedDirectory") {
+			// Find the resource in desired to get full metadata
+			plan.Removals = append(plan.Removals, &resource.ManagedFile{
+				BaseResource: resource.BaseResource{
+					Kind: s.Kind,
+					Metadata: resource.Metadata{
+						Name:      s.Name,
+						Namespace: s.Namespace,
+					},
+				},
+			})
+		}
+	}
+
+	return plan
+}
+
+// reconcileManagedFile reconciles a single ManagedFile resource.
+func (p *FileProvider) reconcileManagedFile(
+	mf *resource.ManagedFile,
+	stateMap map[string]provider.ResourceState,
+	plan *provider.Plan,
+	desiredIDs map[string]bool,
+) {
+	// Build resource ID
+	id := fmt.Sprintf("file/%s/%s", mf.GetMetadata().GetNamespace(), mf.GetMetadata().Name)
+	desiredIDs[id] = true
+
+	// Resolve source and destination paths
+	sourcePath := filepath.Join(p.dotfilesRoot, mf.Spec.Source)
+	destPath, err := p.resolveDestination(mf.Spec.Destination)
+	if err != nil {
+		// Can't resolve destination, mark as error
+		return
+	}
+
+	// Render source content
+	content, err := p.renderSource(sourcePath, mf.Spec.Template)
+	if err != nil {
+		// Can't read/render source, mark as error
+		return
+	}
+
+	// Calculate checksum
+	checksum := calculateChecksum(content)
+
+	// Get current state
+	savedState, hasSavedState := stateMap[id]
+
+	// Check if file exists at destination
+	_, err = os.Stat(destPath)
+	fileExists := err == nil
+
+	// Build desired state
+	desiredState := provider.ResourceState{
+		ID:         id,
+		Kind:       "ManagedFile",
+		Name:       mf.GetMetadata().Name,
+		Namespace:  mf.GetMetadata().GetNamespace(),
+		Checksum:   checksum,
+		DestHash:   checksum, // For files, dest_hash is the rendered content hash
+		SourceHash: calculateChecksumFromFile(sourcePath), // Hash of source file
+		Extra: map[string]interface{}{
+			"source_path": sourcePath,
+			"dest_path":   destPath,
+			"mode":        mf.Spec.Mode,
+		},
+	}
+
+	// Determine action
+	if !fileExists {
+		// File doesn't exist - needs to be created
+		plan.Additions = append(plan.Additions, mf)
+		return
+	}
+
+	if !hasSavedState {
+		// File exists but wasn't managed by us - check if it matches desired
+		actualContent, err := os.ReadFile(destPath)
+		if err != nil {
+			return
+		}
+		actualChecksum := calculateChecksum(string(actualContent))
+
+		if actualChecksum != checksum {
+			// File exists with different content - drift
+			plan.Modifications = append(plan.Modifications, provider.Modification{
+				Resource:  mf,
+				OldState:  provider.ResourceState{ID: id, DestHash: actualChecksum},
+				NewState:  desiredState,
+				Diff:      p.generateDiff(string(actualContent), content),
+			})
+		} else {
+			// File exists with same content - in sync
+			plan.InSync = append(plan.InSync, mf)
+		}
+		return
+	}
+
+	// File exists and we have saved state
+	actualContent, err := os.ReadFile(destPath)
+	if err != nil {
+		return
+	}
+	actualChecksum := calculateChecksum(string(actualContent))
+
+	// Check if file has drifted (changed outside of dotisan)
+	if actualChecksum != savedState.DestHash {
+		// File has been modified outside of dotisan
+		plan.Drifted = append(plan.Drifted, provider.Drift{
+			Resource:      mf,
+			ExpectedState: savedState,
+			ActualState:   provider.ResourceState{ID: id, DestHash: actualChecksum},
+			Description:   "file content has changed",
+		})
+		return
+	}
+
+	// Check if desired state has changed
+	if checksum != savedState.DestHash {
+		plan.Modifications = append(plan.Modifications, provider.Modification{
+			Resource: mf,
+			OldState: savedState,
+			NewState: desiredState,
+			Diff:     p.generateDiff(string(actualContent), content),
+		})
+		return
+	}
+
+	// File is in sync
+	plan.InSync = append(plan.InSync, mf)
+}
+
+// resolveDestination resolves the destination path using template variables.
+func (p *FileProvider) resolveDestination(dest string) (string, error) {
+	if p.templateContext == nil {
+		return dest, nil
+	}
+
+	// Use the template engine to resolve the destination
+	engine := config.NewTemplateEngine(p.templateContext)
+	resolved, err := engine.RenderTemplate("destination", dest)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve destination: %w", err)
+	}
+
+	// Expand ~ to home directory
+	if strings.HasPrefix(resolved, "~/") {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return "", fmt.Errorf("failed to get home directory: %w", err)
+		}
+		resolved = filepath.Join(homeDir, resolved[2:])
+	}
+
+	return resolved, nil
+}
+
+// renderSource renders the source file (if template is enabled) or reads it as-is.
+func (p *FileProvider) renderSource(sourcePath string, isTemplate bool) (string, error) {
+	content, err := os.ReadFile(sourcePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read source file %s: %w", sourcePath, err)
+	}
+
+	if !isTemplate || p.templateContext == nil {
+		return string(content), nil
+	}
+
+	// Render as template
+	engine := config.NewTemplateEngine(p.templateContext)
+	rendered, err := engine.RenderTemplate(sourcePath, string(content))
+	if err != nil {
+		return "", fmt.Errorf("failed to render template %s: %w", sourcePath, err)
+	}
+
+	return rendered, nil
+}
+
+// calculateChecksum calculates SHA256 checksum of content.
+func calculateChecksum(content string) string {
+	hash := sha256.Sum256([]byte(content))
+	return hex.EncodeToString(hash[:])
+}
+
+// calculateChecksumFromFile calculates SHA256 checksum of a file.
+func calculateChecksumFromFile(path string) string {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return ""
+	}
+	return calculateChecksum(string(content))
+}
+
+// generateDiff generates a diff between old and new content.
+func (p *FileProvider) generateDiff(oldContent, newContent string) string {
+	if p.diffEngine == nil {
+		return ""
+	}
+	// Generate a short diff preview (first few lines)
+	changes := p.diffEngine.GenerateDiff(oldContent, newContent)
+	if len(changes) == 0 {
+		return ""
+	}
+
+	var result strings.Builder
+	for i, change := range changes {
+		if i > 10 {
+			result.WriteString("...")
+			break
+		}
+		if change.Type != diff.LineUnchanged {
+			result.WriteString(change.Type.String())
+			result.WriteString(" ")
+			result.WriteString(change.Content)
+			result.WriteString("\n")
+		}
+	}
+
+	return result.String()
 }
 
 // Apply executes the given plan.
