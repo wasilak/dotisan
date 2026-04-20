@@ -1,0 +1,93 @@
+{
+	"meta": {
+		"generatedAt": "2026-04-19T18:35:52.752Z",
+		"tasksAnalyzed": 10,
+		"totalTasks": 10,
+		"analysisCount": 10,
+		"thresholdScore": 5,
+		"projectName": "Task Master",
+		"usedResearch": true
+	},
+	"complexityAnalysis": [
+		{
+			"taskId": 1,
+			"taskTitle": "Project Setup and CLI Framework Integration",
+			"complexityScore": 3,
+			"recommendedSubtasks": 2,
+			"expansionPrompt": "Break down the project initialization, Cobra integration for the root command, and the definition of placeholder subcommands with basic functionality.",
+			"reasoning": "This task involves standard Go project setup and integrating a well-documented CLI framework (Cobra). The main complexity lies in correctly wiring up the root command and defining placeholders for future subcommands, which is a common and relatively straightforward pattern."
+		},
+		{
+			"taskId": 2,
+			"taskTitle": "Configuration Loading and Templating Engine",
+			"complexityScore": 7,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Detail the steps for defining configuration structs, implementing YAML loading for both config and values, building the comprehensive template context, and implementing the two-pass templating logic with Sprig functions.",
+			"reasoning": "The two-pass templating engine significantly increases complexity. It requires careful management of the template context, robust YAML parsing, and integration of `sprig` functions. Ensuring correct order of operations (values.yaml first) and comprehensive error handling for both loading and templating will be critical."
+		},
+		{
+			"taskId": 3,
+			"taskTitle": "Resource Object Parsing and Schema Validation",
+			"complexityScore": 7,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Outline the definition of the base Resource interface, specific Go structs for each resource kind, the dynamic YAML unmarshaling logic based on 'kind', integration of schema validation using `go-playground/validator`, and the process of loading and templating resource files from the dotfiles directory.",
+			"reasoning": "Dynamically unmarshaling YAML based on a 'kind' field in Go can be intricate. Defining and validating multiple resource schemas with `go-playground/validator` requires careful annotation and error handling. Additionally, applying templating to resource fields after the initial `values.yaml` pass adds another layer of complexity."
+		},
+		{
+			"taskId": 4,
+			"taskTitle": "State Management Backend Implementation",
+			"complexityScore": 6,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Break down the definition of the State struct and the StateBackend interface, the implementation of the LocalBackend (JSON file), the implementation of the S3Backend using `minio-go/v7`, and the factory function for selecting the appropriate backend.",
+			"reasoning": "Implementing two distinct state backends (local file and S3) with a common interface introduces moderate complexity. The S3 backend specifically adds challenges related to network I/O, authentication, and robust error handling for remote operations. Schema definition and versioning also need consideration."
+		},
+		{
+			"taskId": 5,
+			"taskTitle": "Provider Interface and Registry",
+			"complexityScore": 5,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Detail the definition of the `Provider` interface with all specified methods, the implementation of a global provider registry, and the common `Available()` method logic using `os/exec.LookPath` for sanity checks.",
+			"reasoning": "This task defines a core architectural pattern for the application. The `Provider` interface needs to be robust and flexible to accommodate all future resource types. The registry implementation should be efficient and thread-safe (if concurrent access is anticipated), and the `Available()` method provides essential system checks."
+		},
+		{
+			"taskId": 6,
+			"taskTitle": "Diff Engine Integration",
+			"complexityScore": 6,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Break down the integration of `github.com/martinohmann/go-difflib` for line-level unified diffs, `github.com/sergi/go-diff` for character-level intra-line changes, and `github.com/charmbracelet/lipgloss` for colored terminal output, including helper functions for formatting plan output.",
+			"reasoning": "Combining two different diff libraries (one for line-level, one for intra-line changes) and then applying sophisticated terminal styling with `lipgloss` requires careful coordination. Ensuring coherent, readable, and visually appealing output for various diff scenarios adds to the complexity."
+		},
+		{
+			"taskId": 7,
+			"taskTitle": "File Provider Implementation",
+			"complexityScore": 8,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Detail the implementation of the `ManagedFile` provider (including templating, destination path resolution, file mode, checksums, and backup logic) and the `ManagedDirectory` provider (recursive copy, cleanup logic). Focus on their `Reconcile` and `Apply` methods, and integration with the templating and diff engines.",
+			"reasoning": "This is one of the most complex providers due to the intricate file system interactions. `ManagedFile` involves content templating, checksum calculations, mode management, and backup strategies. `ManagedDirectory` adds recursive operations and cleanup logic, which is prone to errors and requires extensive testing. Deep integration with the templating and diff engines is also critical."
+		},
+		{
+			"taskId": 8,
+			"taskTitle": "Package Providers Implementation (Brew, NPM, Go, Cargo)",
+			"complexityScore": 9,
+			"recommendedSubtasks": 8,
+			"expansionPrompt": "Break down the implementation of each package provider (`BrewProvider`, `NpmProvider`, `GoProvider`, `CargoProvider`), focusing on robust `os/exec` interactions, parsing varied command outputs, state reconciliation logic, and application logic for installations, uninstalls, and upgrades, including any external API calls (e.g., Brew).",
+			"reasoning": "This task is highly complex because each package manager has its own unique CLI, output format, and behavior. Robustly interacting with `os/exec`, parsing diverse outputs, handling different versioning schemes (especially Brew's API interaction), and ensuring idempotent operations for multiple providers makes this a significant challenge. Error handling for external commands is paramount."
+		},
+		{
+			"taskId": 9,
+			"taskTitle": "Core Engine: Plan and Apply Logic",
+			"complexityScore": 10,
+			"recommendedSubtasks": 7,
+			"expansionPrompt": "Detail the implementation of the `plan` command (covering state loading, resource parsing, provider reconciliation, plan aggregation, and diff display) and the `apply` command (including plan execution, confirmation logic, state updates, error handling, and backup functionality).",
+			"reasoning": "This is the central nervous system of the application, integrating almost all previously developed components. It orchestrates state loading, resource parsing, provider reconciliation, plan aggregation, diff display, and conditional execution with state updates. The logic for `plan` and `apply` must be robust, idempotent, handle various edge cases, user confirmation, and potential error recovery, making it the most complex task."
+		},
+		{
+			"taskId": 10,
+			"taskTitle": "Implement Remaining CLI Commands",
+			"complexityScore": 6,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Break down the implementation of each remaining CLI command: `doctor`, `state import`, `state remove`, `state list`, `state pull`, `state push`, and `eject`, outlining their specific logic, interactions with other components (providers, state backend), and output formatting.",
+			"reasoning": "While not as complex as the core `plan`/`apply` logic, each of these utility commands has distinct requirements. `doctor` involves iterating providers and checking health, `state` commands interact with the state backend and display formatted output, and `eject` involves file system interaction and confirmation. Each command requires careful implementation and testing."
+		}
+	]
+}

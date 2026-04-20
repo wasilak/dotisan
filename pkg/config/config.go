@@ -1,0 +1,91 @@
+// Package config provides configuration loading and management for dotisan.
+// It handles loading of ~/.dotisan/config.yaml which contains tool-level configuration
+// such as state backend settings and dotfiles root path.
+package config
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+
+	"gopkg.in/yaml.v3"
+)
+
+// S3Config holds S3-compatible backend configuration.
+type S3Config struct {
+	Endpoint        string `yaml:"endpoint"`
+	Bucket          string `yaml:"bucket"`
+	Key             string `yaml:"key"`
+	Region          string `yaml:"region"`
+	AccessKeyID     string `yaml:"access_key_id"`
+	SecretAccessKey string `yaml:"secret_access_key"`
+}
+
+// StateConfig holds state backend configuration.
+type StateConfig struct {
+	Backend string   `yaml:"backend"` // "local" or "s3"
+	Path    string   `yaml:"path,omitempty"`    // for local backend
+	S3      S3Config `yaml:"s3,omitempty"`      // for s3 backend
+}
+
+// Config holds the complete dotisan tool configuration from ~/.dotisan/config.yaml
+type Config struct {
+	// DotfilesRoot is the path to the dotfiles directory (default: ~/.dotfiles)
+	DotfilesRoot string `yaml:"dotfiles_root"`
+
+	// State holds state backend configuration
+	State StateConfig `yaml:"state"`
+}
+
+// DefaultConfig returns a Config with default values.
+func DefaultConfig() *Config {
+	homeDir, _ := os.UserHomeDir()
+	return &Config{
+		DotfilesRoot: filepath.Join(homeDir, ".dotfiles"),
+		State: StateConfig{
+			Backend: "local",
+			Path:    filepath.Join(homeDir, ".dotisan", "state.json"),
+		},
+	}
+}
+
+// LoadConfig loads the dotisan configuration from the specified path.
+// If the file doesn't exist, it returns a default configuration.
+func LoadConfig(path string) (*Config, error) {
+	// Start with defaults
+	cfg := DefaultConfig()
+
+	// Check if file exists
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		// No config file, return defaults
+		return cfg, nil
+	}
+
+	// Read config file
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read config file %s: %w", path, err)
+	}
+
+	// Parse YAML
+	if err := yaml.Unmarshal(data, cfg); err != nil {
+		return nil, fmt.Errorf("failed to parse config file %s: %w", path, err)
+	}
+
+	// Expand environment variables in paths
+	cfg.DotfilesRoot = os.ExpandEnv(cfg.DotfilesRoot)
+	cfg.State.Path = os.ExpandEnv(cfg.State.Path)
+
+	return cfg, nil
+}
+
+// LoadConfigFromDefaultPath loads configuration from the default location (~/.dotisan/config.yaml).
+func LoadConfigFromDefaultPath() (*Config, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get home directory: %w", err)
+	}
+
+	configPath := filepath.Join(homeDir, ".dotisan", "config.yaml")
+	return LoadConfig(configPath)
+}

@@ -1,0 +1,785 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": "1",
+        "title": "Project Setup and CLI Framework Integration",
+        "description": "Initialize the Go project, set up the basic directory structure, and integrate the Cobra CLI framework to handle top-level commands like 'dotisan plan', 'dotisan apply', etc. Establish the main entry point for the application.",
+        "details": "1. Initialize a new Go module: `go mod init dotisan`. 2. Install `github.com/spf13/cobra`. 3. Create `main.go` and `cmd/root.go` to define the root command. 4. Implement a basic `dotisan` command that prints a welcome message or usage. 5. Define placeholders for subcommands like `plan`, `apply`, `doctor`, `state`, `eject`. 6. Ensure proper error handling and command line argument parsing using Cobra's features.",
+        "testStrategy": "1. Run `go run main.go` to verify the root command executes without errors. 2. Run `go run main.go --help` to check if Cobra generates correct help output. 3. Create dummy subcommands and verify their execution and help messages. 4. Ensure `dotisan` can be built and run as a standalone binary.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Initialize Go Project and Setup Cobra Root Command",
+            "description": "Initialize the Go module, install Cobra, create the main entry point and the root command structure, and implement a basic 'dotisan' command with proper error handling.",
+            "dependencies": [],
+            "details": "Execute `go mod init dotisan` to initialize the Go module. Install `github.com/spf13/cobra` using `go get`. Create `main.go` to call `cmd.Execute()` and `cmd/root.go` to define the `rootCmd`. Implement the `rootCmd.Run` function to print a welcome message or usage information. Ensure Cobra's default error handling and argument parsing are functional for the root command.",
+            "status": "done",
+            "testStrategy": "Run `go run main.go` to verify the root command executes without errors and prints the expected output. Run `go run main.go --help` to check if Cobra generates correct help output for the root command. Verify basic argument parsing (e.g., unknown flags) triggers Cobra's error handling.",
+            "updatedAt": "2026-04-20T07:41:32.057Z",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Define Placeholder Subcommands",
+            "description": "Create placeholder subcommands for `plan`, `apply`, `doctor`, `state`, and `eject` under the `dotisan` root command, each with minimal functionality.",
+            "dependencies": [
+              1
+            ],
+            "details": "For each subcommand (`plan`, `apply`, `doctor`, `state`, `eject`), create a new file (e.g., `cmd/plan.go`) and define its `cobra.Command` struct. Add these subcommands to the `rootCmd` using `rootCmd.AddCommand()`. Implement a simple `Run` function for each subcommand that prints a message indicating which command was called (e.g., \"plan command executed\").",
+            "status": "done",
+            "testStrategy": "Run `go run main.go plan`, `go run main.go apply`, etc., to verify each subcommand executes and prints its placeholder message. Run `go run main.go plan --help` to ensure Cobra generates correct help output for each subcommand.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-20T07:41:32.811Z"
+          }
+        ],
+        "complexity": 3,
+        "recommendedSubtasks": 2,
+        "expansionPrompt": "Break down the project initialization, Cobra integration for the root command, and the definition of placeholder subcommands with basic functionality.",
+        "updatedAt": "2026-04-20T07:41:32.811Z"
+      },
+      {
+        "id": "2",
+        "title": "Configuration Loading and Templating Engine",
+        "description": "Implement the loading mechanism for `~/.dotisan/config.yaml` (tool configuration) and `~/.dotfiles/values.yaml` (dotfiles values). Develop the two-pass templating engine using Go's `text/template` and `sprig` functions, ensuring `values.yaml` is templated first.",
+        "details": "1. Define Go structs for `~/.dotisan/config.yaml` (e.g., `StateBackendConfig`, `DotfilesRoot`). 2. Implement a function to load and parse `config.yaml` using `gopkg.in/yaml.v3`. 3. Implement a function to load `~/.dotfiles/values.yaml`. 4. Create the `TemplateContext` struct including `Values`, `Env` (from `os.Environ()`), and `OS` (GOOS, arch, hostname). 5. Implement the two-pass rendering: first, render `values.yaml` using `Env` and `OS` context, then parse the result into `.Values`. Second, prepare the full `TemplateContext` for subsequent template rendering (e.g., `ManagedFile` sources). 6. Integrate `github.com/Masterminds/sprig/v3` functions into the template engine.",
+        "testStrategy": "1. Create sample `config.yaml` and `values.yaml` files with environment variable interpolations (e.g., `{{ .Env.HOME }}`, `{{ .Env.HOSTNAME }}`). 2. Write unit tests to verify `config.yaml` loads correctly. 3. Write unit tests to verify `values.yaml` is templated correctly in the first pass, including `Env` variables. 4. Verify that `sprig` functions like `default`, `trimSpace`, `env` work as expected within templates. 5. Ensure the `TemplateContext` is correctly populated.",
+        "priority": "high",
+        "dependencies": [
+          "1"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Define Configuration Structs and Load Dotisan Config",
+            "description": "Define Go structs for the `~/.dotisan/config.yaml` file and implement the loading and parsing mechanism for it using `gopkg.in/yaml.v3`.",
+            "dependencies": [],
+            "details": "Create Go structs (e.g., `StateBackendConfig`, `DotfilesRoot`) that accurately represent the structure of `~/.dotisan/config.yaml`. Implement a utility function to locate, read, and unmarshal this YAML file. Handle file not found and parsing errors gracefully.",
+            "status": "done",
+            "testStrategy": "Create a sample `config.yaml` file. Write unit tests to ensure the file is loaded correctly, parsed into the defined structs, and that all fields are populated as expected. Test error cases like malformed YAML or missing files.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-20T07:55:30.457Z"
+          },
+          {
+            "id": 2,
+            "title": "Load Dotfiles Values and Prepare Initial Template Context",
+            "description": "Implement the loading mechanism for `~/.dotfiles/values.yaml` and create the initial `TemplateContext` including environment variables and OS details.",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement a function to locate and read the raw content of `~/.dotfiles/values.yaml`. Create the `TemplateContext` struct, populating its `Env` field from `os.Environ()` and `OS` field with `runtime.GOOS`, `runtime.GOARCH`, and `os.Hostname()` for the first templating pass.",
+            "status": "done",
+            "testStrategy": "Create a sample `values.yaml` file. Write unit tests to verify the `values.yaml` content is read correctly. Verify the `TemplateContext` is initialized with accurate `Env` and `OS` data.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-20T07:55:31.506Z"
+          },
+          {
+            "id": 3,
+            "title": "Implement First-Pass Templating for Values.yaml with Sprig",
+            "description": "Develop the first pass of the templating engine to render `~/.dotfiles/values.yaml` using the `Env` and `OS` context, integrating `sprig` functions, then parse the result into `.Values`.",
+            "dependencies": [
+              2
+            ],
+            "details": "Use Go's `text/template` package. Create a template engine instance and integrate `github.com/Masterminds/sprig/v3` functions. Implement a function that takes the raw `values.yaml` content and the initial `TemplateContext`, executes the template, and then unmarshals the resulting YAML string into a dynamic structure for the `.Values` field.",
+            "status": "done",
+            "testStrategy": "Create `values.yaml` samples with `{{ .Env.HOME }}`, `{{ .OS.Hostname }}`, and basic `sprig` functions (e.g., `{{ default \"foo\" .Env.NON_EXISTENT_VAR }}`). Write unit tests to verify correct rendering and parsing of the templated `values.yaml` into the `.Values` structure.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-20T07:55:32.315Z"
+          },
+          {
+            "id": 4,
+            "title": "Finalize Full Template Context and General Templating Setup",
+            "description": "Prepare the complete `TemplateContext` by incorporating the parsed `values.yaml` and set up the template engine for general use with all available context and Sprig functions.",
+            "dependencies": [
+              3
+            ],
+            "details": "After the first pass, update the `TemplateContext` to include the parsed `.Values` data. Ensure the template engine is fully initialized with `text/template` and `sprig` functions, ready to be used for rendering other templated files (e.g., `ManagedFile` sources). This involves creating a reusable template parsing and execution utility.",
+            "status": "done",
+            "testStrategy": "Create a dummy template string that uses `{{ .Values.someKey }}`, `{{ .Env.PATH }}`, `{{ .OS.Arch }}`, and various `sprig` functions. Write unit tests to ensure the full `TemplateContext` is correctly assembled and that the template engine can successfully render this dummy template using all available context data.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-20T07:53:05.916Z"
+          }
+        ],
+        "complexity": 7,
+        "recommendedSubtasks": 4,
+        "expansionPrompt": "Detail the steps for defining configuration structs, implementing YAML loading for both config and values, building the comprehensive template context, and implementing the two-pass templating logic with Sprig functions.",
+        "updatedAt": "2026-04-20T07:55:32.315Z"
+      },
+      {
+        "id": "3",
+        "title": "Resource Object Parsing and Schema Validation",
+        "description": "Define Go structs for all specified resource kinds (`BrewPackages`, `NpmPackages`, `GoPackages`, `CargoPackages`, `ManagedFile`, `ManagedDirectory`). Implement a generic parser for `kind`-based YAML resource objects and integrate `go-playground/validator/v10` for schema validation.",
+        "details": "1. Create a `Resource` interface or base struct with `apiVersion`, `kind`, `metadata`. 2. Define specific Go structs for each `kind` (e.g., `BrewPackagesSpec`, `ManagedFileSpec`) adhering to the PRD's YAML structure. 3. Implement a YAML unmarshaler that can dynamically unmarshal based on the `kind` field using `gopkg.in/yaml.v3`. 4. Integrate `github.com/go-playground/validator/v10` to add validation tags to resource structs (e.g., `required`, `min`, `max`, `url`). 5. Implement a function to read all resource YAML files from the `~/.dotfiles/` directory layout, apply templating (if applicable, after `values.yaml` pass), and parse them into a list of `Resource` objects.",
+        "testStrategy": "1. Create valid and invalid YAML resource files for each `kind`. 2. Write unit tests to ensure correct parsing of valid resources. 3. Verify that invalid resources (e.g., missing required fields, incorrect types) trigger validation errors. 4. Test parsing of templated resource fields (e.g., `destination` in `ManagedFile`) after the `values.yaml` context is applied. 5. Ensure `namespace` defaults to 'default' if not specified.",
+        "priority": "high",
+        "dependencies": [
+          "2"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Define Base Resource Interface and Common Fields",
+            "description": "Create the foundational `Resource` interface or base struct that includes common fields like `apiVersion`, `kind`, and `metadata`. This will serve as the common contract for all specific resource types.",
+            "dependencies": [],
+            "details": "Define a Go interface `Resource` with methods to access `GetAPIVersion() string`, `GetKind() string`, `GetMetadata() ResourceMetadata`. Alternatively, define a base struct `ResourceBase` with `APIVersion string`, `Kind string`, `Metadata ResourceMetadata` fields, and embed it into specific resource structs. Ensure `ResourceMetadata` struct is also defined with fields like `Name string` and `Labels map[string]string`.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-20T08:24:19.693Z"
+          },
+          {
+            "id": 2,
+            "title": "Define Specific Go Structs for Resource Kinds",
+            "description": "Create distinct Go structs for each specified resource kind (`BrewPackages`, `NpmPackages`, `GoPackages`, `CargoPackages`, `ManagedFile`, `ManagedDirectory`), ensuring they accurately reflect the YAML structure defined in the PRD.",
+            "dependencies": [
+              1
+            ],
+            "details": "For each resource kind, define a corresponding Go struct (e.g., `BrewPackages`, `ManagedFile`) that embeds the base `Resource` interface/struct and includes a `Spec` field. The `Spec` field will contain the specific configuration for that resource type, adhering to the PRD's YAML schema for each kind.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-20T08:07:38.887Z"
+          },
+          {
+            "id": 3,
+            "title": "Implement Dynamic YAML Unmarshaling by Kind",
+            "description": "Develop a generic YAML unmarshaler that can dynamically parse resource objects based on their `kind` field, using `gopkg.in/yaml.v3` to unmarshal into the appropriate specific Go struct.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Create a central parsing function that first unmarshals the YAML into a temporary struct to extract `apiVersion` and `kind`. Based on the `kind` value, use a switch statement or a map of `kind` to struct types to unmarshal the full YAML content into the correct specific resource struct (e.g., `BrewPackages`, `ManagedFile`). Handle unknown `kind` values gracefully by returning an error.",
+            "status": "done",
+            "testStrategy": "Create valid YAML files for each resource kind. Write unit tests to ensure each file is correctly unmarshaled into its corresponding Go struct without errors. Test with invalid `kind` values to verify error handling.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-20T08:10:29.739Z"
+          },
+          {
+            "id": 4,
+            "title": "Integrate Schema Validation with go-playground/validator",
+            "description": "Integrate `github.com/go-playground/validator/v10` into the resource structs by adding appropriate validation tags (e.g., `required`, `min`, `max`, `url`) and implement a validation function.",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "Add validation tags to the fields within the `Spec` structs of all defined resource kinds (e.g., `BrewPackagesSpec`, `ManagedFileSpec`) as per PRD requirements. Implement a `Validate()` method on the `Resource` interface or a separate validation utility function that iterates through the parsed resource objects and applies the `go-playground/validator` validation.",
+            "status": "done",
+            "testStrategy": "Create valid and invalid YAML resource files for each `kind` (e.g., missing required fields, out-of-range values, incorrect formats). Write unit tests to verify that valid resources pass validation and invalid resources correctly trigger validation errors with informative messages.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-20T08:10:31.570Z"
+          },
+          {
+            "id": 5,
+            "title": "Implement Resource File Loading and Templating",
+            "description": "Create a function to read all resource YAML files from the `~/.dotfiles/` directory, apply templating (if applicable, after `values.yaml` pass), and parse them into a list of `Resource` objects.",
+            "dependencies": [
+              3,
+              4
+            ],
+            "details": "Implement a function `LoadResources(dotfilesPath string, values map[string]interface{}) ([]Resource, error)`. This function should recursively scan the `dotfilesPath` for `.yaml` or `.yml` files. For each file, read its content, apply templating using the provided `values` (e.g., `text/template` or similar), then use the dynamic YAML unmarshaler (from subtask 3) and validator (from subtask 4) to parse the content into `Resource` objects. Aggregate all parsed resources into a slice.",
+            "status": "done",
+            "testStrategy": "Create a dummy `~/.dotfiles/` structure with multiple valid and invalid resource YAML files, some with templating. Write integration tests to ensure all files are correctly discovered, templated, parsed, and validated. Verify error handling for malformed YAML or templating issues.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-20T08:15:58.598Z"
+          }
+        ],
+        "complexity": 7,
+        "recommendedSubtasks": 5,
+        "expansionPrompt": "Outline the definition of the base Resource interface, specific Go structs for each resource kind, the dynamic YAML unmarshaling logic based on 'kind', integration of schema validation using `go-playground/validator`, and the process of loading and templating resource files from the dotfiles directory.",
+        "updatedAt": "2026-04-20T08:24:19.693Z"
+      },
+      {
+        "id": "4",
+        "title": "State Management Backend Implementation",
+        "description": "Implement the `StateBackend` interface with `LocalBackend` (JSON file) and `S3Backend` using `minio-go/v7`. This includes loading and saving the state file according to the defined schema.",
+        "details": "1. Define the `State` Go struct matching the `state.json` schema (version, timestamps, resources array). 2. Define the `StateBackend` interface with `Load(ctx context.Context) (*State, error)` and `Save(ctx context.Context, s *State) error` methods. 3. Implement `LocalBackend`: reads/writes JSON to `~/.dotisan/state.json` (configurable path). Use `encoding/json` for serialization/deserialization. 4. Implement `S3Backend`: uses `github.com/minio/minio-go/v7` for S3-compatible storage. Configure endpoint, bucket, key, region, and credentials (env vars or explicit) from `~/.dotisan/config.yaml`. 5. Implement a factory function to select the appropriate backend based on `config.yaml` settings.",
+        "testStrategy": "1. Write unit tests for `LocalBackend`: save a sample state, load it, verify content. Test edge cases like file not found. 2. Write integration tests for `S3Backend` (using a local MinIO instance or mock S3 client): save/load state, verify connectivity and data integrity. 3. Verify correct handling of `created_at` and `updated_at` timestamps. 4. Ensure `checksum` is correctly stored for resources. 5. Test state backend selection based on `config.yaml`.",
+        "priority": "high",
+        "dependencies": [
+          "1",
+          "2"
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Define State Schema, Backend Interface, and Local Backend",
+            "description": "Create the `State` Go struct based on the `state.json` schema, define the `StateBackend` interface with Load and Save methods, and implement the `LocalBackend` for file-based state management.",
+            "dependencies": [],
+            "details": "Define the `State` Go struct matching the `state.json` schema (version, timestamps, resources array). Define the `StateBackend` interface with `Load(ctx context.Context) (*State, error)` and `Save(ctx context.Context, s *State) error` methods. Implement `LocalBackend` to read/write JSON to `~/.dotisan/state.json` (configurable path) using `encoding/json` for serialization/deserialization.",
+            "status": "pending",
+            "testStrategy": "Write unit tests for `LocalBackend`: save a sample state, load it, verify content. Test edge cases like file not found, invalid JSON, and permission issues.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Implement S3 State Backend",
+            "description": "Develop the `S3Backend` implementation for the `StateBackend` interface, utilizing `minio-go/v7` for S3-compatible object storage.",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement `S3Backend` using `github.com/minio/minio-go/v7` for S3-compatible storage. Configure S3 endpoint, bucket, key, region, and credentials (from environment variables or `~/.dotisan/config.yaml`). Ensure robust error handling for network operations and S3 API calls.",
+            "status": "pending",
+            "testStrategy": "Write integration tests for `S3Backend` using a local MinIO instance or mock S3 client: save/load state, verify connectivity, authentication, and data integrity. Test error scenarios like connection failures, invalid credentials, or permission issues.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Implement State Backend Factory",
+            "description": "Create a factory function responsible for selecting and initializing the appropriate `StateBackend` (Local or S3) based on the application's configuration.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Implement a factory function that reads `~/.dotisan/config.yaml` to determine which `StateBackend` to instantiate. The factory should return an initialized `StateBackend` instance (either `LocalBackend` or `S3Backend`). Handle cases where no backend is specified or configuration is invalid, providing clear error messages.",
+            "status": "pending",
+            "testStrategy": "Write unit tests for the factory function: verify it returns `LocalBackend` when S3 configuration is absent, and `S3Backend` when S3 configuration is present and valid. Test error handling for malformed or incomplete configuration settings.",
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 6,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Break down the definition of the State struct and the StateBackend interface, the implementation of the LocalBackend (JSON file), the implementation of the S3Backend using `minio-go/v7`, and the factory function for selecting the appropriate backend."
+      },
+      {
+        "id": "5",
+        "title": "Provider Interface and Registry",
+        "description": "Define the `Provider` interface and implement a central registry for all resource providers. Include the `Available()` method for sanity checks using `os/exec.LookPath`.",
+        "details": "1. Define the `Provider` interface as specified: `Name() string`, `Available() (bool, string)`, `Reconcile(desired []Resource, state []ResourceState) Plan`, `Apply(plan Plan) error`, `Import(id string) (ResourceState, error)`. 2. Create a global provider registry (e.g., a `map[string]Provider`) to register instances of each provider. 3. Implement a `RegisterProvider` function and a `GetProvider` function. 4. For the `Available()` method, use `os/exec.LookPath` to check for necessary executables (e.g., `brew`, `npm`, `go`, `cargo`). Return `false` and a descriptive message if not found. 5. Ensure providers can be initialized with necessary dependencies (e.g., `TemplateContext`, `DiffEngine`).",
+        "testStrategy": "1. Write unit tests for the provider registry: register multiple dummy providers, retrieve them by name. 2. Test the `Available()` method for various scenarios: executable present, executable missing, permissions issues. 3. Verify that a descriptive warning message is returned when a provider is unavailable. 4. Ensure the `Name()` method returns the correct provider name.",
+        "priority": "high",
+        "dependencies": [
+          "1"
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Define the Provider Interface",
+            "description": "Create the Go interface `Provider` with all specified methods: `Name() string`, `Available() (bool, string)`, `Reconcile(desired []Resource, state []ResourceState) Plan`, `Apply(plan Plan) error`, `Import(id string) (ResourceState, error)`. This interface will serve as the contract for all resource providers.",
+            "dependencies": [],
+            "details": "Define the `Provider` interface in a suitable package (e.g., `pkg/provider/provider.go`). Ensure all method signatures precisely match the specification provided in the parent task description.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Implement Global Provider Registry and Functions",
+            "description": "Create a global provider registry, likely a `map[string]Provider`, to store instances of all registered resource providers. Implement `RegisterProvider(name string, provider Provider)` and `GetProvider(name string) (Provider, error)` functions to manage this registry.",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement the global registry using a `map[string]Provider` and protect it with a `sync.RWMutex` to ensure thread-safe access. The `RegisterProvider` function should add a provider instance, and `GetProvider` should retrieve it by name, returning an error if the provider is not found.",
+            "status": "pending",
+            "testStrategy": "Write unit tests for the provider registry: register multiple dummy providers, verify successful retrieval by name, test retrieval of non-existent providers, and ensure thread-safety with concurrent access attempts.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Implement Common Available() Logic and Provider Initialization",
+            "description": "Develop a common utility or pattern for the `Available()` method that leverages `os/exec.LookPath` to perform sanity checks for necessary executables (e.g., `brew`, `npm`, `go`, `cargo`). Additionally, ensure that provider implementations can be initialized with required dependencies such as `TemplateContext` and `DiffEngine`.",
+            "dependencies": [
+              1
+            ],
+            "details": "Create a helper function, e.g., `CheckExecutable(name string) (bool, string)`, that wraps `os/exec.LookPath` and returns a boolean indicating availability and a descriptive message. Providers will use this in their `Available()` implementation. Define a clear mechanism (e.g., a constructor or `Init` method) for injecting `TemplateContext` and `DiffEngine` into provider structs.",
+            "status": "pending",
+            "testStrategy": "Write unit tests for the `CheckExecutable` utility: test with existing executables (e.g., `ls`), non-existent executables, and scenarios where `LookPath` might fail. Verify that descriptive warning messages are returned correctly.",
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 5,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Detail the definition of the `Provider` interface with all specified methods, the implementation of a global provider registry, and the common `Available()` method logic using `os/exec.LookPath` for sanity checks."
+      },
+      {
+        "id": "6",
+        "title": "Diff Engine Integration",
+        "description": "Integrate `github.com/martinohmann/go-difflib` for line-level unified diffs and `github.com/sergi/go-diff` for character-level intra-line changes. Use `github.com/charmbracelet/lipgloss` for colored terminal output.",
+        "details": "1. Create a `DiffEngine` component or utility package. 2. Implement a function to generate a unified diff between two strings using `go-difflib`, ensuring colored output (`Color: true`). 3. Implement a function to highlight intra-line changes using `go-diff`'s `DiffMainRunes` algorithm. 4. Integrate `github.com/charmbracelet/lipgloss` for applying ANSI colors and styling to diff output (e.g., green for additions, red for removals, yellow for changes). 5. Provide helper functions for formatting plan output (additions, modifications, deletions, in-sync messages).",
+        "testStrategy": "1. Write unit tests for `go-difflib` integration: compare two multi-line strings, verify correct unified diff format and line-level coloring. 2. Write unit tests for `go-diff` integration: compare two strings with subtle intra-line changes, verify character-level highlighting. 3. Test `lipgloss` styling with various colors and styles to ensure correct terminal output. 4. Verify that package list diffs (add/remove) are formatted correctly without line diffs. 5. Test drift detection output format.",
+        "priority": "high",
+        "dependencies": [
+          "1"
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Line-Level Unified Diff with go-difflib",
+            "description": "Create the initial `DiffEngine` component or utility package and implement a function to generate a unified diff between two multi-line strings using `github.com/martinohmann/go-difflib`. This function should produce the raw unified diff output, preparing for later `lipgloss` integration.",
+            "dependencies": [],
+            "details": "Create a new package `diffengine` or a `DiffEngine` struct. Implement a public function, e.g., `GenerateUnifiedDiff(old, new string) (string, error)`, that utilizes `go-difflib.UnifiedDiff` to compare the provided strings. Focus on correctly generating the standard unified diff format.",
+            "status": "pending",
+            "testStrategy": "Write unit tests comparing two multi-line strings with various changes (additions, deletions, modifications). Verify the output format matches a standard unified diff, including headers and line prefixes (+, -, ' ').",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Integrate go-diff for Intra-Line Changes and Apply Lipgloss Styling",
+            "description": "Integrate `github.com/sergi/go-diff` to highlight character-level intra-line changes within modified lines. Simultaneously, integrate `github.com/charmbracelet/lipgloss` to apply ANSI colors and styling (green for additions, red for removals, yellow for changes) to both line-level and intra-line diff outputs.",
+            "dependencies": [
+              1
+            ],
+            "details": "Enhance the `DiffEngine` to include a function like `HighlightIntraLineChanges(oldLine, newLine string) string` using `go-diff.DiffMainRunes` to identify character-level differences. Define `lipgloss.Style` objects for additions, deletions, and modifications. Modify the `GenerateUnifiedDiff` function (from subtask 1) to parse its output, apply `lipgloss` styles for line-level changes, and call `HighlightIntraLineChanges` for any modified lines to apply intra-line styling.",
+            "status": "pending",
+            "testStrategy": "Write unit tests for `HighlightIntraLineChanges` with strings having subtle character differences, verifying correct character-level highlighting. Test the `GenerateUnifiedDiff` function with `lipgloss` enabled, checking for the presence of correct ANSI escape codes for line-level and intra-line changes.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Develop Helper Functions for Formatted Plan Output",
+            "description": "Develop helper functions within the `DiffEngine` or a related utility to format various types of plan output messages: additions, modifications, deletions, and in-sync messages, leveraging the integrated diff and styling capabilities for clear and readable terminal output.",
+            "dependencies": [
+              2
+            ],
+            "details": "Implement functions such as `FormatAddition(resourceName, content string) string`, `FormatModification(resourceName, oldContent, newContent string) string`, `FormatDeletion(resourceName, content string) string`, and `FormatInSync(resourceName string) string`. These functions should utilize the diff engine's capabilities (line-level and intra-line) and `lipgloss` styling to produce user-friendly, colored, and structured output suitable for the `plan` command.",
+            "status": "pending",
+            "testStrategy": "Write integration-style unit tests for each formatting helper. Provide sample resource names and content (old/new) and verify the generated output is correctly formatted, includes diffs where appropriate, and uses the defined `lipgloss` styles for visual clarity. Ensure in-sync messages are also correctly formatted.",
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 6,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Break down the integration of `github.com/martinohmann/go-difflib` for line-level unified diffs, `github.com/sergi/go-diff` for character-level intra-line changes, and `github.com/charmbracelet/lipgloss` for colored terminal output, including helper functions for formatting plan output."
+      },
+      {
+        "id": "7",
+        "title": "File Provider Implementation",
+        "description": "Implement the `ManagedFile` and `ManagedDirectory` providers. This includes handling file templating, destination path resolution, file mode, and recursive directory management with cleanup. Utilize the templating and diff engines.",
+        "details": "1. Implement the `FileProvider` struct, embedding `TemplateContext` and `DiffEngine`. 2. For `ManagedFile`: implement `Reconcile` to compare desired state (rendered source, destination path, mode) with actual file state (on disk, `dest_hash` from state). Use the templating engine to render `source` if `template: true`. Resolve `destination` using `TemplateContext.Values`. 3. Implement `Apply` for `ManagedFile`: create/update file, set mode, handle `--backup` for conflicts. 4. For `ManagedDirectory`: implement `Reconcile` to compare source directory contents with destination. Handle `recursive: true` and `clean: true` (remove files at destination not in source). 5. Implement `Apply` for `ManagedDirectory`: copy/delete files/directories as per plan. 6. Calculate `checksum` for rendered file content and `source_hash`/`dest_hash` for state tracking.",
+        "testStrategy": "1. Create test cases for `ManagedFile`: new file creation, content update, mode change, templated content, static content, destination path with `Values` interpolation. 2. Test `ManagedDirectory`: recursive copy, `clean: true` functionality (verify files are removed), handling of empty directories. 3. Verify `dest_hash` and `checksum` calculations are accurate. 4. Simulate file drift (manual edit) and verify `plan` shows it as drift with a diff. 5. Test `apply --confirm --backup` behavior for conflicting files.",
+        "priority": "high",
+        "dependencies": [
+          "2",
+          "3",
+          "5",
+          "6"
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement FileProvider struct and Available() method",
+            "description": "Create the foundational `FileProvider` struct, embedding `TemplateContext` and `DiffEngine`. Implement the `Available()` method to ensure the provider can operate, checking for necessary system access or tools.",
+            "dependencies": [
+              2,
+              3,
+              5
+            ],
+            "details": "Define the `FileProvider` struct in `pkg/providers/file.go`. Embed `TemplateContext` from Task 2 and `DiffEngine` from Task 3. Implement the `Available()` method as per the `Provider` interface (Task 5), returning true as file system operations are generally always available, or false with a message if critical permissions are missing.",
+            "status": "pending",
+            "testStrategy": "Write a unit test for `FileProvider.Available()` to ensure it returns true under normal conditions. Verify the struct correctly embeds `TemplateContext` and `DiffEngine`.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Implement ManagedFile.Reconcile (Templating, Path Resolution, Checksum)",
+            "description": "Develop the `Reconcile` method for `ManagedFile` to determine the desired state of a single file. This includes rendering source content using the templating engine, resolving the destination path, and calculating content checksums.",
+            "dependencies": [
+              1,
+              2,
+              6
+            ],
+            "details": "Inside `ManagedFile.Reconcile`, check if `template: true`. If so, render the `source` content using the embedded `TemplateContext` (Task 2). Resolve the `destination` path using `TemplateContext.Values`. Calculate a SHA256 `checksum` of the rendered content. Compare this desired state with the actual file on disk and the `dest_hash` from the `ResourceState` (Task 6) to identify changes.",
+            "status": "pending",
+            "testStrategy": "Create test cases for `ManagedFile.Reconcile`: static source, templated source with `Values` interpolation, destination path resolution with `Values`, and scenarios where content/mode/path changes are detected. Verify correct checksum calculation.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Implement ManagedFile.Apply (File Operations, Mode, Backup Logic)",
+            "description": "Implement the `Apply` method for `ManagedFile` to execute the plan generated by `Reconcile`. This involves creating new files, updating existing content, setting file modes, and handling backup for conflicts.",
+            "dependencies": [
+              2
+            ],
+            "details": "Based on the `Plan` from `Reconcile`, implement logic to: 1. Create new files with the rendered content and specified mode. 2. Update existing files, optionally backing up the original file if `--backup` is enabled. 3. Set the correct file permissions (mode). Handle potential I/O errors during file operations.",
+            "status": "pending",
+            "testStrategy": "Write integration tests for `ManagedFile.Apply`: new file creation, content update, mode change, backup creation on update, and error handling for permission issues. Verify file content and permissions post-apply.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 4,
+            "title": "Implement ManagedDirectory.Reconcile (Recursive Comparison, Cleanup Plan)",
+            "description": "Develop the `Reconcile` method for `ManagedDirectory` to compare source directory contents with the destination. This includes recursive traversal and identifying files/directories for cleanup.",
+            "dependencies": [
+              1,
+              2,
+              6
+            ],
+            "details": "Inside `ManagedDirectory.Reconcile`, recursively traverse the `source` directory. For each item, compare its state with the corresponding item in the `destination` directory. If `recursive: true`, perform deep comparison. If `clean: true`, identify files/directories present in the destination but not in the source as candidates for deletion. Generate a `Plan` outlining copy, update, and delete operations.",
+            "status": "pending",
+            "testStrategy": "Create test cases for `ManagedDirectory.Reconcile`: empty source/destination, source with new files/dirs, source with updated files, `recursive: true` with nested structures, and `clean: true` scenarios where extra files in destination are identified for removal.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 5,
+            "title": "Implement ManagedDirectory.Apply (Recursive Copy/Delete Operations)",
+            "description": "Implement the `Apply` method for `ManagedDirectory` to execute the plan generated by `Reconcile`. This involves copying new/updated files and directories, and deleting unwanted items.",
+            "dependencies": [
+              4
+            ],
+            "details": "Based on the `Plan` from `Reconcile`, implement logic to: 1. Create new directories. 2. Copy new or updated files from source to destination. 3. Recursively copy entire subdirectories. 4. Delete files and directories identified for cleanup (if `clean: true`). Ensure proper error handling for file system operations.",
+            "status": "pending",
+            "testStrategy": "Write integration tests for `ManagedDirectory.Apply`: successful recursive copy, `clean: true` removing extra files, handling of empty directories, and scenarios involving permissions or non-existent source paths.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 6,
+            "title": "Integrate Diff Engine and State Tracking for File Providers",
+            "description": "Ensure both `ManagedFile` and `ManagedDirectory` `Reconcile` methods correctly utilize the `DiffEngine` and manage `source_hash`/`dest_hash` for robust state tracking and change detection.",
+            "dependencies": [
+              2,
+              3,
+              4,
+              6
+            ],
+            "details": "Refine the `Reconcile` methods of both `ManagedFile` and `ManagedDirectory` to fully integrate the embedded `DiffEngine` (Task 3). This includes calculating `source_hash` from the desired state and `dest_hash` from the actual state (Task 6), feeding these into the diff engine, and interpreting its output to generate the final `Plan`. Ensure `checksum` is consistently used for content comparison.",
+            "status": "pending",
+            "testStrategy": "Enhance existing `Reconcile` tests for both providers to explicitly verify `DiffEngine` interaction and correct `source_hash`/`dest_hash` usage. Test scenarios where only mode changes, content changes, or path changes are detected by the diff engine.",
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 8,
+        "recommendedSubtasks": 6,
+        "expansionPrompt": "Detail the implementation of the `ManagedFile` provider (including templating, destination path resolution, file mode, checksums, and backup logic) and the `ManagedDirectory` provider (recursive copy, cleanup logic). Focus on their `Reconcile` and `Apply` methods, and integration with the templating and diff engines."
+      },
+      {
+        "id": "8",
+        "title": "Package Providers Implementation (Brew, NPM, Go, Cargo)",
+        "description": "Implement the `BrewPackages`, `NpmPackages`, `GoPackages`, and `CargoPackages` providers. These providers will interact with system package managers using `os/exec` and external APIs where necessary.",
+        "details": "1. Implement `BrewProvider`: Use `os/exec` for `brew install`, `brew uninstall`, `brew upgrade`, `brew tap`. Use `brew list --formula --versions` to get installed state. Use `https://formulae.brew.sh/api/formula/<name>.json` (HTTP client) to validate formula existence and get available versions. Implement warning for version pinning if brew doesn't support it. 2. Implement `NpmProvider`: Use `os/exec` for `npm install -g`, `npm uninstall -g`, `npm list -g --json`. 3. Implement `GoProvider`: Use `os/exec` for `go install <module>@<version>`, `go list -m all` to check installed modules. 4. Implement `CargoProvider`: Use `os/exec` for `cargo install`, `cargo uninstall`, `cargo install --list`. 5. For each provider, implement `Reconcile` to compare desired packages/versions with current system state, and `Apply` to execute necessary commands.",
+        "testStrategy": "1. For each provider, write integration tests that mock `os/exec` commands and HTTP requests (for Brew API). 2. Test `Available()` method for each provider. 3. Test `Reconcile` logic for adding, removing, and updating packages/taps/casks. 4. Test `Apply` logic for successful installations, uninstalls, and upgrades. 5. Verify correct handling of optional versions and warnings for unsupported pinning (Brew). 6. Ensure `id` and `version` are correctly extracted for state tracking.",
+        "priority": "high",
+        "dependencies": [
+          "3",
+          "5"
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement BrewProvider - `os/exec` commands and `Available()`",
+            "description": "Set up basic `os/exec` commands for `brew install`, `brew uninstall`, `brew upgrade`, `brew tap` and implement the `Available()` method using `os/exec.LookPath` for the `BrewProvider`.",
+            "dependencies": [
+              5
+            ],
+            "details": "Create the `BrewProvider` struct. Implement `Name()` and `Available()` methods. For `Available()`, check if the `brew` executable is in the system PATH. Implement internal helper functions for executing `brew` commands with `os/exec`, capturing stdout and stderr for later parsing.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Implement BrewProvider - State Retrieval and API Integration",
+            "description": "Implement logic to retrieve the current state of installed Homebrew packages using `brew list --formula --versions` and integrate with the `https://formulae.brew.sh/api/formula/<name>.json` API for package validation and available versions.",
+            "dependencies": [
+              1
+            ],
+            "details": "Parse the output of `brew list --formula --versions` to accurately identify installed packages and their versions. Implement an HTTP client to query the Homebrew API for formula existence and available versions, handling JSON response parsing and potential network or API errors.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Implement BrewProvider - Reconcile and Apply Logic",
+            "description": "Develop the `Reconcile` method to compare desired Brew packages with the current system state and generate an execution plan. Implement the `Apply` method to execute `brew install`, `brew uninstall`, `brew upgrade`, and `brew tap` commands based on the generated plan.",
+            "dependencies": [
+              2
+            ],
+            "details": "Implement the `Reconcile` method to determine necessary additions, removals, and upgrades. Include logic to issue warnings if version pinning is requested but not directly supported by Homebrew. Implement the `Apply` method to call the `os/exec` helper functions for `brew` commands, ensuring idempotent operations.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 4,
+            "title": "Implement NpmProvider - Full Implementation",
+            "description": "Implement the `NpmProvider`, including `os/exec` interactions for `npm install -g`, `npm uninstall -g`, and `npm list -g --json`. Parse the JSON output for state retrieval, and develop the `Reconcile` and `Apply` logic for global npm packages.",
+            "dependencies": [
+              5
+            ],
+            "details": "Create the `NpmProvider` struct. Implement `Name()` and `Available()` (checking `npm` executable). Implement `os/exec` wrappers for npm commands. Parse `npm list -g --json` output to accurately determine installed packages and versions. Implement `Reconcile` and `Apply` for npm package management.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 5,
+            "title": "Implement GoProvider - Full Implementation",
+            "description": "Implement the `GoProvider`, including `os/exec` interactions for `go install <module>@<version>` and `go list -m all`. Parse command outputs for state retrieval, and develop the `Reconcile` and `Apply` logic for Go modules.",
+            "dependencies": [
+              5
+            ],
+            "details": "Create the `GoProvider` struct. Implement `Name()` and `Available()` (checking `go` executable). Implement `os/exec` wrappers for go commands. Parse `go list -m all` output to determine installed modules and their versions. Implement `Reconcile` and `Apply` for Go module management.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 6,
+            "title": "Implement CargoProvider - Full Implementation",
+            "description": "Implement the `CargoProvider`, including `os/exec` interactions for `cargo install`, `cargo uninstall`, and `cargo install --list`. Parse command outputs for state retrieval, and develop the `Reconcile` and `Apply` logic for Cargo crates.",
+            "dependencies": [
+              5
+            ],
+            "details": "Create the `CargoProvider` struct. Implement `Name()` and `Available()` (checking `cargo` executable). Implement `os/exec` wrappers for cargo commands. Parse `cargo install --list` output to determine installed crates and their versions. Implement `Reconcile` and `Apply` for Cargo crate management.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 7,
+            "title": "Refactor Common `os/exec` Utilities and Error Handling",
+            "description": "Extract and refactor common patterns for `os/exec` command execution, output parsing, and robust error handling into shared utility functions or a dedicated package to improve code reusability and maintainability across all providers.",
+            "dependencies": [
+              1,
+              4,
+              5,
+              6
+            ],
+            "details": "Create a `cmdutil` package or similar. Implement functions like `RunCommand(name string, args ...string) (stdout, stderr string, err error)` that handle command execution, timeout, and error capturing. Standardize error wrapping and logging for external command failures. Implement utilities for parsing common output formats (e.g., line-by-line, JSON).",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 8,
+            "title": "Develop Comprehensive Integration Tests for All Providers",
+            "description": "Create comprehensive integration tests for `BrewProvider`, `NpmProvider`, `GoProvider`, and `CargoProvider`. These tests will mock `os/exec` commands and HTTP requests (for Brew API) to verify `Available()`, `Reconcile`, and `Apply` logic for various scenarios (install, uninstall, upgrade, no-op).",
+            "dependencies": [
+              3,
+              4,
+              5,
+              6,
+              7
+            ],
+            "details": "Utilize Go's `testing` package and mocking techniques to intercept `os/exec` calls and HTTP requests. Test `Available()` for both presence and absence of executables. Test `Reconcile` for correct plan generation (add, remove, update, no-change). Test `Apply` for simulating successful and failed command executions and verifying expected state changes.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 9,
+        "recommendedSubtasks": 8,
+        "expansionPrompt": "Break down the implementation of each package provider (`BrewProvider`, `NpmProvider`, `GoProvider`, `CargoProvider`), focusing on robust `os/exec` interactions, parsing varied command outputs, state reconciliation logic, and application logic for installations, uninstalls, and upgrades, including any external API calls (e.g., Brew)."
+      },
+      {
+        "id": "9",
+        "title": "Core Engine: Plan and Apply Logic",
+        "description": "Implement the central `plan` and `apply` commands. The `plan` command will compute and display changes (add, modify, remove, in-sync, drift). The `apply` command will execute these changes, supporting dry-run by default and requiring `--confirm` or `--auto-confirm` for execution.",
+        "details": "1. Implement the `plan` command: Load current state using `StateBackend`. Load and parse all desired resource objects (Task 3). For each resource, find its corresponding provider (Task 5). Call `Provider.Reconcile()` to generate a `Plan`. Aggregate all plans. Use the `DiffEngine` (Task 6) to format and display the plan output (additions, changes, removals, in-sync, drift). 2. Implement the `apply` command: First, run the `plan` logic. If no `--confirm` or `--auto-confirm` flag is present, exit after showing the plan. If confirmed, iterate through the generated plan and call `Provider.Apply()` for each planned change. After successful application, update the `State` object and save it using `StateBackend`. Handle `apply --confirm --backup` for `ManagedFile` conflicts (Task 7).",
+        "testStrategy": "1. Create end-to-end scenarios with various resource types (files, packages) for `plan`: new resources, modified resources, removed resources, in-sync resources, drifted files. Verify plan output matches expectations. 2. Test `apply` without `--confirm`: ensure it shows the plan and exits without making changes. 3. Test `apply --confirm`: verify that changes are correctly applied to the system and the state file is updated. 4. Test `apply --auto-confirm`: verify non-interactive application. 5. Simulate provider failures during `apply` and ensure graceful error handling and state rollback (if feasible, or clear error message).",
+        "priority": "high",
+        "dependencies": [
+          "2",
+          "3",
+          "4",
+          "5",
+          "6",
+          "7",
+          "8"
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement `plan` command core logic: State loading and resource parsing",
+            "description": "Set up the initial structure for the `plan` command, including loading the current application state and parsing all desired resource configurations from the user's dotfiles.",
+            "dependencies": [
+              3,
+              4
+            ],
+            "details": "Initialize the `plan` command handler. Load the existing state from the `StateBackend` (Task 4). Utilize the resource parsing logic (Task 3) to load and parse all desired resource objects from configuration files into an internal representation.",
+            "status": "pending",
+            "testStrategy": "Unit tests for state loading and resource parsing. Integration tests to ensure correct loading of various resource types from sample configuration files.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Execute `Provider.Reconcile()` for all resources and aggregate plans",
+            "description": "For each parsed desired resource, identify its corresponding provider and invoke the `Reconcile` method to compute the necessary changes, then aggregate these individual plans.",
+            "dependencies": [
+              1,
+              5,
+              8
+            ],
+            "details": "Iterate through the collection of parsed desired resources obtained from subtask 1. For each resource, use the provider registry (Task 5) to find the appropriate `Provider` instance. Call `Provider.Reconcile(desiredResource, currentState)` (part of Task 8) to generate a `Plan` for that specific resource. Collect and aggregate all individual `Plan` objects into a comprehensive plan structure.",
+            "status": "pending",
+            "testStrategy": "Unit tests for plan aggregation logic. Integration tests with mocked providers to verify `Reconcile` calls and correct plan generation for different resource states (add, modify, remove, in-sync, drift).",
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Integrate `DiffEngine` for plan output display",
+            "description": "Utilize the `DiffEngine` to format and display the aggregated plan, providing a clear and colored output of all proposed changes to the user.",
+            "dependencies": [
+              2,
+              6
+            ],
+            "details": "Take the aggregated plan generated in subtask 2. Integrate with the `DiffEngine` (Task 6) to render the plan output. This involves formatting additions, modifications, removals, in-sync items, and drifted items with appropriate ANSI coloring and clear descriptive text for terminal display.",
+            "status": "pending",
+            "testStrategy": "Integration tests to verify `DiffEngine` output for various plan scenarios (empty plan, plan with additions, modifications, removals, drifts). Check for correct coloring and formatting.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 4,
+            "title": "Implement `apply` command entry point and confirmation logic",
+            "description": "Develop the initial logic for the `apply` command, which includes running the `plan` logic first and then handling user confirmation flags (`--confirm`, `--auto-confirm`) before proceeding with execution.",
+            "dependencies": [
+              1,
+              2,
+              3
+            ],
+            "details": "Implement the `apply` command handler. The first step within `apply` is to execute the full `plan` logic (subtasks 1, 2, 3) to generate and display the proposed changes. Check for the presence of `--confirm` or `--auto-confirm` command-line flags. If neither is provided, display the plan and exit, effectively performing a dry-run. If confirmed, proceed to the next steps.",
+            "status": "pending",
+            "testStrategy": "Unit tests for flag parsing and conditional exit logic. End-to-end tests for `apply` without confirmation, ensuring it displays the plan and exits without making changes.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 5,
+            "title": "Execute `Provider.Apply()` for all confirmed planned changes",
+            "description": "Iterate through the confirmed aggregated plan and invoke the `Apply` method on the respective providers for each planned change (add, modify, remove).",
+            "dependencies": [
+              4,
+              8
+            ],
+            "details": "If the `apply` command is confirmed (from subtask 4), iterate through the aggregated plan. For each planned change (e.g., resource addition, modification, or removal), retrieve the corresponding `Provider` instance (Task 8) and call `Provider.Apply(change)`. Implement robust error handling for individual `Apply` operations, potentially allowing for partial application or rollback mechanisms.",
+            "status": "pending",
+            "testStrategy": "Integration tests with mocked providers to verify `Apply` calls for various change types. Test error handling during `Apply` operations.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 6,
+            "title": "Update and save state after successful `apply` execution",
+            "description": "After all planned changes have been successfully applied by the providers, update the internal state representation to reflect the new desired state and persist it using the `StateBackend`.",
+            "dependencies": [
+              4,
+              5
+            ],
+            "details": "Upon successful completion of all `Provider.Apply()` calls (subtask 5), update the in-memory `State` object to accurately reflect the new desired state of all managed resources. Use the `StateBackend` (Task 4) to save this updated `State` object to persistent storage. Ensure that state saving is robust and handles potential failures gracefully.",
+            "status": "pending",
+            "testStrategy": "Integration tests to verify state updates after successful `apply`. Test state persistence by checking the saved state file content. Test error scenarios during state saving.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 7,
+            "title": "Implement `ManagedFile` backup logic for `apply --backup`",
+            "description": "Integrate the specific backup functionality for `ManagedFile` resources when the `apply` command is executed with the `--backup` flag, ensuring existing files are preserved before modification or removal.",
+            "dependencies": [
+              5,
+              7
+            ],
+            "details": "When the `apply` command is executed with both `--confirm` and `--backup` flags, specifically for `ManagedFile` resources (Task 7), ensure that before `Provider.Apply()` modifies or removes an existing file, a backup copy of that file is created. This involves calling the designated backup logic from Task 7 to prevent data loss. This logic should be integrated into the `Provider.Apply()` call for `ManagedFile` types.",
+            "status": "pending",
+            "testStrategy": "End-to-end tests for `apply --confirm --backup` with `ManagedFile` resources. Verify that backup files are created correctly before changes are applied and that they can be restored if needed.",
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 10,
+        "recommendedSubtasks": 7,
+        "expansionPrompt": "Detail the implementation of the `plan` command (covering state loading, resource parsing, provider reconciliation, plan aggregation, and diff display) and the `apply` command (including plan execution, confirmation logic, state updates, error handling, and backup functionality)."
+      },
+      {
+        "id": "10",
+        "title": "Implement Remaining CLI Commands",
+        "description": "Implement the `doctor`, `state import`, `state remove`, `state list`, `state pull`, `state push`, and `eject` CLI commands as specified in the PRD.",
+        "details": "1. `doctor`: Iterate through all registered providers and call `Available()`. Check `StateBackend` connectivity. Attempt to parse all config files and report errors. Report template rendering errors. Use `lipgloss` for formatted output. 2. `state import KIND NAME ID`: Call `Provider.Import(id)` for the specified resource. Add the returned `ResourceState` to the local state file without applying changes. 3. `state remove KIND NAME`: Remove the specified resource entry from the local state file. Do not interact with the system. 4. `state list`: Load the local state file and display a tabular output of all managed resources with their status (`in_sync`, `drift`, `missing`). 5. `state pull`: If S3 backend is configured, download remote state to overwrite local cache. 6. `state push`: If S3 backend is configured, upload local state to overwrite remote. 7. `eject KIND NAME`: Remove resource from state and, with confirmation, remove its definition from config files. Do not touch the system.",
+        "testStrategy": "1. Test `doctor`: Verify it correctly reports provider availability, config parsing errors, and state backend connectivity. 2. Test `state import`: Import a dummy resource, verify it appears in the state file but not on the system. 3. Test `state remove`: Remove an imported resource, verify it's gone from state. 4. Test `state list`: Verify correct tabular output for various state scenarios. 5. Test `state pull`/`push` (with mocked S3): Verify state synchronization. 6. Test `eject`: Verify resource is removed from state and config (with confirmation), and system is untouched.",
+        "priority": "medium",
+        "dependencies": [
+          "4",
+          "5",
+          "9"
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement `doctor` CLI command",
+            "description": "Implement the `doctor` command to perform system health checks, including provider availability, state backend connectivity, config file parsing, and template rendering error detection.",
+            "dependencies": [
+              2,
+              4,
+              5,
+              6
+            ],
+            "details": "Iterate through all registered providers using the `ProviderRegistry` and call their `Available()` method. Check `StateBackend` connectivity by attempting a `Load()` or `Save()` operation. Attempt to parse all configuration files (`config.yaml`, `values.yaml`, resource definitions) and report any syntax or schema errors. Report any template rendering errors encountered during config loading. Use `lipgloss` for structured and colored output.",
+            "status": "pending",
+            "testStrategy": "Write unit tests to mock provider availability, state backend status, and config parsing results. Verify the `doctor` command correctly aggregates and reports these statuses with appropriate formatting. Test cases for healthy, partially healthy, and unhealthy states.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Implement `state import` and `state remove` CLI commands",
+            "description": "Implement `state import KIND NAME ID` to import a resource into the local state file without applying changes, and `state remove KIND NAME` to remove a resource from the local state file.",
+            "dependencies": [
+              4,
+              5
+            ],
+            "details": "For `state import KIND NAME ID`, retrieve the specified `Provider` from the registry, call its `Import(id)` method, and add the returned `ResourceState` to the local state file using the `StateBackend.Save()` method. Ensure no system changes are made. For `state remove KIND NAME`, load the local state file, locate and remove the specified resource entry, and save the updated state file. Do not interact with the system or providers.",
+            "status": "pending",
+            "testStrategy": "Test `state import`: Mock a provider's `Import` method to return a `ResourceState`. Run the command, then verify the resource appears in the local state file. Test `state remove`: Add a dummy resource to the state file, run the command, then verify the resource is no longer present. Ensure no external system changes occur.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Implement `state list` CLI command",
+            "description": "Implement the `state list` command to load the local state file and display a tabular output of all managed resources with their status (`in_sync`, `drift`, `missing`).",
+            "dependencies": [
+              4,
+              6
+            ],
+            "details": "Load the local state file using the `StateBackend.Load()` method. Iterate through all `ResourceState` entries. For each resource, determine its status (e.g., `in_sync`, `drift`, `missing` - this might require a lightweight `plan` like comparison or just checking if the resource exists in the config). Format the output as a clear, readable table using `lipgloss` for styling, including columns for KIND, NAME, ID, and STATUS.",
+            "status": "pending",
+            "testStrategy": "Create a sample state file with resources in different statuses (mocked). Run `state list` and verify the output matches the expected tabular format and correctly displays the statuses.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 4,
+            "title": "Implement `state pull` and `state push` CLI commands",
+            "description": "Implement `state pull` to download remote state to overwrite local cache and `state push` to upload local state to overwrite remote, specifically for S3 backend.",
+            "dependencies": [
+              4
+            ],
+            "details": "For `state pull`, if the `StateBackend` is configured as S3, call the `StateBackend.Load()` method to retrieve the remote state and then `StateBackend.Save()` to persist it locally. For `state push`, if the `StateBackend` is configured as S3, load the local state using `StateBackend.Load()` and then call `StateBackend.Save()` to upload it to the remote S3 backend. Handle cases where S3 backend is not configured.",
+            "status": "pending",
+            "testStrategy": "Write integration tests using a mock S3 client or a local MinIO instance. Test `state pull` by having a remote state and verifying it overwrites local. Test `state push` by modifying local state and verifying it's uploaded to remote. Test error handling for connectivity issues or misconfigured S3.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 5,
+            "title": "Implement `eject` CLI command",
+            "description": "Implement the `eject KIND NAME` command to remove a resource from the state file and, with user confirmation, remove its definition from configuration files.",
+            "dependencies": [
+              2,
+              4
+            ],
+            "details": "Load the local state file using `StateBackend.Load()`. Locate and remove the specified resource entry from the state. Prompt the user for confirmation before proceeding with config file modification. If confirmed, identify the configuration file(s) where the resource `KIND NAME` is defined and remove its definition. Save the updated state file and modified config files. Ensure no interaction with the actual system resources.",
+            "status": "pending",
+            "testStrategy": "Test `eject` with a dummy resource defined in a config file and present in state. Verify the command prompts for confirmation. Test both 'yes' and 'no' responses. If 'yes', verify the resource is removed from state and its definition from the config file. Ensure no system changes.",
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 6,
+        "recommendedSubtasks": 5,
+        "expansionPrompt": "Break down the implementation of each remaining CLI command: `doctor`, `state import`, `state remove`, `state list`, `state pull`, `state push`, and `eject`, outlining their specific logic, interactions with other components (providers, state backend), and output formatting."
+      }
+    ],
+    "metadata": {
+      "version": "1.0.0",
+      "lastModified": "2026-04-20T08:24:19.693Z",
+      "taskCount": 10,
+      "completedCount": 3,
+      "tags": [
+        "master"
+      ]
+    }
+  }
+}
