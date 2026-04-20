@@ -541,30 +541,59 @@ func calculateChecksumFromFile(path string) string {
 
 // generateDiff generates a diff between old and new content.
 func (p *FileProvider) generateDiff(oldContent, newContent string) string {
-	if p.diffEngine == nil {
-		return ""
-	}
-	// Generate a short diff preview (first few lines)
-	changes := p.diffEngine.GenerateDiff(oldContent, newContent)
-	if len(changes) == 0 {
-		return ""
-	}
-
-	var result strings.Builder
-	for i, change := range changes {
-		if i > 10 {
-			result.WriteString("...")
-			break
+	oldLines := strings.Split(strings.TrimSpace(oldContent), "\n")
+	newLines := strings.Split(strings.TrimSpace(newContent), "\n")
+	
+	var result []string
+	maxLines := 20 // Limit diff output
+	
+	// Find removed lines (in old but not in new)
+	for _, oldLine := range oldLines {
+		if oldLine == "" {
+			continue
 		}
-		if change.Type != diff.LineUnchanged {
-			result.WriteString(change.Type.String())
-			result.WriteString(" ")
-			result.WriteString(change.Content)
-			result.WriteString("\n")
+		found := false
+		for _, newLine := range newLines {
+			if oldLine == newLine {
+				found = true
+				break
+			}
+		}
+		if !found {
+			result = append(result, "- "+oldLine)
+			if len(result) >= maxLines {
+				result = append(result, "...")
+				break
+			}
 		}
 	}
-
-	return result.String()
+	
+	if len(result) >= maxLines {
+		return strings.Join(result, "\n")
+	}
+	
+	// Find added lines (in new but not in old)
+	for _, newLine := range newLines {
+		if newLine == "" {
+			continue
+		}
+		found := false
+		for _, oldLine := range oldLines {
+			if oldLine == newLine {
+				found = true
+				break
+			}
+		}
+		if !found {
+			result = append(result, "+ "+newLine)
+			if len(result) >= maxLines {
+				result = append(result, "...")
+				break
+			}
+		}
+	}
+	
+	return strings.Join(result, "\n")
 }
 
 // Apply executes the given plan.
