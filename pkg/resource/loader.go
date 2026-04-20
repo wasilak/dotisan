@@ -43,8 +43,9 @@ func (l *Loader) LoadResources() ([]Resource, error) {
 			return nil
 		}
 
-		// Skip values.yaml - it's handled separately
-		if filepath.Base(path) == "values.yaml" {
+		// Skip values.yaml and config.yaml - they're handled separately
+		base := filepath.Base(path)
+		if base == "values.yaml" || base == "config.yaml" {
 			return nil
 		}
 

@@ -17,11 +17,21 @@ var initCmd = &cobra.Command{
 	Short: "Initialize dotisan configuration",
 	Long: `init creates the default dotisan configuration directory and files:
 
-  ~/.config/dotisan/           - Configuration directory
-  ~/.config/dotisan/config.yaml - Tool configuration
-  ~/.config/dotisan/values.yaml - Sample values file
+  ~/.config/dotisan/              - Configuration directory
+  ~/.config/dotisan/config.yaml   - Tool configuration
+  ~/.config/dotisan/values.yaml   - Personal variables
+  ~/.config/dotisan/resources/    - Resource definitions (YAML files)
 
-This is a one-time setup command for new users.`,
+This is a one-time setup command for new users.
+
+Recommended structure:
+  ~/.config/dotisan/
+  ├── config.yaml
+  ├── values.yaml
+  └── resources/
+      ├── shell.yaml
+      ├── packages.yaml
+      └── git.yaml`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runInit()
 	},
@@ -39,6 +49,7 @@ func runInit() error {
 	}
 
 	configDir := filepath.Join(homeDir, ".config", "dotisan")
+	resourcesDir := filepath.Join(configDir, "resources")
 	configPath := filepath.Join(configDir, "config.yaml")
 	valuesPath := filepath.Join(configDir, "values.yaml")
 
@@ -52,17 +63,18 @@ func runInit() error {
 		return nil
 	}
 
-	// Create directory
-	if err := os.MkdirAll(configDir, 0755); err != nil {
-		return fmt.Errorf("failed to create directory %s: %w", configDir, err)
+	// Create directories
+	if err := os.MkdirAll(resourcesDir, 0755); err != nil {
+		return fmt.Errorf("failed to create directory %s: %w", resourcesDir, err)
 	}
 	fmt.Printf("%s Created %s\n", greenStyle.Render("✓"), configDir)
+	fmt.Printf("%s Created %s\n", greenStyle.Render("✓"), resourcesDir)
 
 	// Create default config.yaml if it doesn't exist
 	if _, err := os.Stat(configPath); os.IsNotExist(err) || initForceFlag {
 		configContent := `# Dotisan Configuration
 # This is the tool-level configuration file.
-# For resource definitions, create YAML files in this directory.
+# For resource definitions, create YAML files in the resources/ subdirectory.
 
 # Dotfiles/resources location (default: ~/.config/dotisan)
 # dotfiles_root: ~/.config/dotisan
@@ -116,12 +128,61 @@ state:
 		fmt.Printf("%s %s already exists (skipped)\n", yellowStyle.Render("⚠"), valuesPath)
 	}
 
+	// Create sample resource file
+	sampleResourcePath := filepath.Join(resourcesDir, "sample.yaml")
+	if _, err := os.Stat(sampleResourcePath); os.IsNotExist(err) || initForceFlag {
+		sampleContent := `# Sample Resource Definition
+# This is an example resource file. Copy and modify it, or create your own.
+# Remove this file when you're ready to create real resources.
+
+# Example: Manage your shell configuration
+# ---
+# apiVersion: github.com/wasilak/dotisan/v1
+# kind: ManagedFile
+# metadata:
+#   name: zshrc
+# spec:
+#   source: |
+#     # My zsh configuration
+#     export EDITOR={{ .Values.editor | default "vim" }}
+#     export EMAIL={{ .Values.email }}
+#   
+#   destination: ~/.zshrc
+#   mode: "0644"
+#   template: true
+
+# Example: Install packages with Homebrew
+# ---
+# apiVersion: github.com/wasilak/dotisan/v1
+# kind: BrewPackages
+# metadata:
+#   name: cli-tools
+# spec:
+#   packages:
+#     - name: ripgrep
+#     - name: fzf
+#     - name: fd
+`
+		if err := os.WriteFile(sampleResourcePath, []byte(sampleContent), 0644); err != nil {
+			return fmt.Errorf("failed to create sample.yaml: %w", err)
+		}
+		fmt.Printf("%s Created %s (example file)\n", greenStyle.Render("✓"), sampleResourcePath)
+	}
+
+	fmt.Println()
+	fmt.Println(boldStyle.Render("Directory structure:"))
+	fmt.Println("  ~/.config/dotisan/")
+	fmt.Println("  ├── config.yaml     # Tool configuration")
+	fmt.Println("  ├── values.yaml     # Your personal variables")
+	fmt.Println("  └── resources/      # Resource YAML files")
+	fmt.Println("      └── sample.yaml # Example (remove when ready)")
 	fmt.Println()
 	fmt.Println(boldStyle.Render("Next steps:"))
 	fmt.Println("  1. Edit ~/.config/dotisan/values.yaml with your personal settings")
-	fmt.Println("  2. Create resource YAML files in ~/.config/dotisan/")
-	fmt.Println("  3. Run 'dotisan doctor' to verify your setup")
-	fmt.Println("  4. Run 'dotisan plan' to see what would change")
+	fmt.Println("  2. Create resource YAML files in ~/.config/dotisan/resources/")
+	fmt.Println("  3. Remove sample.yaml when you're ready to add real resources")
+	fmt.Println("  4. Run 'dotisan doctor' to verify your setup")
+	fmt.Println("  5. Run 'dotisan plan' to see what would change")
 	fmt.Println()
 	fmt.Printf("%s Dotisan initialized successfully!\n", greenStyle.Render("✓"))
 

@@ -137,11 +137,22 @@ func (p *FileProvider) reconcileManagedFile(
 		return
 	}
 
-	// Render source content
-	content, err := p.renderSource(sourcePath, mf.Spec.Template)
-	if err != nil {
-		// Can't read/render source, mark as error
-		return
+	// Render source content (either from file or inline)
+	var content string
+	
+	// Check if source is a file path or inline content
+	if strings.Contains(mf.Spec.Source, "\n") || strings.Contains(mf.Spec.Source, "\r") {
+		// Inline content - use directly
+		content = mf.Spec.Source
+	} else {
+		// Try as file path
+		var renderErr error
+		content, renderErr = p.renderSource(sourcePath, mf.Spec.Template)
+		if renderErr != nil {
+			// Can't read/render source, mark as error - but still add to plan so user knows
+			plan.Additions = append(plan.Additions, mf)
+			return
+		}
 	}
 
 	// Calculate checksum

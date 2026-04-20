@@ -55,13 +55,17 @@ code ~/.config/dotisan/values.yaml
 ```
 
 This creates:
-- `~/.config/dotisan/` - Configuration directory
-- `~/.config/dotisan/config.yaml` - Tool settings
-- `~/.config/dotisan/values.yaml` - Your personal variables
+```
+~/.config/dotisan/
+├── config.yaml          # Tool configuration
+├── values.yaml          # Your personal variables
+└── resources/           # Resource YAML files
+    └── sample.yaml      # Example (remove when ready)
+```
 
 ### 3. Define Your First Resource
 
-Create `~/.config/dotisan/shell.yaml`:
+Create `~/.config/dotisan/resources/shell.yaml`:
 
 ```yaml
 ---
@@ -108,7 +112,7 @@ $ dotisan apply --confirm
 
 #### Homebrew Packages
 
-Create `~/.config/dotisan/brew.yaml`:
+Create `~/.config/dotisan/resources/brew.yaml`:
 
 ```yaml
 ---
@@ -253,7 +257,7 @@ Available context:
 A complete macOS development environment:
 
 ```yaml
-# ~/.config/dotisan/macos.yaml
+# ~/.config/dotisan/resources/macos.yaml
 ---
 apiVersion: dotisan.io/v1
 kind: BrewPackages
