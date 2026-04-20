@@ -135,7 +135,7 @@ state:
 # This is an example resource file. Copy and modify it, or create your own.
 # Remove this file when you're ready to create real resources.
 
-# Example: Manage your shell configuration
+# Example 1: Inline source (good for small configs)
 # ---
 # apiVersion: github.com/wasilak/dotisan/v1
 # kind: ManagedFile
@@ -146,12 +146,24 @@ state:
 #     # My zsh configuration
 #     export EDITOR={{ .Values.editor | default "vim" }}
 #     export EMAIL={{ .Values.email }}
-#   
 #   destination: ~/.zshrc
 #   mode: "0644"
 #   template: true
 
-# Example: Install packages with Homebrew
+# Example 2: External file source (better for IDE support)
+# Create shell/zshrc.sh with your content, then:
+# ---
+# apiVersion: github.com/wasilak/dotisan/v1
+# kind: ManagedFile
+# metadata:
+#   name: zshrc
+# spec:
+#   sourceFile: shell/zshrc.sh
+#   destination: ~/.zshrc
+#   mode: "0644"
+#   template: true
+
+# Example 3: Install packages with Homebrew
 # ---
 # apiVersion: github.com/wasilak/dotisan/v1
 # kind: BrewPackages

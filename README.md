@@ -69,12 +69,12 @@ Create `~/.config/dotisan/resources/shell.yaml`:
 
 ```yaml
 ---
-apiVersion: dotisan.io/v1
+apiVersion: github.com/wasilak/dotisan/v1
 kind: ManagedFile
 metadata:
   name: zshrc
-  namespace: shell
 spec:
+  # Option A: Inline source (use | for multi-line)
   source: |
     # My awesome zsh config
     export EDITOR=vim
@@ -82,6 +82,10 @@ spec:
     
     # Load custom aliases
     [ -f ~/.aliases ] && source ~/.aliases
+  
+  # Option B: External file (better for IDE support)
+  # sourceFile: shell/zshrc.sh
+  
   destination: ~/.zshrc
   mode: "0644"
   template: true

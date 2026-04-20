@@ -129,23 +129,24 @@ func (p *FileProvider) reconcileManagedFile(
 	id := fmt.Sprintf("file/%s/%s", mf.GetMetadata().GetNamespace(), mf.GetMetadata().Name)
 	desiredIDs[id] = true
 
-	// Resolve source and destination paths
-	sourcePath := filepath.Join(p.dotfilesRoot, mf.Spec.Source)
+	// Resolve destination path
 	destPath, err := p.resolveDestination(mf.Spec.Destination)
 	if err != nil {
 		// Can't resolve destination, mark as error
 		return
 	}
 
-	// Render source content (either from file or inline)
+	// Render source content (either from inline Source or external SourceFile)
 	var content string
+	var sourcePath string
 	
-	// Check if source is a file path or inline content
-	if strings.Contains(mf.Spec.Source, "\n") || strings.Contains(mf.Spec.Source, "\r") {
+	if mf.Spec.Source != "" {
 		// Inline content - use directly
 		content = mf.Spec.Source
-	} else {
-		// Try as file path
+		sourcePath = "" // No source file for inline content
+	} else if mf.Spec.SourceFile != "" {
+		// External file path
+		sourcePath = filepath.Join(p.dotfilesRoot, mf.Spec.SourceFile)
 		var renderErr error
 		content, renderErr = p.renderSource(sourcePath, mf.Spec.Template)
 		if renderErr != nil {
@@ -153,6 +154,9 @@ func (p *FileProvider) reconcileManagedFile(
 			plan.Additions = append(plan.Additions, mf)
 			return
 		}
+	} else {
+		// Neither Source nor SourceFile set - validation should catch this
+		return
 	}
 
 	// Calculate checksum
@@ -257,7 +261,7 @@ func (p *FileProvider) reconcileManagedDirectory(
 	desiredIDs[id] = true
 
 	// Resolve source and destination paths
-	sourcePath := filepath.Join(p.dotfilesRoot, md.Spec.Source)
+	sourcePath := filepath.Join(p.dotfilesRoot, md.Spec.SourceDir)
 	destPath, err := p.resolveDestination(md.Spec.Destination)
 	if err != nil {
 		return
@@ -646,7 +650,7 @@ func (p *FileProvider) applyDirectoryAddition(ctx context.Context, md *resource.
 	}
 
 	// Resolve paths
-	sourcePath := filepath.Join(p.dotfilesRoot, md.Spec.Source)
+	sourcePath := filepath.Join(p.dotfilesRoot, md.Spec.SourceDir)
 	destPath, err := p.resolveDestination(md.Spec.Destination)
 	if err != nil {
 		return err
@@ -714,7 +718,7 @@ func (p *FileProvider) applyDirectoryModification(ctx context.Context, md *resou
 	}
 
 	// Resolve paths
-	sourcePath := filepath.Join(p.dotfilesRoot, md.Spec.Source)
+	sourcePath := filepath.Join(p.dotfilesRoot, md.Spec.SourceDir)
 	destPath, err := p.resolveDestination(md.Spec.Destination)
 	if err != nil {
 		return err
