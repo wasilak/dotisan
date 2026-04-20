@@ -315,7 +315,7 @@
         "dependencies": [
           "1"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -323,9 +323,10 @@
             "description": "Create the initial `DiffEngine` component or utility package and implement a function to generate a unified diff between two multi-line strings using `github.com/martinohmann/go-difflib`. This function should produce the raw unified diff output, preparing for later `lipgloss` integration.",
             "dependencies": [],
             "details": "Create a new package `diffengine` or a `DiffEngine` struct. Implement a public function, e.g., `GenerateUnifiedDiff(old, new string) (string, error)`, that utilizes `go-difflib.UnifiedDiff` to compare the provided strings. Focus on correctly generating the standard unified diff format.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Write unit tests comparing two multi-line strings with various changes (additions, deletions, modifications). Verify the output format matches a standard unified diff, including headers and line prefixes (+, -, ' ').",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2026-04-20T08:50:14.190Z"
           },
           {
             "id": 2,
@@ -335,9 +336,10 @@
               1
             ],
             "details": "Enhance the `DiffEngine` to include a function like `HighlightIntraLineChanges(oldLine, newLine string) string` using `go-diff.DiffMainRunes` to identify character-level differences. Define `lipgloss.Style` objects for additions, deletions, and modifications. Modify the `GenerateUnifiedDiff` function (from subtask 1) to parse its output, apply `lipgloss` styles for line-level changes, and call `HighlightIntraLineChanges` for any modified lines to apply intra-line styling.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Write unit tests for `HighlightIntraLineChanges` with strings having subtle character differences, verifying correct character-level highlighting. Test the `GenerateUnifiedDiff` function with `lipgloss` enabled, checking for the presence of correct ANSI escape codes for line-level and intra-line changes.",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2026-04-20T08:51:19.612Z"
           },
           {
             "id": 3,
@@ -347,14 +349,16 @@
               2
             ],
             "details": "Implement functions such as `FormatAddition(resourceName, content string) string`, `FormatModification(resourceName, oldContent, newContent string) string`, `FormatDeletion(resourceName, content string) string`, and `FormatInSync(resourceName string) string`. These functions should utilize the diff engine's capabilities (line-level and intra-line) and `lipgloss` styling to produce user-friendly, colored, and structured output suitable for the `plan` command.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Write integration-style unit tests for each formatting helper. Provide sample resource names and content (old/new) and verify the generated output is correctly formatted, includes diffs where appropriate, and uses the defined `lipgloss` styles for visual clarity. Ensure in-sync messages are also correctly formatted.",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2026-04-20T08:56:20.402Z"
           }
         ],
         "complexity": 6,
         "recommendedSubtasks": 3,
-        "expansionPrompt": "Break down the integration of `github.com/martinohmann/go-difflib` for line-level unified diffs, `github.com/sergi/go-diff` for character-level intra-line changes, and `github.com/charmbracelet/lipgloss` for colored terminal output, including helper functions for formatting plan output."
+        "expansionPrompt": "Break down the integration of `github.com/martinohmann/go-difflib` for line-level unified diffs, `github.com/sergi/go-diff` for character-level intra-line changes, and `github.com/charmbracelet/lipgloss` for colored terminal output, including helper functions for formatting plan output.",
+        "updatedAt": "2026-04-20T08:56:20.402Z"
       },
       {
         "id": "7",
@@ -782,9 +786,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-04-20T08:47:08.149Z",
+      "lastModified": "2026-04-20T08:56:20.402Z",
       "taskCount": 10,
-      "completedCount": 5,
+      "completedCount": 6,
       "tags": [
         "master"
       ]
