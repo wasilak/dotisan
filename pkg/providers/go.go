@@ -76,7 +76,8 @@ func (p *GoProvider) reconcileGoPackages(
 	plan *provider.Plan,
 	desiredIDs map[string]bool,
 ) {
-	id := fmt.Sprintf("go/%s/%s", gp.GetMetadata().GetNamespace(), gp.GetMetadata().Name)
+	// Build resource ID using kind and name (Terraform-style: files/dirs are for human org only)
+	id := fmt.Sprintf("GoPackages/%s", gp.GetMetadata().Name)
 	desiredIDs[id] = true
 
 	// Get current installed packages

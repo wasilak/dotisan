@@ -14,7 +14,7 @@ func TestUnmarshalYAML(t *testing.T) {
 		{
 			name: "valid BrewPackages",
 			yaml: `
-apiVersion: dotisan/v1
+apiVersion: github.com/wasilak/dotisan/v1
 kind: BrewPackages
 metadata:
   name: core-tools
@@ -41,7 +41,7 @@ spec:
 		{
 			name: "valid ManagedFile",
 			yaml: `
-apiVersion: dotisan/v1
+apiVersion: github.com/wasilak/dotisan/v1
 kind: ManagedFile
 metadata:
   name: zshrc
@@ -76,7 +76,7 @@ spec:
 		{
 			name: "valid ManagedDirectory",
 			yaml: `
-apiVersion: dotisan/v1
+apiVersion: github.com/wasilak/dotisan/v1
 kind: ManagedDirectory
 metadata:
   name: skills
@@ -107,7 +107,7 @@ spec:
 		{
 			name: "valid NpmPackages",
 			yaml: `
-apiVersion: dotisan/v1
+apiVersion: github.com/wasilak/dotisan/v1
 kind: NpmPackages
 metadata:
   name: globals
@@ -135,7 +135,7 @@ spec:
 		{
 			name: "valid GoPackages",
 			yaml: `
-apiVersion: dotisan/v1
+apiVersion: github.com/wasilak/dotisan/v1
 kind: GoPackages
 metadata:
   name: tools
@@ -159,7 +159,7 @@ spec:
 		{
 			name: "valid CargoPackages",
 			yaml: `
-apiVersion: dotisan/v1
+apiVersion: github.com/wasilak/dotisan/v1
 kind: CargoPackages
 metadata:
   name: rust-tools
@@ -195,7 +195,7 @@ spec: {}
 		{
 			name: "unknown kind",
 			yaml: `
-apiVersion: dotisan/v1
+apiVersion: github.com/wasilak/dotisan/v1
 kind: UnknownResource
 metadata:
   name: test

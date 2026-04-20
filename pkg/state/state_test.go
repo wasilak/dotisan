@@ -204,9 +204,9 @@ func TestLocalBackendWithDefaultPath(t *testing.T) {
 		t.Error("Path() returned empty string")
 	}
 
-	// Should contain .dotisan/state.json
-	if !contains(path, ".dotisan") || !contains(path, "state.json") {
-		t.Errorf("Path() = %q, should contain .dotisan and state.json", path)
+	// Should contain .config/dotisan/state.json
+	if !contains(path, ".config/dotisan") || !contains(path, "state.json") {
+		t.Errorf("Path() = %q, should contain .config/dotisan and state.json", path)
 	}
 }
 

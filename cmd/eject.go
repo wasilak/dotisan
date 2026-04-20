@@ -48,7 +48,7 @@ func runEject(kind, name string) error {
 
 	// 1. Load current state
 	ctx := context.Background()
-	dotisanDir := os.ExpandEnv("$HOME/.dotisan")
+	dotisanDir := os.ExpandEnv("$HOME/.config/dotisan")
 	statePath := dotisanDir + "/state.json"
 	backend := state.NewLocalBackend(statePath)
 	currentState, err := backend.Load(ctx)

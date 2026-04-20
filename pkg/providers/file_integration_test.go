@@ -16,8 +16,12 @@ func TestFileProvider_DiffEngineIntegration(t *testing.T) {
 	dotfilesDir := t.TempDir()
 	destDir := t.TempDir()
 
-	// Create source file
-	sourceFile := filepath.Join(dotfilesDir, "test.txt")
+	// Create resources subdirectory (files are resolved relative to resources/)
+	resourcesDir := filepath.Join(dotfilesDir, "resources")
+	os.MkdirAll(resourcesDir, 0755)
+
+	// Create source file in resources/
+	sourceFile := filepath.Join(resourcesDir, "test.txt")
 	if err := os.WriteFile(sourceFile, []byte("new content"), 0644); err != nil {
 		t.Fatalf("Failed to create source file: %v", err)
 	}
@@ -40,7 +44,7 @@ func TestFileProvider_DiffEngineIntegration(t *testing.T) {
 			Metadata:   resource.Metadata{Name: "test", Namespace: "default"},
 		},
 		Spec: resource.ManagedFileSpec{
-			Source:      "test.txt",
+			SourceFile:  "test.txt",
 			Destination: destFile,
 			Template:    false,
 		},
@@ -50,7 +54,7 @@ func TestFileProvider_DiffEngineIntegration(t *testing.T) {
 	desired := []resource.Resource{mf}
 	state := []provider.ResourceState{
 		{
-			ID:       "file/default/test",
+			ID:       "ManagedFile/test",
 			Kind:     "ManagedFile",
 			Name:     "test",
 			DestHash: calculateChecksum("old content"),
@@ -75,8 +79,12 @@ func TestFileProvider_StateTracking(t *testing.T) {
 	dotfilesDir := t.TempDir()
 	destDir := t.TempDir()
 
-	// Create source file
-	sourceFile := filepath.Join(dotfilesDir, "test.txt")
+	// Create resources subdirectory (files are resolved relative to resources/)
+	resourcesDir := filepath.Join(dotfilesDir, "resources")
+	os.MkdirAll(resourcesDir, 0755)
+
+	// Create source file in resources/
+	sourceFile := filepath.Join(resourcesDir, "test.txt")
 	sourceContent := "source content"
 	if err := os.WriteFile(sourceFile, []byte(sourceContent), 0644); err != nil {
 		t.Fatalf("Failed to create source file: %v", err)
@@ -98,7 +106,7 @@ func TestFileProvider_StateTracking(t *testing.T) {
 			Metadata:   resource.Metadata{Name: "test", Namespace: "default"},
 		},
 		Spec: resource.ManagedFileSpec{
-			Source:      "test.txt",
+			SourceFile:  "test.txt",
 			Destination: destFile,
 			Template:    false,
 		},
@@ -112,7 +120,7 @@ func TestFileProvider_StateTracking(t *testing.T) {
 	desired := []resource.Resource{mf}
 	state := []provider.ResourceState{
 		{
-			ID:         "file/default/test",
+			ID:         "ManagedFile/test",
 			Kind:       "ManagedFile",
 			Name:       "test",
 			DestHash:   destHash,
@@ -133,8 +141,12 @@ func TestFileProvider_DriftDetection(t *testing.T) {
 	dotfilesDir := t.TempDir()
 	destDir := t.TempDir()
 
-	// Create source file
-	sourceFile := filepath.Join(dotfilesDir, "test.txt")
+	// Create resources subdirectory (files are resolved relative to resources/)
+	resourcesDir := filepath.Join(dotfilesDir, "resources")
+	os.MkdirAll(resourcesDir, 0755)
+
+	// Create source file in resources/
+	sourceFile := filepath.Join(resourcesDir, "test.txt")
 	if err := os.WriteFile(sourceFile, []byte("original content"), 0644); err != nil {
 		t.Fatalf("Failed to create source file: %v", err)
 	}
@@ -155,17 +167,17 @@ func TestFileProvider_DriftDetection(t *testing.T) {
 			Metadata:   resource.Metadata{Name: "test", Namespace: "default"},
 		},
 		Spec: resource.ManagedFileSpec{
-			Source:      "test.txt",
+			SourceFile:  "test.txt",
 			Destination: destFile,
 			Template:    false,
 		},
 	}
 
-	// Reconcile with saved state matching original content
+	// Reconcile with saved state matching original content (using new kind/name format)
 	desired := []resource.Resource{mf}
 	state := []provider.ResourceState{
 		{
-			ID:       "file/default/test",
+			ID:       "ManagedFile/test",
 			Kind:     "ManagedFile",
 			Name:     "test",
 			DestHash: calculateChecksum("original content"), // Saved state

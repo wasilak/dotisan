@@ -14,8 +14,12 @@ func TestFileProvider_Reconcile_ManagedDirectory_Addition(t *testing.T) {
 	dotfilesDir := t.TempDir()
 	destDir := t.TempDir()
 
-	// Create a source directory with files
-	sourceDir := filepath.Join(dotfilesDir, "skills")
+	// Create resources subdirectory (dirs are resolved relative to resources/)
+	resourcesDir := filepath.Join(dotfilesDir, "resources")
+	os.MkdirAll(resourcesDir, 0755)
+
+	// Create a source directory with files in resources/
+	sourceDir := filepath.Join(resourcesDir, "skills")
 	if err := os.MkdirAll(sourceDir, 0755); err != nil {
 		t.Fatalf("Failed to create source dir: %v", err)
 	}
@@ -34,7 +38,7 @@ func TestFileProvider_Reconcile_ManagedDirectory_Addition(t *testing.T) {
 			Metadata:   resource.Metadata{Name: "skills", Namespace: "default"},
 		},
 		Spec: resource.ManagedDirectorySpec{
-			Source:      "skills",
+			SourceDir:   "skills",
 			Destination: filepath.Join(destDir, "skills"),
 			Recursive:   false,
 			Clean:       false,
@@ -57,8 +61,12 @@ func TestFileProvider_Reconcile_ManagedDirectory_InSync(t *testing.T) {
 	dotfilesDir := t.TempDir()
 	destDir := t.TempDir()
 
-	// Create a source directory
-	sourceDir := filepath.Join(dotfilesDir, "skills")
+	// Create resources subdirectory (dirs are resolved relative to resources/)
+	resourcesDir := filepath.Join(dotfilesDir, "resources")
+	os.MkdirAll(resourcesDir, 0755)
+
+	// Create a source directory in resources/
+	sourceDir := filepath.Join(resourcesDir, "skills")
 	if err := os.MkdirAll(sourceDir, 0755); err != nil {
 		t.Fatalf("Failed to create source dir: %v", err)
 	}
@@ -86,7 +94,7 @@ func TestFileProvider_Reconcile_ManagedDirectory_InSync(t *testing.T) {
 			Metadata:   resource.Metadata{Name: "skills", Namespace: "default"},
 		},
 		Spec: resource.ManagedDirectorySpec{
-			Source:      "skills",
+			SourceDir:   "skills",
 			Destination: destSkillsDir,
 			Recursive:   false,
 			Clean:       false,
@@ -97,7 +105,7 @@ func TestFileProvider_Reconcile_ManagedDirectory_InSync(t *testing.T) {
 	desired := []resource.Resource{md}
 	state := []provider.ResourceState{
 		{
-			ID:   "directory/default/skills",
+			ID:   "ManagedDirectory/skills",
 			Kind: "ManagedDirectory",
 			Name: "skills",
 		},
@@ -115,8 +123,12 @@ func TestFileProvider_Reconcile_ManagedDirectory_Clean(t *testing.T) {
 	dotfilesDir := t.TempDir()
 	destDir := t.TempDir()
 
-	// Create a source directory with one file
-	sourceDir := filepath.Join(dotfilesDir, "skills")
+	// Create resources subdirectory (dirs are resolved relative to resources/)
+	resourcesDir := filepath.Join(dotfilesDir, "resources")
+	os.MkdirAll(resourcesDir, 0755)
+
+	// Create a source directory with one file in resources/
+	sourceDir := filepath.Join(resourcesDir, "skills")
 	if err := os.MkdirAll(sourceDir, 0755); err != nil {
 		t.Fatalf("Failed to create source dir: %v", err)
 	}
@@ -147,7 +159,7 @@ func TestFileProvider_Reconcile_ManagedDirectory_Clean(t *testing.T) {
 			Metadata:   resource.Metadata{Name: "skills", Namespace: "default"},
 		},
 		Spec: resource.ManagedDirectorySpec{
-			Source:      "skills",
+			SourceDir:   "skills",
 			Destination: destSkillsDir,
 			Recursive:   false,
 			Clean:       true, // Enable clean mode
@@ -158,7 +170,7 @@ func TestFileProvider_Reconcile_ManagedDirectory_Clean(t *testing.T) {
 	desired := []resource.Resource{md}
 	state := []provider.ResourceState{
 		{
-			ID:   "directory/default/skills",
+			ID:   "ManagedDirectory/skills",
 			Kind: "ManagedDirectory",
 			Name: "skills",
 		},

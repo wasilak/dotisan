@@ -180,17 +180,14 @@ func (f *PlanFormatter) FormatSummary(add, modify, remove, inSync int) string {
 	if remove > 0 {
 		removeStyle := lipgloss.NewStyle().
 			Foreground(lipgloss.Color(ColorPastelRed))
-		parts = append(parts, removeStyle.Render(fmt.Sprintf("-%d to remove", remove)))
+		parts = append(parts, removeStyle.Render(fmt.Sprintf("-%d to destroy", remove)))
 	}
 
-	if inSync > 0 {
-		syncStyle := lipgloss.NewStyle().
-			Foreground(lipgloss.Color(ColorGray))
-		parts = append(parts, syncStyle.Render(fmt.Sprintf("=%d unchanged", inSync)))
-	}
+	// Note: Terraform doesn't show unchanged/in-sync resources in the summary
+	// Only resources with actions (add/change/destroy) are shown
 
 	if len(parts) == 0 {
-		return "No changes"
+		return "No changes. Your infrastructure matches the configuration."
 	}
 
 	return "Plan: " + strings.Join(parts, ", ")

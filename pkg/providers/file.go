@@ -125,8 +125,8 @@ func (p *FileProvider) reconcileManagedFile(
 	plan *provider.Plan,
 	desiredIDs map[string]bool,
 ) {
-	// Build resource ID
-	id := fmt.Sprintf("file/%s/%s", mf.GetMetadata().GetNamespace(), mf.GetMetadata().Name)
+	// Build resource ID using kind and name (Terraform-style: files/dirs are for human org only)
+	id := fmt.Sprintf("ManagedFile/%s", mf.GetMetadata().Name)
 	desiredIDs[id] = true
 
 	// Resolve destination path
@@ -158,8 +158,8 @@ func (p *FileProvider) reconcileManagedFile(
 			content = mf.Spec.Source
 		}
 	} else if mf.Spec.SourceFile != "" {
-		// External file path
-		sourcePath = filepath.Join(p.dotfilesRoot, mf.Spec.SourceFile)
+		// External file path (relative to resources/ directory)
+		sourcePath = filepath.Join(p.dotfilesRoot, "resources", mf.Spec.SourceFile)
 		var renderErr error
 		content, renderErr = p.renderSource(sourcePath, mf.Spec.Template)
 		if renderErr != nil {
@@ -235,6 +235,30 @@ func (p *FileProvider) reconcileManagedFile(
 	}
 	actualChecksum := calculateChecksum(string(actualContent))
 
+	// Special handling for imported resources
+	// When a resource was imported, we compare the actual destination file
+	// with the saved state (which contains the hash of the file at import time).
+	// If they match, the resource is in sync. We then clear the imported flag.
+	if imported, ok := savedState.Extra["imported"].(bool); ok && imported {
+		if actualChecksum == savedState.DestHash {
+			// Imported file still matches what we saved - it's in sync
+			// Clear the imported flag for future normal reconciliation
+			plan.InSync = append(plan.InSync, mf)
+			// Note: The imported flag will be cleared when state is saved after apply
+			// because the resourceToStateEntry function doesn't preserve the imported flag
+			return
+		}
+		// File was modified after import - this is drift
+		plan.Drifted = append(plan.Drifted, provider.Drift{
+			Resource:      mf,
+			ExpectedState: savedState,
+			ActualState:   provider.ResourceState{ID: id, DestHash: actualChecksum},
+			Description:   "file content has changed since import",
+			Diff:          p.generateDiff(string(actualContent), content),
+		})
+		return
+	}
+
 	// Check if file has drifted (changed outside of dotisan)
 	if actualChecksum != savedState.DestHash {
 		// File has been modified outside of dotisan
@@ -273,12 +297,12 @@ func (p *FileProvider) reconcileManagedDirectory(
 	plan *provider.Plan,
 	desiredIDs map[string]bool,
 ) {
-	// Build resource ID
-	id := fmt.Sprintf("directory/%s/%s", md.GetMetadata().GetNamespace(), md.GetMetadata().Name)
+	// Build resource ID using kind and name (Terraform-style: files/dirs are for human org only)
+	id := fmt.Sprintf("ManagedDirectory/%s", md.GetMetadata().Name)
 	desiredIDs[id] = true
 
-	// Resolve source and destination paths
-	sourcePath := filepath.Join(p.dotfilesRoot, md.Spec.SourceDir)
+	// Resolve source and destination paths (source is relative to resources/ directory)
+	sourcePath := filepath.Join(p.dotfilesRoot, "resources", md.Spec.SourceDir)
 	destPath, err := p.resolveDestination(md.Spec.Destination)
 	if err != nil {
 		return
@@ -684,8 +708,8 @@ func (p *FileProvider) applyFileAddition(ctx context.Context, mf *resource.Manag
 			content = mf.Spec.Source
 		}
 	} else if mf.Spec.SourceFile != "" {
-		// External file path
-		sourcePath := filepath.Join(p.dotfilesRoot, mf.Spec.SourceFile)
+		// External file path (relative to resources/ directory)
+		sourcePath := filepath.Join(p.dotfilesRoot, "resources", mf.Spec.SourceFile)
 		content, err = p.renderSource(sourcePath, mf.Spec.Template)
 		if err != nil {
 			return err
@@ -715,8 +739,8 @@ func (p *FileProvider) applyDirectoryAddition(ctx context.Context, md *resource.
 		return err
 	}
 
-	// Resolve paths
-	sourcePath := filepath.Join(p.dotfilesRoot, md.Spec.SourceDir)
+	// Resolve paths (source is relative to resources/ directory)
+	sourcePath := filepath.Join(p.dotfilesRoot, "resources", md.Spec.SourceDir)
 	destPath, err := p.resolveDestination(md.Spec.Destination)
 	if err != nil {
 		return err
@@ -778,8 +802,8 @@ func (p *FileProvider) applyFileModification(ctx context.Context, mf *resource.M
 			content = mf.Spec.Source
 		}
 	} else if mf.Spec.SourceFile != "" {
-		// External file path
-		sourcePath := filepath.Join(p.dotfilesRoot, mf.Spec.SourceFile)
+		// External file path (relative to resources/ directory)
+		sourcePath := filepath.Join(p.dotfilesRoot, "resources", mf.Spec.SourceFile)
 		content, err = p.renderSource(sourcePath, mf.Spec.Template)
 		if err != nil {
 			return err
@@ -803,8 +827,8 @@ func (p *FileProvider) applyDirectoryModification(ctx context.Context, md *resou
 		return err
 	}
 
-	// Resolve paths
-	sourcePath := filepath.Join(p.dotfilesRoot, md.Spec.SourceDir)
+	// Resolve paths (source is relative to resources/ directory)
+	sourcePath := filepath.Join(p.dotfilesRoot, "resources", md.Spec.SourceDir)
 	destPath, err := p.resolveDestination(md.Spec.Destination)
 	if err != nil {
 		return err
@@ -998,10 +1022,9 @@ func (p *FileProvider) Import(ctx context.Context, id string) (provider.Resource
 	}
 
 	return provider.ResourceState{
-		ID:         fmt.Sprintf("file/default/%s", baseName),
+		ID:         fmt.Sprintf("ManagedFile/%s", baseName),
 		Kind:       "ManagedFile",
 		Name:       baseName,
-		Namespace:  "default",
 		DestHash:   checksum,
 		Extra: map[string]interface{}{
 			"source_path": "",

@@ -45,7 +45,7 @@ func DefaultConfig() *Config {
 		DotfilesRoot: filepath.Join(homeDir, ".config/dotisan"),
 		State: StateConfig{
 			Backend: "local",
-			Path:    filepath.Join(homeDir, ".dotisan", "state.json"),
+			Path:    filepath.Join(homeDir, ".config", "dotisan", "state.json"),
 		},
 	}
 }

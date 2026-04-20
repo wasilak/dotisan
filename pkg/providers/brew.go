@@ -86,7 +86,8 @@ func (p *BrewProvider) reconcileBrewPackages(
 	plan *provider.Plan,
 	desiredIDs map[string]bool,
 ) {
-	id := fmt.Sprintf("brew/%s/%s", bp.GetMetadata().GetNamespace(), bp.GetMetadata().Name)
+	// Build resource ID using kind and name (Terraform-style: files/dirs are for human org only)
+	id := fmt.Sprintf("BrewPackages/%s", bp.GetMetadata().Name)
 	desiredIDs[id] = true
 
 	// Get current installed packages
@@ -312,11 +313,10 @@ func (p *BrewProvider) Import(ctx context.Context, id string) (provider.Resource
 			version = parts[1]
 		}
 		return provider.ResourceState{
-			ID:        fmt.Sprintf("homebrew/default/%s", id),
-			Kind:      "BrewPackages",
-			Name:      id,
-			Namespace: "default",
-			Version:   version,
+			ID:      fmt.Sprintf("BrewPackages/%s", id),
+			Kind:    "BrewPackages",
+			Name:    id,
+			Version: version,
 			Extra: map[string]interface{}{
 				"type": "formula",
 			},
@@ -333,11 +333,10 @@ func (p *BrewProvider) Import(ctx context.Context, id string) (provider.Resource
 			version = parts[1]
 		}
 		return provider.ResourceState{
-			ID:        fmt.Sprintf("homebrew/default/%s", id),
-			Kind:      "BrewPackages",
-			Name:      id,
-			Namespace: "default",
-			Version:   version,
+			ID:      fmt.Sprintf("BrewPackages/%s", id),
+			Kind:    "BrewPackages",
+			Name:    id,
+			Version: version,
 			Extra: map[string]interface{}{
 				"type": "cask",
 			},

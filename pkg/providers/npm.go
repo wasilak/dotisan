@@ -76,7 +76,8 @@ func (p *NpmProvider) reconcileNpmPackages(
 	plan *provider.Plan,
 	desiredIDs map[string]bool,
 ) {
-	id := fmt.Sprintf("npm/%s/%s", np.GetMetadata().GetNamespace(), np.GetMetadata().Name)
+	// Build resource ID using kind and name (Terraform-style: files/dirs are for human org only)
+	id := fmt.Sprintf("NpmPackages/%s", np.GetMetadata().Name)
 	desiredIDs[id] = true
 
 	// Get current installed packages

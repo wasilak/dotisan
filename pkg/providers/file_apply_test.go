@@ -15,8 +15,12 @@ func TestFileProvider_Apply_Addition(t *testing.T) {
 	dotfilesDir := t.TempDir()
 	destDir := t.TempDir()
 
-	// Create a source file
-	sourceFile := filepath.Join(dotfilesDir, "test.txt")
+	// Create resources subdirectory (files are resolved relative to resources/)
+	resourcesDir := filepath.Join(dotfilesDir, "resources")
+	os.MkdirAll(resourcesDir, 0755)
+
+	// Create a source file in resources/
+	sourceFile := filepath.Join(resourcesDir, "test.txt")
 	content := "test content"
 	if err := os.WriteFile(sourceFile, []byte(content), 0644); err != nil {
 		t.Fatalf("Failed to create source file: %v", err)
@@ -33,7 +37,7 @@ func TestFileProvider_Apply_Addition(t *testing.T) {
 			Metadata:   resource.Metadata{Name: "test", Namespace: "default"},
 		},
 		Spec: resource.ManagedFileSpec{
-			Source:      "test.txt",
+			SourceFile:  "test.txt",
 			Destination: filepath.Join(destDir, "dest.txt"),
 			Template:    false,
 			Mode:        "0644",
@@ -71,8 +75,12 @@ func TestFileProvider_Apply_Modification(t *testing.T) {
 	dotfilesDir := t.TempDir()
 	destDir := t.TempDir()
 
-	// Create a source file with new content
-	sourceFile := filepath.Join(dotfilesDir, "test.txt")
+	// Create resources subdirectory (files are resolved relative to resources/)
+	resourcesDir := filepath.Join(dotfilesDir, "resources")
+	os.MkdirAll(resourcesDir, 0755)
+
+	// Create a source file with new content in resources/
+	sourceFile := filepath.Join(resourcesDir, "test.txt")
 	newContent := "new content"
 	if err := os.WriteFile(sourceFile, []byte(newContent), 0644); err != nil {
 		t.Fatalf("Failed to create source file: %v", err)
@@ -96,7 +104,7 @@ func TestFileProvider_Apply_Modification(t *testing.T) {
 			Metadata:   resource.Metadata{Name: "test", Namespace: "default"},
 		},
 		Spec: resource.ManagedFileSpec{
-			Source:      "test.txt",
+			SourceFile:  "test.txt",
 			Destination: destFile,
 			Template:    false,
 		},
@@ -149,7 +157,7 @@ func TestFileProvider_Apply_Removal(t *testing.T) {
 			Metadata:   resource.Metadata{Name: "test", Namespace: "default"},
 		},
 		Spec: resource.ManagedFileSpec{
-			Source:      "test.txt",
+			SourceFile:  "test.txt",
 			Destination: destFile,
 			Template:    false,
 		},
@@ -219,8 +227,12 @@ func TestFileProvider_Apply_CreatesParentDirectories(t *testing.T) {
 	dotfilesDir := t.TempDir()
 	destDir := t.TempDir()
 
-	// Create a source file
-	sourceFile := filepath.Join(dotfilesDir, "test.txt")
+	// Create resources subdirectory (files are resolved relative to resources/)
+	resourcesDir := filepath.Join(dotfilesDir, "resources")
+	os.MkdirAll(resourcesDir, 0755)
+
+	// Create a source file in resources/
+	sourceFile := filepath.Join(resourcesDir, "test.txt")
 	if err := os.WriteFile(sourceFile, []byte("content"), 0644); err != nil {
 		t.Fatalf("Failed to create source file: %v", err)
 	}
@@ -238,7 +250,7 @@ func TestFileProvider_Apply_CreatesParentDirectories(t *testing.T) {
 			Metadata:   resource.Metadata{Name: "test", Namespace: "default"},
 		},
 		Spec: resource.ManagedFileSpec{
-			Source:      "test.txt",
+			SourceFile:  "test.txt",
 			Destination: destFile,
 			Template:    false,
 		},

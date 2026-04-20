@@ -262,12 +262,29 @@ func (e *Engine) groupResourcesByProvider(resources []resource.Resource) map[str
 }
 
 // filterStateForProvider filters state entries for a specific provider.
+// Maps provider names to the kinds they handle (e.g., "file" -> ["ManagedFile", "ManagedDirectory"])
 func (e *Engine) filterStateForProvider(stateMap map[string]provider.ResourceState, providerName string) []provider.ResourceState {
 	var filtered []provider.ResourceState
 
+	// Map provider to the kinds it handles
+	providerKinds := make(map[string]bool)
+	switch providerName {
+	case "file":
+		providerKinds["ManagedFile"] = true
+		providerKinds["ManagedDirectory"] = true
+	case "homebrew":
+		providerKinds["BrewPackages"] = true
+	case "npm":
+		providerKinds["NpmPackages"] = true
+	case "go":
+		providerKinds["GoPackages"] = true
+	case "cargo":
+		providerKinds["CargoPackages"] = true
+	}
+
 	for _, s := range stateMap {
-		// State ID format: "provider/namespace/name"
-		if len(s.ID) > len(providerName) && s.ID[:len(providerName)] == providerName {
+		// Check if this state's kind belongs to this provider
+		if providerKinds[s.Kind] {
 			filtered = append(filtered, s)
 		}
 	}
@@ -279,12 +296,11 @@ func (e *Engine) filterStateForProvider(stateMap map[string]provider.ResourceSta
 // These are resources that were previously managed but no longer have YAML definitions.
 // Returns the orphaned resources converted to resource.Resource for display.
 func (e *Engine) findOrphanedStateResources(stateResources []provider.ResourceState, resourcesByProvider map[string][]resource.Resource) []resource.Resource {
-	// Build set of config resource IDs
+	// Build set of config resource IDs using kind/name (Terraform-style)
 	configIDs := make(map[string]bool)
-	for providerName, providerResources := range resourcesByProvider {
+	for _, providerResources := range resourcesByProvider {
 		for _, res := range providerResources {
-			meta := res.GetMetadata()
-			id := fmt.Sprintf("%s/%s/%s", providerName, meta.GetNamespace(), meta.Name)
+			id := fmt.Sprintf("%s/%s", res.GetKind(), res.GetMetadata().Name)
 			configIDs[id] = true
 		}
 	}
@@ -355,9 +371,9 @@ func (e *Engine) DisplayPlan(result *PlanResult) {
 	if result.TotalRemovals > 0 {
 		fmt.Println()
 		fmt.Println(e.PlanFormatter.FormatSectionHeader("Resources to be removed"))
-		for providerName, plan := range result.ProviderPlans {
+		for _, plan := range result.ProviderPlans {
 			for _, res := range plan.Removals {
-				resourceID := fmt.Sprintf("%s/%s/%s", providerName, res.GetMetadata().GetNamespace(), res.GetMetadata().Name)
+				resourceID := fmt.Sprintf("%s/%s", res.GetKind(), res.GetMetadata().Name)
 				fmt.Println()
 				fmt.Println(e.PlanFormatter.FormatRemovalDetailed(resourceID))
 			}
@@ -368,9 +384,9 @@ func (e *Engine) DisplayPlan(result *PlanResult) {
 	if result.TotalAdditions > 0 {
 		fmt.Println()
 		fmt.Println(e.PlanFormatter.FormatSectionHeader("Resources to be created"))
-		for providerName, plan := range result.ProviderPlans {
+		for _, plan := range result.ProviderPlans {
 			for _, res := range plan.Additions {
-				resourceID := fmt.Sprintf("%s/%s/%s", providerName, res.GetMetadata().GetNamespace(), res.GetMetadata().Name)
+				resourceID := fmt.Sprintf("%s/%s", res.GetKind(), res.GetMetadata().Name)
 				fmt.Println()
 				fmt.Println(e.PlanFormatter.FormatAdditionDetailed(resourceID))
 			}
@@ -381,9 +397,9 @@ func (e *Engine) DisplayPlan(result *PlanResult) {
 	if result.TotalModifications > 0 {
 		fmt.Println()
 		fmt.Println(e.PlanFormatter.FormatSectionHeader("Resources to be modified"))
-		for providerName, plan := range result.ProviderPlans {
+		for _, plan := range result.ProviderPlans {
 			for _, mod := range plan.Modifications {
-				resourceID := fmt.Sprintf("%s/%s/%s", providerName, mod.Resource.GetMetadata().GetNamespace(), mod.Resource.GetMetadata().Name)
+				resourceID := fmt.Sprintf("%s/%s", mod.Resource.GetKind(), mod.Resource.GetMetadata().Name)
 				fmt.Println()
 				fmt.Println(e.PlanFormatter.FormatModificationDetailed(resourceID))
 				if mod.Diff != "" {
@@ -398,9 +414,9 @@ func (e *Engine) DisplayPlan(result *PlanResult) {
 	if result.TotalDrifted > 0 {
 		fmt.Println()
 		fmt.Println(e.PlanFormatter.FormatSectionHeader("Drifted resources (manual changes detected)"))
-		for providerName, plan := range result.ProviderPlans {
+		for _, plan := range result.ProviderPlans {
 			for _, drift := range plan.Drifted {
-				resourceID := fmt.Sprintf("%s/%s/%s", providerName, drift.Resource.GetMetadata().GetNamespace(), drift.Resource.GetMetadata().Name)
+				resourceID := fmt.Sprintf("%s/%s", drift.Resource.GetKind(), drift.Resource.GetMetadata().Name)
 				fmt.Println()
 				fmt.Println(e.PlanFormatter.FormatDriftDetailed(resourceID))
 				if drift.Diff != "" {
@@ -507,8 +523,9 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 // resourceToStateEntry converts a resource to a state entry.
 // For file resources, it calculates checksums of the content.
 func (e *Engine) resourceToStateEntry(res resource.Resource, providerName string) provider.ResourceState {
+	// Use kind/name for ID (Terraform-style: files/dirs are for human org only)
 	stateEntry := provider.ResourceState{
-		ID:        fmt.Sprintf("%s/%s/%s", providerName, res.GetMetadata().GetNamespace(), res.GetMetadata().Name),
+		ID:        fmt.Sprintf("%s/%s", res.GetKind(), res.GetMetadata().Name),
 		Kind:      res.GetKind(),
 		Name:      res.GetMetadata().Name,
 		Namespace: res.GetMetadata().GetNamespace(),

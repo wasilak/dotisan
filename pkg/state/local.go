@@ -27,7 +27,7 @@ func NewLocalBackendWithDefaultPath() (*LocalBackend, error) {
 		return nil, fmt.Errorf("failed to get home directory: %w", err)
 	}
 
-	path := filepath.Join(homeDir, ".dotisan", "state.json")
+	path := filepath.Join(homeDir, ".config", "dotisan", "state.json")
 	return NewLocalBackend(path), nil
 }
 

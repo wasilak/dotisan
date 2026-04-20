@@ -115,8 +115,8 @@ func runStateImport(kind, name, id string) error {
 	resourceState.Name = name
 	resourceState.Kind = kind
 
-	// Load current state
-	dotisanDir := os.ExpandEnv("$HOME/.dotisan")
+	// Load current state (from ~/.config/dotisan/state.json)
+	dotisanDir := os.ExpandEnv("$HOME/.config/dotisan")
 	statePath := dotisanDir + "/state.json"
 	backend := state.NewLocalBackend(statePath)
 	currentState, err := backend.Load(ctx)
@@ -159,7 +159,7 @@ Example: dotisan state remove BrewPackages core-tools`,
 func runStateRemove(kind, name string) error {
 	// Load current state
 	ctx := context.Background()
-	dotisanDir := os.ExpandEnv("$HOME/.dotisan")
+	dotisanDir := os.ExpandEnv("$HOME/.config/dotisan")
 	statePath := dotisanDir + "/state.json"
 	backend := state.NewLocalBackend(statePath)
 	currentState, err := backend.Load(ctx)
@@ -223,7 +223,7 @@ func runStateList() error {
 	}
 
 	// Load state for resource list
-	dotisanDir := os.ExpandEnv("$HOME/.dotisan")
+	dotisanDir := os.ExpandEnv("$HOME/.config/dotisan")
 	statePath := dotisanDir + "/state.json"
 	backend := state.NewLocalBackend(statePath)
 	currentState, err := backend.Load(ctx)
@@ -297,30 +297,30 @@ func truncate(s string, maxLen int) string {
 func buildStatusMap(result *engine.PlanResult) map[string]string {
 	statusMap := make(map[string]string)
 
-	for providerName, plan := range result.ProviderPlans {
+	for _, plan := range result.ProviderPlans {
 		// In sync resources
 		for _, res := range plan.InSync {
-			id := fmt.Sprintf("%s/%s/%s", providerName, res.GetMetadata().GetNamespace(), res.GetMetadata().Name)
+			id := fmt.Sprintf("%s/%s", res.GetKind(), res.GetMetadata().Name)
 			statusMap[id] = "in_sync"
 		}
 		// Additions (not in state yet)
 		for _, res := range plan.Additions {
-			id := fmt.Sprintf("%s/%s/%s", providerName, res.GetMetadata().GetNamespace(), res.GetMetadata().Name)
+			id := fmt.Sprintf("%s/%s", res.GetKind(), res.GetMetadata().Name)
 			statusMap[id] = "pending"
 		}
 		// Modifications
 		for _, mod := range plan.Modifications {
-			id := fmt.Sprintf("%s/%s/%s", providerName, mod.Resource.GetMetadata().GetNamespace(), mod.Resource.GetMetadata().Name)
+			id := fmt.Sprintf("%s/%s", mod.Resource.GetKind(), mod.Resource.GetMetadata().Name)
 			statusMap[id] = "modified"
 		}
 		// Removals (orphaned)
 		for _, res := range plan.Removals {
-			id := fmt.Sprintf("%s/%s/%s", providerName, res.GetMetadata().GetNamespace(), res.GetMetadata().Name)
+			id := fmt.Sprintf("%s/%s", res.GetKind(), res.GetMetadata().Name)
 			statusMap[id] = "orphaned"
 		}
 		// Drifted
 		for _, drift := range plan.Drifted {
-			id := fmt.Sprintf("%s/%s/%s", providerName, drift.Resource.GetMetadata().GetNamespace(), drift.Resource.GetMetadata().Name)
+			id := fmt.Sprintf("%s/%s", drift.Resource.GetKind(), drift.Resource.GetMetadata().Name)
 			statusMap[id] = "drift"
 		}
 	}
@@ -355,7 +355,7 @@ func getResourceStatus(r provider.ResourceState, statusMap map[string]string,
 // runStateListBasic is a fallback that just lists resources without status check
 func runStateListBasic() error {
 	ctx := context.Background()
-	dotisanDir := os.ExpandEnv("$HOME/.dotisan")
+	dotisanDir := os.ExpandEnv("$HOME/.config/dotisan")
 	statePath := dotisanDir + "/state.json"
 	backend := state.NewLocalBackend(statePath)
 	currentState, err := backend.Load(ctx)
@@ -438,7 +438,7 @@ func runStatePull() error {
 	}
 
 	// Save to local backend
-	dotisanDir := os.ExpandEnv("$HOME/.dotisan")
+	dotisanDir := os.ExpandEnv("$HOME/.config/dotisan")
 	localBackend := state.NewLocalBackend(dotisanDir)
 	if err := localBackend.Save(ctx, remoteState); err != nil {
 		return fmt.Errorf("failed to save local state: %w", err)
@@ -479,7 +479,7 @@ func runStatePush() error {
 
 	// Load local state
 	ctx := context.Background()
-	dotisanDir := os.ExpandEnv("$HOME/.dotisan")
+	dotisanDir := os.ExpandEnv("$HOME/.config/dotisan")
 	statePath := dotisanDir + "/state.json"
 	localBackend := state.NewLocalBackend(statePath)
 	localState, err := localBackend.Load(ctx)

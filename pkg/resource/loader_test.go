@@ -16,8 +16,8 @@ func TestNewLoader(t *testing.T) {
 		t.Fatal("NewLoader() returned nil")
 	}
 
-	if loader.config/dotisanPath != "/tmp/dotfiles" {
-		t.Errorf("dotfilesPath = %q, want %q", loader.config/dotisanPath, "/tmp/dotfiles")
+	if loader.dotfilesPath != "/tmp/dotfiles" {
+		t.Errorf("dotfilesPath = %q, want %q", loader.dotfilesPath, "/tmp/dotfiles")
 	}
 
 	if loader.engine == nil {
@@ -41,7 +41,7 @@ func TestLoader_LoadResources(t *testing.T) {
 		t.Fatalf("Failed to create brew dir: %v", err)
 	}
 
-	brewContent := "apiVersion: dotisan/v1\nkind: BrewPackages\nmetadata:\n  name: core-tools\nspec:\n  formulae:\n    - name: ripgrep\n    - name: fd\n"
+	brewContent := "apiVersion: github.com/wasilak/dotisan/v1\nkind: BrewPackages\nmetadata:\n  name: core-tools\nspec:\n  formulae:\n    - name: ripgrep\n    - name: fd\n"
 	if err := os.WriteFile(filepath.Join(brewDir, "core.yaml"), []byte(brewContent), 0644); err != nil {
 		t.Fatalf("Failed to write brew resource: %v", err)
 	}
@@ -52,7 +52,7 @@ func TestLoader_LoadResources(t *testing.T) {
 		t.Fatalf("Failed to create files dir: %v", err)
 	}
 
-	fileContent := "apiVersion: dotisan/v1\nkind: ManagedFile\nmetadata:\n  name: test-config\nspec:\n  source: templates/test.txt\n  destination: /tmp/test.txt\n  template: false\n"
+	fileContent := "apiVersion: github.com/wasilak/dotisan/v1\nkind: ManagedFile\nmetadata:\n  name: test-config\nspec:\n  source: templates/test.txt\n  destination: /tmp/test.txt\n  template: false\n"
 	if err := os.WriteFile(filepath.Join(filesDir, "test.yaml"), []byte(fileContent), 0644); err != nil {
 		t.Fatalf("Failed to write file resource: %v", err)
 	}
@@ -108,7 +108,7 @@ func TestLoader_LoadResources_InvalidResource(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create an invalid resource (unknown kind)
-	invalidContent := "apiVersion: dotisan/v1\nkind: UnknownKind\nmetadata:\n  name: invalid\nspec: {}\n"
+	invalidContent := "apiVersion: github.com/wasilak/dotisan/v1\nkind: UnknownKind\nmetadata:\n  name: invalid\nspec: {}\n"
 	if err := os.WriteFile(filepath.Join(tmpDir, "invalid.yaml"), []byte(invalidContent), 0644); err != nil {
 		t.Fatalf("Failed to write invalid resource: %v", err)
 	}

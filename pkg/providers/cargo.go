@@ -77,7 +77,8 @@ func (p *CargoProvider) reconcileCargoPackages(
 	plan *provider.Plan,
 	desiredIDs map[string]bool,
 ) {
-	id := fmt.Sprintf("cargo/%s/%s", cp.GetMetadata().GetNamespace(), cp.GetMetadata().Name)
+	// Build resource ID using kind and name (Terraform-style: files/dirs are for human org only)
+	id := fmt.Sprintf("CargoPackages/%s", cp.GetMetadata().Name)
 	desiredIDs[id] = true
 
 	// Get current installed packages

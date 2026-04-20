@@ -177,7 +177,7 @@ func TestPlanFormatter(t *testing.T) {
 func TestPlanFormatter_FormatSummary(t *testing.T) {
 	f := NewPlanFormatter()
 
-	// Test with changes
+	// Test with changes (Terraform-style: only shows add/change/destroy, not unchanged)
 	summary := f.FormatSummary(2, 1, 1, 5)
 	if summary == "" {
 		t.Error("FormatSummary() returned empty")
@@ -188,17 +188,18 @@ func TestPlanFormatter_FormatSummary(t *testing.T) {
 	if !strings.Contains(summary, "1 to change") {
 		t.Error("summary should contain change count")
 	}
-	if !strings.Contains(summary, "1 to remove") {
-		t.Error("summary should contain remove count")
+	if !strings.Contains(summary, "1 to destroy") {
+		t.Error("summary should contain destroy count")
 	}
-	if !strings.Contains(summary, "5 unchanged") {
-		t.Error("summary should contain unchanged count")
+	// Terraform doesn't show unchanged in summary - only resources with actions
+	if strings.Contains(summary, "unchanged") {
+		t.Error("summary should NOT contain unchanged count (Terraform-style)")
 	}
 
 	// Test with no changes
 	noChange := f.FormatSummary(0, 0, 0, 0)
-	if noChange != "No changes" {
-		t.Errorf("FormatSummary(0,0,0,0) = %q, want 'No changes'", noChange)
+	if !strings.Contains(noChange, "No changes") {
+		t.Errorf("FormatSummary(0,0,0,0) = %q, want message containing 'No changes'", noChange)
 	}
 }
 

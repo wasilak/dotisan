@@ -1,7 +1,7 @@
 // Package state provides the StateBackend interface and implementations for dotisan.
 //
 // State represents the current state of all managed resources as tracked by dotisan.
-// The state file is stored at ~/.dotisan/state.json (local) or in S3-compatible storage.
+// The state file is stored at ~/.config/dotisan/state.json (local) or in S3-compatible storage.
 //
 // Example state.json:
 //

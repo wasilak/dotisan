@@ -15,8 +15,12 @@ func TestFileProvider_Reconcile_Addition(t *testing.T) {
 	// Setup temp directories
 	dotfilesDir := t.TempDir()
 	
-	// Create a source file
-	sourceFile := filepath.Join(dotfilesDir, "test.txt")
+	// Create resources subdirectory (files are resolved relative to resources/)
+	resourcesDir := filepath.Join(dotfilesDir, "resources")
+	os.MkdirAll(resourcesDir, 0755)
+	
+	// Create a source file in resources/
+	sourceFile := filepath.Join(resourcesDir, "test.txt")
 	if err := os.WriteFile(sourceFile, []byte("test content"), 0644); err != nil {
 		t.Fatalf("Failed to create source file: %v", err)
 	}
@@ -34,7 +38,7 @@ func TestFileProvider_Reconcile_Addition(t *testing.T) {
 			Metadata:   resource.Metadata{Name: "test", Namespace: "default"},
 		},
 		Spec: resource.ManagedFileSpec{
-			Source:      "test.txt",
+			SourceFile:  "test.txt",
 			Destination: filepath.Join(t.TempDir(), "dest.txt"), // Non-existent destination
 			Template:    false,
 		},
@@ -56,8 +60,12 @@ func TestFileProvider_Reconcile_InSync(t *testing.T) {
 	dotfilesDir := t.TempDir()
 	destDir := t.TempDir()
 	
-	// Create a source file
-	sourceFile := filepath.Join(dotfilesDir, "test.txt")
+	// Create resources subdirectory (files are resolved relative to resources/)
+	resourcesDir := filepath.Join(dotfilesDir, "resources")
+	os.MkdirAll(resourcesDir, 0755)
+	
+	// Create a source file in resources/
+	sourceFile := filepath.Join(resourcesDir, "test.txt")
 	content := "test content"
 	if err := os.WriteFile(sourceFile, []byte(content), 0644); err != nil {
 		t.Fatalf("Failed to create source file: %v", err)
@@ -82,7 +90,7 @@ func TestFileProvider_Reconcile_InSync(t *testing.T) {
 			Metadata:   resource.Metadata{Name: "test", Namespace: "default"},
 		},
 		Spec: resource.ManagedFileSpec{
-			Source:      "test.txt",
+			SourceFile:  "test.txt",
 			Destination: destFile,
 			Template:    false,
 		},
@@ -95,7 +103,7 @@ func TestFileProvider_Reconcile_InSync(t *testing.T) {
 	desired := []resource.Resource{mf}
 	state := []provider.ResourceState{
 		{
-			ID:       "file/default/test",
+			ID:       "ManagedFile/test",
 			Kind:     "ManagedFile",
 			Name:     "test",
 			DestHash: checksum,
@@ -114,8 +122,12 @@ func TestFileProvider_Reconcile_Modification(t *testing.T) {
 	dotfilesDir := t.TempDir()
 	destDir := t.TempDir()
 	
-	// Create a source file
-	sourceFile := filepath.Join(dotfilesDir, "test.txt")
+	// Create resources subdirectory (files are resolved relative to resources/)
+	resourcesDir := filepath.Join(dotfilesDir, "resources")
+	os.MkdirAll(resourcesDir, 0755)
+	
+	// Create a source file in resources/
+	sourceFile := filepath.Join(resourcesDir, "test.txt")
 	if err := os.WriteFile(sourceFile, []byte("new content"), 0644); err != nil {
 		t.Fatalf("Failed to create source file: %v", err)
 	}
@@ -139,7 +151,7 @@ func TestFileProvider_Reconcile_Modification(t *testing.T) {
 			Metadata:   resource.Metadata{Name: "test", Namespace: "default"},
 		},
 		Spec: resource.ManagedFileSpec{
-			Source:      "test.txt",
+			SourceFile:  "test.txt",
 			Destination: destFile,
 			Template:    false,
 		},
@@ -149,7 +161,7 @@ func TestFileProvider_Reconcile_Modification(t *testing.T) {
 	desired := []resource.Resource{mf}
 	state := []provider.ResourceState{
 		{
-			ID:       "file/default/test",
+			ID:       "ManagedFile/test",
 			Kind:     "ManagedFile",
 			Name:     "test",
 			DestHash: calculateChecksum("old content"), // Old checksum
