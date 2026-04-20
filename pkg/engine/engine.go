@@ -346,8 +346,77 @@ func (e *Engine) getProviderNameFromStateID(stateID string) string {
 	return ""
 }
 
-// DisplayPlan outputs the plan result in a formatted way.
+// DisplayPlan outputs the plan result in a formatted way (Terraform-style).
+// Summary is at the end, with clear descriptions and breathing space.
 func (e *Engine) DisplayPlan(result *PlanResult) {
+	// Show sections with clear headers and breathing space
+	
+	// 1. Removals (orphaned resources - will be deleted)
+	if result.TotalRemovals > 0 {
+		fmt.Println()
+		fmt.Println(e.PlanFormatter.FormatSectionHeader("Resources to be removed"))
+		for providerName, plan := range result.ProviderPlans {
+			for _, res := range plan.Removals {
+				resourceID := fmt.Sprintf("%s/%s/%s", providerName, res.GetMetadata().GetNamespace(), res.GetMetadata().Name)
+				fmt.Println()
+				fmt.Println(e.PlanFormatter.FormatRemovalDetailed(resourceID))
+				fmt.Println(e.PlanFormatter.FormatActionReason("# will be deleted (no longer in config)"))
+			}
+		}
+	}
+	
+	// 2. Additions (new resources - will be created)
+	if result.TotalAdditions > 0 {
+		fmt.Println()
+		fmt.Println(e.PlanFormatter.FormatSectionHeader("Resources to be created"))
+		for providerName, plan := range result.ProviderPlans {
+			for _, res := range plan.Additions {
+				resourceID := fmt.Sprintf("%s/%s/%s", providerName, res.GetMetadata().GetNamespace(), res.GetMetadata().Name)
+				fmt.Println()
+				fmt.Println(e.PlanFormatter.FormatAdditionDetailed(resourceID))
+				fmt.Println(e.PlanFormatter.FormatActionReason("# will be created"))
+			}
+		}
+	}
+
+	// 3. Modifications (resources that will be changed)
+	if result.TotalModifications > 0 {
+		fmt.Println()
+		fmt.Println(e.PlanFormatter.FormatSectionHeader("Resources to be modified"))
+		for providerName, plan := range result.ProviderPlans {
+			for _, mod := range plan.Modifications {
+				resourceID := fmt.Sprintf("%s/%s/%s", providerName, mod.Resource.GetMetadata().GetNamespace(), mod.Resource.GetMetadata().Name)
+				fmt.Println()
+				fmt.Println(e.PlanFormatter.FormatModificationDetailed(resourceID))
+				fmt.Println(e.PlanFormatter.FormatActionReason("# will be updated"))
+				if mod.Diff != "" {
+					fmt.Println()
+					fmt.Println(e.PlanFormatter.FormatDiff(mod.Diff))
+				}
+			}
+		}
+	}
+
+	// 4. Drifted resources (changed outside of dotisan)
+	if result.TotalDrifted > 0 {
+		fmt.Println()
+		fmt.Println(e.PlanFormatter.FormatSectionHeader("Drifted resources (manual changes detected)"))
+		for providerName, plan := range result.ProviderPlans {
+			for _, drift := range plan.Drifted {
+				resourceID := fmt.Sprintf("%s/%s/%s", providerName, drift.Resource.GetMetadata().GetNamespace(), drift.Resource.GetMetadata().Name)
+				fmt.Println()
+				fmt.Println(e.PlanFormatter.FormatDriftDetailed(resourceID))
+				fmt.Println(e.PlanFormatter.FormatActionReason("# will be restored to config state"))
+				if drift.Diff != "" {
+					fmt.Println()
+					fmt.Println(e.PlanFormatter.FormatDiff(drift.Diff))
+				}
+			}
+		}
+	}
+
+	// SUMMARY at the end (like Terraform)
+	fmt.Println()
 	fmt.Println()
 	fmt.Println(e.PlanFormatter.FormatSummary(
 		result.TotalAdditions,
@@ -355,49 +424,11 @@ func (e *Engine) DisplayPlan(result *PlanResult) {
 		result.TotalRemovals,
 		result.TotalInSync,
 	))
-	fmt.Println()
 
+	// No changes message
 	if !result.HasChanges && result.TotalDrifted == 0 {
-		fmt.Println("No changes. Your dotfiles are in sync!")
-		return
-	}
-
-	// Display additions
-	for providerName, plan := range result.ProviderPlans {
-		for _, res := range plan.Additions {
-			fmt.Println(e.PlanFormatter.FormatAddition(
-				fmt.Sprintf("%s/%s/%s", providerName, res.GetMetadata().GetNamespace(), res.GetMetadata().Name),
-			))
-		}
-	}
-
-	// Display modifications
-	for providerName, plan := range result.ProviderPlans {
-		for _, mod := range plan.Modifications {
-			resourceID := fmt.Sprintf("%s/%s/%s", providerName, mod.Resource.GetMetadata().GetNamespace(), mod.Resource.GetMetadata().Name)
-			fmt.Println(e.PlanFormatter.FormatModification(resourceID, mod.Diff))
-		}
-	}
-
-	// Display removals
-	for providerName, plan := range result.ProviderPlans {
-		for _, res := range plan.Removals {
-			fmt.Println(e.PlanFormatter.FormatDeletion(
-				fmt.Sprintf("%s/%s/%s", providerName, res.GetMetadata().GetNamespace(), res.GetMetadata().Name),
-			))
-		}
-	}
-
-	// Display drifted
-	for providerName, plan := range result.ProviderPlans {
-		for _, drift := range plan.Drifted {
-			resourceID := fmt.Sprintf("%s/%s/%s", providerName, drift.Resource.GetMetadata().GetNamespace(), drift.Resource.GetMetadata().Name)
-			displayText := drift.Description
-			if drift.Diff != "" {
-				displayText = drift.Diff
-			}
-			fmt.Println(e.PlanFormatter.FormatDrift(resourceID, displayText))
-		}
+		fmt.Println()
+		fmt.Println(e.PlanFormatter.FormatNoChanges())
 	}
 
 	fmt.Println()

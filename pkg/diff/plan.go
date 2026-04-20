@@ -209,3 +209,111 @@ func (f *PlanFormatter) FormatResourceHeader(kind, name string) string {
 
 	return fmt.Sprintf("%s/%s", kindStyle, nameStyle)
 }
+
+// Section header formatting (like Terraform)
+func (f *PlanFormatter) FormatSectionHeader(title string) string {
+	return lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("250")).
+		Render(title)
+}
+
+// Detailed formats with "will be..." text
+func (f *PlanFormatter) FormatAdditionDetailed(resourceName string) string {
+	icon := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(ColorPastelGreen)).
+		Render(IconAddition)
+	
+	nameStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(ColorPastelGreen)).
+		Render(resourceName)
+	
+	action := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("250")).
+		Render("will be created")
+
+	return fmt.Sprintf("  %s %s %s", icon, nameStyle, action)
+}
+
+func (f *PlanFormatter) FormatRemovalDetailed(resourceName string) string {
+	icon := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(ColorPastelRed)).
+		Render(IconDeletion)
+	
+	nameStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(ColorPastelRed)).
+		Render(resourceName)
+	
+	action := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("250")).
+		Render("will be destroyed")
+
+	return fmt.Sprintf("  %s %s %s", icon, nameStyle, action)
+}
+
+func (f *PlanFormatter) FormatModificationDetailed(resourceName string) string {
+	icon := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(ColorPastelYellow)).
+		Render(IconModification)
+	
+	nameStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(ColorPastelYellow)).
+		Render(resourceName)
+	
+	action := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("250")).
+		Render("will be updated")
+
+	return fmt.Sprintf("  %s %s %s", icon, nameStyle, action)
+}
+
+func (f *PlanFormatter) FormatDriftDetailed(resourceName string) string {
+	icon := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(ColorPastelOrange)).
+		Render(IconDrift)
+	
+	nameStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(ColorPastelOrange)).
+		Render(resourceName)
+	
+	action := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("250")).
+		Render("will be restored")
+
+	return fmt.Sprintf("  %s %s %s", icon, nameStyle, action)
+}
+
+func (f *PlanFormatter) FormatInSyncDetailed(resourceName string) string {
+	icon := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(ColorGray)).
+		Render(IconInSync)
+	
+	nameStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(ColorGray)).
+		Render(resourceName)
+	
+	action := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("250")).
+		Render("no changes")
+
+	return fmt.Sprintf("  %s %s %s", icon, nameStyle, action)
+}
+
+// FormatActionReason formats the reason text (gray, indented)
+func (f *PlanFormatter) FormatActionReason(reason string) string {
+	return lipgloss.NewStyle().
+		Foreground(lipgloss.Color("240")).
+		Render(reason)
+}
+
+// FormatDiff formats a diff block
+func (f *PlanFormatter) FormatDiff(diff string) string {
+	return f.formatMultilineDiff(diff, "      ")
+}
+
+// FormatNoChanges formats the "no changes" message
+func (f *PlanFormatter) FormatNoChanges() string {
+	return lipgloss.NewStyle().
+		Foreground(lipgloss.Color("250")).
+		Render("No changes. Your dotfiles are in sync!")
+}

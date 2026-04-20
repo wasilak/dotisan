@@ -57,11 +57,6 @@ func runPlan() error {
 	// Display results (amazing format)
 	eng.DisplayPlan(result)
 
-	// Exit with error code if there are drifted resources
-	if result.TotalDrifted > 0 {
-		fmt.Fprintln(os.Stderr, "\n⚠ Warning: Some resources have drifted from their expected state.")
-	}
-
 	return nil
 }
 
