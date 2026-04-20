@@ -539,9 +539,10 @@
               5
             ],
             "details": "Create the `GoProvider` struct. Implement `Name()` and `Available()` (checking `go` executable). Implement `os/exec` wrappers for go commands. Parse `go list -m all` output to determine installed modules and their versions. Implement `Reconcile` and `Apply` for Go module management.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": null,
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2026-04-20T11:04:45.288Z"
           },
           {
             "id": 6,
@@ -590,7 +591,7 @@
         "complexity": 9,
         "recommendedSubtasks": 8,
         "expansionPrompt": "Break down the implementation of each package provider (`BrewProvider`, `NpmProvider`, `GoProvider`, `CargoProvider`), focusing on robust `os/exec` interactions, parsing varied command outputs, state reconciliation logic, and application logic for installations, uninstalls, and upgrades, including any external API calls (e.g., Brew).",
-        "updatedAt": "2026-04-20T11:02:14.702Z"
+        "updatedAt": "2026-04-20T11:04:45.288Z"
       },
       {
         "id": "9",
@@ -796,7 +797,7 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-04-20T11:02:14.702Z",
+      "lastModified": "2026-04-20T11:04:45.288Z",
       "taskCount": 10,
       "completedCount": 7,
       "tags": [
