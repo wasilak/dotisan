@@ -479,7 +479,7 @@
           "3",
           "5"
         ],
-        "status": "pending",
+        "status": "in-progress",
         "subtasks": [
           {
             "id": 1,
@@ -489,9 +489,10 @@
               5
             ],
             "details": "Create the `BrewProvider` struct. Implement `Name()` and `Available()` methods. For `Available()`, check if the `brew` executable is in the system PATH. Implement internal helper functions for executing `brew` commands with `os/exec`, capturing stdout and stderr for later parsing.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": null,
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2026-04-20T09:50:53.616Z"
           },
           {
             "id": 2,
@@ -587,7 +588,8 @@
         ],
         "complexity": 9,
         "recommendedSubtasks": 8,
-        "expansionPrompt": "Break down the implementation of each package provider (`BrewProvider`, `NpmProvider`, `GoProvider`, `CargoProvider`), focusing on robust `os/exec` interactions, parsing varied command outputs, state reconciliation logic, and application logic for installations, uninstalls, and upgrades, including any external API calls (e.g., Brew)."
+        "expansionPrompt": "Break down the implementation of each package provider (`BrewProvider`, `NpmProvider`, `GoProvider`, `CargoProvider`), focusing on robust `os/exec` interactions, parsing varied command outputs, state reconciliation logic, and application logic for installations, uninstalls, and upgrades, including any external API calls (e.g., Brew).",
+        "updatedAt": "2026-04-20T09:50:53.616Z"
       },
       {
         "id": "9",
@@ -793,7 +795,7 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-04-20T09:41:42.700Z",
+      "lastModified": "2026-04-20T09:50:53.616Z",
       "taskCount": 10,
       "completedCount": 7,
       "tags": [
