@@ -95,7 +95,7 @@ func (p *FileProvider) Reconcile(desired []resource.Resource, currentState []pro
 		case *resource.ManagedFile:
 			p.reconcileManagedFile(r, stateMap, &plan, desiredIDs)
 		case *resource.ManagedDirectory:
-			// TODO: Implement in subtask 7.4
+			p.reconcileManagedDirectory(r, stateMap, &plan, desiredIDs)
 		}
 	}
 
@@ -232,6 +232,218 @@ func (p *FileProvider) reconcileManagedFile(
 
 	// File is in sync
 	plan.InSync = append(plan.InSync, mf)
+}
+
+// reconcileManagedDirectory reconciles a single ManagedDirectory resource.
+func (p *FileProvider) reconcileManagedDirectory(
+	md *resource.ManagedDirectory,
+	stateMap map[string]provider.ResourceState,
+	plan *provider.Plan,
+	desiredIDs map[string]bool,
+) {
+	// Build resource ID
+	id := fmt.Sprintf("directory/%s/%s", md.GetMetadata().GetNamespace(), md.GetMetadata().Name)
+	desiredIDs[id] = true
+
+	// Resolve source and destination paths
+	sourcePath := filepath.Join(p.dotfilesRoot, md.Spec.Source)
+	destPath, err := p.resolveDestination(md.Spec.Destination)
+	if err != nil {
+		return
+	}
+
+	// Check if source directory exists
+	sourceInfo, err := os.Stat(sourcePath)
+	if err != nil {
+		return
+	}
+	if !sourceInfo.IsDir() {
+		return
+	}
+
+	// Check if destination directory exists
+	destExists := false
+	destInfo, err := os.Stat(destPath)
+	if err == nil && destInfo.IsDir() {
+		destExists = true
+	}
+
+	// Get current state
+	savedState, hasSavedState := stateMap[id]
+
+	// Build list of all files in source (for comparison)
+	sourceFiles := make(map[string]string) // relative path -> checksum
+	if err := p.walkSourceDir(sourcePath, "", md.Spec.Recursive, md.Spec.Exclude, sourceFiles); err != nil {
+		return
+	}
+
+	// Build list of all files in destination (for clean operation)
+	destFiles := make(map[string]string) // relative path -> checksum
+	if destExists {
+		if err := p.walkDestDir(destPath, "", md.Spec.Recursive, destFiles); err != nil {
+			return
+		}
+	}
+
+	// Determine changes
+	var hasChanges bool
+
+	// Check for new and modified files
+	for relPath, sourceChecksum := range sourceFiles {
+		destChecksum, exists := destFiles[relPath]
+
+		if !exists {
+			// New file to add
+			hasChanges = true
+		} else if sourceChecksum != destChecksum {
+			// File modified
+			hasChanges = true
+		}
+	}
+
+	// Check for files to remove (clean operation)
+	if md.Spec.Clean {
+		for relPath := range destFiles {
+			if _, exists := sourceFiles[relPath]; !exists {
+				// File exists in dest but not in source - should be removed
+				hasChanges = true
+			}
+		}
+	}
+
+	// Build desired state
+	desiredState := provider.ResourceState{
+		ID:        id,
+		Kind:      "ManagedDirectory",
+		Name:      md.GetMetadata().Name,
+		Namespace: md.GetMetadata().GetNamespace(),
+		Extra: map[string]interface{}{
+			"source_path": sourcePath,
+			"dest_path":   destPath,
+			"recursive":   md.Spec.Recursive,
+			"clean":       md.Spec.Clean,
+			"exclude":     md.Spec.Exclude,
+		},
+	}
+
+	// Determine action
+	if !destExists {
+		// Directory doesn't exist - needs to be created (with all contents)
+		plan.Additions = append(plan.Additions, md)
+		return
+	}
+
+	if !hasSavedState {
+		// Directory exists but wasn't managed by us
+		if hasChanges {
+			plan.Modifications = append(plan.Modifications, provider.Modification{
+				Resource:  md,
+				OldState:  provider.ResourceState{ID: id},
+				NewState:  desiredState,
+				Diff:      fmt.Sprintf("directory %s has changes", destPath),
+			})
+		} else {
+			plan.InSync = append(plan.InSync, md)
+		}
+		return
+	}
+
+	// Directory exists and we have saved state
+	if hasChanges {
+		plan.Modifications = append(plan.Modifications, provider.Modification{
+			Resource: md,
+			OldState: savedState,
+			NewState: desiredState,
+			Diff:     fmt.Sprintf("directory %s has changes", destPath),
+		})
+		return
+	}
+
+	// Directory is in sync
+	plan.InSync = append(plan.InSync, md)
+}
+
+// walkSourceDir recursively walks the source directory and builds a map of files.
+func (p *FileProvider) walkSourceDir(root, rel string, recursive bool, exclude []string, files map[string]string) error {
+	fullPath := filepath.Join(root, rel)
+
+	entries, err := os.ReadDir(fullPath)
+	if err != nil {
+		return err
+	}
+
+	for _, entry := range entries {
+		entryRel := filepath.Join(rel, entry.Name())
+
+		// Check if this path should be excluded
+		if p.shouldExclude(entryRel, exclude) {
+			continue
+		}
+
+		if entry.IsDir() {
+			if recursive {
+				if err := p.walkSourceDir(root, entryRel, recursive, exclude, files); err != nil {
+					return err
+				}
+			}
+		} else {
+			// Calculate checksum for this file
+			filePath := filepath.Join(root, entryRel)
+			checksum := calculateChecksumFromFile(filePath)
+			if checksum != "" {
+				files[entryRel] = checksum
+			}
+		}
+	}
+
+	return nil
+}
+
+// walkDestDir recursively walks the destination directory and builds a map of files.
+func (p *FileProvider) walkDestDir(root, rel string, recursive bool, files map[string]string) error {
+	fullPath := filepath.Join(root, rel)
+
+	entries, err := os.ReadDir(fullPath)
+	if err != nil {
+		return err
+	}
+
+	for _, entry := range entries {
+		entryRel := filepath.Join(rel, entry.Name())
+
+		if entry.IsDir() {
+			if recursive {
+				if err := p.walkDestDir(root, entryRel, recursive, files); err != nil {
+					return err
+				}
+			}
+		} else {
+			// Calculate checksum for this file
+			filePath := filepath.Join(root, entryRel)
+			checksum := calculateChecksumFromFile(filePath)
+			if checksum != "" {
+				files[entryRel] = checksum
+			}
+		}
+	}
+
+	return nil
+}
+
+// shouldExclude checks if a path matches any of the exclude patterns.
+func (p *FileProvider) shouldExclude(path string, exclude []string) bool {
+	for _, pattern := range exclude {
+		matched, err := filepath.Match(pattern, path)
+		if err == nil && matched {
+			return true
+		}
+		// Also check just the filename
+		matched, err = filepath.Match(pattern, filepath.Base(path))
+		if err == nil && matched {
+			return true
+		}
+	}
+	return false
 }
 
 // resolveDestination resolves the destination path using template variables.

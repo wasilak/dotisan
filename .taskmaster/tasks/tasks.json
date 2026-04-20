@@ -428,9 +428,10 @@
               6
             ],
             "details": "Inside `ManagedDirectory.Reconcile`, recursively traverse the `source` directory. For each item, compare its state with the corresponding item in the `destination` directory. If `recursive: true`, perform deep comparison. If `clean: true`, identify files/directories present in the destination but not in the source as candidates for deletion. Generate a `Plan` outlining copy, update, and delete operations.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Create test cases for `ManagedDirectory.Reconcile`: empty source/destination, source with new files/dirs, source with updated files, `recursive: true` with nested structures, and `clean: true` scenarios where extra files in destination are identified for removal.",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2026-04-20T09:32:18.303Z"
           },
           {
             "id": 5,
@@ -463,7 +464,7 @@
         "complexity": 8,
         "recommendedSubtasks": 6,
         "expansionPrompt": "Detail the implementation of the `ManagedFile` provider (including templating, destination path resolution, file mode, checksums, and backup logic) and the `ManagedDirectory` provider (recursive copy, cleanup logic). Focus on their `Reconcile` and `Apply` methods, and integration with the templating and diff engines.",
-        "updatedAt": "2026-04-20T09:20:26.763Z"
+        "updatedAt": "2026-04-20T09:32:18.303Z"
       },
       {
         "id": "8",
@@ -790,7 +791,7 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-04-20T09:20:26.763Z",
+      "lastModified": "2026-04-20T09:32:18.303Z",
       "taskCount": 10,
       "completedCount": 6,
       "tags": [
