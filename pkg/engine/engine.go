@@ -360,7 +360,6 @@ func (e *Engine) DisplayPlan(result *PlanResult) {
 				resourceID := fmt.Sprintf("%s/%s/%s", providerName, res.GetMetadata().GetNamespace(), res.GetMetadata().Name)
 				fmt.Println()
 				fmt.Println(e.PlanFormatter.FormatRemovalDetailed(resourceID))
-				fmt.Println(e.PlanFormatter.FormatActionReason("# will be deleted (no longer in config)"))
 			}
 		}
 	}
@@ -374,7 +373,6 @@ func (e *Engine) DisplayPlan(result *PlanResult) {
 				resourceID := fmt.Sprintf("%s/%s/%s", providerName, res.GetMetadata().GetNamespace(), res.GetMetadata().Name)
 				fmt.Println()
 				fmt.Println(e.PlanFormatter.FormatAdditionDetailed(resourceID))
-				fmt.Println(e.PlanFormatter.FormatActionReason("# will be created"))
 			}
 		}
 	}
@@ -388,7 +386,6 @@ func (e *Engine) DisplayPlan(result *PlanResult) {
 				resourceID := fmt.Sprintf("%s/%s/%s", providerName, mod.Resource.GetMetadata().GetNamespace(), mod.Resource.GetMetadata().Name)
 				fmt.Println()
 				fmt.Println(e.PlanFormatter.FormatModificationDetailed(resourceID))
-				fmt.Println(e.PlanFormatter.FormatActionReason("# will be updated"))
 				if mod.Diff != "" {
 					fmt.Println()
 					fmt.Println(e.PlanFormatter.FormatDiff(mod.Diff))
@@ -406,7 +403,6 @@ func (e *Engine) DisplayPlan(result *PlanResult) {
 				resourceID := fmt.Sprintf("%s/%s/%s", providerName, drift.Resource.GetMetadata().GetNamespace(), drift.Resource.GetMetadata().Name)
 				fmt.Println()
 				fmt.Println(e.PlanFormatter.FormatDriftDetailed(resourceID))
-				fmt.Println(e.PlanFormatter.FormatActionReason("# will be restored to config state"))
 				if drift.Diff != "" {
 					fmt.Println()
 					fmt.Println(e.PlanFormatter.FormatDiff(drift.Diff))
