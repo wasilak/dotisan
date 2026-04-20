@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"dotisan/pkg/provider"
+	"github.com/wasilak/dotisan/pkg/provider"
 )
 
 func TestNewState(t *testing.T) {

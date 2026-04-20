@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"dotisan/pkg/provider"
-	"dotisan/pkg/resource"
+	"github.com/wasilak/dotisan/pkg/provider"
+	"github.com/wasilak/dotisan/pkg/resource"
 )
 
 func TestFileProvider_Apply_Addition(t *testing.T) {
@@ -28,7 +28,7 @@ func TestFileProvider_Apply_Addition(t *testing.T) {
 	// Create plan with addition
 	mf := &resource.ManagedFile{
 		BaseResource: resource.BaseResource{
-			APIVersion: "dotisan/v1",
+			APIVersion: "github.com/wasilak/dotisan/v1",
 			Kind:       "ManagedFile",
 			Metadata:   resource.Metadata{Name: "test", Namespace: "default"},
 		},
@@ -91,7 +91,7 @@ func TestFileProvider_Apply_Modification(t *testing.T) {
 	// Create plan with modification
 	mf := &resource.ManagedFile{
 		BaseResource: resource.BaseResource{
-			APIVersion: "dotisan/v1",
+			APIVersion: "github.com/wasilak/dotisan/v1",
 			Kind:       "ManagedFile",
 			Metadata:   resource.Metadata{Name: "test", Namespace: "default"},
 		},
@@ -144,7 +144,7 @@ func TestFileProvider_Apply_Removal(t *testing.T) {
 	// Create plan with removal
 	mf := &resource.ManagedFile{
 		BaseResource: resource.BaseResource{
-			APIVersion: "dotisan/v1",
+			APIVersion: "github.com/wasilak/dotisan/v1",
 			Kind:       "ManagedFile",
 			Metadata:   resource.Metadata{Name: "test", Namespace: "default"},
 		},
@@ -233,7 +233,7 @@ func TestFileProvider_Apply_CreatesParentDirectories(t *testing.T) {
 
 	mf := &resource.ManagedFile{
 		BaseResource: resource.BaseResource{
-			APIVersion: "dotisan/v1",
+			APIVersion: "github.com/wasilak/dotisan/v1",
 			Kind:       "ManagedFile",
 			Metadata:   resource.Metadata{Name: "test", Namespace: "default"},
 		},

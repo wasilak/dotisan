@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"dotisan/pkg/cmdutil"
-	"dotisan/pkg/provider"
-	"dotisan/pkg/resource"
+	"github.com/wasilak/dotisan/pkg/cmdutil"
+	"github.com/wasilak/dotisan/pkg/provider"
+	"github.com/wasilak/dotisan/pkg/resource"
 )
 
 // GoProvider implements the Provider interface for Go modules.

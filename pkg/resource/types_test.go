@@ -14,7 +14,7 @@ func TestBrewPackages_Validate(t *testing.T) {
 			name: "valid with formulae",
 			pkg: BrewPackages{
 				BaseResource: BaseResource{
-					APIVersion: "dotisan/v1",
+					APIVersion: "github.com/wasilak/dotisan/v1",
 					Kind:       "BrewPackages",
 					Metadata:   Metadata{Name: "core-tools"},
 				},
@@ -28,7 +28,7 @@ func TestBrewPackages_Validate(t *testing.T) {
 			name: "valid with taps only",
 			pkg: BrewPackages{
 				BaseResource: BaseResource{
-					APIVersion: "dotisan/v1",
+					APIVersion: "github.com/wasilak/dotisan/v1",
 					Kind:       "BrewPackages",
 					Metadata:   Metadata{Name: "fonts"},
 				},
@@ -42,7 +42,7 @@ func TestBrewPackages_Validate(t *testing.T) {
 			name: "missing metadata.name",
 			pkg: BrewPackages{
 				BaseResource: BaseResource{
-					APIVersion: "dotisan/v1",
+					APIVersion: "github.com/wasilak/dotisan/v1",
 					Kind:       "BrewPackages",
 					Metadata:   Metadata{},
 				},
@@ -54,7 +54,7 @@ func TestBrewPackages_Validate(t *testing.T) {
 			name: "empty spec allowed",
 			pkg: BrewPackages{
 				BaseResource: BaseResource{
-					APIVersion: "dotisan/v1",
+					APIVersion: "github.com/wasilak/dotisan/v1",
 					Kind:       "BrewPackages",
 					Metadata:   Metadata{Name: "empty"},
 				},
@@ -84,7 +84,7 @@ func TestNpmPackages_Validate(t *testing.T) {
 			name: "valid with packages",
 			pkg: NpmPackages{
 				BaseResource: BaseResource{
-					APIVersion: "dotisan/v1",
+					APIVersion: "github.com/wasilak/dotisan/v1",
 					Kind:       "NpmPackages",
 					Metadata:   Metadata{Name: "globals"},
 				},
@@ -120,7 +120,7 @@ func TestGoPackages_Validate(t *testing.T) {
 			name: "valid with modules",
 			pkg: GoPackages{
 				BaseResource: BaseResource{
-					APIVersion: "dotisan/v1",
+					APIVersion: "github.com/wasilak/dotisan/v1",
 					Kind:       "GoPackages",
 					Metadata:   Metadata{Name: "tools"},
 				},
@@ -156,7 +156,7 @@ func TestManagedFile_Validate(t *testing.T) {
 			name: "valid with mode",
 			file: ManagedFile{
 				BaseResource: BaseResource{
-					APIVersion: "dotisan/v1",
+					APIVersion: "github.com/wasilak/dotisan/v1",
 					Kind:       "ManagedFile",
 					Metadata:   Metadata{Name: "zshrc"},
 				},
@@ -173,7 +173,7 @@ func TestManagedFile_Validate(t *testing.T) {
 			name: "valid without mode",
 			file: ManagedFile{
 				BaseResource: BaseResource{
-					APIVersion: "dotisan/v1",
+					APIVersion: "github.com/wasilak/dotisan/v1",
 					Kind:       "ManagedFile",
 					Metadata:   Metadata{Name: "config"},
 				},
@@ -189,7 +189,7 @@ func TestManagedFile_Validate(t *testing.T) {
 			name: "invalid mode",
 			file: ManagedFile{
 				BaseResource: BaseResource{
-					APIVersion: "dotisan/v1",
+					APIVersion: "github.com/wasilak/dotisan/v1",
 					Kind:       "ManagedFile",
 					Metadata:   Metadata{Name: "bad-mode"},
 				},
@@ -205,7 +205,7 @@ func TestManagedFile_Validate(t *testing.T) {
 			name: "missing source",
 			file: ManagedFile{
 				BaseResource: BaseResource{
-					APIVersion: "dotisan/v1",
+					APIVersion: "github.com/wasilak/dotisan/v1",
 					Kind:       "ManagedFile",
 					Metadata:   Metadata{Name: "no-source"},
 				},
@@ -237,7 +237,7 @@ func TestManagedDirectory_Validate(t *testing.T) {
 			name: "valid with recursive and clean",
 			dir: ManagedDirectory{
 				BaseResource: BaseResource{
-					APIVersion: "dotisan/v1",
+					APIVersion: "github.com/wasilak/dotisan/v1",
 					Kind:       "ManagedDirectory",
 					Metadata:   Metadata{Name: "skills"},
 				},
@@ -254,7 +254,7 @@ func TestManagedDirectory_Validate(t *testing.T) {
 			name: "valid minimal",
 			dir: ManagedDirectory{
 				BaseResource: BaseResource{
-					APIVersion: "dotisan/v1",
+					APIVersion: "github.com/wasilak/dotisan/v1",
 					Kind:       "ManagedDirectory",
 					Metadata:   Metadata{Name: "minimal"},
 				},

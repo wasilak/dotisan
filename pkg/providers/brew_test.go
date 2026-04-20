@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"dotisan/pkg/provider"
-	"dotisan/pkg/resource"
+	"github.com/wasilak/dotisan/pkg/provider"
+	"github.com/wasilak/dotisan/pkg/resource"
 )
 
 func TestNewBrewProvider(t *testing.T) {
@@ -64,7 +64,7 @@ func TestBrewProvider_Reconcile_Additions(t *testing.T) {
 	// Create desired BrewPackages
 	bp := &resource.BrewPackages{
 		BaseResource: resource.BaseResource{
-			APIVersion: "dotisan/v1",
+			APIVersion: "github.com/wasilak/dotisan/v1",
 			Kind:       "BrewPackages",
 			Metadata:   resource.Metadata{Name: "core-tools", Namespace: "default"},
 		},

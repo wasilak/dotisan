@@ -1,4 +1,4 @@
-module dotisan
+module github.com/wasilak/dotisan
 
 go 1.26.2
 

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -88,4 +89,69 @@ func LoadConfigFromDefaultPath() (*Config, error) {
 
 	configPath := filepath.Join(homeDir, ".dotisan", "config.yaml")
 	return LoadConfig(configPath)
+}
+
+// LoadValues loads values from a YAML file (like ~/.dotfiles/values.yaml).
+// It returns the parsed values as a map[string]interface{}.
+func LoadValues(path string) (map[string]interface{}, error) {
+	// Check if file exists
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		// No values file, return empty map
+		return make(map[string]interface{}), nil
+	}
+
+	// Read values file
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read values file %s: %w", path, err)
+	}
+
+	// Parse YAML
+	var values map[string]interface{}
+	if err := yaml.Unmarshal(data, &values); err != nil {
+		return nil, fmt.Errorf("failed to parse values file %s: %w", path, err)
+	}
+
+	return values, nil
+}
+
+// ParseResources parses YAML content containing multiple resource definitions.
+// It returns a slice of resource objects (as map[string]interface{}).
+func ParseResources(data []byte) ([]interface{}, error) {
+	// Split by document separator
+	docs := splitYAMLDocuments(string(data))
+
+	var resources []interface{}
+	for _, doc := range docs {
+		doc = strings.TrimSpace(doc)
+		if doc == "" {
+			continue
+		}
+
+		var resource map[string]interface{}
+		if err := yaml.Unmarshal([]byte(doc), &resource); err != nil {
+			return nil, fmt.Errorf("failed to parse resource: %w", err)
+		}
+
+		if len(resource) > 0 {
+			resources = append(resources, resource)
+		}
+	}
+
+	return resources, nil
+}
+
+// MarshalResource serializes a resource object to YAML.
+func MarshalResource(resource interface{}) ([]byte, error) {
+	return yaml.Marshal(resource)
+}
+
+// splitYAMLDocuments splits a YAML file containing multiple documents (--- separated).
+func splitYAMLDocuments(content string) []string {
+	var docs []string
+	parts := strings.Split(content, "---")
+	for _, part := range parts {
+		docs = append(docs, part)
+	}
+	return docs
 }

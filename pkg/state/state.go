@@ -26,7 +26,7 @@ import (
 	"context"
 	"time"
 
-	"dotisan/pkg/provider"
+	"github.com/wasilak/dotisan/pkg/provider"
 )
 
 // State represents the complete state of managed resources.

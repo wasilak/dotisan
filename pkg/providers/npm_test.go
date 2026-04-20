@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"dotisan/pkg/provider"
-	"dotisan/pkg/resource"
+	"github.com/wasilak/dotisan/pkg/provider"
+	"github.com/wasilak/dotisan/pkg/resource"
 )
 
 func TestNewNpmProvider(t *testing.T) {
@@ -58,7 +58,7 @@ func TestNpmProvider_Reconcile_Additions(t *testing.T) {
 
 	np := &resource.NpmPackages{
 		BaseResource: resource.BaseResource{
-			APIVersion: "dotisan/v1",
+			APIVersion: "github.com/wasilak/dotisan/v1",
 			Kind:       "NpmPackages",
 			Metadata:   resource.Metadata{Name: "globals", Namespace: "default"},
 		},

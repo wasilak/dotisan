@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"dotisan/pkg/provider"
-	"dotisan/pkg/resource"
+	"github.com/wasilak/dotisan/pkg/provider"
+	"github.com/wasilak/dotisan/pkg/resource"
 )
 
 func TestFileProvider_Reconcile_ManagedDirectory_Addition(t *testing.T) {
@@ -29,7 +29,7 @@ func TestFileProvider_Reconcile_ManagedDirectory_Addition(t *testing.T) {
 	// Create desired resource
 	md := &resource.ManagedDirectory{
 		BaseResource: resource.BaseResource{
-			APIVersion: "dotisan/v1",
+			APIVersion: "github.com/wasilak/dotisan/v1",
 			Kind:       "ManagedDirectory",
 			Metadata:   resource.Metadata{Name: "skills", Namespace: "default"},
 		},
@@ -81,7 +81,7 @@ func TestFileProvider_Reconcile_ManagedDirectory_InSync(t *testing.T) {
 	// Create desired resource
 	md := &resource.ManagedDirectory{
 		BaseResource: resource.BaseResource{
-			APIVersion: "dotisan/v1",
+			APIVersion: "github.com/wasilak/dotisan/v1",
 			Kind:       "ManagedDirectory",
 			Metadata:   resource.Metadata{Name: "skills", Namespace: "default"},
 		},
@@ -142,7 +142,7 @@ func TestFileProvider_Reconcile_ManagedDirectory_Clean(t *testing.T) {
 	// Create desired resource with clean: true
 	md := &resource.ManagedDirectory{
 		BaseResource: resource.BaseResource{
-			APIVersion: "dotisan/v1",
+			APIVersion: "github.com/wasilak/dotisan/v1",
 			Kind:       "ManagedDirectory",
 			Metadata:   resource.Metadata{Name: "skills", Namespace: "default"},
 		},

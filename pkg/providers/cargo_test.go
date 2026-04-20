@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"dotisan/pkg/provider"
-	"dotisan/pkg/resource"
+	"github.com/wasilak/dotisan/pkg/provider"
+	"github.com/wasilak/dotisan/pkg/resource"
 )
 
 func TestNewCargoProvider(t *testing.T) {
@@ -56,7 +56,7 @@ func TestCargoProvider_Reconcile_Additions(t *testing.T) {
 
 	cp := &resource.CargoPackages{
 		BaseResource: resource.BaseResource{
-			APIVersion: "dotisan/v1",
+			APIVersion: "github.com/wasilak/dotisan/v1",
 			Kind:       "CargoPackages",
 			Metadata:   resource.Metadata{Name: "rust-tools", Namespace: "default"},
 		},

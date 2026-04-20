@@ -3,8 +3,8 @@ package providers
 import (
 	"testing"
 
-	"dotisan/pkg/config"
-	"dotisan/pkg/diff"
+	"github.com/wasilak/dotisan/pkg/config"
+	"github.com/wasilak/dotisan/pkg/diff"
 )
 
 func TestNewFileProvider(t *testing.T) {

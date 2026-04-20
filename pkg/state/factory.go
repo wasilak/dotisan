@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"dotisan/pkg/config"
+	"github.com/wasilak/dotisan/pkg/config"
 )
 
 // BackendType represents the type of state backend.

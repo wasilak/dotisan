@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"dotisan/pkg/provider"
-	"dotisan/pkg/resource"
+	"github.com/wasilak/dotisan/pkg/provider"
+	"github.com/wasilak/dotisan/pkg/resource"
 )
 
 func TestFileProvider_Apply_Directory_Addition(t *testing.T) {
@@ -33,7 +33,7 @@ func TestFileProvider_Apply_Directory_Addition(t *testing.T) {
 	// Create plan with directory addition
 	md := &resource.ManagedDirectory{
 		BaseResource: resource.BaseResource{
-			APIVersion: "dotisan/v1",
+			APIVersion: "github.com/wasilak/dotisan/v1",
 			Kind:       "ManagedDirectory",
 			Metadata:   resource.Metadata{Name: "skills", Namespace: "default"},
 		},
@@ -89,7 +89,7 @@ func TestFileProvider_Apply_Directory_Removal(t *testing.T) {
 	// Create plan with directory removal
 	md := &resource.ManagedDirectory{
 		BaseResource: resource.BaseResource{
-			APIVersion: "dotisan/v1",
+			APIVersion: "github.com/wasilak/dotisan/v1",
 			Kind:       "ManagedDirectory",
 			Metadata:   resource.Metadata{Name: "skills", Namespace: "default"},
 		},
@@ -149,7 +149,7 @@ func TestFileProvider_Apply_Directory_Clean(t *testing.T) {
 	// Create plan with directory modification and clean
 	md := &resource.ManagedDirectory{
 		BaseResource: resource.BaseResource{
-			APIVersion: "dotisan/v1",
+			APIVersion: "github.com/wasilak/dotisan/v1",
 			Kind:       "ManagedDirectory",
 			Metadata:   resource.Metadata{Name: "skills", Namespace: "default"},
 		},

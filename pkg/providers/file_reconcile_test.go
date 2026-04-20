@@ -5,10 +5,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"dotisan/pkg/config"
-	"dotisan/pkg/diff"
-	"dotisan/pkg/provider"
-	"dotisan/pkg/resource"
+	"github.com/wasilak/dotisan/pkg/config"
+	"github.com/wasilak/dotisan/pkg/diff"
+	"github.com/wasilak/dotisan/pkg/provider"
+	"github.com/wasilak/dotisan/pkg/resource"
 )
 
 func TestFileProvider_Reconcile_Addition(t *testing.T) {
@@ -29,7 +29,7 @@ func TestFileProvider_Reconcile_Addition(t *testing.T) {
 	// Create desired resource
 	mf := &resource.ManagedFile{
 		BaseResource: resource.BaseResource{
-			APIVersion: "dotisan/v1",
+			APIVersion: "github.com/wasilak/dotisan/v1",
 			Kind:       "ManagedFile",
 			Metadata:   resource.Metadata{Name: "test", Namespace: "default"},
 		},
@@ -77,7 +77,7 @@ func TestFileProvider_Reconcile_InSync(t *testing.T) {
 	// Create desired resource
 	mf := &resource.ManagedFile{
 		BaseResource: resource.BaseResource{
-			APIVersion: "dotisan/v1",
+			APIVersion: "github.com/wasilak/dotisan/v1",
 			Kind:       "ManagedFile",
 			Metadata:   resource.Metadata{Name: "test", Namespace: "default"},
 		},
@@ -134,7 +134,7 @@ func TestFileProvider_Reconcile_Modification(t *testing.T) {
 	// Create desired resource
 	mf := &resource.ManagedFile{
 		BaseResource: resource.BaseResource{
-			APIVersion: "dotisan/v1",
+			APIVersion: "github.com/wasilak/dotisan/v1",
 			Kind:       "ManagedFile",
 			Metadata:   resource.Metadata{Name: "test", Namespace: "default"},
 		},

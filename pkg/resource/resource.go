@@ -44,7 +44,7 @@ func validateFileMode(fl validator.FieldLevel) bool {
 // Resource is the interface implemented by all resource types.
 // It provides common access to resource metadata and validation.
 type Resource interface {
-	// GetAPIVersion returns the API version (e.g., "dotisan/v1")
+	// GetAPIVersion returns the API version (e.g., "github.com/wasilak/dotisan/v1")
 	GetAPIVersion() string
 
 	// GetKind returns the resource kind (e.g., "BrewPackages")
@@ -124,7 +124,7 @@ func ValidateStruct(s interface{}) error {
 }
 
 // SupportedAPIVersion is the current supported API version.
-const SupportedAPIVersion = "dotisan/v1"
+const SupportedAPIVersion = "github.com/wasilak/dotisan/v1"
 
 // IsSupportedAPIVersion checks if the given API version is supported.
 func IsSupportedAPIVersion(version string) bool {

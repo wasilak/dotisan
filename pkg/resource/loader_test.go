@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"dotisan/pkg/config"
+	"github.com/wasilak/dotisan/pkg/config"
 )
 
 func TestNewLoader(t *testing.T) {

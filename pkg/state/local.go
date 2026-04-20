@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"dotisan/pkg/provider"
+	"github.com/wasilak/dotisan/pkg/provider"
 )
 
 // LocalBackend implements StateBackend for local JSON file storage.

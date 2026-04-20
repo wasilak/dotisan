@@ -20,10 +20,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"dotisan/pkg/config"
-	"dotisan/pkg/diff"
-	"dotisan/pkg/provider"
-	"dotisan/pkg/resource"
+	"github.com/wasilak/dotisan/pkg/config"
+	"github.com/wasilak/dotisan/pkg/diff"
+	"github.com/wasilak/dotisan/pkg/provider"
+	"github.com/wasilak/dotisan/pkg/resource"
 )
 
 // FileProvider implements the Provider interface for ManagedFile and ManagedDirectory resources.

@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"dotisan/pkg/diff"
-	"dotisan/pkg/provider"
-	"dotisan/pkg/resource"
+	"github.com/wasilak/dotisan/pkg/diff"
+	"github.com/wasilak/dotisan/pkg/provider"
+	"github.com/wasilak/dotisan/pkg/resource"
 )
 
 // TestDiffEngineIntegration verifies that FileProvider correctly uses DiffEngine
@@ -35,7 +35,7 @@ func TestFileProvider_DiffEngineIntegration(t *testing.T) {
 	// Create resource
 	mf := &resource.ManagedFile{
 		BaseResource: resource.BaseResource{
-			APIVersion: "dotisan/v1",
+			APIVersion: "github.com/wasilak/dotisan/v1",
 			Kind:       "ManagedFile",
 			Metadata:   resource.Metadata{Name: "test", Namespace: "default"},
 		},
@@ -93,7 +93,7 @@ func TestFileProvider_StateTracking(t *testing.T) {
 	// Create resource
 	mf := &resource.ManagedFile{
 		BaseResource: resource.BaseResource{
-			APIVersion: "dotisan/v1",
+			APIVersion: "github.com/wasilak/dotisan/v1",
 			Kind:       "ManagedFile",
 			Metadata:   resource.Metadata{Name: "test", Namespace: "default"},
 		},
@@ -150,7 +150,7 @@ func TestFileProvider_DriftDetection(t *testing.T) {
 	// Create resource
 	mf := &resource.ManagedFile{
 		BaseResource: resource.BaseResource{
-			APIVersion: "dotisan/v1",
+			APIVersion: "github.com/wasilak/dotisan/v1",
 			Kind:       "ManagedFile",
 			Metadata:   resource.Metadata{Name: "test", Namespace: "default"},
 		},

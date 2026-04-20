@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"dotisan/pkg/provider"
-	"dotisan/pkg/resource"
+	"github.com/wasilak/dotisan/pkg/provider"
+	"github.com/wasilak/dotisan/pkg/resource"
 )
 
 func TestNewGoProvider(t *testing.T) {
@@ -56,7 +56,7 @@ func TestGoProvider_Reconcile_Additions(t *testing.T) {
 
 	gp := &resource.GoPackages{
 		BaseResource: resource.BaseResource{
-			APIVersion: "dotisan/v1",
+			APIVersion: "github.com/wasilak/dotisan/v1",
 			Kind:       "GoPackages",
 			Metadata:   resource.Metadata{Name: "tools", Namespace: "default"},
 		},

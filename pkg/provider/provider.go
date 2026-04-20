@@ -15,7 +15,7 @@ package provider
 import (
 	"context"
 
-	"dotisan/pkg/resource"
+	"github.com/wasilak/dotisan/pkg/resource"
 )
 
 // Plan represents the changes needed to reconcile desired state with actual state.
