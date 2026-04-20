@@ -479,7 +479,7 @@
           "3",
           "5"
         ],
-        "status": "in-progress",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -502,9 +502,10 @@
               1
             ],
             "details": "Parse the output of `brew list --formula --versions` to accurately identify installed packages and their versions. Implement an HTTP client to query the Homebrew API for formula existence and available versions, handling JSON response parsing and potential network or API errors.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": null,
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2026-04-20T11:08:04.895Z"
           },
           {
             "id": 3,
@@ -514,9 +515,10 @@
               2
             ],
             "details": "Implement the `Reconcile` method to determine necessary additions, removals, and upgrades. Include logic to issue warnings if version pinning is requested but not directly supported by Homebrew. Implement the `Apply` method to call the `os/exec` helper functions for `brew` commands, ensuring idempotent operations.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": null,
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2026-04-20T11:08:06.901Z"
           },
           {
             "id": 4,
@@ -568,9 +570,10 @@
               6
             ],
             "details": "Create a `cmdutil` package or similar. Implement functions like `RunCommand(name string, args ...string) (stdout, stderr string, err error)` that handle command execution, timeout, and error capturing. Standardize error wrapping and logging for external command failures. Implement utilities for parsing common output formats (e.g., line-by-line, JSON).",
-            "status": "pending",
+            "status": "done",
             "testStrategy": null,
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2026-04-20T11:08:07.904Z"
           },
           {
             "id": 8,
@@ -584,15 +587,16 @@
               7
             ],
             "details": "Utilize Go's `testing` package and mocking techniques to intercept `os/exec` calls and HTTP requests. Test `Available()` for both presence and absence of executables. Test `Reconcile` for correct plan generation (add, remove, update, no-change). Test `Apply` for simulating successful and failed command executions and verifying expected state changes.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": null,
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2026-04-20T11:08:08.957Z"
           }
         ],
         "complexity": 9,
         "recommendedSubtasks": 8,
         "expansionPrompt": "Break down the implementation of each package provider (`BrewProvider`, `NpmProvider`, `GoProvider`, `CargoProvider`), focusing on robust `os/exec` interactions, parsing varied command outputs, state reconciliation logic, and application logic for installations, uninstalls, and upgrades, including any external API calls (e.g., Brew).",
-        "updatedAt": "2026-04-20T11:07:30.802Z"
+        "updatedAt": "2026-04-20T11:08:08.957Z"
       },
       {
         "id": "9",
@@ -610,7 +614,7 @@
           "7",
           "8"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -621,9 +625,10 @@
               4
             ],
             "details": "Initialize the `plan` command handler. Load the existing state from the `StateBackend` (Task 4). Utilize the resource parsing logic (Task 3) to load and parse all desired resource objects from configuration files into an internal representation.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Unit tests for state loading and resource parsing. Integration tests to ensure correct loading of various resource types from sample configuration files.",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2026-04-20T11:54:14.385Z"
           },
           {
             "id": 2,
@@ -635,9 +640,10 @@
               8
             ],
             "details": "Iterate through the collection of parsed desired resources obtained from subtask 1. For each resource, use the provider registry (Task 5) to find the appropriate `Provider` instance. Call `Provider.Reconcile(desiredResource, currentState)` (part of Task 8) to generate a `Plan` for that specific resource. Collect and aggregate all individual `Plan` objects into a comprehensive plan structure.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Unit tests for plan aggregation logic. Integration tests with mocked providers to verify `Reconcile` calls and correct plan generation for different resource states (add, modify, remove, in-sync, drift).",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2026-04-20T11:54:15.110Z"
           },
           {
             "id": 3,
@@ -648,9 +654,10 @@
               6
             ],
             "details": "Take the aggregated plan generated in subtask 2. Integrate with the `DiffEngine` (Task 6) to render the plan output. This involves formatting additions, modifications, removals, in-sync items, and drifted items with appropriate ANSI coloring and clear descriptive text for terminal display.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Integration tests to verify `DiffEngine` output for various plan scenarios (empty plan, plan with additions, modifications, removals, drifts). Check for correct coloring and formatting.",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2026-04-20T11:54:17.158Z"
           },
           {
             "id": 4,
@@ -662,9 +669,10 @@
               3
             ],
             "details": "Implement the `apply` command handler. The first step within `apply` is to execute the full `plan` logic (subtasks 1, 2, 3) to generate and display the proposed changes. Check for the presence of `--confirm` or `--auto-confirm` command-line flags. If neither is provided, display the plan and exit, effectively performing a dry-run. If confirmed, proceed to the next steps.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Unit tests for flag parsing and conditional exit logic. End-to-end tests for `apply` without confirmation, ensuring it displays the plan and exits without making changes.",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2026-04-20T11:54:17.842Z"
           },
           {
             "id": 5,
@@ -675,9 +683,10 @@
               8
             ],
             "details": "If the `apply` command is confirmed (from subtask 4), iterate through the aggregated plan. For each planned change (e.g., resource addition, modification, or removal), retrieve the corresponding `Provider` instance (Task 8) and call `Provider.Apply(change)`. Implement robust error handling for individual `Apply` operations, potentially allowing for partial application or rollback mechanisms.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Integration tests with mocked providers to verify `Apply` calls for various change types. Test error handling during `Apply` operations.",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2026-04-20T11:54:18.583Z"
           },
           {
             "id": 6,
@@ -688,9 +697,10 @@
               5
             ],
             "details": "Upon successful completion of all `Provider.Apply()` calls (subtask 5), update the in-memory `State` object to accurately reflect the new desired state of all managed resources. Use the `StateBackend` (Task 4) to save this updated `State` object to persistent storage. Ensure that state saving is robust and handles potential failures gracefully.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Integration tests to verify state updates after successful `apply`. Test state persistence by checking the saved state file content. Test error scenarios during state saving.",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2026-04-20T11:54:19.385Z"
           },
           {
             "id": 7,
@@ -701,14 +711,16 @@
               7
             ],
             "details": "When the `apply` command is executed with both `--confirm` and `--backup` flags, specifically for `ManagedFile` resources (Task 7), ensure that before `Provider.Apply()` modifies or removes an existing file, a backup copy of that file is created. This involves calling the designated backup logic from Task 7 to prevent data loss. This logic should be integrated into the `Provider.Apply()` call for `ManagedFile` types.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "End-to-end tests for `apply --confirm --backup` with `ManagedFile` resources. Verify that backup files are created correctly before changes are applied and that they can be restored if needed.",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2026-04-20T11:54:23.249Z"
           }
         ],
         "complexity": 10,
         "recommendedSubtasks": 7,
-        "expansionPrompt": "Detail the implementation of the `plan` command (covering state loading, resource parsing, provider reconciliation, plan aggregation, and diff display) and the `apply` command (including plan execution, confirmation logic, state updates, error handling, and backup functionality)."
+        "expansionPrompt": "Detail the implementation of the `plan` command (covering state loading, resource parsing, provider reconciliation, plan aggregation, and diff display) and the `apply` command (including plan execution, confirmation logic, state updates, error handling, and backup functionality).",
+        "updatedAt": "2026-04-20T11:54:23.249Z"
       },
       {
         "id": "10",
@@ -722,7 +734,7 @@
           "5",
           "9"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -735,9 +747,10 @@
               6
             ],
             "details": "Iterate through all registered providers using the `ProviderRegistry` and call their `Available()` method. Check `StateBackend` connectivity by attempting a `Load()` or `Save()` operation. Attempt to parse all configuration files (`config.yaml`, `values.yaml`, resource definitions) and report any syntax or schema errors. Report any template rendering errors encountered during config loading. Use `lipgloss` for structured and colored output.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Write unit tests to mock provider availability, state backend status, and config parsing results. Verify the `doctor` command correctly aggregates and reports these statuses with appropriate formatting. Test cases for healthy, partially healthy, and unhealthy states.",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2026-04-20T12:07:37.240Z"
           },
           {
             "id": 2,
@@ -748,9 +761,10 @@
               5
             ],
             "details": "For `state import KIND NAME ID`, retrieve the specified `Provider` from the registry, call its `Import(id)` method, and add the returned `ResourceState` to the local state file using the `StateBackend.Save()` method. Ensure no system changes are made. For `state remove KIND NAME`, load the local state file, locate and remove the specified resource entry, and save the updated state file. Do not interact with the system or providers.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test `state import`: Mock a provider's `Import` method to return a `ResourceState`. Run the command, then verify the resource appears in the local state file. Test `state remove`: Add a dummy resource to the state file, run the command, then verify the resource is no longer present. Ensure no external system changes occur.",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2026-04-20T12:07:38.233Z"
           },
           {
             "id": 3,
@@ -761,9 +775,10 @@
               6
             ],
             "details": "Load the local state file using the `StateBackend.Load()` method. Iterate through all `ResourceState` entries. For each resource, determine its status (e.g., `in_sync`, `drift`, `missing` - this might require a lightweight `plan` like comparison or just checking if the resource exists in the config). Format the output as a clear, readable table using `lipgloss` for styling, including columns for KIND, NAME, ID, and STATUS.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Create a sample state file with resources in different statuses (mocked). Run `state list` and verify the output matches the expected tabular format and correctly displays the statuses.",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2026-04-20T12:07:39.152Z"
           },
           {
             "id": 4,
@@ -773,9 +788,10 @@
               4
             ],
             "details": "For `state pull`, if the `StateBackend` is configured as S3, call the `StateBackend.Load()` method to retrieve the remote state and then `StateBackend.Save()` to persist it locally. For `state push`, if the `StateBackend` is configured as S3, load the local state using `StateBackend.Load()` and then call `StateBackend.Save()` to upload it to the remote S3 backend. Handle cases where S3 backend is not configured.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Write integration tests using a mock S3 client or a local MinIO instance. Test `state pull` by having a remote state and verifying it overwrites local. Test `state push` by modifying local state and verifying it's uploaded to remote. Test error handling for connectivity issues or misconfigured S3.",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2026-04-20T12:07:39.888Z"
           },
           {
             "id": 5,
@@ -786,21 +802,23 @@
               4
             ],
             "details": "Load the local state file using `StateBackend.Load()`. Locate and remove the specified resource entry from the state. Prompt the user for confirmation before proceeding with config file modification. If confirmed, identify the configuration file(s) where the resource `KIND NAME` is defined and remove its definition. Save the updated state file and modified config files. Ensure no interaction with the actual system resources.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test `eject` with a dummy resource defined in a config file and present in state. Verify the command prompts for confirmation. Test both 'yes' and 'no' responses. If 'yes', verify the resource is removed from state and its definition from the config file. Ensure no system changes.",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2026-04-20T12:07:41.203Z"
           }
         ],
         "complexity": 6,
         "recommendedSubtasks": 5,
-        "expansionPrompt": "Break down the implementation of each remaining CLI command: `doctor`, `state import`, `state remove`, `state list`, `state pull`, `state push`, and `eject`, outlining their specific logic, interactions with other components (providers, state backend), and output formatting."
+        "expansionPrompt": "Break down the implementation of each remaining CLI command: `doctor`, `state import`, `state remove`, `state list`, `state pull`, `state push`, and `eject`, outlining their specific logic, interactions with other components (providers, state backend), and output formatting.",
+        "updatedAt": "2026-04-20T12:07:41.203Z"
       }
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-04-20T11:07:30.802Z",
+      "lastModified": "2026-04-20T12:07:41.203Z",
       "taskCount": 10,
-      "completedCount": 7,
+      "completedCount": 10,
       "tags": [
         "master"
       ]
