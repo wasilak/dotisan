@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/wasilak/dotisan/pkg/config"
+	"github.com/wasilak/dotisan/pkg/engine"
 	"github.com/wasilak/dotisan/pkg/provider"
 	"github.com/wasilak/dotisan/pkg/providers"
 	"github.com/wasilak/dotisan/pkg/state"
@@ -207,7 +208,152 @@ along with their status (in_sync, drift, missing).`,
 }
 
 func runStateList() error {
-	// Load state
+	// Create engine to run plan (for accurate status)
+	eng, err := engine.NewEngine()
+	if err != nil {
+		// Fallback to basic list if engine fails
+		return runStateListBasic()
+	}
+
+	// Run plan to get actual status
+	ctx := context.Background()
+	result, err := eng.Plan(ctx)
+	if err != nil {
+		return runStateListBasic()
+	}
+
+	// Load state for resource list
+	dotisanDir := os.ExpandEnv("$HOME/.dotisan")
+	statePath := dotisanDir + "/state.json"
+	backend := state.NewLocalBackend(statePath)
+	currentState, err := backend.Load(ctx)
+	if err != nil {
+		if os.IsNotExist(err) {
+			fmt.Println("No state file found. Run 'dotisan apply' first.")
+			return nil
+		}
+		return fmt.Errorf("cannot load state: %w", err)
+	}
+
+	if len(currentState.Resources) == 0 {
+		fmt.Println("No managed resources found.")
+		return nil
+	}
+
+	// Build status map from plan result
+	statusMap := buildStatusMap(result)
+
+	// Define lipgloss styles (pastel colors)
+	headerStyle := lipgloss.NewStyle().Bold(true)
+	inSyncStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("114"))   // Pastel green
+	driftStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("216"))    // Pastel orange
+	missingStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("174")) // Pastel red
+	unknownStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("240")) // Gray
+
+	// Print header
+	fmt.Println(headerStyle.Render("Managed Resources"))
+	fmt.Println()
+	fmt.Printf("%-20s %-25s %-30s %-10s\n", "KIND", "NAME", "ID", "STATUS")
+	fmt.Println(strings.Repeat("-", 85))
+
+	// Display resources with accurate status
+	for _, r := range currentState.Resources {
+		status, style := getResourceStatus(r, statusMap, inSyncStyle, driftStyle, missingStyle, unknownStyle)
+
+		fmt.Printf("%-20s %-25s %-30s %s\n",
+			truncate(r.Kind, 20),
+			truncate(r.Name, 25),
+			truncate(r.ID, 30),
+			style.Render(status))
+	}
+
+	fmt.Println()
+	fmt.Printf("Total: %d resources\n", len(currentState.Resources))
+
+	// Show summary if there are issues
+	if result.TotalDrifted > 0 || result.TotalRemovals > 0 {
+		fmt.Println()
+		if result.TotalDrifted > 0 {
+			fmt.Printf("⚠ %d resources have drifted\n", result.TotalDrifted)
+		}
+		if result.TotalRemovals > 0 {
+			fmt.Printf("⚠ %d resources are orphaned (in state but not in config)\n", result.TotalRemovals)
+		}
+		fmt.Println("Run 'dotisan plan' for details")
+	}
+
+	return nil
+}
+
+// Helper to truncate strings
+func truncate(s string, maxLen int) string {
+	if len(s) > maxLen {
+		return s[:maxLen-3] + "..."
+	}
+	return s
+}
+
+// buildStatusMap creates a map of resource ID to status from plan result
+func buildStatusMap(result *engine.PlanResult) map[string]string {
+	statusMap := make(map[string]string)
+
+	for providerName, plan := range result.ProviderPlans {
+		// In sync resources
+		for _, res := range plan.InSync {
+			id := fmt.Sprintf("%s/%s/%s", providerName, res.GetMetadata().GetNamespace(), res.GetMetadata().Name)
+			statusMap[id] = "in_sync"
+		}
+		// Additions (not in state yet)
+		for _, res := range plan.Additions {
+			id := fmt.Sprintf("%s/%s/%s", providerName, res.GetMetadata().GetNamespace(), res.GetMetadata().Name)
+			statusMap[id] = "pending"
+		}
+		// Modifications
+		for _, mod := range plan.Modifications {
+			id := fmt.Sprintf("%s/%s/%s", providerName, mod.Resource.GetMetadata().GetNamespace(), mod.Resource.GetMetadata().Name)
+			statusMap[id] = "modified"
+		}
+		// Removals (orphaned)
+		for _, res := range plan.Removals {
+			id := fmt.Sprintf("%s/%s/%s", providerName, res.GetMetadata().GetNamespace(), res.GetMetadata().Name)
+			statusMap[id] = "orphaned"
+		}
+		// Drifted
+		for _, drift := range plan.Drifted {
+			id := fmt.Sprintf("%s/%s/%s", providerName, drift.Resource.GetMetadata().GetNamespace(), drift.Resource.GetMetadata().Name)
+			statusMap[id] = "drift"
+		}
+	}
+
+	return statusMap
+}
+
+// getResourceStatus returns the status and style for a resource
+func getResourceStatus(r provider.ResourceState, statusMap map[string]string, 
+	inSyncStyle, driftStyle, missingStyle, unknownStyle lipgloss.Style) (string, lipgloss.Style) {
+	
+	status, exists := statusMap[r.ID]
+	if !exists {
+		// Resource in state but not in config (orphaned)
+		return "orphaned", missingStyle
+	}
+
+	switch status {
+	case "in_sync":
+		return "in_sync", inSyncStyle
+	case "drift":
+		return "drift", driftStyle
+	case "modified":
+		return "modified", driftStyle
+	case "orphaned", "pending":
+		return status, missingStyle
+	default:
+		return status, unknownStyle
+	}
+}
+
+// runStateListBasic is a fallback that just lists resources without status check
+func runStateListBasic() error {
 	ctx := context.Background()
 	dotisanDir := os.ExpandEnv("$HOME/.dotisan")
 	statePath := dotisanDir + "/state.json"
@@ -226,51 +372,22 @@ func runStateList() error {
 		return nil
 	}
 
-	// Define lipgloss styles
 	headerStyle := lipgloss.NewStyle().Bold(true)
-	greenStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("10"))
-
-	// Print header
 	fmt.Println(headerStyle.Render("Managed Resources"))
 	fmt.Println()
-	fmt.Printf("%-20s %-25s %-30s %-10s\n", "KIND", "NAME", "ID", "STATUS")
-	fmt.Println(strings.Repeat("-", 85))
+	fmt.Printf("%-20s %-25s %-30s\n", "KIND", "NAME", "ID")
+	fmt.Println(strings.Repeat("-", 75))
 
-	// Load config for status check
-	configPath := os.ExpandEnv("$HOME/.dotisan/config.yaml")
-	cfg, _ := config.LoadConfig(configPath)
-
-	// Determine status for each resource
 	for _, r := range currentState.Resources {
-		status := "in_sync"
-		statusStyle := greenStyle
-
-		// Simple heuristic: check if resource is in config
-		if cfg != nil {
-			// For now, we just show "in_sync" - a full status check would require
-			// loading all resources and running Reconcile, which is expensive
-			_ = cfg
-		}
-
-		fmt.Printf("%-20s %-25s %-30s %s\n",
+		fmt.Printf("%-20s %-25s %-30s\n",
 			truncate(r.Kind, 20),
 			truncate(r.Name, 25),
-			truncate(r.ID, 30),
-			statusStyle.Render(status))
+			truncate(r.ID, 30))
 	}
 
 	fmt.Println()
 	fmt.Printf("Total: %d resources\n", len(currentState.Resources))
-
 	return nil
-}
-
-// Helper to truncate strings
-func truncate(s string, maxLen int) string {
-	if len(s) > maxLen {
-		return s[:maxLen-3] + "..."
-	}
-	return s
 }
 
 // statePullCmd pulls state from remote backend
