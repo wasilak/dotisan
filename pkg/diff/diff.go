@@ -60,39 +60,46 @@ func (e *Engine) GenerateUnifiedDiff(oldName, newName, oldContent, newContent st
 // GenerateDiff creates a simple line-by-line diff from unified diff output.
 // Returns a list of changes with type (addition, deletion, unchanged).
 func (e *Engine) GenerateDiff(oldContent, newContent string) []LineChange {
-	// Generate unified diff first
-	unifiedDiff, err := e.GenerateUnifiedDiff("old", "new", oldContent, newContent)
-	if err != nil {
-		return nil
-	}
+	// Fallback simple line-by-line diff algorithm (more robust across diff output variations)
+	oldLines := strings.Split(oldContent, "\n")
+	newLines := strings.Split(newContent, "\n")
 
-	// Parse the unified diff
-	lines := strings.Split(unifiedDiff, "\n")
 	var changes []LineChange
-
-	for _, line := range lines {
-		if len(line) == 0 {
+	i, j := 0, 0
+	for i < len(oldLines) || j < len(newLines) {
+		if i < len(oldLines) && j < len(newLines) && oldLines[i] == newLines[j] {
+			changes = append(changes, LineChange{Type: LineUnchanged, Content: oldLines[i]})
+			i++
+			j++
 			continue
 		}
 
-		prefix := line[0]
-		content := line[1:]
+		// Lookahead: if old line equals next new line -> an addition in new
+		if i < len(oldLines) && j+1 < len(newLines) && oldLines[i] == newLines[j+1] {
+			changes = append(changes, LineChange{Type: LineAdded, Content: newLines[j]})
+			j++
+			continue
+		}
 
-		switch prefix {
-		case '+':
-			// Skip "+++ filename" header lines but keep actual additions
-			// Check if content starts with "++" (the remaining part of "+++")
-			if !strings.HasPrefix(line, "+++") {
-				changes = append(changes, LineChange{Type: LineAdded, Content: content})
-			}
-		case '-':
-			// Skip "--- filename" header lines but keep actual deletions
-			// Check if content starts with "--" (the remaining part of "---")
-			if !strings.HasPrefix(line, "---") {
-				changes = append(changes, LineChange{Type: LineDeleted, Content: content})
-			}
-		case ' ':
-			changes = append(changes, LineChange{Type: LineUnchanged, Content: content})
+		// Lookahead: if next old line equals current new -> a deletion from old
+		if i+1 < len(oldLines) && j < len(newLines) && oldLines[i+1] == newLines[j] {
+			changes = append(changes, LineChange{Type: LineDeleted, Content: oldLines[i]})
+			i++
+			continue
+		}
+
+		// Fallback: if there is an old line, mark deletion
+		if i < len(oldLines) {
+			changes = append(changes, LineChange{Type: LineDeleted, Content: oldLines[i]})
+			i++
+			continue
+		}
+
+		// Otherwise mark addition
+		if j < len(newLines) {
+			changes = append(changes, LineChange{Type: LineAdded, Content: newLines[j]})
+			j++
+			continue
 		}
 	}
 

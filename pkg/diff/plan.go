@@ -37,7 +37,7 @@ const (
 const (
 	ColorPastelGreen  = "114" // Soft mint green
 	ColorPastelRed    = "174" // Soft salmon/coral
-	ColorPastelYellow = "222" // Soft cream yellow  
+	ColorPastelYellow = "222" // Soft cream yellow
 	ColorPastelOrange = "216" // Soft peach
 	ColorGray         = "240" // Neutral gray
 )
@@ -47,7 +47,7 @@ func (f *PlanFormatter) FormatAddition(resourceName string) string {
 	icon := lipgloss.NewStyle().
 		Foreground(lipgloss.Color(ColorPastelGreen)).
 		Render(IconAddition)
-	
+
 	nameStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color(ColorPastelGreen)).
 		Render(resourceName)
@@ -60,7 +60,7 @@ func (f *PlanFormatter) FormatDeletion(resourceName string) string {
 	icon := lipgloss.NewStyle().
 		Foreground(lipgloss.Color(ColorPastelRed)).
 		Render(IconDeletion)
-	
+
 	nameStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color(ColorPastelRed)).
 		Render(resourceName)
@@ -73,7 +73,7 @@ func (f *PlanFormatter) FormatModification(resourceName string, diff string) str
 	icon := lipgloss.NewStyle().
 		Foreground(lipgloss.Color(ColorPastelYellow)).
 		Render(IconModification)
-	
+
 	nameStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color(ColorPastelYellow)).
 		Render(resourceName)
@@ -92,7 +92,7 @@ func (f *PlanFormatter) FormatInSync(resourceName string) string {
 	icon := lipgloss.NewStyle().
 		Foreground(lipgloss.Color(ColorGray)).
 		Render(IconInSync)
-	
+
 	nameStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color(ColorGray)).
 		Render(resourceName)
@@ -106,7 +106,7 @@ func (f *PlanFormatter) FormatDrift(resourceName, description string) string {
 	icon := lipgloss.NewStyle().
 		Foreground(lipgloss.Color(ColorPastelOrange)).
 		Render(IconDrift)
-	
+
 	nameStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color(ColorPastelOrange)).
 		Render(resourceName)
@@ -193,6 +193,16 @@ func (f *PlanFormatter) FormatSummary(add, modify, remove, inSync int) string {
 	return "Plan: " + strings.Join(parts, ", ")
 }
 
+// FormatWarningsSummary formats a short warnings summary string.
+func (f *PlanFormatter) FormatWarningsSummary(warnCount int) string {
+	if warnCount <= 0 {
+		return ""
+	}
+	warnStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(ColorPastelOrange))
+	return warnStyle.Render(fmt.Sprintf("⚠ %d warnings", warnCount))
+}
+
 // FormatResourceHeader formats a resource section header.
 func (f *PlanFormatter) FormatResourceHeader(kind, name string) string {
 	kindStyle := lipgloss.NewStyle().
@@ -220,11 +230,11 @@ func (f *PlanFormatter) FormatAdditionDetailed(resourceName string) string {
 	icon := lipgloss.NewStyle().
 		Foreground(lipgloss.Color(ColorPastelGreen)).
 		Render(IconAddition)
-	
+
 	nameStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color(ColorPastelGreen)).
 		Render(resourceName)
-	
+
 	action := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("250")).
 		Render("will be created")
@@ -236,11 +246,11 @@ func (f *PlanFormatter) FormatRemovalDetailed(resourceName string) string {
 	icon := lipgloss.NewStyle().
 		Foreground(lipgloss.Color(ColorPastelRed)).
 		Render(IconDeletion)
-	
+
 	nameStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color(ColorPastelRed)).
 		Render(resourceName)
-	
+
 	action := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("250")).
 		Render("will be destroyed")
@@ -252,11 +262,11 @@ func (f *PlanFormatter) FormatModificationDetailed(resourceName string) string {
 	icon := lipgloss.NewStyle().
 		Foreground(lipgloss.Color(ColorPastelYellow)).
 		Render(IconModification)
-	
+
 	nameStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color(ColorPastelYellow)).
 		Render(resourceName)
-	
+
 	action := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("250")).
 		Render("will be updated")
@@ -268,11 +278,11 @@ func (f *PlanFormatter) FormatDriftDetailed(resourceName string) string {
 	icon := lipgloss.NewStyle().
 		Foreground(lipgloss.Color(ColorPastelOrange)).
 		Render(IconDrift)
-	
+
 	nameStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color(ColorPastelOrange)).
 		Render(resourceName)
-	
+
 	action := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("250")).
 		Render("will be restored")
@@ -284,11 +294,11 @@ func (f *PlanFormatter) FormatInSyncDetailed(resourceName string) string {
 	icon := lipgloss.NewStyle().
 		Foreground(lipgloss.Color(ColorGray)).
 		Render(IconInSync)
-	
+
 	nameStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color(ColorGray)).
 		Render(resourceName)
-	
+
 	action := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("250")).
 		Render("no changes")

@@ -129,6 +129,9 @@ type PlanResult struct {
 	// TotalDrifted count
 	TotalDrifted int
 
+	// TotalWarnings is the aggregated number of warnings from providers
+	TotalWarnings int
+
 	// HasChanges indicates if there are any changes
 	HasChanges bool
 }
@@ -183,6 +186,7 @@ func (e *Engine) Plan(ctx context.Context) (*PlanResult, error) {
 		result.TotalRemovals += len(plan.Removals)
 		result.TotalInSync += len(plan.InSync)
 		result.TotalDrifted += len(plan.Drifted)
+		result.TotalWarnings += len(plan.Warnings)
 	}
 
 	// Check for orphaned state resources (in state but not in config)
@@ -191,7 +195,7 @@ func (e *Engine) Plan(ctx context.Context) (*PlanResult, error) {
 	if len(orphanedRemovals) > 0 {
 		for _, orphaned := range orphanedRemovals {
 			result.TotalRemovals++
-			
+
 			// Get provider name from the resource's kind
 			var providerName string
 			switch orphaned.(type) {
@@ -208,7 +212,7 @@ func (e *Engine) Plan(ctx context.Context) (*PlanResult, error) {
 			default:
 				continue
 			}
-			
+
 			// Update plan with orphaned resource
 			if plan, exists := providerPlans[providerName]; exists {
 				// Add to existing plan's removals
@@ -366,7 +370,7 @@ func (e *Engine) getProviderNameFromStateID(stateID string) string {
 // Summary is at the end, with clear descriptions and breathing space.
 func (e *Engine) DisplayPlan(result *PlanResult) {
 	// Show sections with clear headers and breathing space
-	
+
 	// 1. Removals (orphaned resources - will be deleted)
 	if result.TotalRemovals > 0 {
 		fmt.Println()
@@ -379,7 +383,7 @@ func (e *Engine) DisplayPlan(result *PlanResult) {
 			}
 		}
 	}
-	
+
 	// 2. Additions (new resources - will be created)
 	if result.TotalAdditions > 0 {
 		fmt.Println()
@@ -427,15 +431,41 @@ func (e *Engine) DisplayPlan(result *PlanResult) {
 		}
 	}
 
+	// 5. Warnings (non-blocking advisory messages)
+	if result.TotalWarnings > 0 {
+		fmt.Println()
+		fmt.Println(e.PlanFormatter.FormatSectionHeader("Warnings and Advisories"))
+		for _, plan := range result.ProviderPlans {
+			for _, w := range plan.Warnings {
+				fmt.Println()
+				// Render severity and message; include suggestion if present
+				sev := strings.ToUpper(w.Severity)
+				header := fmt.Sprintf("%s: %s", sev, w.Message)
+				fmt.Println("  ", e.PlanFormatter.FormatActionReason(header))
+				if w.Suggestion != "" {
+					// Show suggestion in monospace-ish block (indented)
+					fmt.Println()
+					fmt.Println("      ", w.Suggestion)
+				}
+			}
+		}
+	}
+
 	// SUMMARY at the end (like Terraform)
 	fmt.Println()
 	fmt.Println()
-	fmt.Println(e.PlanFormatter.FormatSummary(
+	// Print summary plus warnings count if present
+	summary := e.PlanFormatter.FormatSummary(
 		result.TotalAdditions,
 		result.TotalModifications,
 		result.TotalRemovals,
 		result.TotalInSync,
-	))
+	)
+	if result.TotalWarnings > 0 {
+		// Append warnings summary on its own line for visibility
+		fmt.Println(e.PlanFormatter.FormatWarningsSummary(result.TotalWarnings))
+	}
+	fmt.Println(summary)
 
 	// No changes message
 	if !result.HasChanges && result.TotalDrifted == 0 {
@@ -553,17 +583,17 @@ func (e *Engine) resourceToStateEntry(res resource.Resource, providerName string
 				content = data
 			}
 		}
-		
+
 		if content != "" {
 			hash := sha256.Sum256([]byte(content))
 			stateEntry.DestHash = hex.EncodeToString(hash[:])
 		}
-		
+
 		// Store the mode in extra
 		stateEntry.Extra = map[string]interface{}{
 			"mode": r.Spec.Mode,
 		}
-		
+
 	case *resource.ManagedDirectory:
 		stateEntry.Extra = map[string]interface{}{
 			"recursive": r.Spec.Recursive,
@@ -580,13 +610,13 @@ func (e *Engine) renderSourceFile(sourcePath string, useTemplate bool) (string, 
 	if err != nil {
 		return "", err
 	}
-	
+
 	content := string(data)
-	
+
 	if useTemplate && e.TemplateContext != nil {
 		engine := config.NewTemplateEngine(e.TemplateContext)
 		return engine.RenderTemplate(sourcePath, content)
 	}
-	
+
 	return content, nil
 }

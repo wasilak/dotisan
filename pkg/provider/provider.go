@@ -34,6 +34,24 @@ type Plan struct {
 
 	// Drifted are resources that have changed outside of dotisan's management
 	Drifted []Drift
+	// Warnings are provider-generated advisory messages that do not block apply
+	Warnings []PlanWarning
+}
+
+// PlanWarning represents a non-blocking advisory produced during reconcile.
+// It can point to a resource and optionally include a suggestion (copy-pasteable).
+type PlanWarning struct {
+	// ResourceID is an optional kind/name identifier (e.g., "ManagedFile/zshrc")
+	ResourceID string
+
+	// Severity indicates importance: "warning" or "info"
+	Severity string
+
+	// Message is a human-friendly description of the issue
+	Message string
+
+	// Suggestion is an optional copy-pasteable command or snippet
+	Suggestion string
 }
 
 // Modification represents a change to an existing resource.
