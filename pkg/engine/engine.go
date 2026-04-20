@@ -11,7 +11,11 @@ package engine
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/wasilak/dotisan/pkg/config"
@@ -474,11 +478,71 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 }
 
 // resourceToStateEntry converts a resource to a state entry.
+// For file resources, it calculates checksums of the content.
 func (e *Engine) resourceToStateEntry(res resource.Resource, providerName string) provider.ResourceState {
-	return provider.ResourceState{
+	stateEntry := provider.ResourceState{
 		ID:        fmt.Sprintf("%s/%s/%s", providerName, res.GetMetadata().GetNamespace(), res.GetMetadata().Name),
 		Kind:      res.GetKind(),
 		Name:      res.GetMetadata().Name,
 		Namespace: res.GetMetadata().GetNamespace(),
 	}
+
+	// Calculate checksums for file resources
+	switch r := res.(type) {
+	case *resource.ManagedFile:
+		var content string
+		if r.Spec.Source != "" {
+			// Inline content - render with template if enabled
+			content = r.Spec.Source
+			if r.Spec.Template {
+				engine := config.NewTemplateEngine(e.TemplateContext)
+				rendered, err := engine.RenderTemplate("inline", content)
+				if err == nil {
+					content = rendered
+				}
+			}
+		} else if r.Spec.SourceFile != "" {
+			// External file - read and render with template if enabled
+			sourcePath := filepath.Join(e.Config.DotfilesRoot, r.Spec.SourceFile)
+			data, err := e.renderSourceFile(sourcePath, r.Spec.Template)
+			if err == nil {
+				content = data
+			}
+		}
+		
+		if content != "" {
+			hash := sha256.Sum256([]byte(content))
+			stateEntry.DestHash = hex.EncodeToString(hash[:])
+		}
+		
+		// Store the mode in extra
+		stateEntry.Extra = map[string]interface{}{
+			"mode": r.Spec.Mode,
+		}
+		
+	case *resource.ManagedDirectory:
+		stateEntry.Extra = map[string]interface{}{
+			"recursive": r.Spec.Recursive,
+			"clean":     r.Spec.Clean,
+		}
+	}
+
+	return stateEntry
+}
+
+// renderSourceFile reads and optionally templates a source file.
+func (e *Engine) renderSourceFile(sourcePath string, useTemplate bool) (string, error) {
+	data, err := os.ReadFile(sourcePath)
+	if err != nil {
+		return "", err
+	}
+	
+	content := string(data)
+	
+	if useTemplate && e.TemplateContext != nil {
+		engine := config.NewTemplateEngine(e.TemplateContext)
+		return engine.RenderTemplate(sourcePath, content)
+	}
+	
+	return content, nil
 }
