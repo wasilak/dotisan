@@ -8,6 +8,7 @@ import (
 
 	"github.com/wasilak/dotisan/pkg/config"
 	"github.com/wasilak/dotisan/pkg/provider"
+	"github.com/wasilak/dotisan/pkg/providers"
 	"github.com/wasilak/dotisan/pkg/state"
 
 	"github.com/charmbracelet/lipgloss"
@@ -44,9 +45,54 @@ Example: dotisan state import BrewPackages core-tools ripgrep`,
 	},
 }
 
+// kindToProvider maps resource kind to provider name
+func kindToProvider(kind string) string {
+	switch strings.ToLower(kind) {
+	case "managedfile", "manageddirectory":
+		return "file"
+	case "brewpackages", "homebrew":
+		return "homebrew"
+	case "npmpackages":
+		return "npm"
+	case "gopackages":
+		return "go"
+	case "cargopackages":
+		return "cargo"
+	default:
+		return strings.ToLower(kind)
+	}
+}
+
+// ensureProvidersRegistered registers all providers if they haven't been registered yet.
+// This is needed for commands that don't go through the Engine.
+func ensureProvidersRegistered() {
+	// Try to get each provider, and register if not found
+	if _, err := provider.Get("file"); err != nil {
+		provider.Register("file", providers.NewFileProvider(nil, nil, ""))
+	}
+	if _, err := provider.Get("homebrew"); err != nil {
+		provider.Register("homebrew", providers.NewBrewProvider())
+	}
+	if _, err := provider.Get("npm"); err != nil {
+		provider.Register("npm", providers.NewNpmProvider())
+	}
+	if _, err := provider.Get("go"); err != nil {
+		provider.Register("go", providers.NewGoProvider())
+	}
+	if _, err := provider.Get("cargo"); err != nil {
+		provider.Register("cargo", providers.NewCargoProvider())
+	}
+}
+
 func runStateImport(kind, name, id string) error {
+	// Ensure providers are registered
+	ensureProvidersRegistered()
+
+	// Map kind to provider name
+	providerName := kindToProvider(kind)
+
 	// Get the provider
-	p, err := provider.Get(strings.ToLower(kind))
+	p, err := provider.Get(providerName)
 	if err != nil {
 		return fmt.Errorf("provider not found: %w", err)
 	}

@@ -60,28 +60,33 @@ func NewEngine() (*Engine, error) {
 	diffEngine := diff.NewStyledEngine()
 	planFormatter := diff.NewPlanFormatter()
 
-	// Initialize providers
+	// Initialize providers and register them globally
 	providerMap := make(map[string]provider.Provider)
 
 	// FileProvider
 	fileProvider := providers.NewFileProvider(ctx, diffEngine.Engine, cfg.DotfilesRoot)
 	providerMap["file"] = fileProvider
+	provider.Register("file", fileProvider)
 
 	// BrewProvider
 	brewProvider := providers.NewBrewProvider()
-	providerMap["brew"] = brewProvider
+	providerMap["homebrew"] = brewProvider
+	provider.Register("homebrew", brewProvider)
 
 	// NpmProvider
 	npmProvider := providers.NewNpmProvider()
 	providerMap["npm"] = npmProvider
+	provider.Register("npm", npmProvider)
 
 	// GoProvider
 	goProvider := providers.NewGoProvider()
 	providerMap["go"] = goProvider
+	provider.Register("go", goProvider)
 
 	// CargoProvider
 	cargoProvider := providers.NewCargoProvider()
 	providerMap["cargo"] = cargoProvider
+	provider.Register("cargo", cargoProvider)
 
 	return &Engine{
 		Config:          cfg,

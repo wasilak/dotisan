@@ -302,8 +302,49 @@ func (p *BrewProvider) applyRemoval(ctx context.Context, res resource.Resource) 
 
 // Import discovers an existing package and returns its state.
 func (p *BrewProvider) Import(ctx context.Context, id string) (provider.ResourceState, error) {
-	// TODO: Implement import functionality
-	return provider.ResourceState{}, fmt.Errorf("import not yet implemented")
+	// Try regular formula first
+	stdout, _, err := cmdutil.RunSimple(ctx, "brew", "list", "--versions", id)
+	if err == nil {
+		// Regular formula found
+		parts := strings.Fields(stdout)
+		version := ""
+		if len(parts) >= 2 {
+			version = parts[1]
+		}
+		return provider.ResourceState{
+			ID:        fmt.Sprintf("homebrew/default/%s", id),
+			Kind:      "BrewPackages",
+			Name:      id,
+			Namespace: "default",
+			Version:   version,
+			Extra: map[string]interface{}{
+				"type": "formula",
+			},
+		}, nil
+	}
+
+	// Try cask
+	stdout, _, err = cmdutil.RunSimple(ctx, "brew", "list", "--cask", "--versions", id)
+	if err == nil {
+		// Cask found
+		parts := strings.Fields(stdout)
+		version := ""
+		if len(parts) >= 2 {
+			version = parts[1]
+		}
+		return provider.ResourceState{
+			ID:        fmt.Sprintf("homebrew/default/%s", id),
+			Kind:      "BrewPackages",
+			Name:      id,
+			Namespace: "default",
+			Version:   version,
+			Extra: map[string]interface{}{
+				"type": "cask",
+			},
+		}, nil
+	}
+
+	return provider.ResourceState{}, fmt.Errorf("package %s not found (tried both formula and cask)", id)
 }
 
 // getFormulaInfo fetches formula information from the Homebrew API.
