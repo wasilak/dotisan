@@ -959,6 +959,49 @@ func (p *FileProvider) parseMode(mode string) os.FileMode {
 
 // Import discovers an existing resource on the system and returns its state.
 func (p *FileProvider) Import(ctx context.Context, id string) (provider.ResourceState, error) {
-	// TODO: Implement import functionality
-	return provider.ResourceState{}, fmt.Errorf("import not yet implemented")
+	// id is the file path (e.g., "~/.zshrc")
+	// Expand home directory if needed
+	filePath := id
+	if strings.HasPrefix(filePath, "~/") {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return provider.ResourceState{}, fmt.Errorf("failed to get home directory: %w", err)
+		}
+		filePath = filepath.Join(homeDir, filePath[2:])
+	}
+
+	// Check if file exists
+	fileInfo, err := os.Stat(filePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return provider.ResourceState{}, fmt.Errorf("file %s does not exist", id)
+		}
+		return provider.ResourceState{}, fmt.Errorf("failed to stat file %s: %w", id, err)
+	}
+
+	// Read file content
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return provider.ResourceState{}, fmt.Errorf("failed to read file %s: %w", id, err)
+	}
+
+	// Calculate checksum
+	checksum := calculateChecksum(string(content))
+
+	// Get file mode
+	mode := fmt.Sprintf("%04o", fileInfo.Mode().Perm())
+
+	return provider.ResourceState{
+		ID:         fmt.Sprintf("file/default/%s", filepath.Base(id)),
+		Kind:       "ManagedFile",
+		Name:       filepath.Base(id),
+		Namespace:  "default",
+		DestHash:   checksum,
+		Extra: map[string]interface{}{
+			"source_path": "",
+			"dest_path":   filePath,
+			"mode":        mode,
+			"imported":    true,
+		},
+	}, nil
 }
