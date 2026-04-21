@@ -120,7 +120,8 @@ func (p *BrewProvider) reconcileBrewPackages(
 	// Check formulae
 	for _, pkg := range bp.Spec.Formulae {
 		pkgName := pkg.Name
-		if !p.isPackageInstalled(pkgName, installed) {
+		installedVersion, isInstalled := installed[pkgName]
+		if !isInstalled {
 			// Package needs to be installed
 			plan.Additions = append(plan.Additions, &resource.BrewPackages{
 				BaseResource: resource.BaseResource{
@@ -134,6 +135,31 @@ func (p *BrewProvider) reconcileBrewPackages(
 					Formulae: []resource.Package{{Name: pkgName, Version: pkg.Version}},
 				},
 			})
+		} else {
+			// Package is already installed but not in state - treat as addition with warning
+			stateID := fmt.Sprintf("BrewPackages/%s[%s]", bp.GetMetadata().Name, pkgName)
+			if _, inState := stateMap[stateID]; !inState {
+				// Not in state - show as addition with import suggestion
+				plan.Additions = append(plan.Additions, &resource.BrewPackages{
+					BaseResource: resource.BaseResource{
+						Kind: "BrewPackages",
+						Metadata: resource.Metadata{
+							Name:      pkgName,
+							Namespace: bp.GetMetadata().GetNamespace(),
+						},
+					},
+					Spec: resource.BrewPackagesSpec{
+						Formulae: []resource.Package{{Name: pkgName, Version: installedVersion}},
+					},
+				})
+				warning := provider.PlanWarning{
+					ResourceID: id,
+					Severity:   "warning",
+					Message:    fmt.Sprintf("Package '%s' is already installed but not managed by dotisan", pkgName),
+					Suggestion: fmt.Sprintf("dotisan state import BrewPackages %s[%s] %s", bp.GetMetadata().Name, pkgName, pkgName),
+				}
+				plan.Warnings = append(plan.Warnings, warning)
+			}
 		}
 	}
 
