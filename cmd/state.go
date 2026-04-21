@@ -385,7 +385,13 @@ func buildStatusMap(result *engine.PlanResult) map[string]string {
 func getResourceStatus(r provider.ResourceState, statusMap map[string]string,
 	inSyncStyle, driftStyle, missingStyle, unknownStyle lipgloss.Style) (string, lipgloss.Style) {
 
+	// Try full ID first
 	status, exists := statusMap[r.ID]
+	if !exists {
+		// Try parent ID (without item key) - for indexed resources like BrewPackages/core-tools[ripgrep]
+		parentID := fmt.Sprintf("%s/%s", r.Kind, r.Name)
+		status, exists = statusMap[parentID]
+	}
 	if !exists {
 		// Resource in state but not in config (orphaned)
 		return "orphaned", missingStyle
