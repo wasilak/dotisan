@@ -63,16 +63,25 @@ func (p *BrewProvider) Reconcile(desired []resource.Resource, state []provider.R
 
 	// Check for removals
 	for id, s := range stateMap {
-		if !desiredIDs[id] && s.Kind == "BrewPackages" {
-			plan.Removals = append(plan.Removals, &resource.BrewPackages{
-				BaseResource: resource.BaseResource{
-					Kind: s.Kind,
-					Metadata: resource.Metadata{
-						Name:      s.Name,
-						Namespace: s.Namespace,
+		if s.Kind == "BrewPackages" {
+			// Check if this exact ID is desired OR if parent resource is desired
+			isDesired := desiredIDs[id]
+			if !isDesired {
+				// Check parent ID (without item key)
+				parentID := fmt.Sprintf("BrewPackages/%s", s.Name)
+				isDesired = desiredIDs[parentID]
+			}
+			if !isDesired {
+				plan.Removals = append(plan.Removals, &resource.BrewPackages{
+					BaseResource: resource.BaseResource{
+						Kind: s.Kind,
+						Metadata: resource.Metadata{
+							Name:      s.Name,
+							Namespace: s.Namespace,
+						},
 					},
-				},
-			})
+				})
+			}
 		}
 	}
 
@@ -135,16 +144,26 @@ func (p *BrewProvider) reconcileBrewPackages(
 					Formulae: []resource.Package{{Name: pkgName, Version: pkg.Version}},
 				},
 			})
-		} else {
-			// Package is already installed but not in state - treat as addition with warning
+			// Mark indexed ID as desired
 			stateID := fmt.Sprintf("BrewPackages/%s[%s]", bp.GetMetadata().Name, pkgName)
+			desiredIDs[stateID] = true
+			desiredIDs[id] = true // Also mark parent ID as desired
+		} else {
+			// Package is already installed
+			// Always mark indexed ID as desired so it's not flagged for removal
+			stateID := fmt.Sprintf("BrewPackages/%s[%s]", bp.GetMetadata().Name, pkgName)
+			desiredIDs[stateID] = true
+			desiredIDs[id] = true // Also mark parent ID as desired
+
+			// Check if not in state - treat as addition with warning
 			if _, inState := stateMap[stateID]; !inState {
 				// Not in state - show as addition with import suggestion
+				// Use parent's name for the resource (not the package name)
 				plan.Additions = append(plan.Additions, &resource.BrewPackages{
 					BaseResource: resource.BaseResource{
 						Kind: "BrewPackages",
 						Metadata: resource.Metadata{
-							Name:      pkgName,
+							Name:      bp.GetMetadata().Name,
 							Namespace: bp.GetMetadata().GetNamespace(),
 						},
 					},

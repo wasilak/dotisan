@@ -301,18 +301,30 @@ func (e *Engine) filterStateForProvider(stateMap map[string]provider.ResourceSta
 // Returns the orphaned resources converted to resource.Resource for display.
 func (e *Engine) findOrphanedStateResources(stateResources []provider.ResourceState, resourcesByProvider map[string][]resource.Resource) []resource.Resource {
 	// Build set of config resource IDs using kind/name (Terraform-style)
+	// Also track indexed IDs for list-based resources
 	configIDs := make(map[string]bool)
+	parentIDs := make(map[string]bool)
 	for _, providerResources := range resourcesByProvider {
 		for _, res := range providerResources {
-			id := fmt.Sprintf("%s/%s", res.GetKind(), res.GetMetadata().Name)
-			configIDs[id] = true
+			parentID := fmt.Sprintf("%s/%s", res.GetKind(), res.GetMetadata().Name)
+			parentIDs[parentID] = true
+			configIDs[parentID] = true
 		}
 	}
 
 	// Find state resources NOT in config (orphaned) and convert to Resource
 	var orphaned []resource.Resource
 	for _, s := range stateResources {
-		if !configIDs[s.ID] {
+		isOrphaned := !configIDs[s.ID]
+		if isOrphaned {
+			// Check if it's an indexed item of a parent resource
+			parentID := fmt.Sprintf("%s/%s", s.Kind, s.Name)
+			if parentIDs[parentID] {
+				// It's an item of a resource in config - not orphaned
+				isOrphaned = false
+			}
+		}
+		if isOrphaned {
 			// Convert ResourceState to appropriate Resource type
 			orphanedRes := e.stateToResource(s)
 			if orphanedRes != nil {
