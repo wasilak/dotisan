@@ -33,18 +33,19 @@ var stateCmd = &cobra.Command{
 
 // stateImportCmd imports an existing resource into state
 var stateImportCmd = &cobra.Command{
-	Use:   "import KIND NAME ID",
+	Use:   "import ID ACTUAL_VALUE",
 	Short: "Import existing resource into state",
-	Long: `import calls Provider.Import(id) to discover an existing resource
-and adds it to the state file without making any changes to the system.
+	Long: `import discovers an existing resource on your system and adds it to
+the state file without making any changes to the system.
 
-Example: dotisan state import BrewPackages core-tools ripgrep`,
-	Args: cobra.ExactArgs(3),
+Examples:
+  dotisan state import ManagedFile/zshrc ~/.zshrc
+  dotisan state import BrewPackages/core-tools[ripgrep] ripgrep`,
+	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		kind := args[0]
-		name := args[1]
-		id := args[2]
-		return runStateImport(kind, name, id)
+		id := args[0]
+		actualValue := args[1]
+		return runStateImport(id, actualValue)
 	},
 }
 
@@ -105,7 +106,15 @@ func ensureProvidersRegistered() {
 	}
 }
 
-func runStateImport(kind, nameArg, id string) error {
+func runStateImport(id, actualValue string) error {
+	// Parse ID to extract kind and name
+	// ID format: Kind/name or Kind/name[itemKey]
+	// Examples: ManagedFile/zshrc, BrewPackages/core-tools[ripgrep]
+	kind, name, hasItemKey, err := parseID(id)
+	if err != nil {
+		return err
+	}
+
 	// Ensure providers are registered
 	ensureProvidersRegistered()
 
@@ -124,25 +133,23 @@ func runStateImport(kind, nameArg, id string) error {
 		return fmt.Errorf("provider %s is not available: %s", kind, msg)
 	}
 
-	// Parse name to check for item key (e.g., "core-tools[ripgrep]")
-	resourceName, itemKey, hasItemKey := parseResourceRef(nameArg)
-
 	// Import the resource
 	ctx := context.Background()
 	var resourceState provider.ResourceState
 	if hasItemKey {
 		// Use ImportItem for indexed resources
-		resourceState, err = p.ImportItem(ctx, resourceName, itemKey)
+		resourceState, err = p.ImportItem(ctx, name, actualValue)
 	} else {
 		// Use regular Import for non-indexed resources
-		resourceState, err = p.Import(ctx, id)
+		resourceState, err = p.Import(ctx, actualValue)
 	}
 	if err != nil {
 		return fmt.Errorf("import failed: %w", err)
 	}
 
-	// Set the resource name and kind
-	resourceState.Name = resourceName
+	// Set the resource ID, name and kind
+	resourceState.ID = id
+	resourceState.Name = name
 	resourceState.Kind = kind
 
 	// Load current state (from ~/.config/dotisan/state.json)
@@ -164,9 +171,36 @@ func runStateImport(kind, nameArg, id string) error {
 
 	// Success message
 	greenStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("10"))
-	fmt.Printf("%s Imported %s/%s with ID %s\n", greenStyle.Render("✓"), kind, resourceName, id)
+	fmt.Printf("%s Imported %s\n", greenStyle.Render("✓"), id)
 
 	return nil
+}
+
+// parseID parses a resource ID to extract kind, name, and whether it has an item key.
+// ID format: Kind/name or Kind/name[itemKey]
+// Examples: 
+//   - "ManagedFile/zshrc" -> kind="ManagedFile", name="zshrc", hasItemKey=false
+//   - "BrewPackages/core-tools[ripgrep]" -> kind="BrewPackages", name="core-tools", hasItemKey=true
+func parseID(id string) (kind, name string, hasItemKey bool, err error) {
+	// First check if there's a bracket (item key)
+	bracketIdx := strings.Index(id, "[")
+	if bracketIdx == -1 {
+		// No bracket - simple Kind/name format
+		parts := strings.SplitN(id, "/", 2)
+		if len(parts) != 2 {
+			return "", "", false, fmt.Errorf("invalid ID format: %s (expected Kind/name)", id)
+		}
+		return parts[0], parts[1], false, nil
+	}
+
+	// Has bracket - extract kind/name from part before bracket
+	prefix := id[:bracketIdx]
+	parts := strings.SplitN(prefix, "/", 2)
+	if len(parts) != 2 {
+		return "", "", false, fmt.Errorf("invalid ID format: %s", id)
+	}
+
+	return parts[0], parts[1], true, nil
 }
 
 // stateRemoveCmd removes a resource from state
