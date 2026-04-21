@@ -161,6 +161,11 @@ func runStateImport(id, actualValue string) error {
 		currentState = state.NewState()
 	}
 
+	// Check if resource already exists in state (Terraform behavior)
+	if _, exists := currentState.GetResource(id); exists {
+		return fmt.Errorf("resource %s already exists in state. Use 'state remove %s' first if you want to re-import", id, id)
+	}
+
 	// Add the imported resource
 	currentState.SetResource(resourceState)
 
