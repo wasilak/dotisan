@@ -306,17 +306,17 @@ func runStateList() error {
 	// Print header
 	fmt.Println(headerStyle.Render("Managed Resources"))
 	fmt.Println()
-	fmt.Printf("%-20s %-25s %-30s %-10s\n", "KIND", "NAME", "ID", "STATUS")
-	fmt.Println(strings.Repeat("-", 85))
+	fmt.Printf("%-20s %-25s %-35s %-10s\n", "KIND", "NAME", "ID", "STATUS")
+	fmt.Println(strings.Repeat("-", 90))
 
 	// Display resources with accurate status
 	for _, r := range currentState.Resources {
 		status, style := getResourceStatus(r, statusMap, inSyncStyle, driftStyle, missingStyle, unknownStyle)
 
-		fmt.Printf("%-20s %-25s %-30s %s\n",
+		fmt.Printf("%-20s %-25s %-35s %s\n",
 			truncate(r.Kind, 20),
 			truncate(r.Name, 25),
-			truncate(r.ID, 30),
+			r.ID,
 			style.Render(status))
 	}
 
