@@ -13,8 +13,9 @@ var initForceFlag bool
 
 // initCmd represents the init command
 var initCmd = &cobra.Command{
-	Use:   "init",
-	Short: "Initialize dotisan configuration",
+	Use:         "init",
+	SilenceUsage: true,
+	Short:       "Initialize dotisan configuration",
 	Long: `init creates the default dotisan configuration directory and files:
 
   ~/.config/dotisan/              - Configuration directory

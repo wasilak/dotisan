@@ -20,8 +20,9 @@ var doctorValidateFlag bool
 
 // doctorCmd represents the doctor command
 var doctorCmd = &cobra.Command{
-	Use:   "doctor",
-	Short: "Check system prerequisites",
+	Use:         "doctor",
+	SilenceUsage: true,
+	Short:       "Check system prerequisites",
 	Long: `doctor checks each provider's Available() status, state backend connectivity,
 config file validity, and template rendering. Reports issues and suggests fixes.
 

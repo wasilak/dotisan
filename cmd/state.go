@@ -33,8 +33,9 @@ var stateCmd = &cobra.Command{
 
 // stateImportCmd imports an existing resource into state
 var stateImportCmd = &cobra.Command{
-	Use:   "import ID ACTUAL_VALUE",
-	Short: "Import existing resource into state",
+	Use:          "import ID ACTUAL_VALUE",
+	SilenceUsage: true,
+	Short:        "Import existing resource into state",
 	Long: `import discovers an existing resource on your system and adds it to
 the state file without making any changes to the system.
 
@@ -163,7 +164,8 @@ func runStateImport(id, actualValue string) error {
 
 	// Check if resource already exists in state (Terraform behavior)
 	if _, exists := currentState.GetResource(id); exists {
-		return fmt.Errorf("resource %s already exists in state. Use 'state remove %s' first if you want to re-import", id, id)
+		fmt.Printf("Resource %s already exists in state. Use 'state remove %s' first if you want to re-import\n", id, id)
+		return nil
 	}
 
 	// Add the imported resource
@@ -210,8 +212,9 @@ func parseID(id string) (kind, name string, hasItemKey bool, err error) {
 
 // stateRemoveCmd removes a resource from state
 var stateRemoveCmd = &cobra.Command{
-	Use:   "remove ID",
-	Short: "Remove resource from state only",
+	Use:          "remove ID",
+	SilenceUsage: true,
+	Short:        "Remove resource from state only",
 	Long: `remove deletes the resource entry from the state file without
 affecting the actual system. Use this when you want dotisan to stop
 tracking a resource without removing it from your system.
@@ -290,8 +293,9 @@ func runStateRemoveByID(id string) error {
 
 // stateListCmd lists all managed resources
 var stateListCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List all managed resources",
+	Use:          "list",
+	SilenceUsage:  true,
+	Short:        "List all managed resources",
 	Long: `list displays all resources currently tracked in the state file
 along with their status (in_sync, drift, missing).`,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -490,8 +494,9 @@ func runStateListBasic() error {
 
 // statePullCmd pulls state from remote backend
 var statePullCmd = &cobra.Command{
-	Use:   "pull",
-	Short: "Fetch state from remote backend",
+	Use:          "pull",
+	SilenceUsage:  true,
+	Short:        "Fetch state from remote backend",
 	Long: `pull downloads the state from a configured remote backend (S3)
 and overwrites the local state file. Use with caution.
 
@@ -551,8 +556,9 @@ func runStatePull() error {
 
 // statePushCmd pushes state to remote backend
 var statePushCmd = &cobra.Command{
-	Use:   "push",
-	Short: "Write local state to remote backend",
+	Use:          "push",
+	SilenceUsage:  true,
+	Short:        "Write local state to remote backend",
 	Long: `push uploads the local state file to a configured remote backend (S3),
 overwriting the remote state. Use with caution.
 
