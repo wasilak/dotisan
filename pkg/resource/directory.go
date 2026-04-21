@@ -32,6 +32,19 @@ type ManagedDirectorySpec struct {
 
 	// Exclude is a list of glob patterns to exclude from sync
 	Exclude []string `yaml:"exclude,omitempty"`
+
+	// Directories is a list of directories to manage (new list-based syntax).
+	// When populated, this takes precedence over the single-directory fields above.
+	Directories []DirectorySpec `yaml:"directories,omitempty"`
+}
+
+// DirectorySpec represents a single directory in the list-based ManagedDirectory structure.
+type DirectorySpec struct {
+	SourceDir    string   `yaml:"sourceDir,omitempty"`
+	Destination  string   `yaml:"destination" validate:"required"`
+	Recursive    bool     `yaml:"recursive,omitempty"`
+	Clean        bool     `yaml:"clean,omitempty"`
+	Exclude      []string `yaml:"exclude,omitempty"`
 }
 
 // Validate implements Resource.Validate.
@@ -41,17 +54,34 @@ func (r ManagedDirectory) Validate() error {
 		return err
 	}
 
-	// Custom validation: at most one of Source or SourceDir should be set
-	// (SourceDir is the common case, Source is for advanced use)
-	hasSource := r.Spec.Source != ""
-	hasSourceDir := r.Spec.SourceDir != ""
+	// Custom validation for single-directory syntax (backward compatibility)
+	if len(r.Spec.Directories) == 0 {
+		// Single-directory mode: at most one of Source or SourceDir should be set
+		hasSource := r.Spec.Source != ""
+		hasSourceDir := r.Spec.SourceDir != ""
 
-	if hasSource && hasSourceDir {
-		return fmt.Errorf("ManagedDirectory.spec: 'source' and 'sourceDir' are mutually exclusive, use exactly one")
+		if hasSource && hasSourceDir {
+			return fmt.Errorf("ManagedDirectory.spec: 'source' and 'sourceDir' are mutually exclusive, use exactly one")
+		}
 	}
 
-	// For directory, SourceDir is the normal case
-	// If neither is set, that's also valid (empty directory creation)
-
 	return nil
+}
+
+// GetDirectories returns the list of directories to manage.
+// If Directories is populated (new syntax), returns that.
+// Otherwise, converts the single-directory fields to a list (backward compatibility).
+func (r ManagedDirectory) GetDirectories() []DirectorySpec {
+	if len(r.Spec.Directories) > 0 {
+		return r.Spec.Directories
+	}
+
+	// Convert single-directory to list for backward compatibility
+	return []DirectorySpec{{
+		SourceDir:   r.Spec.SourceDir,
+		Destination: r.Spec.Destination,
+		Recursive:   r.Spec.Recursive,
+		Clean:       r.Spec.Clean,
+		Exclude:     r.Spec.Exclude,
+	}}
 }

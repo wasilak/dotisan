@@ -140,4 +140,11 @@ type Provider interface {
 	// This is used by the `state import` command to bring unmanaged resources
 	// under dotisan's control.
 	Import(ctx context.Context, id string) (ResourceState, error)
+
+	// ImportItem imports a specific item from a list-based resource.
+	// The resourceName identifies the resource (e.g., "core-tools").
+	// The itemKey identifies the specific item (e.g., "ripgrep" for packages,
+	// "0" for file index, or "/path/to/file" for file path).
+	// Returns the ResourceState for the imported item.
+	ImportItem(ctx context.Context, resourceName string, itemKey string) (ResourceState, error)
 }

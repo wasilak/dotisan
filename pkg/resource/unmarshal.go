@@ -56,12 +56,12 @@ func UnmarshalYAML(data []byte) (Resource, error) {
 type ResourceKind string
 
 const (
-	KindBrewPackages      ResourceKind = "BrewPackages"
-	KindNpmPackages       ResourceKind = "NpmPackages"
-	KindGoPackages        ResourceKind = "GoPackages"
-	KindCargoPackages     ResourceKind = "CargoPackages"
-	KindManagedFile       ResourceKind = "ManagedFile"
-	KindManagedDirectory  ResourceKind = "ManagedDirectory"
+	KindBrewPackages     ResourceKind = "BrewPackages"
+	KindNpmPackages      ResourceKind = "NpmPackages"
+	KindGoPackages       ResourceKind = "GoPackages"
+	KindCargoPackages    ResourceKind = "CargoPackages"
+	KindManagedFile      ResourceKind = "ManagedFile"
+	KindManagedDirectory ResourceKind = "ManagedDirectory"
 )
 
 // ValidResourceKinds returns all valid resource kind strings.

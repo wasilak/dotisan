@@ -157,9 +157,67 @@ func (p *BrewProvider) reconcileBrewPackages(
 		}
 	}
 
+	// Drift detection: check if packages in state are still installed
+	p.detectDrift(bp, stateMap, plan)
+
 	// Check if resource is in sync
-	if len(plan.Additions) == 0 && len(plan.Modifications) == 0 {
+	if len(plan.Additions) == 0 && len(plan.Modifications) == 0 && len(plan.Warnings) == 0 {
 		plan.InSync = append(plan.InSync, bp)
+	}
+}
+
+// detectDrift checks if packages in saved state are still installed on the system.
+// If a package was managed by dotisan but is no longer installed, it generates a PlanWarning.
+func (p *BrewProvider) detectDrift(
+	bp *resource.BrewPackages,
+	stateMap map[string]provider.ResourceState,
+	plan *provider.Plan,
+) {
+	// Get the saved state for this BrewPackages resource
+	id := fmt.Sprintf("BrewPackages/%s", bp.GetMetadata().Name)
+	savedState, exists := stateMap[id]
+	if !exists {
+		return
+	}
+
+	// Extract formulae from saved state
+	var formulae []string
+	if savedState.Extra != nil {
+		if pkgs, ok := savedState.Extra["formulae"].([]interface{}); ok {
+			for _, pkg := range pkgs {
+				if name, ok := pkg.(string); ok {
+					formulae = append(formulae, name)
+				}
+			}
+		}
+	}
+
+	if len(formulae) == 0 {
+		return
+	}
+
+	// Check actual status using brew info
+	status, err := p.checkFormulaeStatus(formulae)
+	if err != nil {
+		return
+	}
+
+	// Generate warnings for uninstalled packages
+	var driftMsg []string
+	for _, formula := range formulae {
+		if installed, ok := status[formula]; ok && !installed {
+			driftMsg = append(driftMsg, fmt.Sprintf("Package '%s' was uninstalled outside of dotisan", formula))
+		}
+	}
+
+	if len(driftMsg) > 0 {
+		warning := provider.PlanWarning{
+			ResourceID: id,
+			Severity:   "warning",
+			Message:    fmt.Sprintf("BrewPackages/%s has drift. %s", bp.GetMetadata().Name, strings.Join(driftMsg, ". ")),
+			Suggestion: "Run 'dotisan apply' to restore",
+		}
+		plan.Warnings = append(plan.Warnings, warning)
 	}
 }
 
@@ -183,6 +241,39 @@ func (p *BrewProvider) getInstalledPackages() (map[string]string, error) {
 	}
 
 	return packages, nil
+}
+
+// checkFormulaeStatus checks the installation status of specific Homebrew formulae.
+// It returns a map where the key is the formula name and the value indicates if it's installed.
+func (p *BrewProvider) checkFormulaeStatus(formulae []string) (map[string]bool, error) {
+	if len(formulae) == 0 {
+		return make(map[string]bool), nil
+	}
+
+	ctx := context.Background()
+	args := append([]string{"info", "--json"}, formulae...)
+	stdout, stderr, err := cmdutil.RunSimple(ctx, "brew", args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to run brew info: %w (stderr: %s)", err, stderr)
+	}
+
+	var results []brewInfoResult
+	if err := json.Unmarshal([]byte(stdout), &results); err != nil {
+		return nil, fmt.Errorf("failed to parse brew info output: %w", err)
+	}
+
+	status := make(map[string]bool)
+	for _, result := range results {
+		status[result.Name] = len(result.Installed) > 0
+	}
+
+	return status, nil
+}
+
+// brewInfoResult represents the JSON structure returned by `brew info --json v1`.
+type brewInfoResult struct {
+	Name      string        `json:"name"`
+	Installed []interface{} `json:"installed"`
 }
 
 // isTapInstalled checks if a tap is installed.
@@ -346,10 +437,56 @@ func (p *BrewProvider) Import(ctx context.Context, id string) (provider.Resource
 	return provider.ResourceState{}, fmt.Errorf("package %s not found (tried both formula and cask)", id)
 }
 
+// ImportItem imports a specific package from a BrewPackages resource.
+// The itemKey is the package name (e.g., "ripgrep", "fd").
+func (p *BrewProvider) ImportItem(ctx context.Context, resourceName string, itemKey string) (provider.ResourceState, error) {
+	// Check if the package is installed using brew info
+	status, err := p.checkFormulaeStatus([]string{itemKey})
+	if err != nil {
+		return provider.ResourceState{}, fmt.Errorf("failed to check package status: %w", err)
+	}
+
+	installed, ok := status[itemKey]
+	if !ok || !installed {
+		return provider.ResourceState{}, fmt.Errorf("package %s is not installed", itemKey)
+	}
+
+	// Get version info
+	stdout, _, err := cmdutil.RunSimple(ctx, "brew", "list", "--versions", itemKey)
+	if err != nil {
+		return provider.ResourceState{}, fmt.Errorf("failed to get version for %s: %w", itemKey, err)
+	}
+
+	version := ""
+	lines := strings.Split(stdout, "\n")
+	for _, line := range lines {
+		parts := strings.Fields(line)
+		if len(parts) >= 1 && strings.HasPrefix(parts[0], itemKey) {
+			if len(parts) >= 2 {
+				version = parts[1]
+			}
+			break
+		}
+	}
+
+	// Build the ResourceState ID
+	stateID := fmt.Sprintf("BrewPackages/%s[%s]", resourceName, itemKey)
+
+	return provider.ResourceState{
+		ID:   stateID,
+		Kind: "BrewPackages",
+		Name: resourceName,
+		Extra: map[string]interface{}{
+			"formulae": []string{itemKey},
+			"version":  version,
+		},
+	}, nil
+}
+
 // getFormulaInfo fetches formula information from the Homebrew API.
 func (p *BrewProvider) getFormulaInfo(name string) (*brewFormulaInfo, error) {
 	url := fmt.Sprintf("https://formulae.brew.sh/api/formula/%s.json", name)
-	
+
 	resp, err := p.httpClient.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch formula info: %w", err)

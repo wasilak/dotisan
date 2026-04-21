@@ -34,6 +34,10 @@ func (m *mockProvider) Import(ctx context.Context, id string) (ResourceState, er
 	return ResourceState{ID: id}, nil
 }
 
+func (m *mockProvider) ImportItem(ctx context.Context, resourceName string, itemKey string) (ResourceState, error) {
+	return ResourceState{ID: resourceName + "[" + itemKey + "]"}, nil
+}
+
 func TestRegisterAndGet(t *testing.T) {
 	// Create a fresh registry for testing
 	reg := &Registry{

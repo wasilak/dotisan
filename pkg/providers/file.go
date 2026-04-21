@@ -125,29 +125,53 @@ func (p *FileProvider) reconcileManagedFile(
 	plan *provider.Plan,
 	desiredIDs map[string]bool,
 ) {
+	// Get files list (supports both list-based and single-file syntax)
+	files := mf.GetFiles()
+
 	// Build resource ID using kind and name (Terraform-style: files/dirs are for human org only)
 	id := fmt.Sprintf("ManagedFile/%s", mf.GetMetadata().Name)
 	desiredIDs[id] = true
 
+	// Iterate over each file in the list
+	for i, file := range files {
+		p.reconcileSingleFile(mf, file, i, stateMap, plan, desiredIDs, id)
+	}
+}
+
+// reconcileSingleFile reconciles a single file within a ManagedFile resource.
+func (p *FileProvider) reconcileSingleFile(
+	mf *resource.ManagedFile,
+	file resource.FileSpec,
+	index int,
+	stateMap map[string]provider.ResourceState,
+	plan *provider.Plan,
+	desiredIDs map[string]bool,
+	parentID string,
+) {
 	// Resolve destination path
-	destPath, err := p.resolveDestination(mf.Spec.Destination)
+	destPath, err := p.resolveDestination(file.Destination)
 	if err != nil {
-		// Can't resolve destination, mark as error
 		return
+	}
+
+	// Build item-specific ID if we have multiple files
+	id := parentID
+	if len(mf.GetFiles()) > 1 {
+		id = fmt.Sprintf("%s[%d]", parentID, index)
 	}
 
 	// Render source content (either from inline Source or external SourceFile)
 	var content string
 	var sourcePath string
 
-	if mf.Spec.Source != "" {
+	if file.Source != "" {
 		// Inline content
 		sourcePath = "" // No source file for inline content
-		if mf.Spec.Template && p.templateContext != nil {
+		if file.Template && p.templateContext != nil {
 			// Apply templating to inline content
 			engine := config.NewTemplateEngine(p.templateContext)
 			var renderErr error
-			content, renderErr = engine.RenderTemplate("inline", mf.Spec.Source)
+			content, renderErr = engine.RenderTemplate("inline", file.Source)
 			if renderErr != nil {
 				// Template rendering failed
 				plan.Additions = append(plan.Additions, mf)
@@ -155,13 +179,13 @@ func (p *FileProvider) reconcileManagedFile(
 			}
 		} else {
 			// Use inline content directly without templating
-			content = mf.Spec.Source
+			content = file.Source
 		}
-	} else if mf.Spec.SourceFile != "" {
+	} else if file.SourceFile != "" {
 		// External file path (relative to resources/ directory)
-		sourcePath = filepath.Join(p.dotfilesRoot, "resources", mf.Spec.SourceFile)
+		sourcePath = filepath.Join(p.dotfilesRoot, "resources", file.SourceFile)
 		var renderErr error
-		content, renderErr = p.renderSource(sourcePath, mf.Spec.Template)
+		content, renderErr = p.renderSource(sourcePath, file.Template)
 		if renderErr != nil {
 			// Can't read/render source, mark as error - but still add to plan so user knows
 			plan.Additions = append(plan.Additions, mf)
@@ -194,7 +218,7 @@ func (p *FileProvider) reconcileManagedFile(
 		Extra: map[string]interface{}{
 			"source_path": sourcePath,
 			"dest_path":   destPath,
-			"mode":        mf.Spec.Mode,
+			"mode":        file.Mode,
 		},
 	}
 
@@ -294,13 +318,38 @@ func (p *FileProvider) reconcileManagedDirectory(
 	plan *provider.Plan,
 	desiredIDs map[string]bool,
 ) {
+	// Get directories list (supports both list-based and single-directory syntax)
+	dirs := md.GetDirectories()
+
 	// Build resource ID using kind and name (Terraform-style: files/dirs are for human org only)
 	id := fmt.Sprintf("ManagedDirectory/%s", md.GetMetadata().Name)
 	desiredIDs[id] = true
 
+	// Iterate over each directory in the list
+	for i, dir := range dirs {
+		p.reconcileSingleDirectory(md, dir, i, stateMap, plan, desiredIDs, id)
+	}
+}
+
+// reconcileSingleDirectory reconciles a single directory within a ManagedDirectory resource.
+func (p *FileProvider) reconcileSingleDirectory(
+	md *resource.ManagedDirectory,
+	dir resource.DirectorySpec,
+	index int,
+	stateMap map[string]provider.ResourceState,
+	plan *provider.Plan,
+	desiredIDs map[string]bool,
+	parentID string,
+) {
+	// Build item-specific ID if we have multiple directories
+	id := parentID
+	if len(md.GetDirectories()) > 1 {
+		id = fmt.Sprintf("%s[%d]", parentID, index)
+	}
+
 	// Resolve source and destination paths (source is relative to resources/ directory)
-	sourcePath := filepath.Join(p.dotfilesRoot, "resources", md.Spec.SourceDir)
-	destPath, err := p.resolveDestination(md.Spec.Destination)
+	sourcePath := filepath.Join(p.dotfilesRoot, "resources", dir.SourceDir)
+	destPath, err := p.resolveDestination(dir.Destination)
 	if err != nil {
 		return
 	}
@@ -326,14 +375,14 @@ func (p *FileProvider) reconcileManagedDirectory(
 
 	// Build list of all files in source (for comparison)
 	sourceFiles := make(map[string]string) // relative path -> checksum
-	if err := p.walkSourceDir(sourcePath, "", md.Spec.Recursive, md.Spec.Exclude, sourceFiles); err != nil {
+	if err := p.walkSourceDir(sourcePath, "", dir.Recursive, dir.Exclude, sourceFiles); err != nil {
 		return
 	}
 
 	// Build list of all files in destination (for clean operation)
 	destFiles := make(map[string]string) // relative path -> checksum
 	if destExists {
-		if err := p.walkDestDir(destPath, "", md.Spec.Recursive, destFiles); err != nil {
+		if err := p.walkDestDir(destPath, "", dir.Recursive, destFiles); err != nil {
 			return
 		}
 	}
@@ -355,7 +404,7 @@ func (p *FileProvider) reconcileManagedDirectory(
 	}
 
 	// Check for files to remove (clean operation)
-	if md.Spec.Clean {
+	if dir.Clean {
 		for relPath := range destFiles {
 			if _, exists := sourceFiles[relPath]; !exists {
 				// File exists in dest but not in source - should be removed
@@ -373,9 +422,9 @@ func (p *FileProvider) reconcileManagedDirectory(
 		Extra: map[string]interface{}{
 			"source_path": sourcePath,
 			"dest_path":   destPath,
-			"recursive":   md.Spec.Recursive,
-			"clean":       md.Spec.Clean,
-			"exclude":     md.Spec.Exclude,
+			"recursive":   dir.Recursive,
+			"clean":       dir.Clean,
+			"exclude":     dir.Exclude,
 		},
 	}
 
@@ -682,8 +731,23 @@ func (p *FileProvider) applyFileAddition(ctx context.Context, mf *resource.Manag
 		return err
 	}
 
+	// Get files list (supports both list-based and single-file syntax)
+	files := mf.GetFiles()
+
+	// Process each file
+	for _, file := range files {
+		if err := p.applySingleFileAddition(ctx, mf, file); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// applySingleFileAddition creates a single file.
+func (p *FileProvider) applySingleFileAddition(ctx context.Context, mf *resource.ManagedFile, file resource.FileSpec) error {
 	// Resolve destination path
-	destPath, err := p.resolveDestination(mf.Spec.Destination)
+	destPath, err := p.resolveDestination(file.Destination)
 	if err != nil {
 		return err
 	}
@@ -691,23 +755,23 @@ func (p *FileProvider) applyFileAddition(ctx context.Context, mf *resource.Manag
 	// Render content (from inline Source or external SourceFile)
 	var content string
 
-	if mf.Spec.Source != "" {
+	if file.Source != "" {
 		// Inline content
-		if mf.Spec.Template && p.templateContext != nil {
+		if file.Template && p.templateContext != nil {
 			// Apply templating to inline content
 			engine := config.NewTemplateEngine(p.templateContext)
-			content, err = engine.RenderTemplate("inline", mf.Spec.Source)
+			content, err = engine.RenderTemplate("inline", file.Source)
 			if err != nil {
 				return fmt.Errorf("failed to render template: %w", err)
 			}
 		} else {
 			// Use inline content directly
-			content = mf.Spec.Source
+			content = file.Source
 		}
-	} else if mf.Spec.SourceFile != "" {
+	} else if file.SourceFile != "" {
 		// External file path (relative to resources/ directory)
-		sourcePath := filepath.Join(p.dotfilesRoot, "resources", mf.Spec.SourceFile)
-		content, err = p.renderSource(sourcePath, mf.Spec.Template)
+		sourcePath := filepath.Join(p.dotfilesRoot, "resources", file.SourceFile)
+		content, err = p.renderSource(sourcePath, file.Template)
 		if err != nil {
 			return err
 		}
@@ -722,7 +786,7 @@ func (p *FileProvider) applyFileAddition(ctx context.Context, mf *resource.Manag
 	}
 
 	// Write file
-	if err := os.WriteFile(destPath, []byte(content), p.parseMode(mf.Spec.Mode)); err != nil {
+	if err := os.WriteFile(destPath, []byte(content), p.parseMode(file.Mode)); err != nil {
 		return fmt.Errorf("failed to write file %s: %w", destPath, err)
 	}
 
@@ -776,8 +840,23 @@ func (p *FileProvider) applyFileModification(ctx context.Context, mf *resource.M
 		return err
 	}
 
+	// Get files list (supports both list-based and single-file syntax)
+	files := mf.GetFiles()
+
+	// Process each file
+	for _, file := range files {
+		if err := p.applySingleFileModification(ctx, mf, file); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// applySingleFileModification updates a single existing file.
+func (p *FileProvider) applySingleFileModification(ctx context.Context, mf *resource.ManagedFile, file resource.FileSpec) error {
 	// Resolve destination path
-	destPath, err := p.resolveDestination(mf.Spec.Destination)
+	destPath, err := p.resolveDestination(file.Destination)
 	if err != nil {
 		return err
 	}
@@ -785,23 +864,23 @@ func (p *FileProvider) applyFileModification(ctx context.Context, mf *resource.M
 	// Render content (from inline Source or external SourceFile)
 	var content string
 
-	if mf.Spec.Source != "" {
+	if file.Source != "" {
 		// Inline content
-		if mf.Spec.Template && p.templateContext != nil {
+		if file.Template && p.templateContext != nil {
 			// Apply templating to inline content
 			engine := config.NewTemplateEngine(p.templateContext)
-			content, err = engine.RenderTemplate("inline", mf.Spec.Source)
+			content, err = engine.RenderTemplate("inline", file.Source)
 			if err != nil {
 				return fmt.Errorf("failed to render template: %w", err)
 			}
 		} else {
 			// Use inline content directly
-			content = mf.Spec.Source
+			content = file.Source
 		}
-	} else if mf.Spec.SourceFile != "" {
+	} else if file.SourceFile != "" {
 		// External file path (relative to resources/ directory)
-		sourcePath := filepath.Join(p.dotfilesRoot, "resources", mf.Spec.SourceFile)
-		content, err = p.renderSource(sourcePath, mf.Spec.Template)
+		sourcePath := filepath.Join(p.dotfilesRoot, "resources", file.SourceFile)
+		content, err = p.renderSource(sourcePath, file.Template)
 		if err != nil {
 			return err
 		}
@@ -810,7 +889,7 @@ func (p *FileProvider) applyFileModification(ctx context.Context, mf *resource.M
 	}
 
 	// Write file (this overwrites existing content)
-	if err := os.WriteFile(destPath, []byte(content), p.parseMode(mf.Spec.Mode)); err != nil {
+	if err := os.WriteFile(destPath, []byte(content), p.parseMode(file.Mode)); err != nil {
 		return fmt.Errorf("failed to write file %s: %w", destPath, err)
 	}
 
@@ -1028,6 +1107,63 @@ func (p *FileProvider) Import(ctx context.Context, id string) (provider.Resource
 			"dest_path":   filePath,
 			"mode":        mode,
 			"imported":    true,
+		},
+	}, nil
+}
+
+// ImportItem imports a specific file from a ManagedFile resource.
+// The itemKey can be:
+// - A file path (e.g., "/path/to/file" or "~/file")
+// - A numeric index (currently unsupported)
+func (p *FileProvider) ImportItem(ctx context.Context, resourceName string, itemKey string) (provider.ResourceState, error) {
+	// Resolve the file path
+	filePath := itemKey
+	if strings.HasPrefix(filePath, "~/") {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return provider.ResourceState{}, fmt.Errorf("failed to get home directory: %w", err)
+		}
+		filePath = filepath.Join(homeDir, filePath[2:])
+	}
+
+	// Check if file exists
+	fileInfo, err := os.Stat(filePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return provider.ResourceState{}, fmt.Errorf("file %s does not exist", itemKey)
+		}
+		return provider.ResourceState{}, fmt.Errorf("failed to stat file %s: %w", itemKey, err)
+	}
+
+	if fileInfo.IsDir() {
+		return provider.ResourceState{}, fmt.Errorf("itemKey %s is a directory, not a file", itemKey)
+	}
+
+	// Read file content
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return provider.ResourceState{}, fmt.Errorf("failed to read file %s: %w", itemKey, err)
+	}
+
+	// Calculate checksum
+	checksum := calculateChecksum(string(content))
+
+	// Get file mode
+	mode := fmt.Sprintf("%04o", fileInfo.Mode().Perm())
+
+	// Build the ResourceState ID
+	stateID := fmt.Sprintf("ManagedFile/%s[%s]", resourceName, itemKey)
+
+	return provider.ResourceState{
+		ID:       stateID,
+		Kind:     "ManagedFile",
+		Name:     resourceName,
+		DestHash: checksum,
+		Extra: map[string]interface{}{
+			"source_path": "",
+			"dest_path": filePath,
+			"mode":     mode,
+			"imported": true,
 		},
 	}, nil
 }

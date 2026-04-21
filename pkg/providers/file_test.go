@@ -40,23 +40,23 @@ func TestFileProvider_Name(t *testing.T) {
 
 func TestFileProvider_Available(t *testing.T) {
 	tests := []struct {
-		name         string
-		dotfilesRoot string
+		name          string
+		dotfilesRoot  string
 		wantAvailable bool
 	}{
 		{
-			name:         "valid dotfiles root",
-			dotfilesRoot: t.TempDir(),
+			name:          "valid dotfiles root",
+			dotfilesRoot:  t.TempDir(),
 			wantAvailable: true,
 		},
 		{
-			name:         "empty dotfiles root (uses home)",
-			dotfilesRoot: "",
+			name:          "empty dotfiles root (uses home)",
+			dotfilesRoot:  "",
 			wantAvailable: true,
 		},
 		{
-			name:         "non-existent dotfiles root",
-			dotfilesRoot: "/nonexistent/path/12345",
+			name:          "non-existent dotfiles root",
+			dotfilesRoot:  "/nonexistent/path/12345",
 			wantAvailable: false,
 		},
 	}

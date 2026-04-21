@@ -81,12 +81,12 @@ func TestBrewProvider_Reconcile_Additions(t *testing.T) {
 
 	desired := []resource.Resource{bp}
 	state := []provider.ResourceState{}
-	
+
 	// Note: This test may fail if brew is not installed
 	// We're just testing that Reconcile doesn't panic
 	plan := p.Reconcile(desired, state)
 
-	t.Logf("Plan: %d additions, %d removals, %d in-sync", 
+	t.Logf("Plan: %d additions, %d removals, %d in-sync",
 		len(plan.Additions), len(plan.Removals), len(plan.InSync))
 }
 
@@ -169,4 +169,65 @@ func TestBrewProvider_Apply_ContextCancellation(t *testing.T) {
 	if err != nil {
 		t.Logf("Apply() returned error for cancelled context (may be expected): %v", err)
 	}
+}
+
+func TestBrewProvider_checkFormulaeStatus(t *testing.T) {
+	p := NewBrewProvider()
+
+	t.Run("empty list returns empty map", func(t *testing.T) {
+		result, err := p.checkFormulaeStatus([]string{})
+		if err != nil {
+			t.Errorf("checkFormulaeStatus([]) returned error: %v", err)
+			return
+		}
+		if len(result) != 0 {
+			t.Errorf("checkFormulaeStatus([]) = %v, want empty map", result)
+		}
+	})
+
+	t.Run("returns map with formula names", func(t *testing.T) {
+		formulae := []string{"ripgrep", "fd"}
+		result, err := p.checkFormulaeStatus(formulae)
+		if err != nil {
+			t.Logf("checkFormulaeStatus() error (may fail without brew): %v", err)
+			return
+		}
+
+		if len(result) == 0 {
+			t.Log("checkFormulaeStatus returned empty map - may be expected if brew not available")
+			return
+		}
+
+		for _, formula := range formulae {
+			if _, ok := result[formula]; !ok {
+				t.Errorf("checkFormulaeStatus() missing key %q in result %v", formula, result)
+			}
+			if result[formula] != true && result[formula] != false {
+				t.Errorf("checkFormulaeStatus()[%q] = %v, want bool", formula, result[formula])
+			}
+			t.Logf("checkFormulaeStatus(%q) = %v", formula, result[formula])
+		}
+	})
+
+	t.Run("nonexistent formula handled gracefully", func(t *testing.T) {
+		formulae := []string{"nonexistent-formula-xyz-123"}
+		result, err := p.checkFormulaeStatus(formulae)
+		if err != nil {
+			t.Logf("checkFormulaeStatus() error (may fail without brew): %v", err)
+			return
+		}
+
+		if result == nil {
+			t.Error("checkFormulaeStatus() returned nil map")
+			return
+		}
+
+		if installed, ok := result["nonexistent-formula-xyz-123"]; !ok {
+			t.Errorf("checkFormulaeStatus() missing nonexistent formula in result %v", result)
+		} else if installed {
+			t.Error("checkFormulaeStatus() reported nonexistent formula as installed")
+		} else {
+			t.Log("checkFormulaeStatus() correctly reported nonexistent formula as not installed")
+		}
+	})
 }

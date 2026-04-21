@@ -14,11 +14,11 @@ import (
 
 // S3Backend implements StateBackend for S3-compatible storage.
 type S3Backend struct {
-	client     *minio.Client
-	bucket     string
-	key        string
-	endpoint   string
-	useSSL     bool
+	client   *minio.Client
+	bucket   string
+	key      string
+	endpoint string
+	useSSL   bool
 }
 
 // S3Config holds configuration for S3Backend.

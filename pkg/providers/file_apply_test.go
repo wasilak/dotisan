@@ -203,13 +203,13 @@ func TestFileProvider_parseMode(t *testing.T) {
 		mode string
 		want os.FileMode
 	}{
-		{"", 0644},           // Default
-		{"0644", 0644},       // Standard file
-		{"0755", 0755},       // Executable
-		{"0600", 0600},       // Private
-		{"0777", 0777},       // Full permissions
-		{"invalid", 0644},    // Invalid falls back to default
-		{"abc", 0644},        // Invalid falls back to default
+		{"", 0644},        // Default
+		{"0644", 0644},    // Standard file
+		{"0755", 0755},    // Executable
+		{"0600", 0600},    // Private
+		{"0777", 0777},    // Full permissions
+		{"invalid", 0644}, // Invalid falls back to default
+		{"abc", 0644},     // Invalid falls back to default
 	}
 
 	for _, tt := range tests {

@@ -1038,14 +1038,14 @@
   "resource-management-enhancment": {
     "tasks": [
       {
-        "id": 1,
+        "id": "1",
         "title": "Refactor PlanWarning Structure and Plan Output",
         "description": "Implement the `PlanWarning` struct and integrate it into the `Plan` struct. Update the plan display logic to show warnings and information messages in a user-friendly format, including suggested code snippets.",
         "details": "Modify `pkg/provider/provider.go` to add `Warnings []PlanWarning` to the `Plan` struct. Define `PlanWarning` with fields: `ResourceID`, `Severity` (e.g., 'warning', 'info'), `Message`, and `Suggestion` (for code snippets). Update `pkg/engine/engine.go` and `pkg/provider/provider.go` to format and display these warnings in the plan output, adhering to the 'After' format specified in the PRD's 'Plan Output Format' section. Ensure warnings are clearly visible and suggestions are copy-pasteable.",
         "testStrategy": "Create unit tests for the `PlanWarning` struct and its serialization. Develop integration tests to verify that warnings are correctly generated and displayed in the `dotisan plan` output for various scenarios, including existing destination files without state. Check that the suggested `dotisan state import` command is accurate and copy-pasteable.",
         "priority": "high",
         "dependencies": [],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -1053,8 +1053,10 @@
             "description": "Create the `PlanWarning` struct with `ResourceID`, `Severity`, `Message`, and `Suggestion` fields. Integrate this new struct by adding a slice of `PlanWarning` to the existing `Plan` struct in `pkg/provider/provider.go`.",
             "dependencies": [],
             "details": "In `pkg/provider/provider.go`, define `type PlanWarning struct { ResourceID string; Severity string; Message string; Suggestion string }`. Then, modify the `Plan` struct definition to include `Warnings []PlanWarning` as a new field.",
-            "status": "pending",
-            "testStrategy": "Create unit tests for the `PlanWarning` struct's definition to ensure all fields are correctly typed and accessible. Verify that the `Plan` struct can successfully hold a slice of `PlanWarning` objects."
+            "status": "done",
+            "testStrategy": "Create unit tests for the `PlanWarning` struct's definition to ensure all fields are correctly typed and accessible. Verify that the `Plan` struct can successfully hold a slice of `PlanWarning` objects.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-21T13:19:04.051Z"
           },
           {
             "id": 2,
@@ -1064,8 +1066,10 @@
               1
             ],
             "details": "Identify specific conditions within `pkg/provider/provider.go` where warnings should be generated (e.g., existing destination files without state, as per Task 2 context). Create `PlanWarning` instances with appropriate `ResourceID`, `Severity` ('warning', 'info'), `Message`, and `Suggestion` and append them to `plan.Warnings` before the plan is returned.",
-            "status": "pending",
-            "testStrategy": "Develop unit tests for specific provider functions (e.g., `FileProvider.Reconcile`) to ensure `PlanWarning` objects are correctly generated and added to the `Plan` under various conditions, such as a pre-existing unmanaged destination file."
+            "status": "done",
+            "testStrategy": "Develop unit tests for specific provider functions (e.g., `FileProvider.Reconcile`) to ensure `PlanWarning` objects are correctly generated and added to the `Plan` under various conditions, such as a pre-existing unmanaged destination file.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-21T13:11:43.676Z"
           },
           {
             "id": 3,
@@ -1076,8 +1080,10 @@
               2
             ],
             "details": "In `pkg/engine/engine.go`, update the plan display logic to check for `plan.Warnings`. For each warning, format its `Severity`, `Message`, and `Suggestion` for clear presentation in the console output. Ensure suggestions are easily copy-pasteable and the overall output matches the 'After' format from the PRD's 'Plan Output Format' section.",
-            "status": "pending",
-            "testStrategy": "Create integration tests that run `dotisan plan` against configurations designed to trigger warnings. Verify that the output correctly displays warnings with the specified formatting, including severity, message, and accurate, copy-pasteable suggestions."
+            "status": "done",
+            "testStrategy": "Create integration tests that run `dotisan plan` against configurations designed to trigger warnings. Verify that the output correctly displays warnings with the specified formatting, including severity, message, and accurate, copy-pasteable suggestions.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-21T13:15:48.843Z"
           },
           {
             "id": 4,
@@ -1089,31 +1095,39 @@
               3
             ],
             "details": "Develop comprehensive integration tests to verify that warnings are correctly generated and displayed in the `dotisan plan` output for various scenarios, including existing destination files without state, and different resource types. Check that the suggested code snippets are accurate and copy-pasteable. Ensure unit tests cover edge cases for `PlanWarning` creation and manipulation, and that no regressions are introduced.",
-            "status": "pending",
-            "testStrategy": "Execute a full suite of integration tests covering all warning scenarios. Manually inspect `dotisan plan` output for correct formatting and suggestion usability. Review unit test coverage for `PlanWarning` related code paths."
+            "status": "done",
+            "testStrategy": "Execute a full suite of integration tests covering all warning scenarios. Manually inspect `dotisan plan` output for correct formatting and suggestion usability. Review unit test coverage for `PlanWarning` related code paths.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-21T13:19:04.788Z"
           }
-        ]
+        ],
+        "complexity": 8,
+        "recommendedSubtasks": 4,
+        "expansionPrompt": "Break down the task into defining the `PlanWarning` struct, integrating it into `Plan`, modifying `pkg/engine/engine.go` for output formatting, updating `pkg/provider/provider.go` for warning generation, and comprehensive testing.",
+        "updatedAt": "2026-04-21T13:19:04.788Z"
       },
       {
-        "id": 2,
+        "id": "2",
         "title": "Fix ManagedFile Reconcile Logic for Unmanaged Files",
         "description": "Correct the `FileProvider` reconcile logic to accurately identify unmanaged files with existing destinations as '+ to create' and generate a warning, instead of incorrectly marking them 'in sync'.",
         "details": "Locate `pkg/providers/file.go` lines 208-229. Modify the `if !hasSavedState` block. Instead of `plan.InSync = append(plan.InSync, mf)`, always treat this scenario as an addition. Generate a `PlanWarning` (using the structure from Task 1) with severity 'warning', message 'Destination file already exists at ~/.zshrc', and a suggestion like 'dotisan state import ManagedFile zshrc ~/.zshrc'. Add this warning to the `Plan` object.",
         "testStrategy": "Create a test case where a destination file exists (e.g., `~/.zshrc`) but is not in dotisan's state. Run `dotisan plan` and verify that the file is listed as '+ to create' and the correct warning message with the import suggestion is displayed, matching AC1. Ensure `test-template-inline` also appears as '+ to create'.",
         "priority": "high",
         "dependencies": [
-          1
+          "1"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
             "title": "Adjust FileProvider Reconcile for Unmanaged Existing Files",
             "description": "Modify the `FileProvider`'s `Reconcile` method to correctly identify files that exist at the destination but are not managed by dotisan's state, marking them as '+ to create' instead of 'in sync'.",
             "dependencies": [],
-            "details": "Navigate to `pkg/providers/file.go` and locate lines 208-229. Within the `if !hasSavedState` block, change the logic from appending to `plan.InSync` to instead treat the `ManagedFile` as an addition, ensuring it appears in `plan.ToCreate`.",
-            "status": "pending",
-            "testStrategy": "Unit tests for the `Reconcile` method to ensure that when `!hasSavedState` and the destination exists, the file is correctly added to `plan.ToCreate`."
+            "details": "Navigate to `pkg/providers/file.go` and locate lines 208-229. Within the `if !hasSavedState` block, change the logic from appending to `plan.InSync` to instead treat the `ManagedFile` as an addition, ensuring it appears in `plan.ToCreate`.\n<info added on 2026-04-20T20:32:53.116Z>\n[IMPLEMENTATION LOG] Treated unmanaged existing destination files as additions and added PlanWarning suggestion. Files changed: pkg/provider/provider.go (added PlanWarning + Warnings field), pkg/engine/engine.go (TotalWarnings aggregation, display), pkg/diff/plan.go (warnings formatting), pkg/diff/diff.go (robust diff), pkg/providers/file.go (treat unmanaged dest as addition + PlanWarning). Ran go test ./... — all tests passed. Marking subtask complete.\n</info added on 2026-04-20T20:32:53.116Z>",
+            "status": "done",
+            "testStrategy": "Unit tests for the `Reconcile` method to ensure that when `!hasSavedState` and the destination exists, the file is correctly added to `plan.ToCreate`.",
+            "updatedAt": "2026-04-20T20:33:52.722Z",
+            "parentId": "undefined"
           },
           {
             "id": 2,
@@ -1123,8 +1137,10 @@
               1
             ],
             "details": "After modifying the reconcile logic in `pkg/providers/file.go` (as per subtask 1), generate a `PlanWarning` object. Set its severity to 'warning', message to 'Destination file already exists at ~/.zshrc', and suggestion to 'dotisan state import ManagedFile zshrc ~/.zshrc'. Add this `PlanWarning` to the `Plan` object. Ensure the `PlanWarning` structure aligns with Task 1.",
-            "status": "pending",
-            "testStrategy": "Unit tests to verify that when an unmanaged file with an existing destination is processed, a `PlanWarning` with the correct content (severity, message, suggestion) is generated and added to the `Plan` object."
+            "status": "done",
+            "testStrategy": "Unit tests to verify that when an unmanaged file with an existing destination is processed, a `PlanWarning` with the correct content (severity, message, suggestion) is generated and added to the `Plan` object.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-21T13:31:34.934Z"
           },
           {
             "id": 3,
@@ -1135,20 +1151,26 @@
               2
             ],
             "details": "Create a new integration test. Set up a scenario where a destination file (e.g., `~/.zshrc`) exists on the filesystem but is not present in dotisan's state. Run `dotisan plan` and assert that the output correctly lists the file as '+ to create' and displays the specific `PlanWarning` message and import suggestion, matching AC1.",
-            "status": "pending",
-            "testStrategy": "Execute the created integration test case and manually verify the `dotisan plan` output against the expected behavior: file listed as '+ to create' and the warning message with import suggestion is present."
+            "status": "done",
+            "testStrategy": "Execute the created integration test case and manually verify the `dotisan plan` output against the expected behavior: file listed as '+ to create' and the warning message with import suggestion is present.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-21T13:31:35.422Z"
           }
-        ]
+        ],
+        "complexity": 6,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Detail the steps for modifying the `FileProvider` reconcile logic, generating the specific `PlanWarning` with the import suggestion, and creating a dedicated integration test case.",
+        "updatedAt": "2026-04-21T13:31:35.422Z"
       },
       {
-        "id": 3,
+        "id": "3",
         "title": "Implement Homebrew Package Status Checker",
         "description": "Develop a new method within `BrewProvider` to efficiently query Homebrew for the installation status of specific packages using `brew info --json v1`.",
         "details": "In `pkg/providers/brew.go`, implement `func (p *BrewProvider) checkFormulaeStatus(formulae []string) (map[string]bool, error)`. This method should construct and execute the `brew info --json v1 <formula1> <formula2> ...` command. Parse the JSON output, specifically looking at the `installed` array for each formula to determine if it's currently installed. Return a `map[string]bool` where the key is the formula name and the value indicates installation status. Ensure error handling for `brew` command execution and JSON parsing.",
         "testStrategy": "Write unit tests for `checkFormulaeStatus` covering cases with installed packages, uninstalled packages, and a mix. Mock `brew info --json` output for controlled testing. Verify that the returned map accurately reflects the installation status for various inputs. Test performance with a reasonable number of packages to ensure it meets the < 2 seconds NFR.",
         "priority": "high",
         "dependencies": [],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -1156,8 +1178,10 @@
             "description": "Implement the logic within `checkFormulaeStatus` to take a slice of Homebrew formula names and construct the complete `brew info --json v1 <formula1> <formula2> ...` command string, ensuring proper argument formatting.",
             "dependencies": [],
             "details": "In `pkg/providers/brew.go`, within the `checkFormulaeStatus` method, build the command arguments by iterating through the input `formulae` slice and appending them to the base `brew info --json v1` command. Ensure proper escaping if necessary, though Homebrew package names are usually simple.",
-            "status": "pending",
-            "testStrategy": "Unit test the command string generation function with various inputs: an empty slice, a single formula, and multiple formulae. Verify the generated command string is correctly formatted."
+            "status": "done",
+            "testStrategy": "Unit test the command string generation function with various inputs: an empty slice, a single formula, and multiple formulae. Verify the generated command string is correctly formatted.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-21T13:30:38.151Z"
           },
           {
             "id": 2,
@@ -1167,8 +1191,10 @@
               1
             ],
             "details": "Use the `os/exec` package to run the command string generated in subtask 1. Capture `stdout` as a byte slice for JSON parsing and `stderr` for error reporting. Handle potential errors during command execution, such as `brew` not being found or the command returning a non-zero exit code.",
-            "status": "pending",
-            "testStrategy": "Mock `os/exec` to simulate successful command execution with valid JSON output, and failed execution scenarios (e.g., `brew` command not found, non-zero exit code with stderr output). Verify that stdout and stderr are correctly captured."
+            "status": "done",
+            "testStrategy": "Mock `os/exec` to simulate successful command execution with valid JSON output, and failed execution scenarios (e.g., `brew` command not found, non-zero exit code with stderr output). Verify that stdout and stderr are correctly captured.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-21T13:30:39.514Z"
           },
           {
             "id": 3,
@@ -1178,8 +1204,10 @@
               2
             ],
             "details": "Define Go structs that accurately match the expected JSON structure of `brew info --json v1` output. Use `json.Unmarshal` to parse the captured `stdout`. Iterate through the parsed data, specifically checking the `installed` array for each formula to determine its installation status and populate the `map[string]bool`.",
-            "status": "pending",
-            "testStrategy": "Unit test the JSON parsing logic with various mock JSON inputs: valid output for installed packages, uninstalled packages, mixed packages, and malformed JSON. Ensure the `map[string]bool` is correctly populated for each scenario."
+            "status": "done",
+            "testStrategy": "Unit test the JSON parsing logic with various mock JSON inputs: valid output for installed packages, uninstalled packages, mixed packages, and malformed JSON. Ensure the `map[string]bool` is correctly populated for each scenario.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-21T13:30:39.813Z"
           },
           {
             "id": 4,
@@ -1190,24 +1218,30 @@
               2,
               3
             ],
-            "details": "Ensure `checkFormulaeStatus` returns appropriate errors for `brew` command failures (e.g., `brew` not found, non-zero exit code) and JSON unmarshalling issues. Create a `_test.go` file for `BrewProvider` and use a mocking library (e.g., `testify/mock`) to simulate `os/exec` interactions. Cover edge cases like an empty formula list, `brew` not being installed, and partial/invalid JSON output.",
-            "status": "pending",
-            "testStrategy": "Write unit tests for `checkFormulaeStatus` covering cases with installed packages, uninstalled packages, and a mix. Mock `brew info --json` output for controlled testing. Verify that the returned map accurately reflects the installation status for various inputs. Test all error paths, ensuring correct error propagation and messages."
+            "details": "Ensure `checkFormulaeStatus` returns appropriate errors for `brew` command failures (e.g., `brew` not found, non-zero exit code) and JSON unmarshalling issues. Create a `_test.go` file for `BrewProvider` and use a mocking library (e.g., `testify/mock`) to simulate `os/exec` interactions. Cover edge cases like an empty formula list, `brew` not being installed, and partial/invalid JSON output.\n<info added on 2026-04-21T13:30:32.340Z>\n[IMPLEMENTATION LOG] Implemented `checkFormulaeStatus` method in `pkg/providers/brew.go`. The method constructs and executes the `brew info --json v1 <formulae...>` command via `cmdutil.RunSimple`, parses the JSON output into a `[]brewInfoResult` struct (which was also added), and returns a `map[name]bool` indicating installation status. All `brew` specific tests and the full `go test ./...` suite pass. Verified that `dotisan plan` correctly displays `PlanWarning` messages.\n</info added on 2026-04-21T13:30:32.340Z>",
+            "status": "done",
+            "testStrategy": "Write unit tests for `checkFormulaeStatus` covering cases with installed packages, uninstalled packages, and a mix. Mock `brew info --json` output for controlled testing. Verify that the returned map accurately reflects the installation status for various inputs. Test all error paths, ensuring correct error propagation and messages.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-21T14:36:42.299Z"
           }
-        ]
+        ],
+        "complexity": 7,
+        "recommendedSubtasks": 4,
+        "expansionPrompt": "Outline subtasks for constructing the `brew info --json v1` command, executing it, parsing the JSON output to extract installation status, implementing robust error handling, and writing comprehensive unit tests including mocking.",
+        "updatedAt": "2026-04-21T14:36:42.299Z"
       },
       {
-        "id": 4,
+        "id": "4",
         "title": "Integrate Homebrew Drift Detection into Reconcile",
         "description": "Update the `BrewProvider` reconcile logic to utilize the `checkFormulaeStatus` method, compare saved state with actual installed packages, and generate drift warnings for uninstalled packages.",
         "details": "Modify the `Reconcile` method in `pkg/providers/brew.go`. Before determining the plan, call `checkFormulaeStatus` with the list of formulae expected to be managed by `BrewPackages`. Compare the results with the packages recorded in dotisan's state. If a package in state is not reported as installed by `brew info`, generate a `PlanWarning` (using Task 1's structure) with severity 'warning', message 'Package 'X' was uninstalled outside of dotisan', and suggestion 'Run 'dotisan apply' to restore'. Add this warning to the `Plan` object. Ensure only expected packages are checked, not all installed packages.",
         "testStrategy": "Create integration tests for `BrewProvider` where a package managed by dotisan is manually uninstalled via `brew uninstall`. Run `dotisan plan` and verify that the drift warning is correctly displayed, matching AC2. Test with multiple packages, some installed, some uninstalled, to ensure accurate detection and reporting. Verify that `brew info` is only called for the expected packages.",
         "priority": "high",
         "dependencies": [
-          1,
-          3
+          "1",
+          "3"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -1217,8 +1251,10 @@
               3
             ],
             "details": "Locate the `Reconcile` method in `pkg/providers/brew.go`. Before the plan determination logic, extract the list of formulae from the `BrewPackages` resource configuration and pass it to `p.checkFormulaeStatus()`. Ensure proper error handling for the `checkFormulaeStatus` call.",
-            "status": "pending",
-            "testStrategy": "Unit test the `Reconcile` method's initial call to `checkFormulaeStatus` by mocking its return value and verifying that the correct formulae are passed as arguments."
+            "status": "done",
+            "testStrategy": "Unit test the `Reconcile` method's initial call to `checkFormulaeStatus` by mocking its return value and verifying that the correct formulae are passed as arguments.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-21T16:25:12.953Z"
           },
           {
             "id": 2,
@@ -1228,8 +1264,10 @@
               1
             ],
             "details": "After receiving the `map[string]bool` from `checkFormulaeStatus`, iterate through the `BrewPackages` defined in dotisan's desired state. For each package, check if its status in the returned map indicates it's not installed, while dotisan's state expects it to be present.",
-            "status": "pending",
-            "testStrategy": "Unit test the comparison logic by providing mock `checkFormulaeStatus` results and a predefined dotisan state, verifying that the correct discrepancies (uninstalled packages) are accurately identified."
+            "status": "done",
+            "testStrategy": "Unit test the comparison logic by providing mock `checkFormulaeStatus` results and a predefined dotisan state, verifying that the correct discrepancies (uninstalled packages) are accurately identified.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-21T16:25:13.014Z"
           },
           {
             "id": 3,
@@ -1240,8 +1278,10 @@
               2
             ],
             "details": "When a discrepancy is found (a package in dotisan's state is not reported as installed by `brew info`), instantiate a `PlanWarning` with `Severity: 'warning'`, `Message: 'Package 'X' was uninstalled outside of dotisan'`, and `Suggestion: 'Run 'dotisan apply' to restore'`. Add this warning to the `Plan.Warnings` slice.",
-            "status": "pending",
-            "testStrategy": "Unit test the warning generation by feeding identified uninstalled packages into a function and asserting that the `PlanWarning` objects are correctly structured, contain the specified message and suggestion, and are added to the `Plan`."
+            "status": "done",
+            "testStrategy": "Unit test the warning generation by feeding identified uninstalled packages into a function and asserting that the `PlanWarning` objects are correctly structured, contain the specified message and suggestion, and are added to the `Plan`.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-21T16:25:13.038Z"
           },
           {
             "id": 4,
@@ -1253,20 +1293,26 @@
               3
             ],
             "details": "Implement integration tests in `pkg/providers/brew_test.go`. Set up a test environment where `brew` commands can be simulated or executed against a controlled Homebrew installation. Define `BrewPackages` in a test configuration. Manually uninstall a managed package using `brew uninstall`. Run `dotisan plan` and assert that the generated `Plan` contains the expected `PlanWarning` with correct details, matching AC2. Test with multiple packages, some installed, some uninstalled, to ensure accurate detection.",
-            "status": "pending",
-            "testStrategy": "The subtask itself is about testing, so the strategy is to ensure comprehensive coverage of drift scenarios, including single package drift, multiple package drift, and no drift. Verify warning content, severity, and suggestions are accurate in the `dotisan plan` output."
+            "status": "done",
+            "testStrategy": "The subtask itself is about testing, so the strategy is to ensure comprehensive coverage of drift scenarios, including single package drift, multiple package drift, and no drift. Verify warning content, severity, and suggestions are accurate in the `dotisan plan` output.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-21T17:11:13.157Z"
           }
-        ]
+        ],
+        "complexity": 7,
+        "recommendedSubtasks": 4,
+        "expansionPrompt": "Break down the integration into modifying `BrewProvider.Reconcile` to call `checkFormulaeStatus`, comparing the results with dotisan's state, generating `PlanWarning` for uninstalled packages, and developing thorough integration tests for drift scenarios.",
+        "updatedAt": "2026-04-21T17:11:13.157Z"
       },
       {
-        "id": 5,
+        "id": "5",
         "title": "Implement CLI Parsing for Indexed Resource References",
         "description": "Develop the `parseResourceRef` function to parse resource references in the format `name[index]` or `name[key]` for `dotisan state import` commands.",
         "details": "In `cmd/state.go` or a suitable utility package, implement `func parseResourceRef(ref string) (name string, itemKey string, hasItemKey bool)`. This function should use regular expressions or string manipulation to correctly extract the resource `name` and the `itemKey` (which can be a string like 'ripgrep' or an integer index '0') if the `[key]` syntax is present. Handle cases where no index is provided (e.g., 'zshrc').",
         "testStrategy": "Write unit tests for `parseResourceRef` covering all specified formats: 'core-tools[ripgrep]', 'core-tools[0]', and 'zshrc'. Verify that the `name`, `itemKey`, and `hasItemKey` boolean are correctly extracted for each case.",
         "priority": "medium",
         "dependencies": [],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -1274,8 +1320,10 @@
             "description": "Develop the `parseResourceRef` function in Go to correctly parse CLI resource references in the format `name[key]` or `name`, extracting the resource name, item key, and a boolean indicating if an item key was present.",
             "dependencies": [],
             "details": "Implement `func parseResourceRef(ref string) (name string, itemKey string, hasItemKey bool)` in `cmd/state.go` or a new utility package. Use regular expressions (e.g., `regexp.Compile`) to match patterns like `^([a-zA-Z0-9_-]+)(?:\\u005b([a-zA-Z0-9_.-]+)\\u005d)?$`. The regex should capture the resource name and optionally the item key. Ensure `itemKey` is an empty string and `hasItemKey` is false when no key is provided.",
-            "status": "pending",
-            "testStrategy": null
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-21T16:27:00.372Z"
           },
           {
             "id": 2,
@@ -1285,20 +1333,26 @@
               1
             ],
             "details": "Write unit tests in a `_test.go` file for `parseResourceRef`. Test cases should include: 'core-tools[ripgrep]' (expected name='core-tools', itemKey='ripgrep', hasItemKey=true), 'core-tools[0]' (expected name='core-tools', itemKey='0', hasItemKey=true), and 'zshrc' (expected name='zshrc', itemKey='', hasItemKey=false). Also, consider edge cases like empty strings or malformed inputs.",
-            "status": "pending",
-            "testStrategy": "Implement table-driven unit tests for `parseResourceRef` covering all specified input formats and edge cases. Verify the returned `name`, `itemKey`, and `hasItemKey` for each test case."
+            "status": "done",
+            "testStrategy": "Implement table-driven unit tests for `parseResourceRef` covering all specified input formats and edge cases. Verify the returned `name`, `itemKey`, and `hasItemKey` for each test case.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-21T16:27:00.602Z"
           }
-        ]
+        ],
+        "complexity": 5,
+        "recommendedSubtasks": 2,
+        "expansionPrompt": "Detail the implementation of `parseResourceRef` using regular expressions or string manipulation, and specify unit test cases for all expected input formats.",
+        "updatedAt": "2026-04-21T16:27:00.602Z"
       },
       {
-        "id": 6,
+        "id": "6",
         "title": "Extend Provider Interface for Item-Level Import",
         "description": "Add the `ImportItem` method to the `Provider` interface to support importing individual items from list-based resources.",
         "details": "Modify `pkg/provider/provider.go` to add a new method signature to the `Provider` interface: `ImportItem(ctx context.Context, resourceName string, itemKey string) (ResourceState, error)`. This method will be responsible for importing a specific item identified by `itemKey` within a resource named `resourceName`. The `ResourceState` returned should represent the state of the *imported item*, not necessarily the entire resource.",
         "testStrategy": "No direct unit tests for an interface change. Verification will occur when concrete implementations are tested in Task 7.",
         "priority": "medium",
         "dependencies": [],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -1306,8 +1360,10 @@
             "description": "Review the existing `Provider` interface in `pkg/provider/provider.go` to understand its current methods and determine the optimal placement for the new `ImportItem` method.",
             "dependencies": [],
             "details": "Examine `pkg/provider/provider.go` to identify the `Provider` interface definition. Understand the existing method grouping and decide where `ImportItem` logically fits to maintain code readability and consistency.",
-            "status": "pending",
-            "testStrategy": null
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-21T16:30:26.800Z"
           },
           {
             "id": 2,
@@ -1317,8 +1373,10 @@
               1
             ],
             "details": "Insert `ImportItem(ctx context.Context, resourceName string, itemKey string) (ResourceState, error)` into the `Provider` interface in `pkg/provider/provider.go`. Ensure correct Go syntax and necessary type imports (e.g., `context`).",
-            "status": "pending",
-            "testStrategy": null
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-21T16:30:27.008Z"
           },
           {
             "id": 3,
@@ -1328,8 +1386,10 @@
               2
             ],
             "details": "Write clear and concise GoDoc comments for `ImportItem` in `pkg/provider/provider.go`. Explain that it imports a specific item (`itemKey`) from a named resource (`resourceName`) and returns the `ResourceState` of that *imported item*.",
-            "status": "pending",
-            "testStrategy": null
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-21T16:30:27.042Z"
           },
           {
             "id": 4,
@@ -1339,8 +1399,10 @@
               3
             ],
             "details": "Run `go build ./pkg/provider` or an equivalent command to verify that the `provider.go` file, after changes, compiles without errors. This step focuses on the interface definition file, not its implementations.",
-            "status": "pending",
-            "testStrategy": "Execute `go build ./pkg/provider` and confirm that the command completes successfully with zero compilation errors."
+            "status": "done",
+            "testStrategy": "Execute `go build ./pkg/provider` and confirm that the command completes successfully with zero compilation errors.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-21T16:30:33.029Z"
           },
           {
             "id": 5,
@@ -1350,23 +1412,29 @@
               4
             ],
             "details": "This subtask serves as a logical bridge to future implementation efforts (e.g., Task 7 mentioned in the parent task's test strategy). No direct code change is involved, but it marks the interface readiness for consumption.",
-            "status": "pending",
-            "testStrategy": null
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-21T16:30:33.267Z"
           }
-        ]
+        ],
+        "complexity": 2,
+        "recommendedSubtasks": 0,
+        "expansionPrompt": "No expansion needed; this task is a single interface definition.",
+        "updatedAt": "2026-04-21T16:30:33.267Z"
       },
       {
-        "id": 7,
+        "id": "7",
         "title": "Implement Item-Level Import for ManagedFile and BrewPackages",
         "description": "Implement the `ImportItem` method for `ManagedFile` and `BrewPackages` providers, allowing users to import specific files or packages using the new indexed syntax.",
         "details": "For `ManagedFileProvider` and `BrewProvider`, implement the `ImportItem` method defined in Task 6. This implementation will need to: 1. Locate the resource by `resourceName`. 2. Use `itemKey` to identify the specific file or package within the resource's list. 3. Generate the `ResourceState` for that individual item. For `ManagedFile`, `itemKey` could be an index or a path. For `BrewPackages`, `itemKey` would be the package name. Update the state tracking mechanism to correctly store and retrieve indexed items. Ensure the CLI command `dotisan state import <Kind> <name>[key] <actual_value>` works as expected.",
         "testStrategy": "Create integration tests for `dotisan state import BrewPackages core-tools[ripgrep] ripgrep` and `dotisan state import ManagedFile dotfiles[0] ~/.zshrc`. Verify that only the specified item is imported into the state, and subsequent `dotisan plan` commands correctly reflect its managed status. Test both name-based and index-based imports for list resources, matching AC3.",
         "priority": "medium",
         "dependencies": [
-          5,
-          6
+          "5",
+          "6"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -1376,8 +1444,10 @@
               5
             ],
             "details": "In `pkg/providers/file.go`, add or modify `(p *ManagedFileProvider) ImportItem(resourceName string, itemKey string, actualValue string) (*ResourceState, error)`. Implement logic to parse `itemKey` as an integer index or a string path. Retrieve the corresponding file definition from the resource's configuration. Construct a `ResourceState` for this single file, ensuring it accurately reflects the state of the individual item.",
-            "status": "pending",
-            "testStrategy": null
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-21T16:35:41.286Z"
           },
           {
             "id": 2,
@@ -1388,8 +1458,10 @@
               5
             ],
             "details": "In `pkg/providers/brew.go`, add or modify `(p *BrewProvider) ImportItem(resourceName string, itemKey string, actualValue string) (*ResourceState, error)`. Implement logic to find the package by `itemKey` (package name) within the resource's defined packages. Utilize `checkFormulaeStatus` (from Task 3) to verify the package's installation status if needed for state generation. Construct a `ResourceState` for this single package.",
-            "status": "pending",
-            "testStrategy": null
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-21T16:35:41.389Z"
           },
           {
             "id": 3,
@@ -1400,8 +1472,10 @@
               2
             ],
             "details": "Review and update `pkg/state/state.go` and related components. The state should be able to store `ResourceState` for `Kind/Name[Key]` and retrieve it accurately. Consider how this impacts `GetState`, `SaveState`, and `DeleteState` operations. Ensure that a resource `Kind/Name` can have both a full resource state and individual item states without conflict.",
-            "status": "pending",
-            "testStrategy": null
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-21T16:35:45.482Z"
           },
           {
             "id": 4,
@@ -1412,8 +1486,10 @@
               3
             ],
             "details": "Write integration tests in `test/integration/` that simulate `dotisan state import ManagedFile dotfiles[0] ~/.zshrc` and `dotisan state import ManagedFile dotfiles[/path/to/file] /actual/path/to/file`. Verify that only the specified item is imported, `dotisan plan` reflects its managed status, and subsequent operations on the parent resource or other items are unaffected. Ensure proper cleanup of test state and files.",
-            "status": "pending",
-            "testStrategy": "Run `dotisan state import` with various `ManagedFile` item keys (index, path). Verify state file content, `dotisan plan` output, and `dotisan apply` behavior for the imported item and other items in the same resource."
+            "status": "done",
+            "testStrategy": "Run `dotisan state import` with various `ManagedFile` item keys (index, path). Verify state file content, `dotisan plan` output, and `dotisan apply` behavior for the imported item and other items in the same resource.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-21T17:11:14.092Z"
           },
           {
             "id": 5,
@@ -1424,20 +1500,26 @@
               3
             ],
             "details": "Write integration tests in `test/integration/` that simulate `dotisan state import BrewPackages core-tools[ripgrep] ripgrep`. Verify that only the specified package is imported, `dotisan plan` reflects its managed status, and subsequent operations on the parent resource or other packages are unaffected. Mock `brew` commands as necessary for controlled testing scenarios.",
-            "status": "pending",
-            "testStrategy": "Run `dotisan state import` with various `BrewPackages` item keys (package names). Verify state file content, `dotisan plan` output, and `dotisan apply` behavior for the imported package and other packages in the same resource. Mock `brew` commands to simulate different installation states."
+            "status": "done",
+            "testStrategy": "Run `dotisan state import` with various `BrewPackages` item keys (package names). Verify state file content, `dotisan plan` output, and `dotisan apply` behavior for the imported package and other packages in the same resource. Mock `brew` commands to simulate different installation states.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-21T17:11:14.360Z"
           }
-        ]
+        ],
+        "complexity": 8,
+        "recommendedSubtasks": 5,
+        "expansionPrompt": "Break down the implementation for `ManagedFileProvider.ImportItem` and `BrewProvider.ImportItem` separately, including logic for locating items by `itemKey`, generating `ResourceState` for individual items, updating state tracking, and comprehensive integration testing for both providers.",
+        "updatedAt": "2026-04-21T17:11:14.360Z"
       },
       {
-        "id": 8,
+        "id": "8",
         "title": "Migrate ManagedFile to List-Based Structure",
         "description": "Refactor the `ManagedFile` resource to use a `Files []FileSpec` list field, while maintaining backward compatibility for existing single-item configurations.",
         "details": "In `pkg/resource/managedfile.go`, modify the `ManagedFile` struct to include a `Files []FileSpec` field. Define `FileSpec` to contain `sourceFile` and `destination` fields. Implement logic to handle both the new list-based structure and the old single `sourceFile`/`destination` fields. When reading old configurations, populate the `Files` list with a single `FileSpec`. When writing, prioritize the `Files` list. Ensure the `ManagedFileProvider`'s `Reconcile` and `Apply` methods correctly process the new list structure.",
         "testStrategy": "Create unit tests to verify that `ManagedFile` resources can be defined using both the old single-item syntax and the new `files:` list syntax. Ensure that `dotisan plan` and `dotisan apply` behave identically for equivalent configurations using both syntaxes. Verify that a resource defined with the old syntax is correctly interpreted as a single-item list internally, matching AC4 and NFR (Compatibility).",
         "priority": "medium",
         "dependencies": [],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -1445,8 +1527,10 @@
             "description": "Modify `pkg/resource/managedfile.go` to define the `FileSpec` struct with `sourceFile` and `destination` fields, and add a `Files []FileSpec` field to the `ManagedFile` struct.",
             "dependencies": [],
             "details": "In `pkg/resource/managedfile.go`, create `type FileSpec struct { SourceFile string `yaml:\"sourceFile\"`; Destination string `yaml:\"destination\"` }`. Then, add `Files []FileSpec `yaml:\"files,omitempty\"` to the `ManagedFile` struct. Ensure existing `SourceFile` and `Destination` fields are kept for backward compatibility initially.",
-            "status": "pending",
-            "testStrategy": "Verify that the new structs compile and can be instantiated without errors."
+            "status": "done",
+            "testStrategy": "Verify that the new structs compile and can be instantiated without errors.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-21T16:46:14.541Z"
           },
           {
             "id": 2,
@@ -1456,8 +1540,10 @@
               1
             ],
             "details": "Implement custom `UnmarshalYAML` and `MarshalYAML` methods for `ManagedFile`. In `UnmarshalYAML`, if `Files` is empty but `SourceFile` and `Destination` are present, populate `Files` with a single `FileSpec`. In `MarshalYAML`, if `Files` is populated, only serialize `Files` and omit `SourceFile`/`Destination`.",
-            "status": "pending",
-            "testStrategy": "Create unit tests that deserialize YAML configurations using both old (single file) and new (list of files) syntax. Assert that the `ManagedFile` struct correctly populates its `Files` field in both cases. Test serialization to ensure `Files` is prioritized."
+            "status": "done",
+            "testStrategy": "Create unit tests that deserialize YAML configurations using both old (single file) and new (list of files) syntax. Assert that the `ManagedFile` struct correctly populates its `Files` field in both cases. Test serialization to ensure `Files` is prioritized.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-21T16:49:18.587Z"
           },
           {
             "id": 3,
@@ -1467,8 +1553,10 @@
               2
             ],
             "details": "In `pkg/providers/managedfile.go`, update the `Reconcile` method to iterate through `mf.Files` instead of directly using `mf.SourceFile` and `mf.Destination`. Similarly, adjust the `Apply` method to perform file operations for each `FileSpec` in the `Files` list. Ensure state management correctly reflects the list of files.",
-            "status": "pending",
-            "testStrategy": "Conduct integration tests using mock file systems. Verify that `dotisan plan` and `dotisan apply` correctly identify and manage multiple files defined within a single `ManagedFile` resource using the new list syntax."
+            "status": "done",
+            "testStrategy": "Conduct integration tests using mock file systems. Verify that `dotisan plan` and `dotisan apply` correctly identify and manage multiple files defined within a single `ManagedFile` resource using the new list syntax.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-21T16:50:37.572Z"
           },
           {
             "id": 4,
@@ -1478,22 +1566,28 @@
               3
             ],
             "details": "Write unit tests for the custom (un)marshaling logic (from subtask 2). Create integration tests that define `ManagedFile` resources using both old and new YAML syntax. Verify that `dotisan plan` and `dotisan apply` produce identical results for equivalent configurations, and that state is correctly managed. Include tests for edge cases like empty `Files` list or mixed configurations.",
-            "status": "pending",
-            "testStrategy": "Use `test-template-inline` for integration tests. Define test cases with old syntax, new syntax (single item in list), and new syntax (multiple items in list). Assert that `plan` output and `apply` results (file creation/deletion) are as expected for all scenarios."
+            "status": "done",
+            "testStrategy": "Use `test-template-inline` for integration tests. Define test cases with old syntax, new syntax (single item in list), and new syntax (multiple items in list). Assert that `plan` output and `apply` results (file creation/deletion) are as expected for all scenarios.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-21T16:50:37.586Z"
           }
-        ]
+        ],
+        "complexity": 7,
+        "recommendedSubtasks": 4,
+        "expansionPrompt": "Detail the steps for modifying the `ManagedFile` struct, implementing backward compatibility logic for reading old configurations, updating `Reconcile` and `Apply` methods, and creating unit tests for both old and new syntax.",
+        "updatedAt": "2026-04-21T16:50:37.586Z"
       },
       {
-        "id": 9,
+        "id": "9",
         "title": "Migrate ManagedDirectory to List-Based Structure",
         "description": "Refactor the `ManagedDirectory` resource to use a `Directories []DirectorySpec` list field, ensuring backward compatibility.",
         "details": "In `pkg/resource/manageddirectory.go`, modify the `ManagedDirectory` struct to include a `Directories []DirectorySpec` field. Define `DirectorySpec` to contain `sourceDirectory` and `destination` fields. Similar to Task 8, implement logic for backward compatibility, allowing both old single-item and new list-based definitions. Update the `ManagedDirectoryProvider`'s `Reconcile` and `Apply` methods to correctly process the new list structure.",
         "testStrategy": "Create unit tests to verify that `ManagedDirectory` resources can be defined using both the old single-item syntax and the new `directories:` list syntax. Ensure that `dotisan plan` and `dotisan apply` behave identically for equivalent configurations using both syntaxes. Verify backward compatibility, matching AC4 and NFR (Compatibility).",
         "priority": "low",
         "dependencies": [
-          8
+          "8"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -1501,8 +1595,10 @@
             "description": "Modify the `ManagedDirectory` struct in `pkg/resource/manageddirectory.go` to include a new `Directories []DirectorySpec` field. Concurrently, define the `DirectorySpec` struct with `sourceDirectory` and `destination` fields.",
             "dependencies": [],
             "details": "Create the `DirectorySpec` struct in `pkg/resource/manageddirectory.go` with `SourceDirectory string` and `Destination string` fields. Then, add `Directories []DirectorySpec` to the `ManagedDirectory` struct. This sets up the new data structure.",
-            "status": "pending",
-            "testStrategy": null
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-21T17:00:08.129Z"
           },
           {
             "id": 2,
@@ -1512,8 +1608,10 @@
               1
             ],
             "details": "In `pkg/resource/manageddirectory.go`, implement methods or logic within `ManagedDirectory` to populate the `Directories` list from old single-item fields when reading, and prioritize the `Directories` list when writing. Update `ManagedDirectoryProvider`'s `Reconcile` and `Apply` methods to iterate over the `Directories` list for planning and applying changes, leveraging patterns established in Task 8 for `ManagedFile`.",
-            "status": "pending",
-            "testStrategy": "Manual testing of `dotisan plan` and `dotisan apply` with both old and new syntax configurations to observe behavior."
+            "status": "done",
+            "testStrategy": "Manual testing of `dotisan plan` and `dotisan apply` with both old and new syntax configurations to observe behavior.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-21T17:00:08.770Z"
           },
           {
             "id": 3,
@@ -1523,20 +1621,26 @@
               2
             ],
             "details": "Write unit tests in `pkg/resource/manageddirectory_test.go` and `pkg/providers/manageddirectory_test.go`. Include test cases for: 1) a resource defined with only old `sourceDirectory`/`destination` fields, 2) a resource defined with only the new `directories` list, and 3) a resource defined with both (ensuring the new list takes precedence). Verify that the internal state and provider actions are consistent across syntaxes, similar to the testing approach for Task 8.",
-            "status": "pending",
-            "testStrategy": "Run all unit tests to ensure full coverage of old and new syntax parsing, state management, and provider reconciliation/application logic."
+            "status": "done",
+            "testStrategy": "Run all unit tests to ensure full coverage of old and new syntax parsing, state management, and provider reconciliation/application logic.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-21T17:00:09.134Z"
           }
-        ]
+        ],
+        "complexity": 6,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Outline the steps for modifying the `ManagedDirectory` struct, implementing backward compatibility logic, updating the `ManagedDirectoryProvider`'s methods, and creating unit tests for both old and new syntax, leveraging patterns from Task 8.",
+        "updatedAt": "2026-04-21T17:00:09.134Z"
       },
       {
-        "id": 10,
+        "id": "10",
         "title": "Consolidate `eject` and `state remove` Commands",
         "description": "Deprecate the `dotisan eject` command and enhance `dotisan state remove` with a `--force` flag to consolidate resource removal functionality under a single, more discoverable command.",
         "details": "Modify `cmd/eject.go` to mark the `eject` command as deprecated, printing a warning message advising users to use `dotisan state remove` instead. In `cmd/state.go`, add a `--force` flag to the `state remove` command, allowing it to bypass confirmation prompts. Ensure `state remove` performs the same operation as `eject` (removing the resource from the state file without touching the actual resource on the system). Update relevant documentation to reflect this change.",
         "testStrategy": "Verify that `dotisan eject` prints a deprecation warning. Test `dotisan state remove KIND NAME` with and without the `--force` flag, ensuring it removes the resource from state and prompts for confirmation when `--force` is absent. Confirm that the actual resource on the filesystem remains untouched. Verify that `dotisan state remove --force KIND NAME` removes the resource without a prompt.",
         "priority": "low",
         "dependencies": [],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -1544,8 +1648,10 @@
             "description": "Modify the `dotisan eject` command in `cmd/eject.go` to mark it as deprecated. When invoked, it should print a warning message advising users to use `dotisan state remove` instead, while still performing its original function.",
             "dependencies": [],
             "details": "Locate `cmd/eject.go`. Implement the deprecation logic to print a clear warning message to stderr when `eject` is executed. The message should explicitly suggest `dotisan state remove` as the alternative command. Ensure the command's core functionality remains intact.",
-            "status": "pending",
-            "testStrategy": "Execute `dotisan eject <resource_kind> <resource_name>`. Verify that a deprecation warning message is displayed on stderr. Confirm that the resource is still correctly removed from the state file as expected."
+            "status": "done",
+            "testStrategy": "Execute `dotisan eject <resource_kind> <resource_name>`. Verify that a deprecation warning message is displayed on stderr. Confirm that the resource is still correctly removed from the state file as expected.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-21T17:07:47.811Z"
           },
           {
             "id": 2,
@@ -1553,8 +1659,10 @@
             "description": "Add a `--force` flag to the `dotisan state remove` command in `cmd/state.go`. This flag should allow the command to bypass any interactive confirmation prompts. Additionally, ensure that `state remove` performs the exact same operation as `eject` (removing the resource from the state file without touching the actual resource on the system).",
             "dependencies": [],
             "details": "In `cmd/state.go`, define a new boolean flag `--force` for the `state remove` command. Modify the command's execution flow to check for this flag; if present, skip any user confirmation prompts. Review the existing `eject` logic and integrate or confirm that `state remove`'s resource removal from the state file is functionally identical.",
-            "status": "pending",
-            "testStrategy": "Test `dotisan state remove KIND NAME` without `--force` and verify it prompts for user confirmation. Test `dotisan state remove KIND NAME --force` and verify it removes the resource from the state file without any prompts. In both scenarios, confirm that the actual resource on the filesystem remains untouched."
+            "status": "done",
+            "testStrategy": "Test `dotisan state remove KIND NAME` without `--force` and verify it prompts for user confirmation. Test `dotisan state remove KIND NAME --force` and verify it removes the resource from the state file without any prompts. In both scenarios, confirm that the actual resource on the filesystem remains untouched.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-21T17:07:48.092Z"
           },
           {
             "id": 3,
@@ -1566,15 +1674,24 @@
             ],
             "details": "Identify and modify all documentation files (e.g., `docs/commands/eject.md`, `docs/commands/state.md`, `README.md`, CLI help output) that reference `eject` or `state remove`. Clearly state the deprecation of `eject` and guide users to `state remove`. Add comprehensive details about the `--force` flag to `state remove`'s documentation. Ensure CLI help messages are updated.",
             "status": "pending",
-            "testStrategy": "Review all updated documentation files for accuracy and completeness. Run `dotisan eject --help` and `dotisan state remove --help` to confirm that the CLI help messages correctly reflect the deprecation and the new `--force` flag, respectively."
+            "testStrategy": "Review all updated documentation files for accuracy and completeness. Run `dotisan eject --help` and `dotisan state remove --help` to confirm that the CLI help messages correctly reflect the deprecation and the new `--force` flag, respectively.",
+            "parentId": "undefined"
           }
-        ]
+        ],
+        "complexity": 4,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Break down the task into deprecating `dotisan eject` with a warning, adding the `--force` flag to `dotisan state remove`, ensuring functional parity between the commands, and updating relevant documentation.",
+        "updatedAt": "2026-04-21T17:07:51.702Z"
       }
     ],
     "metadata": {
-      "created": "2026-04-20T19:52:37.575Z",
-      "updated": "2026-04-20T19:53:45.669Z",
-      "description": "Tasks for resource-management-enhancment context"
+      "version": "1.0.0",
+      "lastModified": "2026-04-21T17:11:14.360Z",
+      "taskCount": 10,
+      "completedCount": 10,
+      "tags": [
+        "resource-management-enhancment"
+      ]
     }
   }
 }

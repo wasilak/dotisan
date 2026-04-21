@@ -29,7 +29,7 @@ type Styles struct {
 func DefaultStyles() Styles {
 	return Styles{
 		Addition: lipgloss.NewStyle().
-			Foreground(lipgloss.Color("42")).  // Green
+			Foreground(lipgloss.Color("42")). // Green
 			Background(lipgloss.Color("22")), // Dark green
 
 		Deletion: lipgloss.NewStyle().
@@ -38,7 +38,7 @@ func DefaultStyles() Styles {
 
 		Modification: lipgloss.NewStyle().
 			Foreground(lipgloss.Color("226")). // Yellow
-			Background(lipgloss.Color("58")), // Dark yellow
+			Background(lipgloss.Color("58")),  // Dark yellow
 
 		Unchanged: lipgloss.NewStyle().
 			Foreground(lipgloss.Color("250")), // Light gray

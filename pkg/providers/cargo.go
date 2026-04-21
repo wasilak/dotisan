@@ -239,3 +239,7 @@ func (p *CargoProvider) applyRemoval(ctx context.Context, res resource.Resource)
 func (p *CargoProvider) Import(ctx context.Context, id string) (provider.ResourceState, error) {
 	return provider.ResourceState{}, fmt.Errorf("import not yet implemented")
 }
+
+func (p *CargoProvider) ImportItem(ctx context.Context, resourceName string, itemKey string) (provider.ResourceState, error) {
+	return provider.ResourceState{}, fmt.Errorf("ImportItem not implemented for CargoProvider")
+}

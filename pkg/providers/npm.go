@@ -213,3 +213,7 @@ func (p *NpmProvider) applyRemoval(ctx context.Context, res resource.Resource) e
 func (p *NpmProvider) Import(ctx context.Context, id string) (provider.ResourceState, error) {
 	return provider.ResourceState{}, fmt.Errorf("import not yet implemented")
 }
+
+func (p *NpmProvider) ImportItem(ctx context.Context, resourceName string, itemKey string) (provider.ResourceState, error) {
+	return provider.ResourceState{}, fmt.Errorf("ImportItem not implemented for NpmProvider")
+}

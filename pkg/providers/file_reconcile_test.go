@@ -14,11 +14,11 @@ import (
 func TestFileProvider_Reconcile_Addition(t *testing.T) {
 	// Setup temp directories
 	dotfilesDir := t.TempDir()
-	
+
 	// Create resources subdirectory (files are resolved relative to resources/)
 	resourcesDir := filepath.Join(dotfilesDir, "resources")
 	os.MkdirAll(resourcesDir, 0755)
-	
+
 	// Create a source file in resources/
 	sourceFile := filepath.Join(resourcesDir, "test.txt")
 	if err := os.WriteFile(sourceFile, []byte("test content"), 0644); err != nil {
@@ -59,11 +59,11 @@ func TestFileProvider_Reconcile_InSync(t *testing.T) {
 	// Setup temp directories
 	dotfilesDir := t.TempDir()
 	destDir := t.TempDir()
-	
+
 	// Create resources subdirectory (files are resolved relative to resources/)
 	resourcesDir := filepath.Join(dotfilesDir, "resources")
 	os.MkdirAll(resourcesDir, 0755)
-	
+
 	// Create a source file in resources/
 	sourceFile := filepath.Join(resourcesDir, "test.txt")
 	content := "test content"
@@ -98,7 +98,7 @@ func TestFileProvider_Reconcile_InSync(t *testing.T) {
 
 	// Calculate checksum for state
 	checksum := calculateChecksum(content)
-	
+
 	// Reconcile with matching state
 	desired := []resource.Resource{mf}
 	state := []provider.ResourceState{
@@ -121,11 +121,11 @@ func TestFileProvider_Reconcile_Modification(t *testing.T) {
 	// Setup temp directories
 	dotfilesDir := t.TempDir()
 	destDir := t.TempDir()
-	
+
 	// Create resources subdirectory (files are resolved relative to resources/)
 	resourcesDir := filepath.Join(dotfilesDir, "resources")
 	os.MkdirAll(resourcesDir, 0755)
-	
+
 	// Create a source file in resources/
 	sourceFile := filepath.Join(resourcesDir, "test.txt")
 	if err := os.WriteFile(sourceFile, []byte("new content"), 0644); err != nil {
@@ -243,7 +243,7 @@ func TestFileProvider_renderSource(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := config.NewTemplateContext()
 			p := NewFileProvider(ctx, nil, "")
-			
+
 			rendered, err := p.renderSource(sourceFile, tt.isTemplate)
 			if err != nil {
 				t.Errorf("renderSource() error = %v", err)

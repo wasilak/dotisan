@@ -24,9 +24,9 @@ type S3Config struct {
 
 // StateConfig holds state backend configuration.
 type StateConfig struct {
-	Backend string   `yaml:"backend"` // "local" or "s3"
-	Path    string   `yaml:"path,omitempty"`    // for local backend
-	S3      S3Config `yaml:"s3,omitempty"`      // for s3 backend
+	Backend string   `yaml:"backend"`        // "local" or "s3"
+	Path    string   `yaml:"path,omitempty"` // for local backend
+	S3      S3Config `yaml:"s3,omitempty"`   // for s3 backend
 }
 
 // Config holds the complete dotisan tool configuration from ~/.dotisan/config.yaml

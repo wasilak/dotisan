@@ -1,9 +1,11 @@
 package cmd
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/wasilak/dotisan/pkg/config"
@@ -62,6 +64,24 @@ func kindToProvider(kind string) string {
 	default:
 		return strings.ToLower(kind)
 	}
+}
+
+var resourceRefRegex = regexp.MustCompile(`^([a-zA-Z0-9_-]+)(?:\[([^\]]+)\])?$`)
+
+// parseResourceRef parses a resource reference that may contain an item key.
+// Examples:
+//   - "zshrc" -> name="zshrc", itemKey="", hasItemKey=false
+//   - "core-tools[ripgrep]" -> name="core-tools", itemKey="ripgrep", hasItemKey=true
+//   - "core-tools[0]" -> name="core-tools", itemKey="0", hasItemKey=true
+func parseResourceRef(ref string) (name string, itemKey string, hasItemKey bool) {
+	matches := resourceRefRegex.FindStringSubmatch(ref)
+	if matches == nil {
+		return ref, "", false
+	}
+	name = matches[1]
+	itemKey = matches[2]
+	hasItemKey = itemKey != ""
+	return name, itemKey, hasItemKey
 }
 
 // ensureProvidersRegistered registers all providers if they haven't been registered yet.
@@ -147,6 +167,8 @@ var stateRemoveCmd = &cobra.Command{
 affecting the actual system. Use this when you want dotisan to stop
 tracking a resource without removing it from your system.
 
+Use --force to skip confirmation prompts.
+
 Example: dotisan state remove BrewPackages core-tools`,
 	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -156,7 +178,28 @@ Example: dotisan state remove BrewPackages core-tools`,
 	},
 }
 
+var stateRemoveForce bool
+
+func init() {
+	stateRemoveCmd.Flags().BoolVarP(&stateRemoveForce, "force", "f", false, "Skip confirmation prompt")
+}
+
 func runStateRemove(kind, name string) error {
+	// Ask for confirmation if --force is not set
+	if !stateRemoveForce {
+		fmt.Printf("Remove %s/%s from state? (actual resource will not be modified) [y/N]: ", kind, name)
+		reader := bufio.NewReader(os.Stdin)
+		response, err := reader.ReadString('\n')
+		if err != nil {
+			return fmt.Errorf("failed to read response: %w", err)
+		}
+		response = strings.TrimSpace(strings.ToLower(response))
+		if response != "y" && response != "yes" {
+			fmt.Println("Cancelled.")
+			return nil
+		}
+	}
+
 	// Load current state
 	ctx := context.Background()
 	dotisanDir := os.ExpandEnv("$HOME/.config/dotisan")
@@ -245,8 +288,8 @@ func runStateList() error {
 
 	// Define lipgloss styles (pastel colors)
 	headerStyle := lipgloss.NewStyle().Bold(true)
-	inSyncStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("114"))   // Pastel green
-	driftStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("216"))    // Pastel orange
+	inSyncStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("114"))  // Pastel green
+	driftStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("216"))   // Pastel orange
 	missingStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("174")) // Pastel red
 	unknownStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("240")) // Gray
 
@@ -329,9 +372,9 @@ func buildStatusMap(result *engine.PlanResult) map[string]string {
 }
 
 // getResourceStatus returns the status and style for a resource
-func getResourceStatus(r provider.ResourceState, statusMap map[string]string, 
+func getResourceStatus(r provider.ResourceState, statusMap map[string]string,
 	inSyncStyle, driftStyle, missingStyle, unknownStyle lipgloss.Style) (string, lipgloss.Style) {
-	
+
 	status, exists := statusMap[r.ID]
 	if !exists {
 		// Resource in state but not in config (orphaned)
