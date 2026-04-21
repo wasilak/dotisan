@@ -232,7 +232,8 @@ func runStateRemoveByID(id string) error {
 	}
 
 	if !found {
-		return fmt.Errorf("resource %s not found in state", id)
+		fmt.Printf("Resource %s not found in state\n", id)
+		return nil
 	}
 
 	// Save state
