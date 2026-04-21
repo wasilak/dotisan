@@ -97,7 +97,6 @@ func (p *BrewProvider) reconcileBrewPackages(
 ) {
 	// Build resource ID using kind and name (Terraform-style: files/dirs are for human org only)
 	id := fmt.Sprintf("BrewPackages/%s", bp.GetMetadata().Name)
-	desiredIDs[id] = true
 
 	// Get current installed packages
 	installed, err := p.getInstalledPackages()
@@ -124,6 +123,11 @@ func (p *BrewProvider) reconcileBrewPackages(
 				},
 			})
 		}
+	}
+
+	// Check formulae - only mark as desired if there are formulae to manage
+	if len(bp.Spec.Formulae) > 0 {
+		desiredIDs[id] = true
 	}
 
 	// Check formulae
