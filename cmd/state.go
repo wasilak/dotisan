@@ -105,7 +105,7 @@ func ensureProvidersRegistered() {
 	}
 }
 
-func runStateImport(kind, name, id string) error {
+func runStateImport(kind, nameArg, id string) error {
 	// Ensure providers are registered
 	ensureProvidersRegistered()
 
@@ -124,15 +124,25 @@ func runStateImport(kind, name, id string) error {
 		return fmt.Errorf("provider %s is not available: %s", kind, msg)
 	}
 
+	// Parse name to check for item key (e.g., "core-tools[ripgrep]")
+	resourceName, itemKey, hasItemKey := parseResourceRef(nameArg)
+
 	// Import the resource
 	ctx := context.Background()
-	resourceState, err := p.Import(ctx, id)
+	var resourceState provider.ResourceState
+	if hasItemKey {
+		// Use ImportItem for indexed resources
+		resourceState, err = p.ImportItem(ctx, resourceName, itemKey)
+	} else {
+		// Use regular Import for non-indexed resources
+		resourceState, err = p.Import(ctx, id)
+	}
 	if err != nil {
 		return fmt.Errorf("import failed: %w", err)
 	}
 
 	// Set the resource name and kind
-	resourceState.Name = name
+	resourceState.Name = resourceName
 	resourceState.Kind = kind
 
 	// Load current state (from ~/.config/dotisan/state.json)
@@ -154,7 +164,7 @@ func runStateImport(kind, name, id string) error {
 
 	// Success message
 	greenStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("10"))
-	fmt.Printf("%s Imported %s/%s with ID %s\n", greenStyle.Render("✓"), kind, name, id)
+	fmt.Printf("%s Imported %s/%s with ID %s\n", greenStyle.Render("✓"), kind, resourceName, id)
 
 	return nil
 }
