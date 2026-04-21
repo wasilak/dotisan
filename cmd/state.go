@@ -171,7 +171,7 @@ func runStateImport(kind, nameArg, id string) error {
 
 // stateRemoveCmd removes a resource from state
 var stateRemoveCmd = &cobra.Command{
-	Use:   "remove KIND NAME",
+	Use:   "remove ID",
 	Short: "Remove resource from state only",
 	Long: `remove deletes the resource entry from the state file without
 affecting the actual system. Use this when you want dotisan to stop
@@ -179,12 +179,11 @@ tracking a resource without removing it from your system.
 
 Use --force to skip confirmation prompts.
 
-Example: dotisan state remove BrewPackages core-tools`,
-	Args: cobra.ExactArgs(2),
+Example: dotisan state remove BrewPackages/core-tools[ripgrep]`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		kind := args[0]
-		name := args[1]
-		return runStateRemove(kind, name)
+		id := args[0]
+		return runStateRemoveByID(id)
 	},
 }
 
@@ -194,10 +193,10 @@ func init() {
 	stateRemoveCmd.Flags().BoolVarP(&stateRemoveForce, "force", "f", false, "Skip confirmation prompt")
 }
 
-func runStateRemove(kind, name string) error {
+func runStateRemoveByID(id string) error {
 	// Ask for confirmation if --force is not set
 	if !stateRemoveForce {
-		fmt.Printf("Remove %s/%s from state? (actual resource will not be modified) [y/N]: ", kind, name)
+		fmt.Printf("Remove %s from state? (actual resource will not be modified) [y/N]: ", id)
 		reader := bufio.NewReader(os.Stdin)
 		response, err := reader.ReadString('\n')
 		if err != nil {
@@ -220,10 +219,10 @@ func runStateRemove(kind, name string) error {
 		return fmt.Errorf("cannot load state: %w", err)
 	}
 
-	// Find and remove the resource
+	// Find and remove the resource by ID
 	found := false
 	for i, r := range currentState.Resources {
-		if r.Kind == kind && r.Name == name {
+		if r.ID == id {
 			// Remove by swapping with last and truncating
 			currentState.Resources[i] = currentState.Resources[len(currentState.Resources)-1]
 			currentState.Resources = currentState.Resources[:len(currentState.Resources)-1]
@@ -233,7 +232,7 @@ func runStateRemove(kind, name string) error {
 	}
 
 	if !found {
-		return fmt.Errorf("resource %s/%s not found in state", kind, name)
+		return fmt.Errorf("resource %s not found in state", id)
 	}
 
 	// Save state
@@ -243,7 +242,7 @@ func runStateRemove(kind, name string) error {
 
 	// Success message
 	greenStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("10"))
-	fmt.Printf("%s Removed %s/%s from state\n", greenStyle.Render("✓"), kind, name)
+	fmt.Printf("%s Removed %s from state\n", greenStyle.Render("✓"), id)
 	fmt.Println("Note: The actual resource was not modified on your system.")
 
 	return nil
