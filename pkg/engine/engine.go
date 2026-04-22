@@ -404,7 +404,6 @@ func (e *Engine) DisplayPlan(result *PlanResult) {
 		for _, plan := range result.ProviderPlans {
 			for _, res := range plan.Additions {
 				resourceID := fmt.Sprintf("%s/%s", res.GetKind(), res.GetMetadata().Name)
-				fmt.Println()
 				fmt.Println(e.PlanFormatter.FormatAdditionDetailed(resourceID))
 			}
 		}
@@ -417,7 +416,6 @@ func (e *Engine) DisplayPlan(result *PlanResult) {
 		for _, plan := range result.ProviderPlans {
 			for _, mod := range plan.Modifications {
 				resourceID := fmt.Sprintf("%s/%s", mod.Resource.GetKind(), mod.Resource.GetMetadata().Name)
-				fmt.Println()
 				fmt.Println(e.PlanFormatter.FormatModificationDetailed(resourceID))
 				if mod.Diff != "" {
 					fmt.Println()
@@ -434,7 +432,6 @@ func (e *Engine) DisplayPlan(result *PlanResult) {
 		for _, plan := range result.ProviderPlans {
 			for _, drift := range plan.Drifted {
 				resourceID := fmt.Sprintf("%s/%s", drift.Resource.GetKind(), drift.Resource.GetMetadata().Name)
-				fmt.Println()
 				fmt.Println(e.PlanFormatter.FormatDriftDetailed(resourceID))
 				if drift.Diff != "" {
 					fmt.Println()
@@ -450,15 +447,12 @@ func (e *Engine) DisplayPlan(result *PlanResult) {
 		fmt.Println(e.PlanFormatter.FormatSectionHeader("Warnings and Advisories"))
 		for _, plan := range result.ProviderPlans {
 			for _, w := range plan.Warnings {
-				fmt.Println()
 				// Render severity and message; include suggestion if present
 				sev := strings.ToUpper(w.Severity)
 				header := fmt.Sprintf("%s: %s", sev, w.Message)
 				fmt.Println("  ", e.PlanFormatter.FormatActionReason(header))
 				if w.Suggestion != "" {
-					// Show suggestion in monospace-ish block (indented)
-					fmt.Println()
-					fmt.Println("      ", w.Suggestion)
+					fmt.Println("\t", w.Suggestion)
 				}
 			}
 		}

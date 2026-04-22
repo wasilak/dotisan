@@ -130,17 +130,19 @@ func (p *BrewProvider) reconcileBrewPackages(
 		desiredIDs[id] = true
 	}
 
-	// Check formulae
+	// Check formulae - add ALL packages from manifest to plan (in or not in state)
 	for _, pkg := range bp.Spec.Formulae {
 		pkgName := pkg.Name
-		installedVersion, isInstalled := installed[pkgName]
+		_, isInstalled := installed[pkgName]
+		_, inState := stateMap[fmt.Sprintf("BrewPackages/%s[%s]", bp.GetMetadata().Name, pkgName)]
+
 		if !isInstalled {
 			// Package needs to be installed
 			plan.Additions = append(plan.Additions, &resource.BrewPackages{
 				BaseResource: resource.BaseResource{
 					Kind: "BrewPackages",
 					Metadata: resource.Metadata{
-						Name:      pkgName,
+						Name:      fmt.Sprintf("%s[%s]", bp.GetMetadata().Name, pkgName),
 						Namespace: bp.GetMetadata().GetNamespace(),
 					},
 				},
@@ -148,42 +150,26 @@ func (p *BrewProvider) reconcileBrewPackages(
 					Formulae: []resource.Package{{Name: pkgName, Version: pkg.Version}},
 				},
 			})
-			// Mark indexed ID as desired
-			stateID := fmt.Sprintf("BrewPackages/%s[%s]", bp.GetMetadata().Name, pkgName)
-			desiredIDs[stateID] = true
-			desiredIDs[id] = true // Also mark parent ID as desired
-		} else {
-			// Package is already installed
-			// Always mark indexed ID as desired so it's not flagged for removal
-			stateID := fmt.Sprintf("BrewPackages/%s[%s]", bp.GetMetadata().Name, pkgName)
-			desiredIDs[stateID] = true
-			desiredIDs[id] = true // Also mark parent ID as desired
-
-			// Check if not in state - treat as addition with warning
-			if _, inState := stateMap[stateID]; !inState {
-				// Not in state - show as addition with import suggestion
-				// Use parent's name for the resource (not the package name)
-				plan.Additions = append(plan.Additions, &resource.BrewPackages{
-					BaseResource: resource.BaseResource{
-						Kind: "BrewPackages",
-						Metadata: resource.Metadata{
-							Name:      bp.GetMetadata().Name,
-							Namespace: bp.GetMetadata().GetNamespace(),
-						},
+		} else if !inState {
+			// Package installed but not tracked - show as addition (will be imported)
+			plan.Additions = append(plan.Additions, &resource.BrewPackages{
+				BaseResource: resource.BaseResource{
+					Kind: "BrewPackages",
+					Metadata: resource.Metadata{
+						Name:      fmt.Sprintf("%s[%s]", bp.GetMetadata().Name, pkgName),
+						Namespace: bp.GetMetadata().GetNamespace(),
 					},
-					Spec: resource.BrewPackagesSpec{
-						Formulae: []resource.Package{{Name: pkgName, Version: installedVersion}},
-					},
-				})
-				warning := provider.PlanWarning{
-					ResourceID: id,
-					Severity:   "warning",
-					Message:    fmt.Sprintf("Package '%s' is already installed but not managed by dotisan", pkgName),
-					Suggestion: fmt.Sprintf("dotisan state import BrewPackages %s[%s] %s", bp.GetMetadata().Name, pkgName, pkgName),
-				}
-				plan.Warnings = append(plan.Warnings, warning)
-			}
+				},
+				Spec: resource.BrewPackagesSpec{
+					Formulae: []resource.Package{{Name: pkgName, Version: pkg.Version}},
+				},
+			})
 		}
+
+		// Always mark as desired so it's not flagged for removal
+		stateID := fmt.Sprintf("BrewPackages/%s[%s]", bp.GetMetadata().Name, pkgName)
+		desiredIDs[stateID] = true
+		desiredIDs[id] = true
 	}
 
 	// Check casks

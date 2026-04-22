@@ -101,16 +101,19 @@ func (p *GoProvider) reconcileGoPackages(
 		return
 	}
 
-	// Check each desired package
+	// Check each desired package - add ALL to plan
 	for _, pkg := range gp.Spec.Packages {
 		moduleName := pkg.Module
-		if !p.isPackageInstalled(moduleName, installed) {
-			// Package needs to be installed
+		_, isInstalled := installed[moduleName]
+		_, inState := stateMap[fmt.Sprintf("GoPackages/%s[%s]", gp.GetMetadata().Name, moduleName)]
+
+		if !isInstalled || !inState {
+			// Needs install or not in state
 			plan.Additions = append(plan.Additions, &resource.GoPackages{
 				BaseResource: resource.BaseResource{
 					Kind: "GoPackages",
 					Metadata: resource.Metadata{
-						Name:      moduleName,
+						Name:      fmt.Sprintf("%s[%s]", gp.GetMetadata().Name, moduleName),
 						Namespace: gp.GetMetadata().GetNamespace(),
 					},
 				},
@@ -119,6 +122,9 @@ func (p *GoProvider) reconcileGoPackages(
 				},
 			})
 		}
+
+		// Mark as desired
+		desiredIDs[fmt.Sprintf("GoPackages/%s[%s]", gp.GetMetadata().Name, moduleName)] = true
 	}
 
 	// Detect drift: check if modules in saved state are still installed

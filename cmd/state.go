@@ -15,7 +15,8 @@ import (
 	"github.com/wasilak/dotisan/pkg/state"
 	"github.com/wasilak/dotisan/pkg/style"
 
-	"github.com/charmbracelet/lipgloss"
+	lipgloss "charm.land/lipgloss/v2"
+	"charm.land/lipgloss/v2/table"
 	"github.com/spf13/cobra"
 )
 
@@ -365,46 +366,56 @@ func runStateList() error {
 	missingStyle := style.Error
 	unknownStyle := style.Dim
 
-	// Column widths
-	colWidths := []int{20, 25, 35, 12}
+    // Render table using lipgloss table package
+    fmt.Println(style.Header.Render("Managed Resources"))
+    fmt.Println()
 
-	// Render table
-	fmt.Println(style.Header.Render("Managed Resources"))
-	fmt.Println()
-	fmt.Println(style.RenderTableBorder(colWidths))
-	fmt.Println(style.RenderTableHeader([]string{"KIND", "NAME", "ID", "STATUS"}, colWidths))
-	fmt.Println(style.RenderTableBorder(colWidths))
+    // Define styles for header and rows
+    headerStyle := lipgloss.NewStyle().Bold(true).Align(lipgloss.Center)
+    cellStyle := lipgloss.NewStyle().Padding(0, 1)
+    oddRowStyle := cellStyle.Foreground(lipgloss.Color(style.Gray))
+    evenRowStyle := cellStyle
+
+    t := table.New()
+    t.Border(lipgloss.NormalBorder())
+    t.BorderStyle(lipgloss.NewStyle().Foreground(lipgloss.Color(style.Blue)))
+    t.StyleFunc(func(row, col int) lipgloss.Style {
+        switch {
+        case row == table.HeaderRow:
+            return headerStyle
+        case row%2 == 0:
+            return evenRowStyle
+        default:
+            return oddRowStyle
+        }
+    })
+    t.Headers("KIND", "NAME", "ID", "STATUS")
 
 	// Track counts for summary
 	inSyncCount := 0
 	driftCount := 0
 	orphanCount := 0
 
-	// Display resources with accurate status
-	for i, r := range currentState.Resources {
-		status, styled := getResourceStatus(r, statusMap, inSyncStyle, driftStyle, missingStyle, unknownStyle)
+    // Display resources with accurate status
+    for _, r := range currentState.Resources {
+        status, _ := getResourceStatus(r, statusMap, inSyncStyle, driftStyle, missingStyle, unknownStyle)
 
-		// Count statuses
-		switch status {
-		case "in_sync":
-			inSyncCount++
-		case "drift", "modified":
-			driftCount++
-		case "orphaned", "pending":
-			orphanCount++
-		}
+        // Count statuses
+        switch status {
+        case "in_sync":
+            inSyncCount++
+        case "drift", "modified":
+            driftCount++
+        case "orphaned", "pending":
+            orphanCount++
+        }
 
-		cols := []string{
-			truncate(r.Kind, 17),
-			truncate(r.Name, 22),
-			truncate(r.ID, 32),
-			status,
-		}
-		row := style.RenderTableRow(cols, colWidths, i%2 == 1)
-		row = styledInline(row, status, styled)
-		fmt.Println(row)
-	}
-	fmt.Println(style.RenderTableBorder(colWidths))
+        // Add row to table. We'll apply row styling via the table StyleFunc.
+        t.Row(truncate(r.Kind, 17), truncate(r.Name, 22), truncate(r.ID, 32), status)
+    }
+
+    // Print the table
+    fmt.Println(t.Render())
 
 	// Summary footer
 	fmt.Println()

@@ -3,8 +3,9 @@ package diff
 import (
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
+	lipgloss "charm.land/lipgloss/v2"
 	"github.com/sergi/go-diff/diffmatchpatch"
+	"github.com/wasilak/dotisan/pkg/style"
 )
 
 // Styles holds lipgloss styles for diff output.
@@ -26,26 +27,27 @@ type Styles struct {
 }
 
 // DefaultStyles returns the default color scheme for diffs.
+// Uses color constants from pkg/style for consistency.
 func DefaultStyles() Styles {
 	return Styles{
 		Addition: lipgloss.NewStyle().
-			Foreground(lipgloss.Color("42")). // Green
-			Background(lipgloss.Color("22")), // Dark green
+			Foreground(lipgloss.Color(style.Green)).
+			Background(lipgloss.Color("22")),
 
 		Deletion: lipgloss.NewStyle().
-			Foreground(lipgloss.Color("196")). // Red
-			Background(lipgloss.Color("52")),  // Dark red
+			Foreground(lipgloss.Color(style.Red)).
+			Background(lipgloss.Color("52")),
 
 		Modification: lipgloss.NewStyle().
-			Foreground(lipgloss.Color("226")). // Yellow
-			Background(lipgloss.Color("58")),  // Dark yellow
+			Foreground(lipgloss.Color(style.Yellow)).
+			Background(lipgloss.Color("58")),
 
 		Unchanged: lipgloss.NewStyle().
-			Foreground(lipgloss.Color("250")), // Light gray
+			Foreground(lipgloss.Color(style.Gray)),
 
 		Header: lipgloss.NewStyle().
 			Bold(true).
-			Foreground(lipgloss.Color("255")), // White
+			Foreground(lipgloss.Color("255")),
 	}
 }
 

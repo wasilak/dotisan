@@ -219,7 +219,7 @@ func (f *PlanFormatter) FormatActionReason(reason string) string {
 
 // FormatDiff formats a diff block
 func (f *PlanFormatter) FormatDiff(diff string) string {
-	return f.formatMultilineDiff(diff, "      ")
+	return f.formatMultilineDiff(diff, "\t")
 }
 
 // FormatNoChanges formats the "no changes" message
