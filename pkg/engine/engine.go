@@ -586,6 +586,13 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 			newState.SetResource(stateEntry)
 			totalChanges++
 		}
+
+		// Add drift-restored resources to state (they were applied as additions internally)
+		for _, drift := range plan.Drifted {
+			stateEntry := e.resourceToStateEntry(drift.Resource, providerName)
+			newState.SetResource(stateEntry)
+			totalChanges++
+		}
 	}
 
 	// Save updated state
@@ -632,8 +639,8 @@ func (e *Engine) resourceToStateEntry(res resource.Resource, providerName string
 				}
 			}
 		} else if r.Spec.SourceFile != "" {
-			// External file - read and render with template if enabled
-			sourcePath := filepath.Join(e.Config.DotfilesRoot, r.Spec.SourceFile)
+			// External file - path is relative to resources/ subdirectory
+			sourcePath := filepath.Join(e.Config.DotfilesRoot, "resources", r.Spec.SourceFile)
 			data, err := e.renderSourceFile(sourcePath, r.Spec.Template)
 			if err == nil {
 				content = data
