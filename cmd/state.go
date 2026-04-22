@@ -154,9 +154,12 @@ func runStateImport(id, actualValue string) error {
 	resourceState.Name = name
 	resourceState.Kind = kind
 
-	// Load current state (from ~/.config/dotisan/state.json)
-	dotisanDir := os.ExpandEnv("$HOME/.config/dotisan")
-	statePath := dotisanDir + "/state.json"
+	// Load current state - use configured path from config
+	cfg, _ := config.LoadConfigFromDefaultPath()
+	statePath := os.ExpandEnv("$HOME/.config/dotisan/state.json")
+	if cfg != nil && cfg.State.Path != "" {
+		statePath = os.ExpandEnv(cfg.State.Path)
+	}
 	backend := state.NewLocalBackend(statePath)
 	currentState, err := backend.Load(ctx)
 	if err != nil {
@@ -260,10 +263,13 @@ func runStateRemoveByID(id string) error {
 		}
 	}
 
-	// Load current state
+	// Load current state - use configured path from config
 	ctx := context.Background()
-	dotisanDir := os.ExpandEnv("$HOME/.config/dotisan")
-	statePath := dotisanDir + "/state.json"
+	cfg, _ := config.LoadConfigFromDefaultPath()
+	statePath := os.ExpandEnv("$HOME/.config/dotisan/state.json")
+	if cfg != nil && cfg.State.Path != "" {
+		statePath = os.ExpandEnv(cfg.State.Path)
+	}
 	backend := state.NewLocalBackend(statePath)
 	currentState, err := backend.Load(ctx)
 	if err != nil {
@@ -326,9 +332,15 @@ func runStateList() error {
 		return runStateListBasic()
 	}
 
-	// Load state for resource list
-	dotisanDir := os.ExpandEnv("$HOME/.config/dotisan")
-	statePath := dotisanDir + "/state.json"
+	// Load state for resource list - use configured path from config
+	cfg, err := config.LoadConfigFromDefaultPath()
+	statePath := ""
+	if err == nil && cfg.State.Path != "" {
+		statePath = os.ExpandEnv(cfg.State.Path)
+	}
+	if statePath == "" {
+		statePath = os.ExpandEnv("$HOME/.config/dotisan/state.json")
+	}
 	backend := state.NewLocalBackend(statePath)
 	currentState, err := backend.Load(ctx)
 	if err != nil {
@@ -500,8 +512,11 @@ func getResourceStatus(r provider.ResourceState, statusMap map[string]string,
 // runStateListBasic is a fallback that just lists resources without status check
 func runStateListBasic() error {
 	ctx := context.Background()
-	dotisanDir := os.ExpandEnv("$HOME/.config/dotisan")
-	statePath := dotisanDir + "/state.json"
+	cfg, _ := config.LoadConfigFromDefaultPath()
+	statePath := os.ExpandEnv("$HOME/.config/dotisan/state.json")
+	if cfg != nil && cfg.State.Path != "" {
+		statePath = os.ExpandEnv(cfg.State.Path)
+	}
 	backend := state.NewLocalBackend(statePath)
 	currentState, err := backend.Load(ctx)
 	if err != nil {
@@ -584,9 +599,12 @@ func runStatePull() error {
 		return fmt.Errorf("failed to load remote state: %w", err)
 	}
 
-	// Save to local backend
-	dotisanDir := os.ExpandEnv("$HOME/.config/dotisan")
-	localBackend := state.NewLocalBackend(dotisanDir)
+	// Save to local backend - use configured path
+	localStatePath := os.ExpandEnv("$HOME/.config/dotisan/state.json")
+	if cfg.State.Path != "" {
+		localStatePath = os.ExpandEnv(cfg.State.Path)
+	}
+	localBackend := state.NewLocalBackend(localStatePath)
 	if err := localBackend.Save(ctx, remoteState); err != nil {
 		return fmt.Errorf("failed to save local state: %w", err)
 	}
@@ -626,11 +644,13 @@ func runStatePush() error {
 		return fmt.Errorf("S3 backend not configured in config.yaml (current: %s)", cfg.State.Backend)
 	}
 
-	// Load local state
+	// Load local state - use configured path
 	ctx := context.Background()
-	dotisanDir := os.ExpandEnv("$HOME/.config/dotisan")
-	statePath := dotisanDir + "/state.json"
-	localBackend := state.NewLocalBackend(statePath)
+	localStatePath := os.ExpandEnv("$HOME/.config/dotisan/state.json")
+	if cfg.State.Path != "" {
+		localStatePath = os.ExpandEnv(cfg.State.Path)
+	}
+	localBackend := state.NewLocalBackend(localStatePath)
 	localState, err := localBackend.Load(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to load local state: %w", err)
