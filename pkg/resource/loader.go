@@ -43,9 +43,14 @@ func (l *Loader) LoadResources() ([]Resource, error) {
 			return nil
 		}
 
-		// Skip values.yaml (tool-level) - resource config.yaml files are valid
+		// Skip values.yaml and config.yaml (tool-level configs)
 		base := filepath.Base(path)
-		if base == "values.yaml" {
+		if base == "values.yaml" || base == "config.yaml" {
+			return nil
+		}
+
+		// Skip sample/example files
+		if strings.HasPrefix(base, "sample") || strings.HasPrefix(base, "test-") {
 			return nil
 		}
 
