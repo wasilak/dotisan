@@ -662,6 +662,24 @@ func (e *Engine) resourceToStateEntry(res resource.Resource, providerName string
 			"recursive": r.Spec.Recursive,
 			"clean":     r.Spec.Clean,
 		}
+
+	case *resource.NpmPackages:
+		pkgs := make(map[string]string)
+		for _, p := range r.Spec.Packages {
+			pkgs[p.Name] = p.Version
+		}
+		stateEntry.Extra = map[string]interface{}{
+			"packages": pkgs,
+		}
+
+	case *resource.GoPackages:
+		mods := make(map[string]string)
+		for _, m := range r.Spec.Packages {
+			mods[m.Module] = m.Version
+		}
+		stateEntry.Extra = map[string]interface{}{
+			"modules": mods,
+		}
 	}
 
 	return stateEntry

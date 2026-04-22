@@ -121,19 +121,83 @@ func (p *GoProvider) reconcileGoPackages(
 		}
 	}
 
+	// Detect drift: check if modules in saved state are still installed
+	p.detectGoDrift(gp, stateMap, plan, installed)
+
 	// Check if resource is in sync
-	if len(plan.Additions) == 0 && len(plan.Modifications) == 0 {
+	if len(plan.Additions) == 0 && len(plan.Modifications) == 0 && len(plan.Warnings) == 0 {
 		plan.InSync = append(plan.InSync, gp)
 	}
 }
 
+// detectGoDrift checks if modules in saved state are still installed on the system.
+func (p *GoProvider) detectGoDrift(
+	gp *resource.GoPackages,
+	stateMap map[string]provider.ResourceState,
+	plan *provider.Plan,
+	installed map[string]string,
+) {
+	id := fmt.Sprintf("GoPackages/%s", gp.GetMetadata().Name)
+	savedState, exists := stateMap[id]
+	if !exists {
+		return
+	}
+
+	var savedModules []string
+	if savedState.Extra != nil {
+		if mods, ok := savedState.Extra["modules"].(map[string]interface{}); ok {
+			for name := range mods {
+				savedModules = append(savedModules, name)
+			}
+		}
+	}
+
+	if len(savedModules) == 0 {
+		return
+	}
+
+	var driftMsg []string
+	for _, moduleName := range savedModules {
+		if _, stillInstalled := installed[moduleName]; !stillInstalled {
+			driftMsg = append(driftMsg, fmt.Sprintf("Module '%s' was removed outside of dotisan", moduleName))
+		}
+	}
+
+	if len(driftMsg) > 0 {
+		warning := provider.PlanWarning{
+			ResourceID: id,
+			Severity:   "warning",
+			Message:   fmt.Sprintf("GoPackages/%s has drift. %s", gp.GetMetadata().Name, strings.Join(driftMsg, ". ")),
+			Suggestion: "Run 'dotisan apply' to restore",
+		}
+		plan.Warnings = append(plan.Warnings, warning)
+	}
+}
+
 // getInstalledPackages retrieves currently installed Go modules.
-// Note: Go doesn't have a built-in way to list installed binaries,
-// so we check the GOPATH/bin or GOBIN directory.
 func (p *GoProvider) getInstalledPackages() (map[string]string, error) {
-	// For now, return empty map since Go doesn't track installed modules
-	// The user would need to manually check $GOPATH/bin or use `which`
-	return make(map[string]string), nil
+	ctx := context.Background()
+	stdout, _, err := cmdutil.RunSimple(ctx, "go", "list", "-m", "all")
+	if err != nil {
+		return nil, fmt.Errorf("failed to list Go modules: %w", err)
+	}
+
+	result := make(map[string]string)
+	lines := strings.Split(strings.TrimSpace(stdout), "\n")
+	for _, line := range lines {
+		parts := strings.Fields(line)
+		if len(parts) == 0 {
+			continue
+		}
+		module := parts[0]
+		version := ""
+		if len(parts) > 1 {
+			version = parts[1]
+		}
+		result[module] = version
+	}
+
+	return result, nil
 }
 
 // isPackageInstalled checks if a Go module is installed.
@@ -225,9 +289,22 @@ func (p *GoProvider) applyRemoval(ctx context.Context, res resource.Resource) er
 	return nil
 }
 
-// Import discovers an existing module and returns its state.
+// Import discovers all installed Go modules and returns their state.
 func (p *GoProvider) Import(ctx context.Context, id string) (provider.ResourceState, error) {
-	return provider.ResourceState{}, fmt.Errorf("import not yet implemented")
+	modules, err := p.getInstalledPackages()
+	if err != nil {
+		return provider.ResourceState{}, fmt.Errorf("failed to list Go modules: %w", err)
+	}
+
+	return provider.ResourceState{
+		ID:      "GoPackages/global",
+		Kind:    "GoPackages",
+		Name:    "global",
+		Version: "all",
+		Extra: map[string]interface{}{
+			"modules": modules,
+		},
+	}, nil
 }
 
 func (p *GoProvider) ImportItem(ctx context.Context, resourceName string, itemKey string) (provider.ResourceState, error) {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/wasilak/dotisan/pkg/cmdutil"
 	"github.com/wasilak/dotisan/pkg/provider"
@@ -107,9 +108,56 @@ func (p *NpmProvider) reconcileNpmPackages(
 		}
 	}
 
+	// Detect drift: check if packages in saved state are still installed
+	p.detectNpmDrift(np, stateMap, plan, installed)
+
 	// Check if resource is in sync
-	if len(plan.Additions) == 0 && len(plan.Modifications) == 0 {
+	if len(plan.Additions) == 0 && len(plan.Modifications) == 0 && len(plan.Warnings) == 0 {
 		plan.InSync = append(plan.InSync, np)
+	}
+}
+
+// detectNpmDrift checks if packages in saved state are still installed on the system.
+func (p *NpmProvider) detectNpmDrift(
+	np *resource.NpmPackages,
+	stateMap map[string]provider.ResourceState,
+	plan *provider.Plan,
+	installed map[string]string,
+) {
+	id := fmt.Sprintf("NpmPackages/%s", np.GetMetadata().Name)
+	savedState, exists := stateMap[id]
+	if !exists {
+		return
+	}
+
+	var savedPackages []string
+	if savedState.Extra != nil {
+		if pkgs, ok := savedState.Extra["packages"].(map[string]interface{}); ok {
+			for name := range pkgs {
+				savedPackages = append(savedPackages, name)
+			}
+		}
+	}
+
+	if len(savedPackages) == 0 {
+		return
+	}
+
+	var driftMsg []string
+	for _, pkgName := range savedPackages {
+		if _, stillInstalled := installed[pkgName]; !stillInstalled {
+			driftMsg = append(driftMsg, fmt.Sprintf("Package '%s' was uninstalled outside of dotisan", pkgName))
+		}
+	}
+
+	if len(driftMsg) > 0 {
+		warning := provider.PlanWarning{
+			ResourceID: id,
+			Severity:   "warning",
+			Message:   fmt.Sprintf("NpmPackages/%s has drift. %s", np.GetMetadata().Name, strings.Join(driftMsg, ". ")),
+			Suggestion: "Run 'dotisan apply' to restore",
+		}
+		plan.Warnings = append(plan.Warnings, warning)
 	}
 }
 
@@ -209,9 +257,33 @@ func (p *NpmProvider) applyRemoval(ctx context.Context, res resource.Resource) e
 	return nil
 }
 
-// Import discovers an existing package and returns its state.
+// Import discovers all installed global npm packages and returns their state.
 func (p *NpmProvider) Import(ctx context.Context, id string) (provider.ResourceState, error) {
-	return provider.ResourceState{}, fmt.Errorf("import not yet implemented")
+	stdout, _, err := cmdutil.RunSimple(ctx, "npm", "list", "-g", "--json")
+	if err != nil {
+		// npm list returns error when packages are missing, but still outputs valid JSON
+		// We continue to parse the output
+	}
+
+	var listOutput npmListOutput
+	if err := json.Unmarshal([]byte(stdout), &listOutput); err != nil {
+		return provider.ResourceState{}, fmt.Errorf("failed to parse npm list output: %w", err)
+	}
+
+	packages := make(map[string]string)
+	for name, pkg := range listOutput.Dependencies {
+		packages[name] = pkg.Version
+	}
+
+	return provider.ResourceState{
+		ID:      "NpmPackages/global",
+		Kind:    "NpmPackages",
+		Name:    "global",
+		Version: "all",
+		Extra: map[string]interface{}{
+			"packages": packages,
+		},
+	}, nil
 }
 
 func (p *NpmProvider) ImportItem(ctx context.Context, resourceName string, itemKey string) (provider.ResourceState, error) {
