@@ -697,6 +697,18 @@ func (p *FileProvider) Apply(ctx context.Context, plan provider.Plan) error {
 		return err
 	}
 
+	// Process drift (restore files to managed state)
+	for _, drift := range plan.Drifted {
+		if err := p.applyDriftRestore(ctx, drift); err != nil {
+			return fmt.Errorf("failed to restore %s: %w", drift.Resource.GetMetadata().ResourceID(), err)
+		}
+	}
+
+	// Check context cancellation
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
 	// Process removals
 	for _, res := range plan.Removals {
 		if err := p.applyRemoval(ctx, res); err != nil {
@@ -851,6 +863,23 @@ func (p *FileProvider) applyFileModification(ctx context.Context, mf *resource.M
 	}
 
 	return nil
+}
+
+// applyDriftRestore restores a drifted file to the managed state (re-applies the source).
+func (p *FileProvider) applyDriftRestore(ctx context.Context, drift provider.Drift) error {
+	// Check context cancellation
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	switch r := drift.Resource.(type) {
+	case *resource.ManagedFile:
+		return p.applyFileAddition(ctx, r)
+	case *resource.ManagedDirectory:
+		return p.applyDirectoryAddition(ctx, r)
+	default:
+		return fmt.Errorf("unsupported resource type for drift restore: %T", drift.Resource)
+	}
 }
 
 // applySingleFileModification updates a single existing file.

@@ -228,7 +228,7 @@ func (e *Engine) Plan(ctx context.Context) (*PlanResult, error) {
 		}
 	}
 
-	result.HasChanges = result.TotalAdditions > 0 || result.TotalModifications > 0 || result.TotalRemovals > 0
+	result.HasChanges = result.TotalAdditions > 0 || result.TotalModifications > 0 || result.TotalRemovals > 0 || result.TotalDrifted > 0
 
 	return result, nil
 }
@@ -480,8 +480,8 @@ func (e *Engine) DisplayPlan(result *PlanResult) {
 	}
 	fmt.Println(summary)
 
-	// No changes message
-	if !result.HasChanges && result.TotalDrifted == 0 {
+	// No changes message - now includes drift check
+	if !result.HasChanges {
 		fmt.Println()
 		fmt.Println(e.PlanFormatter.FormatNoChanges())
 	}
@@ -503,8 +503,8 @@ type ApplyOptions struct {
 
 // Apply executes the planned changes.
 func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOptions) error {
-	// Check if there are changes to apply
-	if !result.HasChanges && result.TotalDrifted == 0 {
+	// Check if there are changes to apply (HasChanges now includes drift)
+	if !result.HasChanges {
 		fmt.Println("No changes to apply.")
 		return nil
 	}
