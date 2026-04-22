@@ -18,7 +18,7 @@ var (
 // applyCmd represents the apply command
 var applyCmd = &cobra.Command{
 	Use:          "apply",
-	SilenceUsage:  true,
+	SilenceUsage: true,
 	Short:        "Apply changes (dry-run unless --confirm)",
 	Long: `apply runs plan first, displays the output, then executes changes.
 

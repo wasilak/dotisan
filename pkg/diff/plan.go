@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
+	"github.com/wasilak/dotisan/pkg/style"
 )
 
 // PlanFormatter provides helper functions for formatting plan output.
@@ -33,97 +33,64 @@ const (
 	IconInSync       = "✓"
 )
 
-// Pastel color palette (softer, easier on the eyes)
-const (
-	ColorPastelGreen  = "114" // Soft mint green
-	ColorPastelRed    = "174" // Soft salmon/coral
-	ColorPastelYellow = "222" // Soft cream yellow
-	ColorPastelOrange = "216" // Soft peach
-	ColorGray         = "240" // Neutral gray
-)
+// PlanFormatter uses the shared style package for coloring so the
+// plan output matches other CLI outputs. Colors live in pkg/style.
 
 // FormatAddition formats an addition message.
 func (f *PlanFormatter) FormatAddition(resourceName string) string {
-	icon := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(ColorPastelGreen)).
-		Render(IconAddition)
-
-	nameStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(ColorPastelGreen)).
-		Render(resourceName)
-
-	return fmt.Sprintf("%s %s", icon, nameStyle)
+	// Use shared styled icon and row success color
+	icon := style.StyledIconAdd
+	name := style.RowSuccess.Render(resourceName)
+	return fmt.Sprintf("%s %s", icon, name)
 }
 
 // FormatDeletion formats a deletion message.
 func (f *PlanFormatter) FormatDeletion(resourceName string) string {
-	icon := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(ColorPastelRed)).
-		Render(IconDeletion)
-
-	nameStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(ColorPastelRed)).
-		Render(resourceName)
-
-	return fmt.Sprintf("%s %s", icon, nameStyle)
+	icon := style.IconError
+	name := style.RowError.Render(resourceName)
+	return fmt.Sprintf("%s %s", icon, name)
 }
 
 // FormatModification formats a modification message with optional diff.
 func (f *PlanFormatter) FormatModification(resourceName string, diff string) string {
-	icon := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(ColorPastelYellow)).
-		Render(IconModification)
-
-	nameStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(ColorPastelYellow)).
-		Render(resourceName)
+	icon := style.Info.Render(IconModification)
+	name := style.RowWarning.Render(resourceName)
 
 	if diff != "" {
 		// Format multiline diff properly
 		formattedDiff := f.formatMultilineDiff(diff, "  ")
-		return fmt.Sprintf("%s %s\n%s", icon, nameStyle, formattedDiff)
+		return fmt.Sprintf("%s %s\n%s", icon, name, formattedDiff)
 	}
 
-	return fmt.Sprintf("%s %s", icon, nameStyle)
+	return fmt.Sprintf("%s %s", icon, name)
 }
 
 // FormatInSync formats an in-sync message.
 func (f *PlanFormatter) FormatInSync(resourceName string) string {
-	icon := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(ColorGray)).
-		Render(IconInSync)
-
-	nameStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(ColorGray)).
-		Render(resourceName)
-
-	return fmt.Sprintf("%s %s", icon, nameStyle)
+	icon := style.Dim.Render(IconInSync)
+	name := style.Dim.Render(resourceName)
+	return fmt.Sprintf("%s %s", icon, name)
 }
 
 // FormatDrift formats a drift detection message.
 // The description can be multiline (for diffs), and will be properly indented.
 func (f *PlanFormatter) FormatDrift(resourceName, description string) string {
-	icon := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(ColorPastelOrange)).
-		Render(IconDrift)
-
-	nameStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(ColorPastelOrange)).
-		Render(resourceName)
+	icon := style.Warning.Render(IconDrift)
+	name := style.RowWarning.Render(resourceName)
 
 	if description == "" {
-		return fmt.Sprintf("%s %s (drift detected)", icon, nameStyle)
+		return fmt.Sprintf("%s %s (drift detected)", icon, name)
 	}
 
 	// Check if description is multiline (contains \n)
 	if !strings.Contains(description, "\n") {
 		// Single line - use simple format
-		return fmt.Sprintf("%s %s (drift: %s)", icon, nameStyle, description)
+		return fmt.Sprintf("%s %s (drift: %s)", icon, name, description)
 	}
 
 	// Multiline description (likely a diff) - format with proper indentation
 	formattedDiff := f.formatMultilineDiff(description, "  ")
-	return fmt.Sprintf("%s %s (drift detected):\n%s", icon, nameStyle, formattedDiff)
+	return fmt.Sprintf("%s %s (drift detected):\n%s", icon, name, formattedDiff)
 }
 
 // formatMultilineDiff formats a multiline diff with proper indentation and colors.
@@ -138,22 +105,16 @@ func (f *PlanFormatter) formatMultilineDiff(diff, indent string) string {
 
 		// Apply color based on diff prefix (pastel colors)
 		if strings.HasPrefix(line, "+") {
-			// Addition - soft mint green
-			colored := lipgloss.NewStyle().
-				Foreground(lipgloss.Color(ColorPastelGreen)).
-				Render(line)
+			// Addition - use shared row success color
+			colored := style.RowSuccess.Render(line)
 			formattedLines = append(formattedLines, indent+colored)
 		} else if strings.HasPrefix(line, "-") {
-			// Deletion - soft salmon
-			colored := lipgloss.NewStyle().
-				Foreground(lipgloss.Color(ColorPastelRed)).
-				Render(line)
+			// Deletion - use shared row error color
+			colored := style.RowError.Render(line)
 			formattedLines = append(formattedLines, indent+colored)
 		} else {
-			// Context line - soft gray
-			colored := lipgloss.NewStyle().
-				Foreground(lipgloss.Color("250")).
-				Render(line)
+			// Context line - dim
+			colored := style.Dim.Render(line)
 			formattedLines = append(formattedLines, indent+colored)
 		}
 	}
@@ -166,21 +127,15 @@ func (f *PlanFormatter) FormatSummary(add, modify, remove, inSync int) string {
 	var parts []string
 
 	if add > 0 {
-		addStyle := lipgloss.NewStyle().
-			Foreground(lipgloss.Color(ColorPastelGreen))
-		parts = append(parts, addStyle.Render(fmt.Sprintf("+%d to add", add)))
+		parts = append(parts, style.Success.Render(fmt.Sprintf("+%d to add", add)))
 	}
 
 	if modify > 0 {
-		modifyStyle := lipgloss.NewStyle().
-			Foreground(lipgloss.Color(ColorPastelYellow))
-		parts = append(parts, modifyStyle.Render(fmt.Sprintf("~%d to change", modify)))
+		parts = append(parts, style.Info.Render(fmt.Sprintf("~%d to change", modify)))
 	}
 
 	if remove > 0 {
-		removeStyle := lipgloss.NewStyle().
-			Foreground(lipgloss.Color(ColorPastelRed))
-		parts = append(parts, removeStyle.Render(fmt.Sprintf("-%d to destroy", remove)))
+		parts = append(parts, style.Error.Render(fmt.Sprintf("-%d to destroy", remove)))
 	}
 
 	// Note: Terraform doesn't show unchanged/in-sync resources in the summary
@@ -198,119 +153,68 @@ func (f *PlanFormatter) FormatWarningsSummary(warnCount int) string {
 	if warnCount <= 0 {
 		return ""
 	}
-	warnStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(ColorPastelOrange))
-	return warnStyle.Render(fmt.Sprintf("⚠ %d warnings", warnCount))
+	return style.Warning.Render(fmt.Sprintf("%s %d warnings", style.IconWarning, warnCount))
 }
 
 // FormatResourceHeader formats a resource section header.
 func (f *PlanFormatter) FormatResourceHeader(kind, name string) string {
-	kindStyle := lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("255")).
-		Render(kind)
-
-	nameStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("250")).
-		Render(name)
-
+	kindStyle := style.Bold.Render(kind)
+	nameStyle := style.Dim.Render(name)
 	return fmt.Sprintf("%s/%s", kindStyle, nameStyle)
 }
 
 // Section header formatting (like Terraform)
 func (f *PlanFormatter) FormatSectionHeader(title string) string {
-	return lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("250")).
-		Render(title)
+	return style.Header.Render(title)
 }
 
 // Detailed formats with "will be..." text
 func (f *PlanFormatter) FormatAdditionDetailed(resourceName string) string {
-	icon := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(ColorPastelGreen)).
-		Render(IconAddition)
-
-	nameStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(ColorPastelGreen)).
-		Render(resourceName)
-
-	action := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("250")).
-		Render("will be created")
-
-	return fmt.Sprintf("  %s %s %s", icon, nameStyle, action)
+	icon := style.StyledIconAdd
+	name := style.RowSuccess.Render(resourceName)
+	action := style.Dim.Render("will be created")
+	return fmt.Sprintf("  %s %s %s", icon, name, action)
 }
 
 func (f *PlanFormatter) FormatRemovalDetailed(resourceName string) string {
-	icon := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(ColorPastelRed)).
-		Render(IconDeletion)
-
-	nameStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(ColorPastelRed)).
-		Render(resourceName)
-
-	action := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("250")).
-		Render("will be destroyed")
-
-	return fmt.Sprintf("  %s %s %s", icon, nameStyle, action)
+	icon := style.IconError
+	name := style.RowError.Render(resourceName)
+	action := style.Dim.Render("will be destroyed")
+	return fmt.Sprintf("  %s %s %s", icon, name, action)
 }
 
 func (f *PlanFormatter) FormatModificationDetailed(resourceName string) string {
-	icon := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(ColorPastelYellow)).
-		Render(IconModification)
-
-	nameStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(ColorPastelYellow)).
-		Render(resourceName)
-
-	action := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("250")).
-		Render("will be updated")
-
-	return fmt.Sprintf("  %s %s %s", icon, nameStyle, action)
+	icon := style.Info.Render(IconModification)
+	name := style.RowWarning.Render(resourceName)
+	action := style.Dim.Render("will be updated")
+	return fmt.Sprintf("  %s %s %s", icon, name, action)
 }
 
 func (f *PlanFormatter) FormatDriftDetailed(resourceName string) string {
-	icon := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(ColorPastelOrange)).
-		Render(IconDrift)
-
-	nameStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(ColorPastelOrange)).
-		Render(resourceName)
-
-	action := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("250")).
-		Render("will be restored")
-
-	return fmt.Sprintf("  %s %s %s", icon, nameStyle, action)
+	icon := style.Warning.Render(IconDrift)
+	name := style.RowWarning.Render(resourceName)
+	action := style.Dim.Render("will be restored")
+	return fmt.Sprintf("  %s %s %s", icon, name, action)
 }
 
 func (f *PlanFormatter) FormatInSyncDetailed(resourceName string) string {
-	icon := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(ColorGray)).
-		Render(IconInSync)
-
-	nameStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(ColorGray)).
-		Render(resourceName)
-
-	action := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("250")).
-		Render("no changes")
-
-	return fmt.Sprintf("  %s %s %s", icon, nameStyle, action)
+	icon := style.Dim.Render(IconInSync)
+	name := style.Dim.Render(resourceName)
+	action := style.Dim.Render("no changes")
+	return fmt.Sprintf("  %s %s %s", icon, name, action)
 }
 
 // FormatActionReason formats the reason text (gray, indented)
 func (f *PlanFormatter) FormatActionReason(reason string) string {
-	return lipgloss.NewStyle().
-		Foreground(lipgloss.Color("240")).
-		Render(reason)
+	// If the reason includes a severity prefix like "WARNING: msg", highlight the
+	// severity with the warning color and render the rest dimmed for readability.
+	parts := strings.SplitN(reason, ": ", 2)
+	if len(parts) == 2 {
+		sev := style.Warning.Render(parts[0])
+		msg := style.Dim.Render(parts[1])
+		return fmt.Sprintf("%s: %s", sev, msg)
+	}
+	return style.Dim.Render(reason)
 }
 
 // FormatDiff formats a diff block
@@ -320,7 +224,5 @@ func (f *PlanFormatter) FormatDiff(diff string) string {
 
 // FormatNoChanges formats the "no changes" message
 func (f *PlanFormatter) FormatNoChanges() string {
-	return lipgloss.NewStyle().
-		Foreground(lipgloss.Color("250")).
-		Render("No changes. Your dotfiles are in sync!")
+	return style.Dim.Render("No changes. Your dotfiles are in sync!")
 }

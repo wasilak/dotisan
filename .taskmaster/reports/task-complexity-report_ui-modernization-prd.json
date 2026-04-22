@@ -1,0 +1,93 @@
+{
+	"meta": {
+		"generatedAt": "2026-04-21T19:58:21.287Z",
+		"tasksAnalyzed": 10,
+		"totalTasks": 10,
+		"analysisCount": 10,
+		"thresholdScore": 5,
+		"projectName": "Task Master",
+		"usedResearch": false
+	},
+	"complexityAnalysis": [
+		{
+			"taskId": 1,
+			"taskTitle": "Create Shared Style System (pkg/style/styles.go)",
+			"complexityScore": 4,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Break down the creation of shared styles into categories: colors and icons, text styles, and box/table styles. Detail the specific lipgloss properties for each.",
+			"reasoning": "This task is foundational and involves defining constants and basic lipgloss styles. While it requires careful attention to detail for color codes and style properties, it doesn't involve complex logic or dynamic behavior. The main effort is in comprehensive definition and initial setup."
+		},
+		{
+			"taskId": 2,
+			"taskTitle": "Integrate Shared Styles Across Codebase",
+			"complexityScore": 7,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Identify specific command groups (e.g., state commands, apply/init, general messages) and plan the refactoring for each. Include a subtask for verifying existing test suites and manual visual inspection.",
+			"reasoning": "This is a significant refactoring task that touches many parts of the codebase. The complexity comes from the broad scope, the need to identify all existing styling/output, and the risk of introducing regressions. Extensive testing and careful replacement are required to ensure consistency and prevent visual breakage."
+		},
+		{
+			"taskId": 3,
+			"taskTitle": "Modernize `state list` Command Output",
+			"complexityScore": 6,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Detail subtasks for setting up the lipgloss table, implementing conditional styling for the 'STATUS' column, calculating and rendering the summary footer, and writing dedicated integration tests.",
+			"reasoning": "This task involves using specific lipgloss features for table rendering, which can be intricate. Implementing conditional styling based on resource status and accurately calculating/displaying a summary footer adds to the logic complexity. It requires careful integration and thorough testing of the visual output."
+		},
+		{
+			"taskId": 4,
+			"taskTitle": "Enhance `state import` Command Messaging",
+			"complexityScore": 5,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Create subtasks for implementing success messages with icons, error messages with icons and actionable guidance, and ensuring 'Usage:' suppression for valid command errors.",
+			"reasoning": "This task focuses on improving specific command output. While it's not as broad as a full codebase refactor, it requires careful handling of different message types (success, error) and ensuring the correct application of shared styles and icons. Suppressing 'Usage:' for valid errors adds a minor logical challenge."
+		},
+		{
+			"taskId": 5,
+			"taskTitle": "Implement Styled Confirmation for `state remove`",
+			"complexityScore": 6,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Outline subtasks for replacing the plain prompt with a lipgloss-styled confirmation box, handling user input ('Y'/'N') within the styled context, and ensuring consistent styled output for success/cancellation messages.",
+			"reasoning": "This task involves creating an interactive UI element (a styled confirmation prompt) rather than just static output. This adds complexity in managing user input within a styled context and ensuring the prompt's appearance and behavior are robust and consistent with the new style system."
+		},
+		{
+			"taskId": 6,
+			"taskTitle": "Add Progress Visualization to `apply` Command",
+			"complexityScore": 8,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Break down into subtasks for displaying individual resource status with color-coding and icons, integrating a simple spinner/progress indicator, rendering a final styled summary banner, and handling various success/failure scenarios.",
+			"reasoning": "Implementing dynamic progress visualization in a terminal is inherently complex. It requires managing real-time output updates, potentially clearing lines, handling different states (success, warning, error) for multiple resources, and ensuring the progress indicator functions correctly without visual glitches. This task has a high potential for subtle bugs and requires robust error handling."
+		},
+		{
+			"taskId": 7,
+			"taskTitle": "Develop `init` Command Welcome Experience",
+			"complexityScore": 5,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Detail subtasks for creating the lipgloss-styled welcome banner, implementing step-by-step progress indicators for setup actions, and designing the 'Next steps' guidance banner.",
+			"reasoning": "This task involves creating multiple distinct styled UI elements (welcome banner, progress steps, next steps banner). While it doesn't involve dynamic updates like the `apply` command, it requires careful design and implementation of several lipgloss components to achieve a cohesive and visually appealing experience."
+		},
+		{
+			"taskId": 8,
+			"taskTitle": "Create `doctor` Command Diagnostic Dashboard",
+			"complexityScore": 8,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Outline subtasks for designing the overall multi-box layout, rendering the 'Core Components' section with a table, rendering the 'Providers' section with a table, implementing conditional status icons and colors, and aggregating a final summary of issues.",
+			"reasoning": "This task is highly complex due to the requirement for a structured diagnostic dashboard with nested boxes and tables. It demands advanced lipgloss composition, careful layout management, and dynamic content rendering with conditional styling based on diagnostic results. Ensuring responsiveness and readability across different terminal sizes can also be a challenge."
+		},
+		{
+			"taskId": 9,
+			"taskTitle": "Refine `plan` Command and `state pull/push` Indicators",
+			"complexityScore": 3,
+			"recommendedSubtasks": 2,
+			"expansionPrompt": "Create subtasks for reviewing the `plan` command's output for consistency with the new style system and implementing simple styled status messages for `state pull` and `state push` operations.",
+			"reasoning": "This is a relatively low-complexity task. The `plan` command is already well-styled, so it primarily involves a review for minor inconsistencies. Adding status indicators for `state pull/push` is a straightforward application of the new shared styles for simple, static messages."
+		},
+		{
+			"taskId": 10,
+			"taskTitle": "Implement Advanced UI Elements (Spinners, Progress Bars)",
+			"complexityScore": 7,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Detail subtasks for integrating `charmbracelet/spinner` into relevant commands, integrating `charmbracelet/progressbar` for multi-resource operations, managing the lifecycle of these elements, and ensuring graceful degradation in various terminal environments.",
+			"reasoning": "This task involves integrating external UI libraries for dynamic terminal elements. While the libraries simplify some aspects, correctly integrating them, managing their state, ensuring they don't interfere with other output, and handling different terminal capabilities adds significant complexity. It builds upon the dynamic output challenges identified in Task 6."
+		}
+	]
+}

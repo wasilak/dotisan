@@ -13,6 +13,7 @@ import (
 	"github.com/wasilak/dotisan/pkg/provider"
 	"github.com/wasilak/dotisan/pkg/providers"
 	"github.com/wasilak/dotisan/pkg/state"
+	"github.com/wasilak/dotisan/pkg/style"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
@@ -164,7 +165,8 @@ func runStateImport(id, actualValue string) error {
 
 	// Check if resource already exists in state (Terraform behavior)
 	if _, exists := currentState.GetResource(id); exists {
-		fmt.Printf("Resource %s already exists in state. Use 'state remove %s' first if you want to re-import\n", id, id)
+		fmt.Printf("%s Cannot import: resource already exists\n", style.IconError)
+		fmt.Printf("  %s Use 'dotisan state remove %s' first\n", style.Dim.Render("→"), id)
 		return nil
 	}
 
@@ -177,15 +179,15 @@ func runStateImport(id, actualValue string) error {
 	}
 
 	// Success message
-	greenStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("10"))
-	fmt.Printf("%s Imported %s\n", greenStyle.Render("✓"), id)
+	fmt.Printf("%s Successfully imported %s[%s]\n", style.IconSuccess, id, resourceState.ID)
+	fmt.Printf("  %s Run 'dotisan state list' to view\n", style.Dim.Render("→"))
 
 	return nil
 }
 
 // parseID parses a resource ID to extract kind, name, and whether it has an item key.
 // ID format: Kind/name or Kind/name[itemKey]
-// Examples: 
+// Examples:
 //   - "ManagedFile/zshrc" -> kind="ManagedFile", name="zshrc", hasItemKey=false
 //   - "BrewPackages/core-tools[ripgrep]" -> kind="BrewPackages", name="core-tools", hasItemKey=true
 func parseID(id string) (kind, name string, hasItemKey bool, err error) {
@@ -238,7 +240,14 @@ func init() {
 func runStateRemoveByID(id string) error {
 	// Ask for confirmation if --force is not set
 	if !stateRemoveForce {
-		fmt.Printf("Remove %s from state? (actual resource will not be modified) [y/N]: ", id)
+		prompt := style.InfoBox.Render(
+			fmt.Sprintf("Remove %s from state?\n", id) +
+				style.Dim.Render("  (actual resource will not be modified)\n\n") +
+				fmt.Sprintf("%s %s, remove from state\n", style.Info.Render("[Y]"), style.Dim.Render("Yes")) +
+				fmt.Sprintf("%s %s, keep it\n", style.Info.Render("[N]"), style.Dim.Render("No")),
+		)
+		fmt.Print(prompt)
+
 		reader := bufio.NewReader(os.Stdin)
 		response, err := reader.ReadString('\n')
 		if err != nil {
@@ -246,7 +255,7 @@ func runStateRemoveByID(id string) error {
 		}
 		response = strings.TrimSpace(strings.ToLower(response))
 		if response != "y" && response != "yes" {
-			fmt.Println("Cancelled.")
+			fmt.Printf("%s Cancelled.\n", style.Warning.Render("→"))
 			return nil
 		}
 	}
@@ -274,7 +283,7 @@ func runStateRemoveByID(id string) error {
 	}
 
 	if !found {
-		fmt.Printf("Resource %s not found in state\n", id)
+		fmt.Printf("%s Resource %s not found in state\n", style.IconError, id)
 		return nil
 	}
 
@@ -284,9 +293,8 @@ func runStateRemoveByID(id string) error {
 	}
 
 	// Success message
-	greenStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("10"))
-	fmt.Printf("%s Removed %s from state\n", greenStyle.Render("✓"), id)
-	fmt.Println("Note: The actual resource was not modified on your system.")
+	fmt.Printf("%s Removed %s from state\n", style.IconSuccess, id)
+	fmt.Println(style.Dim.Render("Note: The actual resource was not modified on your system."))
 
 	return nil
 }
@@ -294,7 +302,7 @@ func runStateRemoveByID(id string) error {
 // stateListCmd lists all managed resources
 var stateListCmd = &cobra.Command{
 	Use:          "list",
-	SilenceUsage:  true,
+	SilenceUsage: true,
 	Short:        "List all managed resources",
 	Long: `list displays all resources currently tracked in the state file
 along with their status (in_sync, drift, missing).`,
@@ -339,46 +347,81 @@ func runStateList() error {
 	// Build status map from plan result
 	statusMap := buildStatusMap(result)
 
-	// Define lipgloss styles (pastel colors)
-	headerStyle := lipgloss.NewStyle().Bold(true)
-	inSyncStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("114"))  // Pastel green
-	driftStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("216"))   // Pastel orange
-	missingStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("174")) // Pastel red
-	unknownStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("240")) // Gray
+	// Use shared styles
+	inSyncStyle := style.Success
+	driftStyle := style.Warning
+	missingStyle := style.Error
+	unknownStyle := style.Dim
 
-	// Print header
-	fmt.Println(headerStyle.Render("Managed Resources"))
+	// Column widths
+	colWidths := []int{20, 25, 35, 12}
+
+	// Render table
+	fmt.Println(style.Header.Render("Managed Resources"))
 	fmt.Println()
-	fmt.Printf("%-20s %-25s %-35s %-10s\n", "KIND", "NAME", "ID", "STATUS")
-	fmt.Println(strings.Repeat("-", 90))
+	fmt.Println(style.RenderTableBorder(colWidths))
+	fmt.Println(style.RenderTableHeader([]string{"KIND", "NAME", "ID", "STATUS"}, colWidths))
+	fmt.Println(style.RenderTableBorder(colWidths))
+
+	// Track counts for summary
+	inSyncCount := 0
+	driftCount := 0
+	orphanCount := 0
 
 	// Display resources with accurate status
-	for _, r := range currentState.Resources {
-		status, style := getResourceStatus(r, statusMap, inSyncStyle, driftStyle, missingStyle, unknownStyle)
+	for i, r := range currentState.Resources {
+		status, styled := getResourceStatus(r, statusMap, inSyncStyle, driftStyle, missingStyle, unknownStyle)
 
-		fmt.Printf("%-20s %-25s %-35s %s\n",
-			truncate(r.Kind, 20),
-			truncate(r.Name, 25),
-			r.ID,
-			style.Render(status))
+		// Count statuses
+		switch status {
+		case "in_sync":
+			inSyncCount++
+		case "drift", "modified":
+			driftCount++
+		case "orphaned", "pending":
+			orphanCount++
+		}
+
+		cols := []string{
+			truncate(r.Kind, 17),
+			truncate(r.Name, 22),
+			truncate(r.ID, 32),
+			status,
+		}
+		row := style.RenderTableRow(cols, colWidths, i%2 == 1)
+		row = styledInline(row, status, styled)
+		fmt.Println(row)
 	}
+	fmt.Println(style.RenderTableBorder(colWidths))
 
+	// Summary footer
 	fmt.Println()
-	fmt.Printf("Total: %d resources\n", len(currentState.Resources))
-
-	// Show summary if there are issues
-	if result.TotalDrifted > 0 || result.TotalRemovals > 0 {
-		fmt.Println()
-		if result.TotalDrifted > 0 {
-			fmt.Printf("⚠ %d resources have drifted\n", result.TotalDrifted)
-		}
-		if result.TotalRemovals > 0 {
-			fmt.Printf("⚠ %d resources are orphaned (in state but not in config)\n", result.TotalRemovals)
-		}
-		fmt.Println("Run 'dotisan plan' for details")
+	if inSyncCount > 0 {
+		fmt.Printf("%s %d in sync\n", style.IconSuccess, inSyncCount)
+	}
+	if driftCount > 0 {
+		fmt.Printf("%s %d warnings\n", style.RowWarning.Render("⚠"), driftCount)
+	}
+	if orphanCount > 0 {
+		fmt.Printf("%s %d orphaned\n", style.RowWarning.Render("⊘"), orphanCount)
+	}
+	if inSyncCount+driftCount+orphanCount == 0 {
+		fmt.Println("No managed resources.")
+	} else {
+		fmt.Printf("\nTotal: %d resources\n", len(currentState.Resources))
 	}
 
 	return nil
+}
+
+func styledInline(row string, status string, st lipgloss.Style) string {
+	switch status {
+	case "in_sync":
+		return style.RowSuccess.Render(row)
+	case "drift", "modified", "pending", "orphaned":
+		return style.RowWarning.Render(row)
+	}
+	return st.Render(status)
 }
 
 // Helper to truncate strings
@@ -474,8 +517,7 @@ func runStateListBasic() error {
 		return nil
 	}
 
-	headerStyle := lipgloss.NewStyle().Bold(true)
-	fmt.Println(headerStyle.Render("Managed Resources"))
+	fmt.Println(style.Header.Render("Managed Resources"))
 	fmt.Println()
 	fmt.Printf("%-20s %-25s %-30s\n", "KIND", "NAME", "ID")
 	fmt.Println(strings.Repeat("-", 75))
@@ -495,7 +537,7 @@ func runStateListBasic() error {
 // statePullCmd pulls state from remote backend
 var statePullCmd = &cobra.Command{
 	Use:          "pull",
-	SilenceUsage:  true,
+	SilenceUsage: true,
 	Short:        "Fetch state from remote backend",
 	Long: `pull downloads the state from a configured remote backend (S3)
 and overwrites the local state file. Use with caution.
@@ -507,6 +549,8 @@ Note: This requires S3 backend configuration in config.yaml`,
 }
 
 func runStatePull() error {
+	fmt.Printf("%s Pulling state from remote...\n", style.Info.Render("→"))
+
 	// Load config to check for S3 backend
 	configPath := os.ExpandEnv("$HOME/.dotisan/config.yaml")
 	cfg, err := config.LoadConfig(configPath)
@@ -547,9 +591,8 @@ func runStatePull() error {
 		return fmt.Errorf("failed to save local state: %w", err)
 	}
 
-	greenStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("10"))
-	fmt.Printf("%s Successfully pulled state from remote (%d resources)\n",
-		greenStyle.Render("✓"), len(remoteState.Resources))
+	fmt.Printf("%s Pulled state from remote (%d resources)\n",
+		style.IconSuccess, len(remoteState.Resources))
 
 	return nil
 }
@@ -557,7 +600,7 @@ func runStatePull() error {
 // statePushCmd pushes state to remote backend
 var statePushCmd = &cobra.Command{
 	Use:          "push",
-	SilenceUsage:  true,
+	SilenceUsage: true,
 	Short:        "Write local state to remote backend",
 	Long: `push uploads the local state file to a configured remote backend (S3),
 overwriting the remote state. Use with caution.
@@ -569,6 +612,8 @@ Note: This requires S3 backend configuration in config.yaml`,
 }
 
 func runStatePush() error {
+	fmt.Printf("%s Pushing state to remote...\n", style.Info.Render("→"))
+
 	// Load config to check for S3 backend
 	configPath := os.ExpandEnv("$HOME/.dotisan/config.yaml")
 	cfg, err := config.LoadConfig(configPath)
@@ -609,9 +654,8 @@ func runStatePush() error {
 		return fmt.Errorf("failed to push state: %w", err)
 	}
 
-	greenStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("10"))
-	fmt.Printf("%s Successfully pushed state to remote (%d resources)\n",
-		greenStyle.Render("✓"), len(localState.Resources))
+	fmt.Printf("%s Pushed state to remote (%d resources)\n",
+		style.IconSuccess, len(localState.Resources))
 
 	return nil
 }

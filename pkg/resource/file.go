@@ -96,7 +96,7 @@ func (r ManagedFile) GetFiles() []FileSpec {
 		Source:      r.Spec.Source,
 		SourceFile:  r.Spec.SourceFile,
 		Destination: r.Spec.Destination,
-		Template:   r.Spec.Template,
-		Mode:       r.Spec.Mode,
+		Template:    r.Spec.Template,
+		Mode:        r.Spec.Mode,
 	}}
 }

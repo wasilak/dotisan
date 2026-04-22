@@ -5,7 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/charmbracelet/lipgloss"
+	"github.com/wasilak/dotisan/pkg/style"
+
 	"github.com/spf13/cobra"
 )
 
@@ -13,9 +14,9 @@ var initForceFlag bool
 
 // initCmd represents the init command
 var initCmd = &cobra.Command{
-	Use:         "init",
+	Use:          "init",
 	SilenceUsage: true,
-	Short:       "Initialize dotisan configuration",
+	Short:        "Initialize dotisan configuration",
 	Long: `init creates the default dotisan configuration directory and files:
 
   ~/.config/dotisan/              - Configuration directory
@@ -39,11 +40,6 @@ Recommended structure:
 }
 
 func runInit() error {
-	// Define lipgloss styles
-	greenStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("10"))
-	yellowStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("11"))
-	boldStyle := lipgloss.NewStyle().Bold(true)
-
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return fmt.Errorf("failed to get home directory: %w", err)
@@ -54,12 +50,16 @@ func runInit() error {
 	configPath := filepath.Join(configDir, "config.yaml")
 	valuesPath := filepath.Join(configDir, "values.yaml")
 
-	fmt.Println(boldStyle.Render("Initializing dotisan..."))
-	fmt.Println()
+	welcomeBanner := style.SuccessBox.Render(
+		style.Bold.Render("dotisan") + " - Your Dotfiles Manager\n\n" +
+			style.Dim.Render("Version: 0.1.0") + " | " + style.Dim.Render("Manage your dotfiles with ease"),
+	)
+	fmt.Println(welcomeBanner)
+	fmt.Println("Initializing...")
 
 	// Check if already initialized
 	if _, err := os.Stat(configDir); err == nil && !initForceFlag {
-		fmt.Printf("%s Directory %s already exists.\n", yellowStyle.Render("⚠"), configDir)
+		fmt.Printf("%s Directory %s already exists.\n", style.IconWarning, configDir)
 		fmt.Println("Use --force to reinitialize (this will not overwrite existing files).")
 		return nil
 	}
@@ -68,8 +68,8 @@ func runInit() error {
 	if err := os.MkdirAll(resourcesDir, 0755); err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", resourcesDir, err)
 	}
-	fmt.Printf("%s Created %s\n", greenStyle.Render("✓"), configDir)
-	fmt.Printf("%s Created %s\n", greenStyle.Render("✓"), resourcesDir)
+	fmt.Printf("%s Created %s\n", style.IconSuccess, configDir)
+	fmt.Printf("%s Created %s\n", style.IconSuccess, resourcesDir)
 
 	// Create default config.yaml if it doesn't exist
 	if _, err := os.Stat(configPath); os.IsNotExist(err) || initForceFlag {
@@ -84,7 +84,7 @@ func runInit() error {
 state:
   backend: local  # Options: local, s3
   path: ~/.config/dotisan/state.json
-  
+
   # For S3 backend, uncomment and configure:
   # s3:
   #   endpoint: s3.amazonaws.com
@@ -97,9 +97,9 @@ state:
 		if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
 			return fmt.Errorf("failed to create config.yaml: %w", err)
 		}
-		fmt.Printf("%s Created %s\n", greenStyle.Render("✓"), configPath)
+		fmt.Printf("%s Created %s\n", style.IconSuccess, configPath)
 	} else {
-		fmt.Printf("%s %s already exists (skipped)\n", yellowStyle.Render("⚠"), configPath)
+		fmt.Printf("%s %s already exists (skipped)\n", style.IconWarning, configPath)
 	}
 
 	// Create sample values.yaml if it doesn't exist
@@ -124,9 +124,9 @@ state:
 		if err := os.WriteFile(valuesPath, []byte(valuesContent), 0644); err != nil {
 			return fmt.Errorf("failed to create values.yaml: %w", err)
 		}
-		fmt.Printf("%s Created %s\n", greenStyle.Render("✓"), valuesPath)
+		fmt.Printf("%s Created %s\n", style.IconSuccess, valuesPath)
 	} else {
-		fmt.Printf("%s %s already exists (skipped)\n", yellowStyle.Render("⚠"), valuesPath)
+		fmt.Printf("%s %s already exists (skipped)\n", style.IconWarning, valuesPath)
 	}
 
 	// Create sample resource file
@@ -179,25 +179,27 @@ state:
 		if err := os.WriteFile(sampleResourcePath, []byte(sampleContent), 0644); err != nil {
 			return fmt.Errorf("failed to create sample.yaml: %w", err)
 		}
-		fmt.Printf("%s Created %s (example file)\n", greenStyle.Render("✓"), sampleResourcePath)
+		fmt.Printf("%s Created %s (example file)\n", style.IconSuccess, sampleResourcePath)
 	}
 
 	fmt.Println()
-	fmt.Println(boldStyle.Render("Directory structure:"))
-	fmt.Println("  ~/.config/dotisan/")
-	fmt.Println("  ├── config.yaml     # Tool configuration")
-	fmt.Println("  ├── values.yaml     # Your personal variables")
-	fmt.Println("  └── resources/      # Resource YAML files")
-	fmt.Println("      └── sample.yaml # Example (remove when ready)")
+	fmt.Println(style.Header.Render("Directory structure:"))
+	fmt.Println("  " + style.Dim.Render("~/.config/dotisan/"))
+	fmt.Println("  " + style.Dim.Render("├── config.yaml"))
+	fmt.Println("  " + style.Dim.Render("├── values.yaml"))
+	fmt.Println("  " + style.Dim.Render("└── resources/"))
+	fmt.Println("      " + style.Dim.Render("└── sample.yaml"))
 	fmt.Println()
-	fmt.Println(boldStyle.Render("Next steps:"))
-	fmt.Println("  1. Edit ~/.config/dotisan/values.yaml with your personal settings")
-	fmt.Println("  2. Create resource YAML files in ~/.config/dotisan/resources/")
-	fmt.Println("  3. Remove sample.yaml when you're ready to add real resources")
-	fmt.Println("  4. Run 'dotisan doctor' to verify your setup")
-	fmt.Println("  5. Run 'dotisan plan' to see what would change")
+
+	nextStepsBox := style.InfoBox.Render(
+		style.Bold.Render("Next Steps") + "\n\n" +
+			style.Success.Render("1. ") + "Edit values.yaml with your settings\n" +
+			style.Success.Render("2. ") + "Create resources in resources/\n" +
+			style.Success.Render("3. ") + "Run " + style.Info.Render("dotisan doctor") + " to verify\n" +
+			style.Success.Render("4. ") + "Run " + style.Info.Render("dotisan plan") + " to preview",
+	)
+	fmt.Println(nextStepsBox)
 	fmt.Println()
-	fmt.Printf("%s Dotisan initialized successfully!\n", greenStyle.Render("✓"))
 
 	return nil
 }

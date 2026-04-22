@@ -24,6 +24,7 @@ import (
 	"github.com/wasilak/dotisan/pkg/providers"
 	"github.com/wasilak/dotisan/pkg/resource"
 	"github.com/wasilak/dotisan/pkg/state"
+	"github.com/wasilak/dotisan/pkg/style"
 )
 
 // Engine orchestrates the plan and apply operations.
@@ -518,19 +519,53 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 	}
 
 	// Execute changes for each provider
+	totalResources := len(result.ProviderPlans)
+	currentProvider := 0
 	for providerName, plan := range result.ProviderPlans {
+		currentProvider++
+
+		// Progress header
+		fmt.Printf("\n[%d/%d] Processing %s...\n", currentProvider, totalResources, providerName)
+
 		provider, exists := e.Providers[providerName]
 		if !exists {
 			return fmt.Errorf("provider %s not found", providerName)
 		}
 
+		// Track resource-level progress
+		currentRes := 0
+
+		// Show additions
+		for _, res := range plan.Additions {
+			currentRes++
+			fmt.Printf("  %s Creating %s/%s\n", style.IconAdd, res.GetKind(), res.GetMetadata().Name)
+		}
+
+		// Show modifications
+		for _, mod := range plan.Modifications {
+			currentRes++
+			fmt.Printf("  %s Updating %s/%s\n", style.IconEdit, mod.Resource.GetKind(), mod.Resource.GetMetadata().Name)
+		}
+
+		// Show removals
+		for _, res := range plan.Removals {
+			currentRes++
+			fmt.Printf("  %s Removing %s/%s\n", style.IconRemove, res.GetKind(), res.GetMetadata().Name)
+		}
+
+		// Apply changes
 		if err := provider.Apply(ctx, plan); err != nil {
 			return fmt.Errorf("failed to apply changes for provider %s: %w", providerName, err)
+		}
+
+		if currentRes > 0 {
+			fmt.Printf("  %s %d changes applied\n", style.IconSuccess, currentRes)
 		}
 	}
 
 	// Update state with new resource states
 	newState := state.NewState()
+	totalChanges := 0
 	for providerName, plan := range result.ProviderPlans {
 		// Add in-sync resources to state
 		for _, res := range plan.InSync {
@@ -542,12 +577,14 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 		for _, mod := range plan.Modifications {
 			stateEntry := e.resourceToStateEntry(mod.Resource, providerName)
 			newState.SetResource(stateEntry)
+			totalChanges++
 		}
 
 		// Add new resources to state
 		for _, res := range plan.Additions {
 			stateEntry := e.resourceToStateEntry(res, providerName)
 			newState.SetResource(stateEntry)
+			totalChanges++
 		}
 	}
 
@@ -557,9 +594,16 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 	}
 
 	fmt.Println()
-	fmt.Println("✓ Changes applied successfully!")
+	fmt.Printf("%s Apply complete! %d resource%s synchronized\n", style.IconSuccess, totalChanges, plural(totalChanges))
 
 	return nil
+}
+
+func plural(n int) string {
+	if n != 1 {
+		return "s"
+	}
+	return ""
 }
 
 // resourceToStateEntry converts a resource to a state entry.

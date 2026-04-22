@@ -1,0 +1,489 @@
+================================================================================
+UI MODERNIZATION PRD - dotisan CLI Enhancement
+================================================================================
+
+## 1. Overview
+
+**Project Name:** dotisan UI Modernization
+**Status:** Proposed
+**Priority:** High
+**Target:** 2026 Quality CLI Experience
+
+### Executive Summary
+
+The dotisan CLI currently has a fragmented user experience - while the `plan`
+command uses beautiful Charmbracelet lipgloss styling with pastel colors and
+icons, other commands like `state list`, `state import`, `apply`, and `init`
+use plain text output. This creates an inconsistent, dated feel that doesn't
+match the 2026 vision.
+
+This PRD proposes a comprehensive UI modernization to bring all commands to
+the same high standard, creating a cohesive and delightful user experience.
+
+### Current State Analysis
+
+**What's Working Well:**
+- `plan` command uses beautiful pastel palette (mint green, salmon, cream yellow, peach)
+- Nice icons: ✚ ✖ ✎ ⚠ ✓ consistently used in plan
+- `PlanFormatter` provides structured styling system
+- lipgloss imported throughout codebase (121 references)
+
+**What's Missing:**
+- Only `plan` uses rich styling
+- Success/error messages are plain text
+- Tables use basic formatting
+- No visual hierarchy or consistent branding
+- Commands feel disconnected from each other
+
+================================================================================
+## 2. Problem Statement
+
+### User Pain Points
+
+1. **Inconsistent Experience**: Running different commands feels like using
+   different apps - `plan` is beautiful, `state list` is plain
+
+2. **Dated Feel**: Plain text output makes CLI feel like it's from 2001,
+   not 2026
+
+3. **Poor Readability**: No visual hierarchy makes it hard to scan output
+   and find important information
+
+4. **No Engagement**: Commands don't provide feedback, progress, or
+   delightful micro-interactions
+
+5. **No Emotional Design**: The CLI is purely functional, not inspiring
+
+### Business Impact
+
+- Users feel the project is "dead" or abandoned
+- Reduced motivation to use dotisan daily
+- Poor impression for new users evaluating the tool
+- Missed opportunity for delighting users
+
+================================================================================
+## 3. Proposed Solution
+
+### Design Principles
+
+1. **Consistency First**: Every command uses the same style system
+2. **Progressive Enhancement**: Basic colored output → rich UI → interactive
+3. **Respect User Intelligence**: Don't over-animate, keep it tasteful
+4. **Performance Matters**: Styling shouldn't slow down commands
+5. **Accessibility**: Ensure colors work in common terminal themes
+
+### Color Palette (Already Implemented)
+
+```
+ColorPastelGreen  = "114"  // Soft mint green - Success, additions
+ColorPastelRed    = "174"  // Soft salmon/coral - Errors, deletions
+ColorPastelYellow = "222"  // Soft cream yellow - Info, modifications
+ColorPastelOrange  = "216"  // Soft peach - Warnings, drift
+ColorGray         = "240"   // Neutral gray - In-sync, neutral
+```
+
+### Iconography
+
+```
+✚  Addition/Creation
+✖  Deletion/Removal
+✎  Modification/Edit
+⚠  Warning/Drift
+✓  Success/In-Sync
+ℹ  Information
+```
+
+================================================================================
+## 4. Technical Specification
+
+### 4.1 Shared Style System
+
+**New File:** `pkg/style/styles.go`
+
+```go
+package style
+
+import "github.com/charmbracelet/lipgloss"
+
+// Core colors
+const (
+    Green  = "114"
+    Red    = "174"
+    Yellow = "222"
+    Orange = "216"
+    Gray   = "240"
+)
+
+// Icon constants
+const (
+    IconAdd     = "✚"
+    IconRemove = "✖"
+    IconEdit   = "✎"
+    IconWarn   = "⚠"
+    IconOK     = "✓"
+    IconInfo   = "ℹ"
+)
+
+// Text Styles
+var (
+    Success = NewStyle().Foreground(Green)
+    Error   = NewStyle().Foreground(Red)
+    Warning = NewStyle().Foreground(Orange)
+    Info    = NewStyle().Foreground(Yellow)
+    Dim     = NewStyle().Foreground(Gray)
+)
+
+// Icon Styles
+var (
+    IconSuccess = Success.Render(IconOK)
+    IconError   = Error.Render(IconRemove)
+    IconWarning = Warning.Render(IconWarn)
+    IconInfo    = Info.Render(IconInfo)
+)
+
+// Border Styles
+var (
+    SuccessBox = NewStyle().
+        Border(lipgloss.RoundedBorder()).
+        BorderForeground(Green).
+        Padding(1, 2)
+
+    ErrorBox = NewStyle().
+        Border(lipgloss.RoundedBorder()).
+        BorderForeground(Red).
+        Padding(1, 2)
+)
+
+// Table Styles
+var (
+    TableHeader = NewStyle().Bold(true).Underline(true)
+    TableRow    = NewStyle()
+    TableCell   = NewStyle()
+)
+```
+
+### 4.2 Command Enhancements
+
+#### A. state list - Rich Table
+
+**Current Output:**
+```
+KIND                 NAME                      ID                                  STATUS
+------------------------------------------------------------------------------------------
+ManagedFile          zshrc                     ManagedFile/zshrc                   in_sync
+```
+
+**Proposed Output:**
+```
+┌─────────────┬─────────────┬─────────────────────────────────┬──────────┐
+│ KIND        │ NAME       │ ID                               │ STATUS   │
+├─────────────┼─────────────┼─────────────────────────────────┼──────────┤
+│ ManagedFile │ zshrc      │ ManagedFile/zshrc               │ ✓ in_sync│
+│ BrewPackages│ core-tools │ BrewPackages/core-tools[rip...]│ ✓ in_sync│
+└─────────────┴─────────────┴─────────────────────────────────┴──────────┘
+
+✓ 2 resources in sync
+```
+
+**Implementation Notes:**
+- Use lipgloss table rendering
+- Color-code status column (green=in_sync, orange=drift, red=orphaned)
+- Add summary footer with counts
+
+#### B. state import - Styled Messages
+
+**Current Output:**
+```
+✓ Imported BrewPackages/core-tools[ripgrep]
+Error: resource already exists
+```
+
+**Proposed Output:**
+```
+✓ Successfully imported BrewPackages/core-tools[ripgrep]
+
+✖ Cannot import: resource already exists
+  Use 'dotisan state remove BrewPackages/core-tools[ripgrep]' first
+```
+
+**Implementation Notes:**
+- Use consistent success/error styling
+- Provide actionable guidance on errors
+- No usage help shown for valid commands
+
+#### C. apply - Progress Visualization
+
+**Current Output:**
+```
+Applying changes...
+Created ManagedFile/zshrc
+Created BrewPackages/ripgrep
+Apply complete! 2 resources created.
+```
+
+**Proposed Output:**
+```
+Applying changes...
+
+  ✓ ManagedFile/zshrc       created
+  ✓ BrewPackages/ripgrep   installed
+  ✓ BrewPackages/fd         installed
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✓ Apply complete! 3 resources synchronized
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**Implementation Notes:**
+- Show spinner or progress during operations
+- Color-code each resource's status
+- Summary with success count
+- Show timing if slow
+
+#### D. init - Welcome Experience
+
+**Current Output:**
+```
+Created ~/.config/dotisan/config.yaml
+Created ~/.config/dotisan/values.yaml
+Created directory ~/.config/dotisan/resources
+```
+
+**Proposed Output:**
+```
+╭──────────────────────────────────────────────────────────────╮
+│  Welcome to dotisan v0.1.0                                 │
+│  Your dotfiles management solution                         │
+╰──────────────────────────────────────────────────────────────╯
+
+Setting up your environment...
+
+  ✓ Created config directory
+  ✓ Created config.yaml
+  ✓ Created values.yaml
+  ✓ Created resources/
+
+╭──────────────────────────────────────────────────────────────╮
+│  Next steps:                                               │
+│                                                            │
+│  1. Edit ~/.config/dotisan/resources/your-resource.yaml   │
+│  2. Run 'dotisan plan' to see what would change          │
+│  3. Run 'dotisan apply' to sync your dotfiles            │
+╰──────────────────────────────────────────────────────────────╯
+```
+
+#### E. doctor - Diagnostic Dashboard
+
+**Current Output:**
+```
+Checking dotisan installation...
+
+✓ homebrew provider: available
+✓ file provider: available
+✗ npm provider: not found
+✓ go provider: available
+✓ cargo provider: available
+```
+
+**Proposed Output:**
+```
+╭─────────────────── dotisan doctor ───────────────────╮
+│                                                    │
+│  Core Components                                     │
+│  ┌────────────────────┬─────────┬─────────────────┐  │
+│  │ Component         │ Status  │ Details         │  │
+│  ├────────────────────┼─────────┼─────────────────┤  │
+│  │ Config            │   ✓     │ Valid           │  │
+│  │ State Backend    │   ✓     │ Local           │  │
+│  │ Templates        │   ✓     │ 3 loaded       │  │
+│  └────────────────────┴─────────┴─────────────────┘  │
+│                                                    │
+│  Providers                                          │
+│  ┌────────────────────┬─────────┬─────────────────┐  │
+│  │ Provider          │ Status  │ Version        │  │
+│  ├────────────────────┼─────────┼─────────────────┤  │
+│  │ homebrew          │   ✓     │ 5.2.0          │  │
+│  │ file              │   ✓     │ -              │  │
+│  │ npm               │   ✖     │ not installed  │  │
+│  │ go                │   ✓     │ 1.24.0        │  │
+│  │ cargo             │   ✓     │ 0.16.0         │  │
+│  └────────────────────┴─────────┴─────────────────┘  │
+│                                                    │
+│  ⚠ 1 issue found (run with --validate for details)│
+╰────────────────────────────────────────────────────╯
+```
+
+#### F. state remove - Confirmation Prompts
+
+**Current Output:**
+```
+Remove ManagedFile/zshrc from state? (actual resource will not be modified) [y/N]:
+```
+
+**Proposed Output:**
+```
+╭─────────────── Confirm ───────────────╮
+│                                      │
+│  Remove ManagedFile/zshrc?          │
+│  Actual file will NOT be modified.  │
+│                                      │
+│  [Y] Yes, remove from state         │
+│  [N] No, keep it                    │
+│                                      │
+╰──────────────────────────────────────╯
+```
+
+================================================================================
+## 5. Implementation Phases
+
+### Phase 1: Foundation (Week 1)
+
+**Goal:** Create shared style system used everywhere
+
+**Tasks:**
+- [ ] Create `pkg/style/styles.go` with centralized definitions
+- [ ] Update all imports to use shared styles
+- [ ] Add style tests
+
+**Deliverables:**
+- Working style system
+- All commands use consistent colors/icons
+
+### Phase 2: Core Commands (Week 2)
+
+**Goal:** Modernize highest-impact commands
+
+**Tasks:**
+- [ ] `state list` - Rich table with borders and color-coded status
+- [ ] `state import` - Styled success/error messages
+- [ ] `state remove` - Styled confirmation and results
+- [ ] `apply` - Progress visualization and summary
+
+**Deliverables:**
+- Beautiful core commands
+- Consistent UX across main workflows
+
+### Phase 3: Enhancement (Week 3)
+
+**Goal:** Polish remaining commands
+
+**Tasks:**
+- [ ] `init` - Welcome banner and progress indicators
+- [ ] `doctor` - Diagnostic dashboard with boxes
+- [ ] `plan` - Refinements (already good)
+- [ ] `state pull/push` - Status indicators
+
+**Deliverables:**
+- Complete UI modernization
+- All commands feel cohesive
+
+### Phase 4: Advanced (Week 4)
+
+**Goal:** Delightful extras (optional)
+
+**Tasks:**
+- [ ] Spinners for async operations
+- [ ] Progress bars for multi-resource apply
+- [ ] Interactive prompts (optional)
+- [ ] Keyboard shortcuts (optional)
+
+**Deliverables:**
+- Polished experience
+- Performance optimized
+
+================================================================================
+## 6. Acceptance Criteria
+
+### Must Have (Phase 1-2)
+
+- [ ] All commands use shared color palette
+- [ ] Icons consistent across all commands
+- [ ] `state list` renders as styled table
+- [ ] Success/error messages are color-coded
+- [ ] No "Usage:" shown for valid commands with errors
+
+### Should Have (Phase 3)
+
+- [ ] `init` shows welcome banner
+- [ ] `doctor` shows dashboard layout
+- [ ] `apply` shows progress indicators
+
+### Nice to Have (Phase 4)
+
+- [ ] Spinners during operations
+- [ ] Progress bars
+- [ ] Interactive prompts
+
+### Visual Checkpoints
+
+1. Running any command feels like using the same app
+2. Output is scannable - important info pops
+3. Errors are clearly distinguishable
+4. Success states feel rewarding
+5. CLI feels modern and alive
+
+================================================================================
+## 7. Non-Functional Requirements
+
+### Performance
+- Style rendering adds <5ms overhead per command
+- No degradation in command execution time
+
+### Compatibility
+- Works in standard terminal (80x24 minimum)
+- Colors degrade gracefully in limited terminals
+- Supports dark and light themes
+
+### Accessibility
+- Color is not the only indicator (icons also used)
+- High contrast option available
+- Works with screen readers (structure preserved)
+
+### Maintainability
+- Single source of truth for styles
+- Easy to update colors globally
+- Well-documented style system
+
+================================================================================
+## 8. Dependencies
+
+### External
+- github.com/charmbraceler/lipgloss (already in use)
+- No new dependencies required
+
+### Internal
+- `pkg/style` - New style system
+- Updates to all cmd/*.go files
+- Tests for new functionality
+
+================================================================================
+## 9. Risks & Mitigations
+
+| Risk | Impact | Mitigation |
+|------|--------|------------|
+| Over-styling makes output hard to read | Medium | Use subtle colors, don't overdo borders |
+| Performance degradation | Low | Benchmark, optimize rendering |
+| Terminal compatibility | Medium | Test in common terminals, provide fallbacks |
+| Developer forget to use styles | Low | Centralized system makes default easy |
+
+================================================================================
+## 10. Success Metrics
+
+### Quantitative
+- All 8 CLI commands use shared style system
+- Zero plain text error messages
+- <5ms overhead per command
+
+### Qualitative
+- Users describe CLI as "modern", "beautiful", "consistent"
+- No complaints about "ugly" or "inconsistent" output
+- New users impressed by polish
+
+================================================================================
+
+**PRD Created:** 2026-04-21
+**Author:** Claude (AI Assistant)
+**Status:** Ready for Review
+**Next Step:** Approval → Implementation
+
+================================================================================

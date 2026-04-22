@@ -40,11 +40,11 @@ type ManagedDirectorySpec struct {
 
 // DirectorySpec represents a single directory in the list-based ManagedDirectory structure.
 type DirectorySpec struct {
-	SourceDir    string   `yaml:"sourceDir,omitempty"`
-	Destination  string   `yaml:"destination" validate:"required"`
-	Recursive    bool     `yaml:"recursive,omitempty"`
-	Clean        bool     `yaml:"clean,omitempty"`
-	Exclude      []string `yaml:"exclude,omitempty"`
+	SourceDir   string   `yaml:"sourceDir,omitempty"`
+	Destination string   `yaml:"destination" validate:"required"`
+	Recursive   bool     `yaml:"recursive,omitempty"`
+	Clean       bool     `yaml:"clean,omitempty"`
+	Exclude     []string `yaml:"exclude,omitempty"`
 }
 
 // Validate implements Resource.Validate.

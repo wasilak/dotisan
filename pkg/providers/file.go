@@ -1161,9 +1161,9 @@ func (p *FileProvider) ImportItem(ctx context.Context, resourceName string, item
 		DestHash: checksum,
 		Extra: map[string]interface{}{
 			"source_path": "",
-			"dest_path": filePath,
-			"mode":     mode,
-			"imported": true,
+			"dest_path":   filePath,
+			"mode":        mode,
+			"imported":    true,
 		},
 	}, nil
 }

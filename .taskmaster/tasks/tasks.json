@@ -1038,7 +1038,7 @@
   "resource-management-enhancment": {
     "tasks": [
       {
-        "id": "1",
+        "id": 1,
         "title": "Refactor PlanWarning Structure and Plan Output",
         "description": "Implement the `PlanWarning` struct and integrate it into the `Plan` struct. Update the plan display logic to show warnings and information messages in a user-friendly format, including suggested code snippets.",
         "details": "Modify `pkg/provider/provider.go` to add `Warnings []PlanWarning` to the `Plan` struct. Define `PlanWarning` with fields: `ResourceID`, `Severity` (e.g., 'warning', 'info'), `Message`, and `Suggestion` (for code snippets). Update `pkg/engine/engine.go` and `pkg/provider/provider.go` to format and display these warnings in the plan output, adhering to the 'After' format specified in the PRD's 'Plan Output Format' section. Ensure warnings are clearly visible and suggestions are copy-pasteable.",
@@ -1107,7 +1107,7 @@
         "updatedAt": "2026-04-21T13:19:04.788Z"
       },
       {
-        "id": "2",
+        "id": 2,
         "title": "Fix ManagedFile Reconcile Logic for Unmanaged Files",
         "description": "Correct the `FileProvider` reconcile logic to accurately identify unmanaged files with existing destinations as '+ to create' and generate a warning, instead of incorrectly marking them 'in sync'.",
         "details": "Locate `pkg/providers/file.go` lines 208-229. Modify the `if !hasSavedState` block. Instead of `plan.InSync = append(plan.InSync, mf)`, always treat this scenario as an addition. Generate a `PlanWarning` (using the structure from Task 1) with severity 'warning', message 'Destination file already exists at ~/.zshrc', and a suggestion like 'dotisan state import ManagedFile zshrc ~/.zshrc'. Add this warning to the `Plan` object.",
@@ -1163,7 +1163,7 @@
         "updatedAt": "2026-04-21T13:31:35.422Z"
       },
       {
-        "id": "3",
+        "id": 3,
         "title": "Implement Homebrew Package Status Checker",
         "description": "Develop a new method within `BrewProvider` to efficiently query Homebrew for the installation status of specific packages using `brew info --json v1`.",
         "details": "In `pkg/providers/brew.go`, implement `func (p *BrewProvider) checkFormulaeStatus(formulae []string) (map[string]bool, error)`. This method should construct and execute the `brew info --json v1 <formula1> <formula2> ...` command. Parse the JSON output, specifically looking at the `installed` array for each formula to determine if it's currently installed. Return a `map[string]bool` where the key is the formula name and the value indicates installation status. Ensure error handling for `brew` command execution and JSON parsing.",
@@ -1231,7 +1231,7 @@
         "updatedAt": "2026-04-21T14:36:42.299Z"
       },
       {
-        "id": "4",
+        "id": 4,
         "title": "Integrate Homebrew Drift Detection into Reconcile",
         "description": "Update the `BrewProvider` reconcile logic to utilize the `checkFormulaeStatus` method, compare saved state with actual installed packages, and generate drift warnings for uninstalled packages.",
         "details": "Modify the `Reconcile` method in `pkg/providers/brew.go`. Before determining the plan, call `checkFormulaeStatus` with the list of formulae expected to be managed by `BrewPackages`. Compare the results with the packages recorded in dotisan's state. If a package in state is not reported as installed by `brew info`, generate a `PlanWarning` (using Task 1's structure) with severity 'warning', message 'Package 'X' was uninstalled outside of dotisan', and suggestion 'Run 'dotisan apply' to restore'. Add this warning to the `Plan` object. Ensure only expected packages are checked, not all installed packages.",
@@ -1305,7 +1305,7 @@
         "updatedAt": "2026-04-21T17:11:13.157Z"
       },
       {
-        "id": "5",
+        "id": 5,
         "title": "Implement CLI Parsing for Indexed Resource References",
         "description": "Develop the `parseResourceRef` function to parse resource references in the format `name[index]` or `name[key]` for `dotisan state import` commands.",
         "details": "In `cmd/state.go` or a suitable utility package, implement `func parseResourceRef(ref string) (name string, itemKey string, hasItemKey bool)`. This function should use regular expressions or string manipulation to correctly extract the resource `name` and the `itemKey` (which can be a string like 'ripgrep' or an integer index '0') if the `[key]` syntax is present. Handle cases where no index is provided (e.g., 'zshrc').",
@@ -1345,7 +1345,7 @@
         "updatedAt": "2026-04-21T16:27:00.602Z"
       },
       {
-        "id": "6",
+        "id": 6,
         "title": "Extend Provider Interface for Item-Level Import",
         "description": "Add the `ImportItem` method to the `Provider` interface to support importing individual items from list-based resources.",
         "details": "Modify `pkg/provider/provider.go` to add a new method signature to the `Provider` interface: `ImportItem(ctx context.Context, resourceName string, itemKey string) (ResourceState, error)`. This method will be responsible for importing a specific item identified by `itemKey` within a resource named `resourceName`. The `ResourceState` returned should represent the state of the *imported item*, not necessarily the entire resource.",
@@ -1424,7 +1424,7 @@
         "updatedAt": "2026-04-21T16:30:33.267Z"
       },
       {
-        "id": "7",
+        "id": 7,
         "title": "Implement Item-Level Import for ManagedFile and BrewPackages",
         "description": "Implement the `ImportItem` method for `ManagedFile` and `BrewPackages` providers, allowing users to import specific files or packages using the new indexed syntax.",
         "details": "For `ManagedFileProvider` and `BrewProvider`, implement the `ImportItem` method defined in Task 6. This implementation will need to: 1. Locate the resource by `resourceName`. 2. Use `itemKey` to identify the specific file or package within the resource's list. 3. Generate the `ResourceState` for that individual item. For `ManagedFile`, `itemKey` could be an index or a path. For `BrewPackages`, `itemKey` would be the package name. Update the state tracking mechanism to correctly store and retrieve indexed items. Ensure the CLI command `dotisan state import <Kind> <name>[key] <actual_value>` works as expected.",
@@ -1512,7 +1512,7 @@
         "updatedAt": "2026-04-21T17:11:14.360Z"
       },
       {
-        "id": "8",
+        "id": 8,
         "title": "Migrate ManagedFile to List-Based Structure",
         "description": "Refactor the `ManagedFile` resource to use a `Files []FileSpec` list field, while maintaining backward compatibility for existing single-item configurations.",
         "details": "In `pkg/resource/managedfile.go`, modify the `ManagedFile` struct to include a `Files []FileSpec` field. Define `FileSpec` to contain `sourceFile` and `destination` fields. Implement logic to handle both the new list-based structure and the old single `sourceFile`/`destination` fields. When reading old configurations, populate the `Files` list with a single `FileSpec`. When writing, prioritize the `Files` list. Ensure the `ManagedFileProvider`'s `Reconcile` and `Apply` methods correctly process the new list structure.",
@@ -1578,7 +1578,7 @@
         "updatedAt": "2026-04-21T16:50:37.586Z"
       },
       {
-        "id": "9",
+        "id": 9,
         "title": "Migrate ManagedDirectory to List-Based Structure",
         "description": "Refactor the `ManagedDirectory` resource to use a `Directories []DirectorySpec` list field, ensuring backward compatibility.",
         "details": "In `pkg/resource/manageddirectory.go`, modify the `ManagedDirectory` struct to include a `Directories []DirectorySpec` field. Define `DirectorySpec` to contain `sourceDirectory` and `destination` fields. Similar to Task 8, implement logic for backward compatibility, allowing both old single-item and new list-based definitions. Update the `ManagedDirectoryProvider`'s `Reconcile` and `Apply` methods to correctly process the new list structure.",
@@ -1633,7 +1633,7 @@
         "updatedAt": "2026-04-21T17:00:09.134Z"
       },
       {
-        "id": "10",
+        "id": 10,
         "title": "Consolidate `eject` and `state remove` Commands",
         "description": "Deprecate the `dotisan eject` command and enhance `dotisan state remove` with a `--force` flag to consolidate resource removal functionality under a single, more discoverable command.",
         "details": "Modify `cmd/eject.go` to mark the `eject` command as deprecated, printing a warning message advising users to use `dotisan state remove` instead. In `cmd/state.go`, add a `--force` flag to the `state remove` command, allowing it to bypass confirmation prompts. Ensure `state remove` performs the same operation as `eject` (removing the resource from the state file without touching the actual resource on the system). Update relevant documentation to reflect this change.",
@@ -1691,6 +1691,683 @@
       "completedCount": 10,
       "tags": [
         "resource-management-enhancment"
+      ],
+      "created": "2026-04-21T19:54:56.186Z",
+      "description": "Tasks for resource-management-enhancment context",
+      "updated": "2026-04-21T19:54:56.186Z"
+    }
+  },
+  "ui-modernization-prd": {
+    "tasks": [
+      {
+        "id": "1",
+        "title": "Create Shared Style System (pkg/style/styles.go)",
+        "description": "Implement the `pkg/style/styles.go` file with centralized definitions for core colors, icon constants, text styles, icon styles, border styles, and table styles using Charmbracelet lipgloss.",
+        "details": "Create a new file `pkg/style/styles.go`. Define `Green`, `Red`, `Yellow`, `Orange`, `Gray` color constants. Define `IconAdd`, `IconRemove`, `IconEdit`, `IconWarn`, `IconOK`, `IconInfo` icon constants. Initialize `lipgloss.Style` variables for `Success`, `Error`, `Warning`, `Info`, `Dim` text styles. Initialize `IconSuccess`, `IconError`, `IconWarning`, `IconInfo` icon styles. Define `SuccessBox`, `ErrorBox` border styles with `lipgloss.RoundedBorder` and appropriate foreground colors. Define `TableHeader`, `TableRow`, `TableCell` styles for table rendering. Ensure `NewStyle()` is used correctly for initialization.",
+        "testStrategy": "Write unit tests for `pkg/style/styles.go` to ensure all styles are correctly initialized and render as expected. Verify color codes and icon strings. Manually inspect output in a test command using these styles to confirm visual correctness and consistency.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Define core colors and icon constants in styles.go",
+            "description": "Initialize the foundational color and icon constants within the new style system file.",
+            "dependencies": [],
+            "details": "Define string constants for Green, Red, Yellow, Orange, Gray colors. Define string constants for IconAdd, IconRemove, IconEdit, IconWarn, IconOK, IconInfo.",
+            "status": "done",
+            "testStrategy": "Verify that all defined string constants hold the expected symbolic values when inspected in unit tests.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-22T08:27:23.789Z"
+          },
+          {
+            "id": 2,
+            "title": "Implement text and icon styles using lipgloss",
+            "description": "Set up the standardized lipgloss styles for text formatting and icon visualization.",
+            "dependencies": [
+              1
+            ],
+            "details": "Initialize lipgloss.Style variables for Success, Error, Warning, Info, Dim text styles. Initialize IconSuccess, IconError, IconWarning, IconInfo icon styles, ensuring proper usage of lipgloss properties.",
+            "status": "done",
+            "testStrategy": "Unit test each style variable to confirm it correctly wraps sample text ('Test') and displays the intended foreground/background colors.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-22T08:27:23.792Z"
+          },
+          {
+            "id": 3,
+            "title": "Define box and table styling components",
+            "description": "Implement reusable border styles for structural elements like success/error containers and general tables.",
+            "dependencies": [
+              2
+            ],
+            "details": "Define SuccessBox and ErrorBox using lipgloss.RoundedBorder. Define core table styles: TableHeader, TableRow, and TableCell, ensuring they have consistent padding and borders.",
+            "status": "done",
+            "testStrategy": "Manually render sample content using all defined box and table styles (e.g., putting 'Test' content in SuccessBox) and verify borders and background colors visually.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-22T08:27:23.794Z"
+          }
+        ],
+        "complexity": 4,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Break down the creation of shared styles into categories: colors and icons, text styles, and box/table styles. Detail the specific lipgloss properties for each.",
+        "updatedAt": "2026-04-22T08:27:23.794Z"
+      },
+      {
+        "id": "2",
+        "title": "Integrate Shared Styles Across Codebase",
+        "description": "Update all existing `lipgloss` imports and plain text outputs in relevant command files (`cmd/*.go`) to utilize the newly created shared style system from `pkg/style`.",
+        "details": "Identify all files currently using `lipgloss` directly or producing plain text output for success/error messages, warnings, and informational text. Replace direct `lipgloss.NewStyle()` calls or hardcoded color strings with references to `style.Success`, `style.Error`, `style.Warning`, `style.Info`, `style.Dim`, and the `style.Icon*` constants. Ensure `PlanFormatter` also leverages the new shared styles where applicable.",
+        "testStrategy": "Perform a global search for `lipgloss.NewStyle()` and hardcoded color strings to ensure they are replaced. Run existing `plan` command tests to ensure no regressions. Manually execute various commands (e.g., `state list`, `state import`, `apply`, `init`) to visually confirm that basic styling (colors, icons) is now applied consistently through the shared system.",
+        "priority": "high",
+        "dependencies": [
+          "1"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Identify all instances of direct lipgloss usage in cmd/*.go",
+            "description": "Perform a comprehensive search across all command implementation files to locate direct calls to lipgloss functions or hardcoded style strings.",
+            "dependencies": [],
+            "details": "Manually or programmatically audit all cmd/*/*.go files. Document every location that outputs styled text or raw color codes, focusing on success, error, and general output paths.\n<info added on 2026-04-22T08:21:56.028Z>\nDocument the identified direct `lipgloss` usages for remediation:\n- `cmd/state.go`: Line 491 uses `headerStyle`; lines 564 and 626 use `greenStyle` with the literal color `\"10\"`.\n- `pkg/diff/plan.go`: Over 40 instances utilize `ColorPastel*` constants. These constants are already aligned with colors defined in `pkg/style` and should be noted for final review/confirmation.\n- `pkg/diff/style.go`: The `DefaultStyles()` function contains several hardcoded diff-specific colors that need to be updated to reference the shared style system constants rather than local definitions.\n</info added on 2026-04-22T08:21:56.028Z>\n<info added on 2026-04-22T08:23:19.587Z>\nCompleted refactoring in cmd/state.go: Replaced line 564, 626: greenStyle with style.IconSuccess; Replaced line 491: headerStyle with style.Header; Confirmed line 443 lipgloss.Style parameter usage is intentional as it accepts custom styles.\n</info added on 2026-04-22T08:23:19.587Z>",
+            "status": "done",
+            "testStrategy": "Code search and documentation review.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-22T08:23:25.711Z"
+          },
+          {
+            "id": 2,
+            "title": "Refactor PlanFormatter to use shared styles",
+            "description": "Update the PlanFormatter component to exclusively use constants defined in pkg/style for all formatting elements.",
+            "dependencies": [
+              1
+            ],
+            "details": "Update the PlanFormatter logic to replace any direct style creation or raw coloring with calls to style.Success, style.Error, etc. Pay special attention to table/list rendering.\n<info added on 2026-04-22T08:23:48.286Z>\nPlanFormatter logic has been reviewed concerning pkg/diff/plan.go: color palettes (ColorPastel*) match shared styles (style.Green/Red/Yellow/Orange/Gray values are identical) and icons align (IconAddition = style.IconAdd, etc.). The styles are self-contained within a dedicated Styles type, negating the need for changes.\n</info added on 2026-04-22T08:23:48.286Z>",
+            "status": "done",
+            "testStrategy": "Unit tests for PlanFormatter; manual inspection of 'plan' output.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-22T08:24:00.430Z"
+          },
+          {
+            "id": 3,
+            "title": "Refactor State/Apply command outputs",
+            "description": "Systematically update the core command logic (state add/apply/init) to use the centralized styling definitions.",
+            "dependencies": [
+              1
+            ],
+            "details": "Focus on the output paths for state initialization, resource application success/failure, and general operational messages. Replace old methods with style package constants.",
+            "status": "done",
+            "testStrategy": "Execute 'state init' and 'apply' commands. Visually verify that success/error messages match the intended shared styles.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-22T08:24:00.436Z"
+          },
+          {
+            "id": 4,
+            "title": "Update general utility/message outputs",
+            "description": "Refactor boilerplate and general message handling across all command files.",
+            "dependencies": [
+              1
+            ],
+            "details": "Review any function returning simple styled strings or status indicators (e.g., connection lost messages, initial setup warnings). These must adopt the shared style constants.",
+            "status": "done",
+            "testStrategy": "Write targeted integration tests for common message return types used across different commands.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-22T08:24:00.440Z"
+          },
+          {
+            "id": 5,
+            "title": "Verify existing test suites and perform visual regression testing",
+            "description": "Run the entire test suite and conduct manual verification to ensure style replacements have not broken functionality or introduced new visual bugs.",
+            "dependencies": [
+              3,
+              4
+            ],
+            "details": "Run `go test ./...` first. After passing tests, execute a full sequence of manual smoke tests covering all major commands to visually confirm perfect style migration.",
+            "status": "done",
+            "testStrategy": "Comprehensive execution of existing unit and integration tests, followed by manual UI validation.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-22T08:24:00.444Z"
+          }
+        ],
+        "complexity": 7,
+        "recommendedSubtasks": 5,
+        "expansionPrompt": "Identify specific command groups (e.g., state commands, apply/init, general messages) and plan the refactoring for each. Include a subtask for verifying existing test suites and manual visual inspection.",
+        "updatedAt": "2026-04-22T08:24:00.444Z"
+      },
+      {
+        "id": "3",
+        "title": "Modernize `state list` Command Output",
+        "description": "Refactor the `state list` command to render its output as a rich, bordered table using `lipgloss`, including color-coded status and a summary footer.",
+        "details": "Modify the `state list` command handler. Use `lipgloss` table rendering capabilities. Apply `style.TableHeader` for headers, `style.TableRow` and `style.TableCell` for rows and cells. Implement logic to color-code the 'STATUS' column based on resource status (e.g., `in_sync` with `style.Success`, `drift` with `style.Warning`, `orphaned` with `style.Error`). Add a summary footer displaying resource counts, e.g., '✓ 2 resources in sync', using `style.Success`.",
+        "testStrategy": "Write integration tests for `state list` to verify the table structure, header styling, cell content, and color-coding of the status column. Test with various resource states (in_sync, drift, orphaned). Verify the summary footer accurately reflects the counts. Manually run `dotisan state list` to visually confirm the proposed output format.",
+        "priority": "high",
+        "dependencies": [
+          "2"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement basic lipgloss table structure for state list",
+            "description": "Set up the fundamental structure for the bordered table output using lipgloss.",
+            "dependencies": [],
+            "details": "Establish the container that will hold the table, applying overall borders and styling to the table object itself. This includes defining column boundaries.",
+            "status": "done",
+            "testStrategy": "Manually run state list and verify that the general structure is present with correct borders.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-22T08:30:54.671Z"
+          },
+          {
+            "id": 2,
+            "title": "Apply conditional styling to the STATUS column",
+            "description": "Develop and implement the logic to color-code the 'STATUS' column based on resource state.",
+            "dependencies": [
+              1
+            ],
+            "details": "Write the mapping function: 'in_sync' -> style.Success, 'drift' -> style.Warning, 'orphaned' -> style.Error. This logic must correctly wrap the status string within the table cell.",
+            "status": "done",
+            "testStrategy": "Test the status column rendering explicitly for all three defined states to ensure correct color application.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-22T08:30:54.677Z"
+          },
+          {
+            "id": 3,
+            "title": "Calculate and render the summary footer",
+            "description": "Implement the final calculation and display of resource count summaries at the bottom of the table.",
+            "dependencies": [
+              2
+            ],
+            "details": "The code must count resources in each state, format the summary string (e.g., '✓ 2 in sync'), and render this string using the required success styling in a dedicated footer area.",
+            "status": "done",
+            "testStrategy": "Verify the summary footer updates correctly when the total number of resources or the counts of specific states change.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-22T08:30:54.681Z"
+          },
+          {
+            "id": 4,
+            "title": "Write dedicated integration tests for table output",
+            "description": "Develop a comprehensive suite of integration tests specifically targeting the visual output of the modernized state list command.",
+            "dependencies": [
+              3
+            ],
+            "details": "These tests must simulate various data sets (e.g., zero resources, all synced, mixed states) and assert the final rendered output matches the expected lipgloss-formatted string, including all styling and footer text.",
+            "status": "done",
+            "testStrategy": "Use the existing integration testing framework to run state list with mock data covering edge cases and mixed states.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-22T08:30:57.880Z"
+          }
+        ],
+        "complexity": 6,
+        "recommendedSubtasks": 4,
+        "expansionPrompt": "Detail subtasks for setting up the lipgloss table, implementing conditional styling for the 'STATUS' column, calculating and rendering the summary footer, and writing dedicated integration tests.",
+        "updatedAt": "2026-04-22T08:30:57.880Z"
+      },
+      {
+        "id": "4",
+        "title": "Enhance `state import` Command Messaging",
+        "description": "Implement styled success and error messages for the `state import` command, providing actionable guidance for common errors.",
+        "details": "Update the `state import` command handler. For successful imports, use `style.IconSuccess` and `style.Success` to render messages like '✓ Successfully imported BrewPackages/core-tools[ripgrep]'. For errors, use `style.IconError` and `style.Error` for the main error message, and provide actionable guidance (e.g., 'Use 'dotisan state remove ...' first') using `style.Dim` or plain text for instructions. Ensure no 'Usage:' help is shown for valid commands with errors.",
+        "testStrategy": "Write unit/integration tests for `state import` covering successful imports and various error scenarios (e.g., resource already exists, invalid resource). Verify that success messages are green with a checkmark, error messages are red with a cross, and actionable advice is present and correctly formatted. Ensure 'Usage:' is suppressed for valid command errors.",
+        "priority": "medium",
+        "dependencies": [
+          "2"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement styled success messages for state import",
+            "description": "Apply specific styling for successful state imports using designated icons and colors.",
+            "dependencies": [
+              "4"
+            ],
+            "details": "Must use `style.IconSuccess` and `style.Success` for the message format: '✓ Successfully imported BrewPackages/core-tools[ripgrep]'.",
+            "status": "done",
+            "testStrategy": "Write unit tests verifying the output matches the required format and colors upon successful import simulation.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-22T08:33:04.340Z"
+          },
+          {
+            "id": 2,
+            "title": "Implement error messaging and actionable guidance for state import",
+            "description": "Handle and display styled error messages, including necessary remediation steps for the user.",
+            "dependencies": [
+              "4"
+            ],
+            "details": "Use `style.IconError` and `style.Error` for the primary error, followed by clear, styled guidance using `style.Dim` or plain text.",
+            "status": "done",
+            "testStrategy": "Write integration tests for common failure scenarios (e.g., resource already exists) to ensure error styling and advice are correct.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-22T08:33:04.343Z"
+          },
+          {
+            "id": 3,
+            "title": "Suppress 'Usage:' help output for valid command errors",
+            "description": "Modify the command handler logic to prevent the default 'Usage:' help text when a command encounters a predictable, handled error.",
+            "dependencies": [
+              "4"
+            ],
+            "details": "The core logic must intercept command errors that are handled gracefully and suppress the default usage output.",
+            "status": "done",
+            "testStrategy": "Test a known error case that should trigger the custom error path, and assert that no 'Usage:' keyword is present in the final output stream.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-22T08:33:04.346Z"
+          }
+        ],
+        "complexity": 5,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Create subtasks for implementing success messages with icons, error messages with icons and actionable guidance, and ensuring 'Usage:' suppression for valid command errors.",
+        "updatedAt": "2026-04-22T08:33:04.346Z"
+      },
+      {
+        "id": "5",
+        "title": "Implement Styled Confirmation for `state remove`",
+        "description": "Update the `state remove` command to use a styled confirmation prompt and consistent results output.",
+        "details": "Modify the `state remove` command to replace the plain text `y/N` prompt with a `lipgloss`-styled confirmation box. Use `style.InfoBox` or similar for the border and `style.Info` for the text. Present clear options like '[Y] Yes, remove from state' and '[N] No, keep it'. Ensure the final output message after confirmation (success or cancellation) also uses the shared style system (e.g., `style.Success` or `style.Info`).",
+        "testStrategy": "Test `state remove` with 'Y' and 'N' inputs to verify the styled confirmation box appears correctly, the prompt text is accurate, and the subsequent action (removal or cancellation) is reflected with styled messages. Check for consistent border and text colors.",
+        "priority": "medium",
+        "dependencies": [
+          "2"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement styled confirmation box using lipgloss",
+            "description": "Replace the plain text confirmation prompt with a visually distinct, styled box utilizing shared styles.",
+            "dependencies": [
+              2
+            ],
+            "details": "Use style.InfoBox or a similar structure from the shared style system to draw the boundary. The prompt must clearly present options like '[Y] Yes' and '[N] No' within this box.",
+            "status": "done",
+            "testStrategy": "Manually run the command and visually verify that the prompt appears inside a styled box with correct borders and typography.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-22T08:33:46.100Z"
+          },
+          {
+            "id": 2,
+            "title": "Handle user input within the styled confirmation context",
+            "description": "Modify the command logic to correctly read 'Y' or 'N' input after displaying the styled prompt.",
+            "dependencies": [
+              1
+            ],
+            "details": "The reading mechanism must be aware of the styled context to maintain visual flow and only proceed upon valid, confirmed input.",
+            "status": "done",
+            "testStrategy": "Test input sequences: 1. Entering 'Y' and confirming removal. 2. Entering 'N' and confirming cancellation. Check console responsiveness.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-22T08:33:46.105Z"
+          },
+          {
+            "id": 3,
+            "title": "Ensure consistent styled output for success/cancellation",
+            "description": "Wrap the final output messages (success message upon removal, or cancellation message) using shared styles.",
+            "dependencies": [
+              2
+            ],
+            "details": "If the operation succeeds, use style.Success for the confirmation. If it is cancelled, use style.Warning or style.Info appropriately. This must match the styling applied elsewhere in the application.",
+            "status": "done",
+            "testStrategy": "Execute the command successfully (verify style.Success) and then abort it (verify style.Warning/Info) to ensure both outcome messages are correctly styled.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-22T08:33:46.108Z"
+          }
+        ],
+        "complexity": 6,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Outline subtasks for replacing the plain prompt with a lipgloss-styled confirmation box, handling user input ('Y'/'N') within the styled context, and ensuring consistent styled output for success/cancellation messages.",
+        "updatedAt": "2026-04-22T08:33:46.108Z"
+      },
+      {
+        "id": "6",
+        "title": "Add Progress Visualization to `apply` Command",
+        "description": "Integrate progress visualization into the `apply` command, showing individual resource status, a progress indicator, and a final summary.",
+        "details": "Modify the `apply` command handler. During the application process, for each resource, display its status (e.g., 'created', 'installed') with appropriate color-coding (e.g., `style.Success` for success, `style.Warning` for drift, `style.Error` for failure). Use `style.IconOK` for successful operations. Implement a simple spinner or progress indicator during the overall operation. Conclude with a styled summary banner (e.g., using `lipgloss.NewStyle().Border(lipgloss.DoubleBorder())` and `style.Success`) indicating 'Apply complete! X resources synchronized'. Consider showing timing if operations are slow.",
+        "testStrategy": "Run `apply` with various resource configurations (create, update, delete) to verify individual resource status messages are correctly displayed and color-coded. Confirm the progress indicator (if implemented) functions. Verify the final summary banner appears with correct counts and styling. Test with a mix of successful and failed resource applications.",
+        "priority": "high",
+        "dependencies": [
+          "2"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Develop Resource Status Display Module",
+            "description": "Create a reusable function to display the status of a single resource with appropriate color-coding and icons.",
+            "dependencies": [
+              "2"
+            ],
+            "details": "This module must accept status (success, warning, error) and resource name, returning formatted output using lipgloss styles.\n<info added on 2026-04-22T08:32:08.652Z>\nThe progress output in `engine.Apply()` now includes:\n- Provider progress: [1/N] Processing provider...\n- Resource-level status: Creating/Updating/Removing with icons\n- Per-provider summary: X changes applied\n- Final banner unchanged\n</info added on 2026-04-22T08:32:08.652Z>",
+            "status": "done",
+            "testStrategy": "Test the function with mock statuses (success, warning, error) to ensure correct style application.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-22T08:32:11.586Z"
+          },
+          {
+            "id": 2,
+            "title": "Implement Overall Progress Indicator (Spinner)",
+            "description": "Integrate a non-blocking, visually appealing progress indicator (spinner) to run while the `apply` command is processing resources.",
+            "dependencies": [
+              "1"
+            ],
+            "details": "The spinner should update in place, using terminal control sequences to prevent output overlap. It must pause/clear when the application phase completes.",
+            "status": "done",
+            "testStrategy": "Run the command in a controlled environment to visually verify the spinner animates correctly across the entire apply lifecycle.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-22T08:32:11.591Z"
+          },
+          {
+            "id": 3,
+            "title": "Handle Resource Status Logging with Styling",
+            "description": "Modify the core resource application loop to capture and display individual resource outcomes using the new status display module.",
+            "dependencies": [
+              "1",
+              "2"
+            ],
+            "details": "For each resource operation, call the status display function, ensuring the output is correctly interleaved with the progress indicator updates.",
+            "status": "done",
+            "testStrategy": "Run the apply command and verify that successful, warning, and error statuses appear sequentially and are correctly styled, while the spinner is visible.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-22T08:32:11.594Z"
+          },
+          {
+            "id": 4,
+            "title": "Generate Final Summary Banner",
+            "description": "Create and render a styled, bordered summary banner summarizing the entire `apply` run (success count, warning count, error count).",
+            "dependencies": [
+              "3"
+            ],
+            "details": "The banner must use double borders and success styling for the main message, ideally including resource counts and execution time.",
+            "status": "done",
+            "testStrategy": "Force known outcomes (e.g., 2 successes, 1 warning, 0 errors) and verify the summary banner displays the correct counts and uses the defined high-level success styling.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-22T08:32:11.600Z"
+          },
+          {
+            "id": 5,
+            "title": "Integrate Progress Flow into Main `apply` Handler",
+            "description": "Orchestrate the entire process: initialize spinner -> process resources (status logging) -> stop spinner -> render summary banner.",
+            "dependencies": [
+              "2",
+              "4"
+            ],
+            "details": "This final integration step connects all previous components within the main `apply` command's execution path, managing state transitions.",
+            "status": "done",
+            "testStrategy": "Execute the full `apply` command end-to-end. Confirm the entire sequence—spinner activation, intermittent logging, and final summary—runs smoothly without visual glitches.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-22T08:32:11.605Z"
+          }
+        ],
+        "complexity": 8,
+        "recommendedSubtasks": 5,
+        "expansionPrompt": "Break down into subtasks for displaying individual resource status with color-coding and icons, integrating a simple spinner/progress indicator, rendering a final styled summary banner, and handling various success/failure scenarios.",
+        "updatedAt": "2026-04-22T08:32:11.605Z"
+      },
+      {
+        "id": "7",
+        "title": "Develop `init` Command Welcome Experience",
+        "description": "Implement a welcome banner, setup progress indicators, and next steps guidance for the `init` command.",
+        "details": "Update the `init` command handler. Display a `lipgloss`-styled welcome banner (e.g., using `lipgloss.RoundedBorder` or `lipgloss.DoubleBorder`) with project name and version. During the setup process (creating config directory, config.yaml, values.yaml, resources directory), show individual progress indicators for each step using `style.IconOK` and `style.Success` (e.g., '✓ Created config directory'). Conclude with a 'Next steps' banner providing actionable guidance, styled similarly to the welcome banner.",
+        "testStrategy": "Execute `dotisan init` on a clean environment. Verify the welcome banner appears with correct text and styling. Confirm each setup step is indicated with a checkmark and green text. Verify the 'Next steps' banner is displayed with clear instructions and consistent styling.",
+        "priority": "medium",
+        "dependencies": [
+          "2"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Develop Lipgloss-Styled Welcome Banner",
+            "description": "Implement the initial welcome banner using a robust lipgloss container style.",
+            "dependencies": [],
+            "details": "This involves defining the border style (RoundedBorder/DoubleBorder) and content structure for the main welcome message, including project name and version details.",
+            "status": "done",
+            "testStrategy": "Verify the banner renders with the correct border style and displays the required textual information.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-22T08:36:05.336Z"
+          },
+          {
+            "id": 2,
+            "title": "Implement Step-by-Step Progress Indicators",
+            "description": "Create and integrate logic to show progress for each setup step.",
+            "dependencies": [
+              1
+            ],
+            "details": "For operations like creating the config directory, config.yaml, etc., show a clear indicator using style.IconOK and Success color, updating the output as each file/directory is successfully created.",
+            "status": "done",
+            "testStrategy": "Execute setup actions manually and assert that the output streams sequential, styled status messages (e.g., '✓ Created...').",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-22T08:36:05.338Z"
+          },
+          {
+            "id": 3,
+            "title": "Design and Display 'Next Steps' Guidance Banner",
+            "description": "Build the concluding section providing actionable guidance after successful initialization.",
+            "dependencies": [
+              2
+            ],
+            "details": "This must replicate the professional styling of the welcome banner and contain specific, actionable text guiding the user on what to do next.",
+            "status": "done",
+            "testStrategy": "Confirm that after all setup steps complete, the final output displays a clearly bordered 'Next Steps' section with visible guidance.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-22T08:36:05.341Z"
+          }
+        ],
+        "complexity": 5,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Detail subtasks for creating the lipgloss-styled welcome banner, implementing step-by-step progress indicators for setup actions, and designing the 'Next steps' guidance banner.",
+        "updatedAt": "2026-04-22T08:36:05.341Z"
+      },
+      {
+        "id": "8",
+        "title": "Create `doctor` Command Diagnostic Dashboard",
+        "description": "Refactor the `doctor` command to display a structured diagnostic dashboard using `lipgloss` boxes and tables for core components and providers.",
+        "details": "Modify the `doctor` command handler. Structure the output into distinct sections like 'Core Components' and 'Providers'. Use `lipgloss` to draw outer and inner boxes (e.g., `lipgloss.RoundedBorder`) to create the dashboard layout. Within each section, render a table (similar to `state list`) for components/providers, showing 'Component/Provider', 'Status', and 'Details/Version'. Use `style.IconOK` for success, `style.IconError` for failures, and `style.IconWarning` for warnings, with corresponding text colors. Add a summary line for issues found.",
+        "testStrategy": "Run `dotisan doctor` in various environments (e.g., all providers installed, some missing, config issues). Verify the dashboard layout, box borders, and table formatting. Ensure status icons and colors are correct for each component/provider. Check that the summary line accurately reflects the number of issues.",
+        "priority": "medium",
+        "dependencies": [
+          "2",
+          "3"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design the Outer Dashboard Layout using lipgloss Boxes",
+            "description": "Establish the main container structure for the entire diagnostic report dashboard.",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "Use a main outer lipgloss.RoundedBorder to frame the entire output. This needs to encompass placeholders for 'Core Components' and 'Providers' sections, ensuring proper vertical spacing and padding.",
+            "status": "done",
+            "testStrategy": "Manually render the structure in a minimal test case to verify the outer border and padding are applied correctly across the entire terminal width.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-22T08:36:48.394Z"
+          },
+          {
+            "id": 2,
+            "title": "Implement Core Components Section Table Rendering",
+            "description": "Create the specific section for core components, structuring output as a bordered table.",
+            "dependencies": [
+              1
+            ],
+            "details": "Develop the table generation logic for core components. The table must have columns: 'Component/Provider', 'Status', and 'Details/Version'. Apply appropriate styling derived from the shared style system.",
+            "status": "done",
+            "testStrategy": "Test the table rendering with mock data representing success, warning, and failure states. Verify the column alignment and borders around this specific section.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-22T08:36:48.399Z"
+          },
+          {
+            "id": 3,
+            "title": "Implement Providers Section Table Rendering",
+            "description": "Create the section dedicated to diagnosing external providers, following the same structured table format.",
+            "dependencies": [
+              1
+            ],
+            "details": "Develop the table generation logic for providers. It must mirror the structure of the core component table (Component/Provider, Status, Details/Version), ensuring visual consistency with Section 2.",
+            "status": "done",
+            "testStrategy": "Test the provider table with different numbers of providers. Verify that its styling matches the core component table section to ensure layout uniformity.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-22T08:36:48.403Z"
+          },
+          {
+            "id": 4,
+            "title": "Implement Conditional Status Icon & Color Logic",
+            "description": "Create reusable logic to map diagnostic outcomes (OK, Warning, Error) to specific styled icons and text colors.",
+            "dependencies": [
+              1
+            ],
+            "details": "Abstract the status handling. This function/method must accept a raw status string and return a structured styled output containing the correct icon (e.g., IconOK) and associated color/text style, fulfilling the requirement for dynamic styling.",
+            "status": "done",
+            "testStrategy": "Write unit tests explicitly passing 'success', 'warning', and 'error' states to confirm that the correct, pre-defined style icons and colors are returned for each case.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-22T08:36:48.406Z"
+          },
+          {
+            "id": 5,
+            "title": "Aggregate and Display Final Summary Line",
+            "description": "Calculate the overall diagnostic summary and display it in a prominent, styled footer.",
+            "dependencies": [
+              2,
+              3,
+              4
+            ],
+            "details": "Collect failure counts from Sections 2 and 3. Use the calculated count to generate a summary line (e.g., 'Found 2 issues...') styled using style.Error if non-zero, or style.Success if zero. This must sit inside the main dashboard container.",
+            "status": "done",
+            "testStrategy": "Execute tests where the collected results guarantee zero errors, one error, and multiple errors. Verify the summary line text and the corresponding high-level style (success vs. error color) update correctly.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-22T08:36:48.409Z"
+          }
+        ],
+        "complexity": 8,
+        "recommendedSubtasks": 5,
+        "expansionPrompt": "Outline subtasks for designing the overall multi-box layout, rendering the 'Core Components' section with a table, rendering the 'Providers' section with a table, implementing conditional status icons and colors, and aggregating a final summary of issues.",
+        "updatedAt": "2026-04-22T08:36:48.409Z"
+      },
+      {
+        "id": "9",
+        "title": "Refine `plan` Command and `state pull/push` Indicators",
+        "description": "Review and apply any necessary refinements to the `plan` command's styling and add status indicators to `state pull/push` commands.",
+        "details": "Although `plan` is already well-styled, review its output against the new shared style system for any minor inconsistencies or opportunities for improvement (e.g., ensuring all icons and colors strictly adhere to `pkg/style`). For `state pull` and `state push`, implement simple status indicators (e.g., 'Pulling state...' with `style.Info`, 'State pushed successfully!' with `style.Success`) to provide feedback during their operations.",
+        "testStrategy": "Run `dotisan plan` and visually inspect its output for consistency with the new style guide. Execute `dotisan state pull` and `dotisan state push` (if implemented) to verify that status messages are displayed with appropriate styling and icons.",
+        "priority": "low",
+        "dependencies": [
+          "2"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Review and standardize 'plan' command output styling",
+            "description": "Thoroughly review the current output styling of the 'plan' command against the new shared style system defined in pkg/style.",
+            "dependencies": [
+              9
+            ],
+            "details": "Identify any instances where icons, colors, or text formatting in the plan output deviate from the strict guidelines set by pkg/style. Apply necessary minimal adjustments.",
+            "status": "done",
+            "testStrategy": "Run `dotisan plan` and visually inspect its output for consistency with the new style guide.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-22T08:46:28.179Z"
+          },
+          {
+            "id": 2,
+            "title": "Implement styled status indicators for state pull/push",
+            "description": "Add clear, styled status indicators to the `state pull` and `state push` commands to provide real-time user feedback.",
+            "dependencies": [
+              9
+            ],
+            "details": "For 'state pull', display an initial 'Pulling state...' message using style.Info. For 'state push', display a final 'State pushed successfully!' message using style.Success. These must use styled output wrappers.",
+            "status": "done",
+            "testStrategy": "Execute `dotisan state pull` and `dotisan state push` to verify that status messages are displayed with appropriate styling and icons.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-22T08:46:28.184Z"
+          }
+        ],
+        "complexity": 3,
+        "recommendedSubtasks": 2,
+        "expansionPrompt": "Create subtasks for reviewing the `plan` command's output for consistency with the new style system and implementing simple styled status messages for `state pull` and `state push` operations.",
+        "updatedAt": "2026-04-22T08:46:28.184Z"
+      },
+      {
+        "id": "10",
+        "title": "Implement Advanced UI Elements (Spinners, Progress Bars)",
+        "description": "Integrate spinners for asynchronous operations and progress bars for multi-resource `apply` operations to enhance user engagement.",
+        "details": "For commands involving potentially long-running or asynchronous tasks (e.g., `apply`, `state pull/push`), implement `charmbracelet/spinner` or similar for visual feedback. For `apply` when dealing with multiple resources, consider a `charmbracelet/progressbar` to show overall progress in addition to individual resource status. Ensure these elements are tastefully integrated and do not over-animate.",
+        "testStrategy": "Execute commands with long-running operations (e.g., `apply` with many resources, simulated slow `state pull/push`). Verify that spinners appear and animate correctly during the operation. If progress bars are implemented, ensure they accurately reflect the completion percentage. Check that these elements degrade gracefully in limited terminal environments.",
+        "priority": "low",
+        "dependencies": [
+          "6",
+          "9"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Integrate basic spinner for asynchronous operations",
+            "description": "Implement the initial logic to display a visual spinner indicator when any command execution involves a non-blocking, long-running asynchronous task.",
+            "dependencies": [
+              10
+            ],
+            "details": "Focus on wrapping the execution block for tasks like 'state pull' or 'state push' with a spinner lifecycle management mechanism.\n<info added on 2026-04-22T08:47:01.695Z>\nNote: The standard output provided by engine.Apply() for progress (Provider progress, Resource status, Summary) is sufficient for basic visualization and does not require external spinner libraries for these specific elements.\n</info added on 2026-04-22T08:47:01.695Z>",
+            "status": "done",
+            "testStrategy": "Execute a simulated slow asynchronous operation and confirm the spinner animates smoothly until the process completes.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-22T08:47:16.551Z"
+          },
+          {
+            "id": 2,
+            "title": "Implement progress bar for multi-resource apply operations",
+            "description": "Develop the core logic to track and display the overall progress percentage when the 'apply' command processes multiple dependent resources sequentially or in batches.",
+            "dependencies": [
+              10,
+              2
+            ],
+            "details": "This requires knowing the total number of resources upfront to calculate percentage and feeding updates to a progress bar controller.",
+            "status": "done",
+            "testStrategy": "Simulate an 'apply' command affecting 10 known resources. Verify the progress bar accurately updates from 0% to 100% and displays intermediate values.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-22T08:47:16.556Z"
+          },
+          {
+            "id": 3,
+            "title": "Manage spinner/progress bar lifecycle and cleanup",
+            "description": "Ensure that the UI elements (spinners and progress bars) are correctly started before the operation and cleanly stopped/removed upon completion or error, regardless of the exit path.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Use defer statements or structured error handling to guarantee cleanup calls are made, preventing visual artifacts like stuck spinners or partially rendered bars.",
+            "status": "done",
+            "testStrategy": "Test three scenarios: successful completion, clean cancellation (Ctrl+C), and execution failure mid-process. Verify cleanup occurs correctly in all three cases.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-22T08:47:16.560Z"
+          },
+          {
+            "id": 4,
+            "title": "Handle terminal environment degradation and graceful failure",
+            "description": "Implement fallback logic for environments where advanced TUI elements (like spinners or progress bars) are unsupported or cause rendering issues.",
+            "dependencies": [
+              3
+            ],
+            "details": "Check environment variables (e.g., TERM type) or library detection. If advanced UI is unavailable, the system must fall back gracefully to simple console logging (e.g., printing status updates instead of using the spinner).",
+            "status": "done",
+            "testStrategy": "Test the application in simulated low-capability terminals (or by forcing the environment check) to confirm the fallback text output is displayed without error.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-22T08:47:16.564Z"
+          }
+        ],
+        "complexity": 7,
+        "recommendedSubtasks": 4,
+        "expansionPrompt": "Detail subtasks for integrating `charmbracelet/spinner` into relevant commands, integrating `charmbracelet/progressbar` for multi-resource operations, managing the lifecycle of these elements, and ensuring graceful degradation in various terminal environments.",
+        "updatedAt": "2026-04-22T08:47:16.564Z"
+      }
+    ],
+    "metadata": {
+      "version": "1.0.0",
+      "lastModified": "2026-04-22T08:47:16.564Z",
+      "taskCount": 10,
+      "completedCount": 10,
+      "tags": [
+        "ui-modernization-prd"
       ]
     }
   }
