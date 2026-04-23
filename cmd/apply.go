@@ -7,13 +7,17 @@ import (
 	"os"
 	"strings"
 
+	"github.com/wasilak/dotisan/pkg/diff"
 	"github.com/wasilak/dotisan/pkg/engine"
 	"github.com/wasilak/dotisan/pkg/style"
 
 	"github.com/spf13/cobra"
 )
 
-var confirmFlag bool
+var (
+	confirmFlag bool
+	applyTreeFlag bool
+)
 
 // applyCmd represents the apply command
 var applyCmd = &cobra.Command{
@@ -57,13 +61,41 @@ func runApply() error {
 	// Execute apply based on mode
 	if confirmFlag {
 		// Non-interactive mode: display plan then apply
-		eng.DisplayPlan(result)
+		if applyTreeFlag {
+			treeFormatter := diff.NewTreeFormatter()
+			planInfo := diff.PlanResultInfo{
+				ProviderPlans:      result.ProviderPlans,
+				TotalAdditions:     result.TotalAdditions,
+				TotalModifications: result.TotalModifications,
+				TotalRemovals:      result.TotalRemovals,
+				TotalDrifted:       result.TotalDrifted,
+			}
+			fmt.Println(treeFormatter.FormatPlanAsTree(planInfo))
+			fmt.Println()
+			fmt.Println(eng.PlanFormatter.FormatSummary(result.TotalAdditions, result.TotalModifications, result.TotalRemovals, result.TotalInSync))
+		} else {
+			eng.DisplayPlan(result)
+		}
 		if err := eng.Apply(ctx, result, opts); err != nil {
 			return fmt.Errorf("apply failed: %w", err)
 		}
 	} else {
 		// Interactive mode: display plan and ask for confirmation
-		eng.DisplayPlan(result)
+		if applyTreeFlag {
+			treeFormatter := diff.NewTreeFormatter()
+			planInfo := diff.PlanResultInfo{
+				ProviderPlans:      result.ProviderPlans,
+				TotalAdditions:     result.TotalAdditions,
+				TotalModifications: result.TotalModifications,
+				TotalRemovals:      result.TotalRemovals,
+				TotalDrifted:       result.TotalDrifted,
+			}
+			fmt.Println(treeFormatter.FormatPlanAsTree(planInfo))
+			fmt.Println()
+			fmt.Println(eng.PlanFormatter.FormatSummary(result.TotalAdditions, result.TotalModifications, result.TotalRemovals, result.TotalInSync))
+		} else {
+			eng.DisplayPlan(result)
+		}
 		if !askForConfirmation(result) {
 			fmt.Println()
 			fmt.Println(style.Info.Render("→ Apply cancelled."))
@@ -117,4 +149,5 @@ func init() {
 	rootCmd.AddCommand(applyCmd)
 
 	applyCmd.Flags().BoolVar(&confirmFlag, "confirm", false, "Skip confirmation and apply immediately")
+	applyCmd.Flags().BoolVar(&applyTreeFlag, "tree", false, "Render plan output as tree structure")
 }
