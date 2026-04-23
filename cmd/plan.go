@@ -11,6 +11,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/wasilak/dotisan/pkg/engine"
 	"github.com/wasilak/dotisan/pkg/style"
+	"golang.org/x/term"
 
 	"github.com/spf13/cobra"
 )
@@ -160,9 +161,18 @@ func runPlan() error {
 	}
 
 	// Interactive mode: use Bubble Tea progress bar
+	// Get terminal width for full-width progress bar
+	barWidth := 40 // default fallback
+	if w, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil && w > 0 {
+		barWidth = w - 10 // Leave some margin for padding/decorations
+		if barWidth < 20 {
+			barWidth = 20 // minimum width
+		}
+	}
+
 	prog := progress.New(
 		progress.WithDefaultGradient(),
-		progress.WithWidth(40),
+		progress.WithWidth(barWidth),
 	)
 
 	m := progressModel{
