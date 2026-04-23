@@ -507,12 +507,6 @@ func (e *Engine) DisplayPlan(result *PlanResult) {
 type ApplyOptions struct {
 	// Confirm indicates if the user has confirmed the apply
 	Confirm bool
-
-	// AutoConfirm skips interactive confirmation
-	AutoConfirm bool
-
-	// Backup indicates if backups should be created
-	Backup bool
 }
 
 // Apply executes the planned changes.
@@ -526,10 +520,9 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 	// Display plan first
 	e.DisplayPlan(result)
 
-	// Check for confirmation
-	if !opts.Confirm && !opts.AutoConfirm {
-		fmt.Println("Run with --confirm to apply these changes, or --auto-confirm for non-interactive mode.")
-		return nil
+	// Check for confirmation (should already be confirmed by cmd/apply.go)
+	if !opts.Confirm {
+		return fmt.Errorf("apply not confirmed: this should not happen, use --confirm flag")
 	}
 
 	// Execute changes for each provider

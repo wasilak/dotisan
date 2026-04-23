@@ -40,21 +40,11 @@ func TestNewEngine(t *testing.T) {
 
 func TestApplyOptions(t *testing.T) {
 	opts := ApplyOptions{
-		Confirm:     true,
-		AutoConfirm: false,
-		Backup:      true,
+		Confirm: true,
 	}
 
 	if !opts.Confirm {
 		t.Error("Confirm should be true")
-	}
-
-	if opts.AutoConfirm {
-		t.Error("AutoConfirm should be false")
-	}
-
-	if !opts.Backup {
-		t.Error("Backup should be true")
 	}
 }
 
