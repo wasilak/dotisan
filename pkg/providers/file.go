@@ -257,19 +257,35 @@ func (p *FileProvider) reconcileSingleFile(
 	actualChecksum := calculateChecksum(string(actualContent))
 
 	// Special handling for imported resources
-	// When a resource was imported, we compare the actual destination file
-	// with the saved state (which contains the hash of the file at import time).
-	// If they match, the resource is in sync. We then clear the imported flag.
+	// When a resource was imported, we need to handle the transition to managed state.
+	// The saved state has the checksum from import time, but we should compare against
+	// the desired state (rendered source) to determine if the file is correctly managed.
 	if imported, ok := savedState.Extra["imported"].(bool); ok && imported {
-		if actualChecksum == savedState.DestHash {
-			// Imported file still matches what we saved - it's in sync
-			// Clear the imported flag for future normal reconciliation
+		// Step 1: Check if file matches DESIRED state (what we want it to be)
+		// This handles the case where the file was already updated to match the source
+		if actualChecksum == checksum {
+			// File matches desired state - it's properly managed now
 			plan.InSync = append(plan.InSync, mf)
 			// Note: The imported flag will be cleared when state is saved after apply
 			// because the resourceToStateEntry function doesn't preserve the imported flag
 			return
 		}
-		// File was modified after import - this is drift
+
+		// Step 2: Check if file still matches original import state
+		// This means the file hasn't been updated from its imported state yet
+		if actualChecksum == savedState.DestHash {
+			// File hasn't changed from import - it needs to be updated to desired state
+			plan.Modifications = append(plan.Modifications, provider.Modification{
+				Resource: mf,
+				OldState: savedState,
+				NewState: desiredState,
+				Diff:     p.generateDiff(string(actualContent), content),
+			})
+			return
+		}
+
+		// Step 3: File changed from BOTH import state AND desired state - genuine drift
+		// The file was modified outside of dotisan after import
 		plan.Drifted = append(plan.Drifted, provider.Drift{
 			Resource:      mf,
 			ExpectedState: savedState,
