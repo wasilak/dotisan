@@ -29,6 +29,12 @@ type StateConfig struct {
 	S3      S3Config `yaml:"s3,omitempty"`   // for s3 backend
 }
 
+// UIConfig holds UI/display configuration.
+type UIConfig struct {
+	// Tree determines whether to render output as tree by default
+	Tree bool `yaml:"tree,omitempty"`
+}
+
 // Config holds the complete dotisan tool configuration from ~/.dotisan/config.yaml
 type Config struct {
 	// DotfilesRoot is the path to the dotfiles directory (default: ~/.config/dotisan)
@@ -36,6 +42,9 @@ type Config struct {
 
 	// State holds state backend configuration
 	State StateConfig `yaml:"state"`
+
+	// UI holds UI/display configuration
+	UI UIConfig `yaml:"ui,omitempty"`
 }
 
 // DefaultConfig returns a Config with default values.
