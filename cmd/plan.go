@@ -211,9 +211,10 @@ func runPlan() error {
 		fallbackUsed = true
 	} else {
 		// Extract result from the model
-		if m, ok := finalModel.(progressModel); ok {
+		if m, ok := finalModel.(progressModel); ok && m.result != nil {
 			result = m.result
 		}
+		// If model extraction failed, result should already be set by the goroutine
 	}
 
 	// Only check planErr if we didn't use the fallback
