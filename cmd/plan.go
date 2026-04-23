@@ -195,7 +195,8 @@ func runPlan() error {
 
 	// Run the program
 	var fallbackUsed bool
-	if _, err := p.Run(); err != nil {
+	finalModel, err := p.Run()
+	if err != nil {
 		// Fall back to simple progress on TTY error
 		fmt.Printf("→ Running plan...\n")
 		ctx := context.Background()
@@ -208,11 +209,21 @@ func runPlan() error {
 			return fmt.Errorf("plan failed: %w", err)
 		}
 		fallbackUsed = true
+	} else {
+		// Extract result from the model
+		if m, ok := finalModel.(progressModel); ok {
+			result = m.result
+		}
 	}
 
 	// Only check planErr if we didn't use the fallback
 	if !fallbackUsed && planErr != nil {
 		return fmt.Errorf("plan failed: %w", planErr)
+	}
+
+	// Check if we have a result
+	if result == nil {
+		return fmt.Errorf("plan failed: no result returned")
 	}
 
 	// Display results
