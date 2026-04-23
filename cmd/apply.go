@@ -49,27 +49,30 @@ func runApply() error {
 		return nil
 	}
 
-	// Display plan
-	eng.DisplayPlan(result)
-
 	// Apply with options
 	opts := engine.ApplyOptions{
 		Confirm: confirmFlag,
 	}
 
-	// Interactive confirmation if not explicitly confirmed
-	if !confirmFlag {
+	// Execute apply based on mode
+	if confirmFlag {
+		// Non-interactive mode: display plan then apply
+		eng.DisplayPlan(result)
+		if err := eng.Apply(ctx, result, opts); err != nil {
+			return fmt.Errorf("apply failed: %w", err)
+		}
+	} else {
+		// Interactive mode: display plan and ask for confirmation
+		eng.DisplayPlan(result)
 		if !askForConfirmation(result) {
 			fmt.Println()
 			fmt.Println(style.Info.Render("→ Apply cancelled."))
 			return nil
 		}
-		opts.Confirm = true
-	}
-
-	// Execute apply
-	if err := eng.Apply(ctx, result, opts); err != nil {
-		return fmt.Errorf("apply failed: %w", err)
+		// Use apply with progress bar
+		if err := eng.ApplyWithProgress(ctx, result, opts); err != nil {
+			return fmt.Errorf("apply failed: %w", err)
+		}
 	}
 
 	return nil

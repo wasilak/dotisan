@@ -17,7 +17,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
+	"github.com/charmbracelet/bubbles/progress"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/wasilak/dotisan/pkg/config"
 	"github.com/wasilak/dotisan/pkg/diff"
 	"github.com/wasilak/dotisan/pkg/provider"
@@ -517,9 +520,6 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 		return nil
 	}
 
-	// Display plan first
-	e.DisplayPlan(result)
-
 	// Check for confirmation (should already be confirmed by cmd/apply.go)
 	if !opts.Confirm {
 		return fmt.Errorf("apply not confirmed: this should not happen, use --confirm flag")
@@ -707,4 +707,282 @@ func (e *Engine) renderSourceFile(sourcePath string, useTemplate bool) (string, 
 	}
 
 	return content, nil
+}
+
+// applyProgressMsg is sent to update apply progress
+type applyProgressMsg struct {
+	provider   string
+	resource   string
+	action     string // "creating", "updating", "removing", "restoring"
+	completed  int
+	total      int
+	percent    float64
+}
+
+// applyCompleteMsg is sent when apply is complete
+type applyCompleteMsg struct {
+	totalChanges int
+	err          error
+}
+
+// applyTickMsg is sent periodically to update the UI
+type applyTickMsg struct{}
+
+// applyProgressModel represents the progress UI for apply
+type applyProgressModel struct {
+	progress     progress.Model
+	current      int
+	total        int
+	percent      float64
+	provider     string
+	resource     string
+	action       string
+	completed    []string
+	currentRes   int
+	totalRes     int
+	totalChanges int
+	done         bool
+	err          error
+}
+
+func (m applyProgressModel) Init() tea.Cmd {
+	return m.tickCmd()
+}
+
+func (m applyProgressModel) tickCmd() tea.Cmd {
+	return tea.Tick(time.Millisecond*100, func(time.Time) tea.Msg {
+		return applyTickMsg{}
+	})
+}
+
+func (m applyProgressModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		if msg.Type == tea.KeyCtrlC {
+			return m, tea.Quit
+		}
+		return m, nil
+
+	case applyTickMsg:
+		if m.done {
+			return m, tea.Quit
+		}
+		return m, m.tickCmd()
+
+	case applyProgressMsg:
+		m.current = msg.completed
+		m.total = msg.total
+		m.percent = msg.percent
+		m.provider = msg.provider
+		m.resource = msg.resource
+		m.action = msg.action
+		return m, nil
+
+	case applyCompleteMsg:
+		m.totalChanges = msg.totalChanges
+		m.err = msg.err
+		m.done = true
+		return m, tea.Quit
+
+	}
+
+	return m, nil
+}
+
+func (m applyProgressModel) View() string {
+	if m.done {
+		return ""
+	}
+
+	var s strings.Builder
+	s.WriteString("\n")
+	s.WriteString(style.Header.Render("Applying changes..."))
+	s.WriteString("\n\n")
+
+	// Progress bar
+	s.WriteString(m.progress.ViewAs(m.percent))
+	s.WriteString(fmt.Sprintf("  %d/%d\n", m.current, m.total))
+
+	// Current operation
+	if m.action != "" && m.resource != "" {
+		s.WriteString(fmt.Sprintf("\n%s %s %s\n", style.Dim.Render("→"), style.Info.Render(m.action), style.Dim.Render(m.resource)))
+	}
+
+	// Recently completed items (last 3)
+	if len(m.completed) > 0 {
+		s.WriteString("\n")
+		start := len(m.completed) - 3
+		if start < 0 {
+			start = 0
+		}
+		for _, item := range m.completed[start:] {
+			s.WriteString(fmt.Sprintf("  %s\n", item))
+		}
+	}
+
+	return s.String()
+}
+
+// ApplyWithProgress executes apply with a progress bar
+func (e *Engine) ApplyWithProgress(ctx context.Context, result *PlanResult, opts ApplyOptions) error {
+	if !result.HasChanges {
+		fmt.Println(style.Info.Render("No changes to apply."))
+		return nil
+	}
+
+	// Calculate total operations
+	totalOps := 0
+	for _, plan := range result.ProviderPlans {
+		totalOps += len(plan.Additions) + len(plan.Modifications) + len(plan.Removals) + len(plan.Drifted)
+	}
+
+	if totalOps == 0 {
+		fmt.Println(style.Info.Render("No changes to apply."))
+		return nil
+	}
+
+	// Create progress model
+	prog := progress.New(
+		progress.WithDefaultGradient(),
+		progress.WithWidth(40),
+	)
+
+	m := applyProgressModel{
+		progress:  prog,
+		current:   0,
+		total:     totalOps,
+		percent:   0,
+		completed: []string{},
+	}
+
+	// Create Bubble Tea program
+	p := tea.NewProgram(m)
+
+	// Execute apply in background
+	var applyErr error
+	var totalChanges int
+	completedOps := 0
+
+	go func() {
+		for providerName, plan := range result.ProviderPlans {
+			prov, exists := e.Providers[providerName]
+			if !exists {
+				applyErr = fmt.Errorf("provider %s not found", providerName)
+				p.Send(applyCompleteMsg{err: applyErr})
+				return
+			}
+
+			// Process additions
+			for _, res := range plan.Additions {
+				completedOps++
+				resourceID := fmt.Sprintf("%s/%s", res.GetKind(), res.GetMetadata().Name)
+				p.Send(applyProgressMsg{
+					provider:  providerName,
+					resource:  resourceID,
+					action:    "Creating",
+					completed: completedOps,
+					total:     totalOps,
+					percent:   float64(completedOps) / float64(totalOps),
+				})
+			}
+
+			// Process modifications
+			for _, mod := range plan.Modifications {
+				completedOps++
+				resourceID := fmt.Sprintf("%s/%s", mod.Resource.GetKind(), mod.Resource.GetMetadata().Name)
+				p.Send(applyProgressMsg{
+					provider:  providerName,
+					resource:  resourceID,
+					action:    "Updating",
+					completed: completedOps,
+					total:     totalOps,
+					percent:   float64(completedOps) / float64(totalOps),
+				})
+			}
+
+			// Process removals
+			for _, res := range plan.Removals {
+				completedOps++
+				resourceID := fmt.Sprintf("%s/%s", res.GetKind(), res.GetMetadata().Name)
+				p.Send(applyProgressMsg{
+					provider:  providerName,
+					resource:  resourceID,
+					action:    "Removing",
+					completed: completedOps,
+					total:     totalOps,
+					percent:   float64(completedOps) / float64(totalOps),
+				})
+			}
+
+			// Process drifted
+			for _, drift := range plan.Drifted {
+				completedOps++
+				resourceID := fmt.Sprintf("%s/%s", drift.Resource.GetKind(), drift.Resource.GetMetadata().Name)
+				p.Send(applyProgressMsg{
+					provider:  providerName,
+					resource:  resourceID,
+					action:    "Restoring",
+					completed: completedOps,
+					total:     totalOps,
+					percent:   float64(completedOps) / float64(totalOps),
+				})
+			}
+
+			// Actually apply changes
+			if err := prov.Apply(ctx, plan); err != nil {
+				applyErr = fmt.Errorf("failed to apply changes for provider %s: %w", providerName, err)
+				p.Send(applyCompleteMsg{err: applyErr})
+				return
+			}
+		}
+
+		// Count total changes for state
+		for _, plan := range result.ProviderPlans {
+			totalChanges += len(plan.Modifications) + len(plan.Additions) + len(plan.Drifted)
+		}
+
+		// Update and save state
+		newState := state.NewState()
+		for providerName, plan := range result.ProviderPlans {
+			for _, res := range plan.InSync {
+				stateEntry := e.resourceToStateEntry(res, providerName)
+				newState.SetResource(stateEntry)
+			}
+			for _, mod := range plan.Modifications {
+				stateEntry := e.resourceToStateEntry(mod.Resource, providerName)
+				newState.SetResource(stateEntry)
+			}
+			for _, res := range plan.Additions {
+				stateEntry := e.resourceToStateEntry(res, providerName)
+				newState.SetResource(stateEntry)
+			}
+			for _, drift := range plan.Drifted {
+				stateEntry := e.resourceToStateEntry(drift.Resource, providerName)
+				newState.SetResource(stateEntry)
+			}
+		}
+
+		if err := e.StateBackend.Save(ctx, newState); err != nil {
+			applyErr = fmt.Errorf("failed to save state: %w", err)
+			p.Send(applyCompleteMsg{err: applyErr})
+			return
+		}
+
+		p.Send(applyCompleteMsg{totalChanges: totalChanges})
+	}()
+
+	// Run the program
+	if _, err := p.Run(); err != nil {
+		// Fallback to non-interactive apply
+		return e.Apply(ctx, result, opts)
+	}
+
+	if applyErr != nil {
+		return applyErr
+	}
+
+	fmt.Println()
+	fmt.Printf("%s Apply complete! %d resource%s synchronized\n", style.IconSuccess, totalChanges, plural(totalChanges))
+
+	return nil
 }
