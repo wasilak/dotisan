@@ -9,6 +9,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/wasilak/dotisan/pkg/diff"
 	"github.com/wasilak/dotisan/pkg/engine"
 	"github.com/wasilak/dotisan/pkg/style"
 	"golang.org/x/term"
@@ -18,6 +19,7 @@ import (
 
 var (
 	planJSONFlag bool
+	planTreeFlag bool
 )
 
 // planCmd represents the plan command
@@ -236,7 +238,23 @@ func runPlan() error {
 	}
 
 	// Display results
-	eng.DisplayPlan(result)
+	if planTreeFlag {
+		// Use tree formatter
+		treeFormatter := diff.NewTreeFormatter()
+		planInfo := diff.PlanResultInfo{
+			ProviderPlans:      result.ProviderPlans,
+			TotalAdditions:     result.TotalAdditions,
+			TotalModifications: result.TotalModifications,
+			TotalRemovals:      result.TotalRemovals,
+			TotalDrifted:       result.TotalDrifted,
+		}
+		fmt.Println(treeFormatter.FormatPlanAsTree(planInfo))
+		// Show summary
+		fmt.Println()
+		fmt.Println(eng.PlanFormatter.FormatSummary(result.TotalAdditions, result.TotalModifications, result.TotalRemovals, result.TotalInSync))
+	} else {
+		eng.DisplayPlan(result)
+	}
 
 	return nil
 }
@@ -318,4 +336,5 @@ func displayJSON(result *engine.PlanResult) error {
 func init() {
 	rootCmd.AddCommand(planCmd)
 	planCmd.Flags().BoolVar(&planJSONFlag, "json", false, "Output in JSON format")
+	planCmd.Flags().BoolVar(&planTreeFlag, "tree", false, "Render output as tree structure")
 }

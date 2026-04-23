@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/wasilak/dotisan/pkg/config"
+	"github.com/wasilak/dotisan/pkg/diff"
 	"github.com/wasilak/dotisan/pkg/engine"
 	"github.com/wasilak/dotisan/pkg/provider"
 	"github.com/wasilak/dotisan/pkg/providers"
@@ -318,6 +319,8 @@ along with their status (in_sync, drift, missing).`,
 	},
 }
 
+var stateTreeFlag bool
+
 func runStateList() error {
 	// Create engine to run plan (for accurate status)
 	eng, err := engine.NewEngine()
@@ -366,9 +369,9 @@ func runStateList() error {
 	missingStyle := style.Error
 	unknownStyle := style.Dim
 
-    // Render table using lipgloss table package
-    fmt.Println(style.Header.Render("Managed Resources"))
-    fmt.Println()
+	// Print header
+	fmt.Println(style.Header.Render("Managed Resources"))
+	fmt.Println()
 
     // Define styles for header and rows
     headerStyle := lipgloss.NewStyle().Bold(true).Align(lipgloss.Center)
@@ -391,10 +394,11 @@ func runStateList() error {
     })
     t.Headers("KIND", "NAME", "ID", "STATUS")
 
-	// Track counts for summary
+	// Track counts for summary and build resources list
 	inSyncCount := 0
 	driftCount := 0
 	orphanCount := 0
+	var stateResources []diff.StateResource
 
     // Display resources with accurate status
     for _, r := range currentState.Resources {
@@ -410,12 +414,26 @@ func runStateList() error {
             orphanCount++
         }
 
+		// Build tree data
+		stateResources = append(stateResources, diff.StateResource{
+			Kind:   r.Kind,
+			Name:   r.Name,
+			ID:     r.ID,
+			Status: status,
+		})
+
         // Add row to table. We'll apply row styling via the table StyleFunc.
         t.Row(truncate(r.Kind, 17), truncate(r.Name, 22), truncate(r.ID, 32), status)
     }
 
-    // Print the table
-    fmt.Println(t.Render())
+	// Render as tree if flag is set
+	if stateTreeFlag {
+		treeFormatter := diff.NewTreeFormatter()
+		fmt.Println(treeFormatter.FormatStateAsTree(stateResources))
+	} else {
+		// Print the table
+		fmt.Println(t.Render())
+	}
 
 	// Summary footer
 	fmt.Println()
@@ -700,4 +718,7 @@ func init() {
 	stateCmd.AddCommand(stateListCmd)
 	stateCmd.AddCommand(statePullCmd)
 	stateCmd.AddCommand(statePushCmd)
+
+	// Add flags
+	stateListCmd.Flags().BoolVar(&stateTreeFlag, "tree", false, "Render output as tree structure")
 }
