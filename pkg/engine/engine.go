@@ -23,6 +23,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	lipgloss "charm.land/lipgloss/v2"
 	"github.com/wasilak/dotisan/pkg/config"
+	"golang.org/x/term"
 	"github.com/wasilak/dotisan/pkg/diff"
 	"github.com/wasilak/dotisan/pkg/provider"
 	"github.com/wasilak/dotisan/pkg/providers"
@@ -777,13 +778,33 @@ func (e *Engine) ApplyWithProgress(ctx context.Context, result *PlanResult, opts
 		fmt.Printf("%s Apply complete! %d resource%s synchronized\n", 
 			style.IconSuccess, successCount, plural(successCount))
 	} else if successCount == 0 {
-		// All failed
-		fmt.Println(style.ErrorBox.Render(
+		// All failed - use full terminal width
+		termWidth := getTerminalWidth()
+		boxWidth := termWidth - 4
+		if boxWidth < 60 {
+			boxWidth = 60
+		}
+
+		// Create a wider error box
+		wideErrorBox := lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color(style.Red)).
+			Padding(1, 2).
+			Width(boxWidth)
+
+		fmt.Println(wideErrorBox.Render(
 			style.Error.Render("✖ Apply failed") + "\n\n" +
 			fmt.Sprintf("All %d resources failed to apply", failCount),
 		))
 	} else {
-		// Mixed results
+		// Mixed results - use full terminal width
+		termWidth := getTerminalWidth()
+		boxWidth := termWidth - 4 // Leave some margin
+		if boxWidth < 60 {
+			boxWidth = 60 // minimum width
+		}
+		wrapWidth := boxWidth - 8 // Account for padding and bullet indent
+
 		var summary strings.Builder
 		summary.WriteString(style.Warning.Render("⚠ Apply completed with errors") + "\n\n")
 		summary.WriteString(fmt.Sprintf("%s %d succeeded\n", style.IconSuccess, successCount))
@@ -792,12 +813,20 @@ func (e *Engine) ApplyWithProgress(ctx context.Context, result *PlanResult, opts
 		summary.WriteString("\n")
 		for _, res := range results {
 			if !res.success {
-				// Wrap error message to fit in box (60 chars - 4 indent)
-				errMsg := lipgloss.Wrap(res.err.Error(), 56, " ")
+				// Wrap error message to fit in box
+				errMsg := lipgloss.Wrap(res.err.Error(), wrapWidth, " ")
 				summary.WriteString(fmt.Sprintf("  • %s:\n    %s\n", res.resource, errMsg))
 			}
 		}
-		fmt.Println(style.WarningBox.Render(summary.String()))
+
+		// Create a wider warning box
+		wideBox := lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color(style.Orange)).
+			Padding(1, 2).
+			Width(boxWidth)
+
+		fmt.Println(wideBox.Render(summary.String()))
 	}
 
 	// Update and save state for successful operations only
@@ -821,6 +850,14 @@ func (e *Engine) ApplyWithProgress(ctx context.Context, result *PlanResult, opts
 	}
 
 	return nil
+}
+
+// getTerminalWidth returns the current terminal width, or 80 as fallback
+func getTerminalWidth() int {
+	if w, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil && w > 0 {
+		return w
+	}
+	return 80 // default fallback
 }
 
 // Apply executes the planned changes.
