@@ -21,6 +21,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
+	lipgloss "charm.land/lipgloss/v2"
 	"github.com/wasilak/dotisan/pkg/config"
 	"github.com/wasilak/dotisan/pkg/diff"
 	"github.com/wasilak/dotisan/pkg/provider"
@@ -791,7 +792,9 @@ func (e *Engine) ApplyWithProgress(ctx context.Context, result *PlanResult, opts
 		summary.WriteString("\n")
 		for _, res := range results {
 			if !res.success {
-				summary.WriteString(fmt.Sprintf("  • %s: %s\n", res.resource, res.err))
+				// Wrap error message to fit in box (60 chars - 4 indent)
+				errMsg := lipgloss.Wrap(res.err.Error(), 56, " ")
+				summary.WriteString(fmt.Sprintf("  • %s:\n    %s\n", res.resource, errMsg))
 			}
 		}
 		fmt.Println(style.WarningBox.Render(summary.String()))
