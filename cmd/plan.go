@@ -194,6 +194,7 @@ func runPlan() error {
 	}()
 
 	// Run the program
+	var fallbackUsed bool
 	if _, err := p.Run(); err != nil {
 		// Fall back to simple progress on TTY error
 		fmt.Printf("→ Running plan...\n")
@@ -206,9 +207,11 @@ func runPlan() error {
 		if err != nil {
 			return fmt.Errorf("plan failed: %w", err)
 		}
+		fallbackUsed = true
 	}
 
-	if planErr != nil {
+	// Only check planErr if we didn't use the fallback
+	if !fallbackUsed && planErr != nil {
 		return fmt.Errorf("plan failed: %w", planErr)
 	}
 
