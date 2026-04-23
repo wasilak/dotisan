@@ -255,7 +255,10 @@ func (p *GoProvider) applyAddition(ctx context.Context, res resource.Resource) e
 			modulePath = fmt.Sprintf("%s@%s", pkg.Module, pkg.Version)
 		}
 
-		if _, stderr, err := cmdutil.RunSimple(ctx, "go", "install", modulePath); err != nil {
+		// Run go install from temp directory to avoid picking up local go.mod
+		// This ensures we install the binary globally, not as a project dependency
+		_, stderr, err := cmdutil.RunWithDir(ctx, "/tmp", "go", "install", modulePath)
+		if err != nil {
 			return fmt.Errorf("failed to install %s: %s: %w", pkg.Module, stderr, err)
 		}
 	}

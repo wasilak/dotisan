@@ -91,6 +91,14 @@ func RunSimple(ctx context.Context, name string, args ...string) (stdout, stderr
 	return result.Stdout, result.Stderr, result.Error
 }
 
+// RunWithDir runs a command in a specific working directory.
+// Returns stdout, stderr, and error.
+func RunWithDir(ctx context.Context, dir string, name string, args ...string) (stdout, stderr string, err error) {
+	opts := &RunOptions{Dir: dir}
+	result := Run(ctx, name, args, opts)
+	return result.Stdout, result.Stderr, result.Error
+}
+
 // CheckExecutable checks if an executable exists in PATH.
 // Returns the path to the executable if found, empty string if not.
 func CheckExecutable(name string) string {
@@ -112,5 +120,5 @@ func FormatError(name string, args []string, result Result) error {
 	if result.Error != nil {
 		parts = append(parts, fmt.Sprintf("error: %v", result.Error))
 	}
-	return fmt.Errorf(strings.Join(parts, "; "))
+	return fmt.Errorf("%s", strings.Join(parts, "; "))
 }
