@@ -81,9 +81,7 @@ func (m progressModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case progressMsg:
 		m.percent = msg.percent
 		m.message = msg.message
-		if m.percent >= 1.0 {
-			m.done = true
-		}
+		// Note: we don't set m.done here - we wait for resultMsg or errorMsg
 		return m, nil
 
 	case resultMsg:
