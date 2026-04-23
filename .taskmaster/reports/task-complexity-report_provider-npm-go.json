@@ -1,0 +1,93 @@
+{
+	"meta": {
+		"generatedAt": "2026-04-22T13:31:23.599Z",
+		"tasksAnalyzed": 10,
+		"totalTasks": 10,
+		"analysisCount": 10,
+		"thresholdScore": 5,
+		"projectName": "Task Master",
+		"usedResearch": true
+	},
+	"complexityAnalysis": [
+		{
+			"taskId": 1,
+			"taskTitle": "Fix Go Provider: Implement accurate getInstalledPackages() logic",
+			"complexityScore": 7,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Break down the implementation of the shell command execution and output parsing into distinct steps. Focus first on reliable execution, then on safe parsing, and finally on error handling across environments.",
+			"reasoning": "Medium-High. This involves interacting with external OS tooling (`go list -m all`) via subprocesses in Go, which introduces environment dependency risk. Parsing the resulting output reliably (especially when the output format might change or differ slightly between Go versions/OSes) requires defensive programming. It's challenging because it bridges the application logic with the external system state."
+		},
+		{
+			"taskId": 2,
+			"taskTitle": "Implement NPM Provider Import Capability (FR2)",
+			"complexityScore": 6,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Decompose the process: 1. Execute `npm list -g --json` and capture output. 2. Write robust JSON unmarshalling logic specific to npm's output structure. 3. Map the parsed structure into the internal `ResourceState` object format.",
+			"reasoning": "Medium. This is similar to Task 1 but uses standard JSON tooling. The complexity comes from correctly parsing the nested JSON structure returned by `npm list -g --json` and ensuring that the mapped `ResourceState` meets the provider's internal contract. Dependency on the exact npm JSON output is the main risk."
+		},
+		{
+			"taskId": 3,
+			"taskTitle": "Implement Go Provider Import Capability (FR3)",
+			"complexityScore": 7,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Since this depends heavily on Task 1, structure the subtasks around leveraging the validated implementation from Task 1. Focus on the conversion layer: take the parsed map/list from Task 1's success, and correctly transform it into the required `ResourceState` structure required by the `dotisan` framework.",
+			"reasoning": "High. It's coupled with Task 1, meaning the success hinges on resolving those OS interaction complexities first. The core challenge here is the state transformation: converting the raw findings from the OS into the standardized, structured state model the system expects."
+		},
+		{
+			"taskId": 4,
+			"taskTitle": "Implement npm Drift Detection (FR4)",
+			"complexityScore": 8,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Structure the comparison logic: 1. Fetch desired state (Current system state via `npm list`). 2. Load recorded state (File state). 3. Implement the intersection/difference algorithm: Find items in (File state) MINUS (Current system state). 4. Report results without triggering apply actions.",
+			"reasoning": "High. Drift detection is inherently complex because it involves comparing two different representations of the same reality (the file state vs. the live system state). It requires careful set operations, error handling for comparing missing keys, and ensuring the output is purely informational (a warning/plan message, not an action)."
+		},
+		{
+			"taskId": 5,
+			"taskTitle": "Implement Go Drift Detection (FR5)",
+			"complexityScore": 8,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Mirror the structure of Task 4, but replace JSON/NPM concepts with Go module path/version checks. The primary challenge is performing reliable 'existence' checks for modules found in the state file against the runtime output of `go list -m all`, accounting for potential path differences.",
+			"reasoning": "High. Like Task 4, it involves complex state comparison logic. The technical difficulty is ensuring the comparison mechanism for Go modules (which can be tricky with paths vs. module names) is robust enough to handle filesystem changes versus actual module removal."
+		},
+		{
+			"taskId": 6,
+			"taskTitle": "Integrate State Tracking for NPM (Version/Presence)",
+			"complexityScore": 6,
+			"recommendedSubtasks": 2,
+			"expansionPrompt": "Refactor the state serialization/deserialization method for the NpmResource. Define a clear, canonical key structure that guarantees both name and version uniqueness for state persistence, ensuring compatibility with Task 4's read operations.",
+			"reasoning": "Medium-High. This task is less about new OS interaction and more about robust data persistence and consistency. It requires deep knowledge of the state management layer of the system to ensure the saved format supports the read patterns required by Task 4."
+		},
+		{
+			"taskId": 7,
+			"taskTitle": "Integrate State Tracking for Go (Version/Presence)",
+			"complexityScore": 6,
+			"recommendedSubtasks": 2,
+			"expansionPrompt": "Update the Go resource state structure. Design the state data type to correctly ingest and store the necessary metadata (path, version) derived from the successful execution of `go list -m all` (Task 1's outcome), ensuring immutability for state consistency checks.",
+			"reasoning": "Medium-High. Similar to Task 6, this is a state model refinement task. The complexity stems from matching the arbitrary, potentially complex output format of `go list -m all` into the required, structured persistence model."
+		},
+		{
+			"taskId": 8,
+			"taskTitle": "Develop Comprehensive NPM E2E Verification Suite (Task 4 Expansion)",
+			"complexityScore": 7,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Design a multi-stage, automated testing harness using a Docker/container setup. The tests must explicitly mock or manage the npm environment for repeatable testing of the full lifecycle: Setup $\rightarrow$ Apply $\rightarrow$ Mutate (Drift) $\rightarrow$ Plan $\rightarrow$ Teardown.",
+			"reasoning": "High. E2E tests are difficult because they require managing the environment state across multiple steps (setup, execution, cleanup). The requirement to simulate *manual* tampering (drift) makes it significantly harder than simple happy-path testing. Success depends on reliable environment provisioning."
+		},
+		{
+			"taskId": 9,
+			"taskTitle": "Develop Comprehensive Go E2E Verification Suite (Task 5 Expansion)",
+			"complexityScore": 7,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Create a containerized test suite for Go resource management. The test execution must include steps to both install and subsequently dismantle/clean specific modules/binaries to accurately trigger and verify the drift detection logic, mirroring the setup required for Task 5 testing.",
+			"reasoning": "High. Similar to Task 8, environment control is the bottleneck. Testing module lifecycle accurately (install, manage state, forcibly remove) requires deep knowledge of Go tooling and containerization patterns to ensure isolation between test runs."
+		},
+		{
+			"taskId": 10,
+			"taskTitle": "Final System Validation and Integration Testing",
+			"complexityScore": 9,
+			"recommendedSubtasks": 0,
+			"expansionPrompt": "No further subtasks are needed; this is a black-box integration effort.",
+			"reasoning": "Very High. This task represents the 'glue' or 'integration test' layer. While it doesn't introduce new feature logic, its complexity is highest because it requires the *coexistence* of 8 highly complex, inter-dependent features (Tasks 1-9). Failure in any minor part of the preceding work will cause this entire validation to fail, demanding perfect synergy across OS interaction, state management, and reconciliation logic."
+		}
+	]
+}

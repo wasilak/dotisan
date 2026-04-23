@@ -39,7 +39,7 @@ func runApply() error {
 
 	// Run plan first
 	ctx := context.Background()
-	result, err := eng.Plan(ctx)
+	result, err := eng.Plan(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("plan failed: %w", err)
 	}

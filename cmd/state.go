@@ -328,7 +328,7 @@ func runStateList() error {
 
 	// Run plan to get actual status
 	ctx := context.Background()
-	result, err := eng.Plan(ctx)
+	result, err := eng.Plan(ctx, nil)
 	if err != nil {
 		return runStateListBasic()
 	}

@@ -5,8 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"time"
 
+	"github.com/charmbracelet/bubbles/progress"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/wasilak/dotisan/pkg/engine"
+	"github.com/wasilak/dotisan/pkg/style"
 
 	"github.com/spf13/cobra"
 )
@@ -36,6 +40,93 @@ Use --json for machine-readable output.`,
 	},
 }
 
+// progressModel represents the progress bar model for Bubble Tea
+type progressModel struct {
+	progress  progress.Model
+	percent   float64
+	message   string
+	result    *engine.PlanResult
+	err       error
+	done      bool
+	eng       *engine.Engine
+}
+
+// tickMsg is sent when we want to update the progress
+type tickMsg struct{}
+
+func (m progressModel) Init() tea.Cmd {
+	return m.tickCmd()
+}
+
+func (m progressModel) tickCmd() tea.Cmd {
+	return tea.Tick(time.Millisecond*100, func(time.Time) tea.Msg {
+		return tickMsg{}
+	})
+}
+
+func (m progressModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		if msg.Type == tea.KeyCtrlC || msg.Type == tea.KeyEsc {
+			return m, tea.Quit
+		}
+		return m, nil
+
+	case tickMsg:
+		if m.done {
+			return m, tea.Quit
+		}
+		return m, m.tickCmd()
+
+	case progressMsg:
+		m.percent = msg.percent
+		m.message = msg.message
+		if m.percent >= 1.0 {
+			m.done = true
+		}
+		return m, nil
+
+	case resultMsg:
+		m.result = msg.result
+		m.done = true
+		return m, tea.Quit
+
+	case errorMsg:
+		m.err = msg.err
+		m.done = true
+		return m, tea.Quit
+	}
+
+	return m, nil
+}
+
+func (m progressModel) View() string {
+	if m.done {
+		return ""
+	}
+
+	var s string
+	s += "\n"
+	s += style.Header.Render("Planning...") + "\n\n"
+	s += m.message + "\n"
+	s += m.progress.ViewAs(m.percent) + "\n"
+	s += fmt.Sprintf("%.0f%%\n", m.percent*100)
+	return s
+}
+
+// Messages for communicating with the Bubble Tea model
+type progressMsg struct {
+	percent float64
+	message string
+}
+
+type resultMsg struct {
+	result *engine.PlanResult
+}
+type errorMsg struct {
+	err error
+}
+
 func runPlan() error {
 	// Create engine
 	eng, err := engine.NewEngine()
@@ -43,22 +134,97 @@ func runPlan() error {
 		return fmt.Errorf("failed to initialize: %w", err)
 	}
 
-	// Run plan
-	ctx := context.Background()
-	result, err := eng.Plan(ctx)
-	if err != nil {
-		return fmt.Errorf("plan failed: %w", err)
-	}
-
-	// JSON output
+	// For JSON output, skip the progress bar
 	if planJSONFlag {
+		ctx := context.Background()
+		result, err := eng.Plan(ctx, nil)
+		if err != nil {
+			return fmt.Errorf("plan failed: %w", err)
+		}
 		return displayJSON(result)
 	}
 
-	// Display results (amazing format)
+	// Check if we're in an interactive terminal
+	if !isTerminal() {
+		// Non-interactive mode: run plan without progress bar
+		ctx := context.Background()
+		result, err := eng.Plan(ctx, func(percent float64, message string) {
+			// Simple text progress for non-interactive mode
+			if message != "" {
+				fmt.Printf("→ %s\n", message)
+			}
+		})
+		if err != nil {
+			return fmt.Errorf("plan failed: %w", err)
+		}
+		eng.DisplayPlan(result)
+		return nil
+	}
+
+	// Interactive mode: use Bubble Tea progress bar
+	prog := progress.New(
+		progress.WithDefaultGradient(),
+		progress.WithWidth(40),
+	)
+
+	m := progressModel{
+		progress: prog,
+		percent:  0,
+		message:  "Initializing...",
+		eng:      eng,
+	}
+
+	// Run Bubble Tea program
+	p := tea.NewProgram(m)
+
+	// Run plan in background and send updates
+	var result *engine.PlanResult
+	var planErr error
+	go func() {
+		ctx := context.Background()
+		result, planErr = eng.Plan(ctx, func(percent float64, message string) {
+			p.Send(progressMsg{percent: percent, message: message})
+		})
+
+		if planErr != nil {
+			p.Send(errorMsg{err: planErr})
+		} else {
+			p.Send(resultMsg{result: result})
+		}
+	}()
+
+	// Run the program
+	if _, err := p.Run(); err != nil {
+		// Fall back to simple progress on TTY error
+		fmt.Printf("→ Running plan...\n")
+		ctx := context.Background()
+		result, err = eng.Plan(ctx, func(percent float64, message string) {
+			if message != "" {
+				fmt.Printf("  %s\n", message)
+			}
+		})
+		if err != nil {
+			return fmt.Errorf("plan failed: %w", err)
+		}
+	}
+
+	if planErr != nil {
+		return fmt.Errorf("plan failed: %w", planErr)
+	}
+
+	// Display results
 	eng.DisplayPlan(result)
 
 	return nil
+}
+
+// isTerminal checks if stdout is a terminal
+func isTerminal() bool {
+	stat, err := os.Stdout.Stat()
+	if err != nil {
+		return false
+	}
+	return (stat.Mode() & os.ModeCharDevice) == os.ModeCharDevice
 }
 
 func displayJSON(result *engine.PlanResult) error {

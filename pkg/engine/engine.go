@@ -137,21 +137,40 @@ type PlanResult struct {
 	HasChanges bool
 }
 
+// ProgressFunc is called during plan execution to report progress (0.0 to 1.0)
+type ProgressFunc func(percent float64, message string)
+
 // Plan loads state, parses resources, and generates plans from all providers.
-func (e *Engine) Plan(ctx context.Context) (*PlanResult, error) {
+// If progressFn is provided, it will be called with progress updates (0.0 to 1.0).
+func (e *Engine) Plan(ctx context.Context, progressFn ProgressFunc) (*PlanResult, error) {
+	// Define progress steps
+	totalSteps := 4
+	currentStep := 0
+
+	updateProgress := func(message string) {
+		currentStep++
+		if progressFn != nil {
+			percent := float64(currentStep) / float64(totalSteps)
+			progressFn(percent, message)
+		}
+	}
+
 	// Load current state
+	updateProgress("Loading state...")
 	currentState, err := e.StateBackend.Load(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load state: %w", err)
 	}
 
 	// Parse all resources from dotfiles
+	updateProgress("Loading resources...")
 	resources, err := e.loadResources()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load resources: %w", err)
 	}
 
 	// Group resources by provider
+	updateProgress("Grouping resources...")
 	resourcesByProvider := e.groupResourcesByProvider(resources)
 
 	// Build state map for quick lookup
@@ -161,6 +180,7 @@ func (e *Engine) Plan(ctx context.Context) (*PlanResult, error) {
 	}
 
 	// Generate plans for each provider
+	updateProgress("Generating plans...")
 	providerPlans := make(map[string]provider.Plan)
 	result := &PlanResult{
 		Resources:     resources,
