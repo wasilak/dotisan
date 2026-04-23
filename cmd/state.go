@@ -369,10 +369,6 @@ func runStateList() error {
 	missingStyle := style.Error
 	unknownStyle := style.Dim
 
-	// Print header
-	fmt.Println(style.Header.Render("Managed Resources"))
-	fmt.Println()
-
     // Define styles for header and rows
     headerStyle := lipgloss.NewStyle().Bold(true).Align(lipgloss.Center)
     cellStyle := lipgloss.NewStyle().Padding(0, 1)
@@ -426,12 +422,15 @@ func runStateList() error {
         t.Row(truncate(r.Kind, 17), truncate(r.Name, 22), truncate(r.ID, 32), status)
     }
 
-	// Render as tree if flag is set
-	if stateTreeFlag {
+	// Render as tree if flag is set OR if configured in config
+	useTree := stateTreeFlag || eng.Config.UI.Tree
+	if useTree {
 		treeFormatter := diff.NewTreeFormatter()
 		fmt.Println(treeFormatter.FormatStateAsTree(stateResources))
 	} else {
-		// Print the table
+		// Print header and table
+		fmt.Println(style.Header.Render("Managed Resources"))
+		fmt.Println()
 		fmt.Println(t.Render())
 	}
 

@@ -158,7 +158,23 @@ func runPlan() error {
 		if err != nil {
 			return fmt.Errorf("plan failed: %w", err)
 		}
-		eng.DisplayPlan(result)
+		// Use tree if flag is set OR if configured in config
+		useTree := planTreeFlag || eng.Config.UI.Tree
+		if useTree {
+			treeFormatter := diff.NewTreeFormatter()
+			planInfo := diff.PlanResultInfo{
+				ProviderPlans:      result.ProviderPlans,
+				TotalAdditions:     result.TotalAdditions,
+				TotalModifications: result.TotalModifications,
+				TotalRemovals:      result.TotalRemovals,
+				TotalDrifted:       result.TotalDrifted,
+			}
+			fmt.Println(treeFormatter.FormatPlanAsTree(planInfo))
+			fmt.Println()
+			fmt.Println(eng.PlanFormatter.FormatSummary(result.TotalAdditions, result.TotalModifications, result.TotalRemovals, result.TotalInSync))
+		} else {
+			eng.DisplayPlan(result)
+		}
 		return nil
 	}
 
@@ -238,7 +254,9 @@ func runPlan() error {
 	}
 
 	// Display results
-	if planTreeFlag {
+	// Use tree if flag is set OR if configured in config
+	useTree := planTreeFlag || eng.Config.UI.Tree
+	if useTree {
 		// Use tree formatter
 		treeFormatter := diff.NewTreeFormatter()
 		planInfo := diff.PlanResultInfo{

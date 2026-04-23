@@ -58,10 +58,13 @@ func runApply() error {
 		Confirm: confirmFlag,
 	}
 
+	// Determine if we should use tree view (flag OR config)
+	useTree := applyTreeFlag || eng.Config.UI.Tree
+
 	// Execute apply based on mode
 	if confirmFlag {
 		// Non-interactive mode: display plan then apply
-		if applyTreeFlag {
+		if useTree {
 			treeFormatter := diff.NewTreeFormatter()
 			planInfo := diff.PlanResultInfo{
 				ProviderPlans:      result.ProviderPlans,
@@ -81,7 +84,7 @@ func runApply() error {
 		}
 	} else {
 		// Interactive mode: display plan and ask for confirmation
-		if applyTreeFlag {
+		if useTree {
 			treeFormatter := diff.NewTreeFormatter()
 			planInfo := diff.PlanResultInfo{
 				ProviderPlans:      result.ProviderPlans,
