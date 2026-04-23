@@ -250,10 +250,13 @@ func (p *GoProvider) applyAddition(ctx context.Context, res resource.Resource) e
 
 	// Install each module
 	for _, pkg := range gp.Spec.Packages {
-		modulePath := pkg.Module
-		if pkg.Version != "" && pkg.Version != "latest" {
-			modulePath = fmt.Sprintf("%s@%s", pkg.Module, pkg.Version)
+		// When running outside a Go module (from /tmp), go install REQUIRES a version suffix
+		// Build module path with @version (use "latest" if no version specified)
+		version := pkg.Version
+		if version == "" {
+			version = "latest"
 		}
+		modulePath := fmt.Sprintf("%s@%s", pkg.Module, version)
 
 		// Run go install from temp directory to avoid picking up local go.mod
 		// This ensures we install the binary globally, not as a project dependency
