@@ -11,6 +11,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/wasilak/dotisan/pkg/diff"
 	"github.com/wasilak/dotisan/pkg/engine"
+	"github.com/wasilak/dotisan/pkg/output"
 	"github.com/wasilak/dotisan/pkg/style"
 	"golang.org/x/term"
 
@@ -18,8 +19,7 @@ import (
 )
 
 var (
-	planJSONFlag bool
-	planTreeFlag bool
+	planOutputFlag string
 )
 
 // planCmd represents the plan command
@@ -30,14 +30,12 @@ var planCmd = &cobra.Command{
 	Long: `plan loads the current state, renders all config objects, and calls Reconcile()
 on each provider to show a structured diff of what would change.
 
-Output format (default):
-  + green: resource will be added
-  ~ yellow: resource will be changed (shows diff)
-  - red: resource will be removed
-  ! orange: resource has drifted from expected state
-  = dim: resource is in sync
+Output formats:
+  plain (default): table view with symbols and colors
+  tree:            3-level tree view (Kind / Name / Items)
+  json:            machine-readable JSON output
 
-Use --json for machine-readable output.`,
+Use --output/-o to specify the format.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runPlan()
 	},
@@ -135,8 +133,19 @@ func runPlan() error {
 		return fmt.Errorf("failed to initialize: %w", err)
 	}
 
+	// Determine output format from flag or config
+	outputFormat := output.Format(planOutputFlag)
+	if outputFormat == "" {
+		// Use config if flag not set
+		if eng.Config.UI.Output != "" {
+			outputFormat = output.Format(eng.Config.UI.Output)
+		} else {
+			outputFormat = output.FormatPlain
+		}
+	}
+
 	// For JSON output, skip the progress bar
-	if planJSONFlag {
+	if outputFormat == output.FormatJSON {
 		ctx := context.Background()
 		result, err := eng.Plan(ctx, nil)
 		if err != nil {
@@ -158,9 +167,9 @@ func runPlan() error {
 		if err != nil {
 			return fmt.Errorf("plan failed: %w", err)
 		}
-		// Use tree if flag is set OR if configured in config
-		useTree := planTreeFlag || eng.Config.UI.Tree
-		if useTree {
+		// Render based on output format
+		switch outputFormat {
+		case output.FormatTree:
 			treeFormatter := diff.NewTreeFormatter()
 			planInfo := diff.PlanResultInfo{
 				ProviderPlans:      result.ProviderPlans,
@@ -172,7 +181,7 @@ func runPlan() error {
 			fmt.Println(treeFormatter.FormatPlanAsTree(planInfo))
 			fmt.Println()
 			fmt.Println(eng.PlanFormatter.FormatSummary(result.TotalAdditions, result.TotalModifications, result.TotalRemovals, result.TotalInSync))
-		} else {
+		default:
 			eng.DisplayPlan(result)
 		}
 		return nil
@@ -253,11 +262,9 @@ func runPlan() error {
 		return fmt.Errorf("plan failed: no result returned")
 	}
 
-	// Display results
-	// Use tree if flag is set OR if configured in config
-	useTree := planTreeFlag || eng.Config.UI.Tree
-	if useTree {
-		// Use tree formatter
+	// Display results based on output format
+	switch outputFormat {
+	case output.FormatTree:
 		treeFormatter := diff.NewTreeFormatter()
 		planInfo := diff.PlanResultInfo{
 			ProviderPlans:      result.ProviderPlans,
@@ -267,10 +274,9 @@ func runPlan() error {
 			TotalDrifted:       result.TotalDrifted,
 		}
 		fmt.Println(treeFormatter.FormatPlanAsTree(planInfo))
-		// Show summary
 		fmt.Println()
 		fmt.Println(eng.PlanFormatter.FormatSummary(result.TotalAdditions, result.TotalModifications, result.TotalRemovals, result.TotalInSync))
-	} else {
+	default:
 		eng.DisplayPlan(result)
 	}
 
@@ -353,6 +359,5 @@ func displayJSON(result *engine.PlanResult) error {
 
 func init() {
 	rootCmd.AddCommand(planCmd)
-	planCmd.Flags().BoolVar(&planJSONFlag, "json", false, "Output in JSON format")
-	planCmd.Flags().BoolVar(&planTreeFlag, "tree", false, "Render output as tree structure")
+	planCmd.Flags().StringVarP(&planOutputFlag, "output", "o", "", "Output format (plain, tree, json)")
 }

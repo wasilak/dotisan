@@ -3,6 +3,7 @@ package cmd
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"regexp"
@@ -11,6 +12,7 @@ import (
 	"github.com/wasilak/dotisan/pkg/config"
 	"github.com/wasilak/dotisan/pkg/diff"
 	"github.com/wasilak/dotisan/pkg/engine"
+	"github.com/wasilak/dotisan/pkg/output"
 	"github.com/wasilak/dotisan/pkg/provider"
 	"github.com/wasilak/dotisan/pkg/providers"
 	"github.com/wasilak/dotisan/pkg/state"
@@ -313,13 +315,18 @@ var stateListCmd = &cobra.Command{
 	SilenceUsage: true,
 	Short:        "List all managed resources",
 	Long: `list displays all resources currently tracked in the state file
-along with their status (in_sync, drift, missing).`,
+along with their status (in_sync, drift, missing).
+
+Output formats:
+  plain (default): table view
+  tree:            3-level tree view
+  json:            machine-readable JSON output`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runStateList()
 	},
 }
 
-var stateTreeFlag bool
+var stateOutputFlag string
 
 func runStateList() error {
 	// Create engine to run plan (for accurate status)
@@ -422,12 +429,24 @@ func runStateList() error {
         t.Row(truncate(r.Kind, 17), truncate(r.Name, 22), truncate(r.ID, 32), status)
     }
 
-	// Render as tree if flag is set OR if configured in config
-	useTree := stateTreeFlag || eng.Config.UI.Tree
-	if useTree {
+	// Determine output format from flag or config
+	outputFormat := output.Format(stateOutputFlag)
+	if outputFormat == "" {
+		if eng.Config.UI.Output != "" {
+			outputFormat = output.Format(eng.Config.UI.Output)
+		} else {
+			outputFormat = output.FormatPlain
+		}
+	}
+
+	// Render based on output format
+	switch outputFormat {
+	case output.FormatJSON:
+		return displayStateJSON(currentState.Resources, statusMap)
+	case output.FormatTree:
 		treeFormatter := diff.NewTreeFormatter()
 		fmt.Println(treeFormatter.FormatStateAsTree(stateResources))
-	} else {
+	default:
 		// Print header and table
 		fmt.Println(style.Header.Render("Managed Resources"))
 		fmt.Println()
@@ -708,6 +727,35 @@ func runStatePush() error {
 	return nil
 }
 
+// displayStateJSON outputs state as JSON
+func displayStateJSON(resources []provider.ResourceState, statusMap map[string]string) error {
+	output := map[string]interface{}{
+		"resources": []map[string]interface{}{},
+	}
+
+	var result []map[string]interface{}
+	for _, r := range resources {
+		status := "unknown"
+		if s, ok := statusMap[r.ID]; ok {
+			status = s
+		}
+
+		res := map[string]interface{}{
+			"kind":   r.Kind,
+			"name":   r.Name,
+			"id":     r.ID,
+			"status": status,
+		}
+		result = append(result, res)
+	}
+
+	output["resources"] = result
+
+	encoder := json.NewEncoder(os.Stdout)
+	encoder.SetIndent("", "  ")
+	return encoder.Encode(output)
+}
+
 func init() {
 	rootCmd.AddCommand(stateCmd)
 
@@ -719,5 +767,5 @@ func init() {
 	stateCmd.AddCommand(statePushCmd)
 
 	// Add flags
-	stateListCmd.Flags().BoolVar(&stateTreeFlag, "tree", false, "Render output as tree structure")
+	stateListCmd.Flags().StringVarP(&stateOutputFlag, "output", "o", "", "Output format (plain, tree, json)")
 }

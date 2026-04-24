@@ -9,14 +9,15 @@ import (
 
 	"github.com/wasilak/dotisan/pkg/diff"
 	"github.com/wasilak/dotisan/pkg/engine"
+	"github.com/wasilak/dotisan/pkg/output"
 	"github.com/wasilak/dotisan/pkg/style"
 
 	"github.com/spf13/cobra"
 )
 
 var (
-	confirmFlag bool
-	applyTreeFlag bool
+	confirmFlag     bool
+	applyOutputFlag string
 )
 
 // applyCmd represents the apply command
@@ -58,13 +59,21 @@ func runApply() error {
 		Confirm: confirmFlag,
 	}
 
-	// Determine if we should use tree view (flag OR config)
-	useTree := applyTreeFlag || eng.Config.UI.Tree
+	// Determine output format from flag or config
+	outputFormat := output.Format(applyOutputFlag)
+	if outputFormat == "" {
+		if eng.Config.UI.Output != "" {
+			outputFormat = output.Format(eng.Config.UI.Output)
+		} else {
+			outputFormat = output.FormatPlain
+		}
+	}
 
 	// Execute apply based on mode
 	if confirmFlag {
 		// Non-interactive mode: display plan then apply
-		if useTree {
+		switch outputFormat {
+		case output.FormatTree:
 			treeFormatter := diff.NewTreeFormatter()
 			planInfo := diff.PlanResultInfo{
 				ProviderPlans:      result.ProviderPlans,
@@ -76,7 +85,7 @@ func runApply() error {
 			fmt.Println(treeFormatter.FormatPlanAsTree(planInfo))
 			fmt.Println()
 			fmt.Println(eng.PlanFormatter.FormatSummary(result.TotalAdditions, result.TotalModifications, result.TotalRemovals, result.TotalInSync))
-		} else {
+		default:
 			eng.DisplayPlan(result)
 		}
 		if err := eng.Apply(ctx, result, opts); err != nil {
@@ -84,7 +93,8 @@ func runApply() error {
 		}
 	} else {
 		// Interactive mode: display plan and ask for confirmation
-		if useTree {
+		switch outputFormat {
+		case output.FormatTree:
 			treeFormatter := diff.NewTreeFormatter()
 			planInfo := diff.PlanResultInfo{
 				ProviderPlans:      result.ProviderPlans,
@@ -96,7 +106,7 @@ func runApply() error {
 			fmt.Println(treeFormatter.FormatPlanAsTree(planInfo))
 			fmt.Println()
 			fmt.Println(eng.PlanFormatter.FormatSummary(result.TotalAdditions, result.TotalModifications, result.TotalRemovals, result.TotalInSync))
-		} else {
+		default:
 			eng.DisplayPlan(result)
 		}
 		if !askForConfirmation(result) {
@@ -152,5 +162,5 @@ func init() {
 	rootCmd.AddCommand(applyCmd)
 
 	applyCmd.Flags().BoolVar(&confirmFlag, "confirm", false, "Skip confirmation and apply immediately")
-	applyCmd.Flags().BoolVar(&applyTreeFlag, "tree", false, "Render plan output as tree structure")
+	applyCmd.Flags().StringVarP(&applyOutputFlag, "output", "o", "", "Output format (plain, tree, json)")
 }

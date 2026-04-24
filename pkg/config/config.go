@@ -31,8 +31,8 @@ type StateConfig struct {
 
 // UIConfig holds UI/display configuration.
 type UIConfig struct {
-	// Tree determines whether to render output as tree by default
-	Tree bool `yaml:"tree,omitempty"`
+	// Output determines the default output format (plain, tree, json)
+	Output string `yaml:"output,omitempty"`
 }
 
 // Config holds the complete dotisan tool configuration from ~/.dotisan/config.yaml
