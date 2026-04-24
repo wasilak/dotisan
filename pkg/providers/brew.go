@@ -298,42 +298,6 @@ func (p *BrewProvider) compareGroupItems(
 	return
 }
 
-// filterInstallableItems returns items that are not currently installed
-func filterInstallableItems(items []resource.ResourceItem, installed map[string]string) []resource.ResourceItem {
-	var result []resource.ResourceItem
-	for _, item := range items {
-		name := item.Name
-		if strings.HasSuffix(name, " (cask)") {
-			name = strings.TrimSuffix(name, " (cask)")
-		}
-		if _, isInstalled := installed[name]; !isInstalled {
-			result = append(result, item)
-		}
-	}
-	return result
-}
-
-// itemsToState converts ResourceItems to ItemStates with version info
-func itemsToState(items []resource.ResourceItem, installed map[string]string) []resource.ItemState {
-	var result []resource.ItemState
-	for _, item := range items {
-		name := item.Name
-		if strings.HasSuffix(name, " (cask)") {
-			name = strings.TrimSuffix(name, " (cask)")
-		}
-		version := item.Version
-		if version == "" {
-			version = installed[name]
-		}
-		result = append(result, resource.ItemState{
-			Name:    item.Name,
-			Version: version,
-			Status:  "present",
-		})
-	}
-	return result
-}
-
 // getInstalledPackages retrieves currently installed Homebrew packages
 func (p *BrewProvider) getInstalledPackages() (map[string]string, error) {
 	ctx := context.Background()

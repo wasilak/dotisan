@@ -662,8 +662,3 @@ func (m applyProgressModel) View() string {
 
 	return s.String()
 }
-
-// DisplayPlan displays the plan result (placeholder for backward compatibility)
-func (e *Engine) DisplayPlan(result *PlanResult) {
-	// This is now handled by the command layer using output formatters
-}
