@@ -85,25 +85,25 @@ func runPlan() error {
 
 			for _, addition := range plan.Additions {
 				for _, item := range addition.Items {
-					fmt.Printf("  %s %s/%s: %s\n", style.IconAdd, addition.Kind, addition.Group, item.Name)
+					fmt.Printf("  %s %s/%s: %s\n", style.StyledIconAdd, addition.Kind, addition.Group, item.Name)
 				}
 			}
 
 			for _, removal := range plan.Removals {
 				for _, item := range removal.Items {
-					fmt.Printf("  %s %s/%s: %s\n", style.IconRemove, removal.Kind, removal.Group, item.Name)
+					fmt.Printf("  %s %s/%s: %s\n", style.IconError, removal.Kind, removal.Group, item.Name)
 				}
 			}
 
 			for _, mod := range plan.Modifications {
 				for _, change := range mod.Changes {
-					fmt.Printf("  %s %s/%s: %s\n", style.IconEdit, mod.Kind, mod.Group, change.ItemName)
+					fmt.Printf("  %s %s/%s: %s\n", style.IconWarning, mod.Kind, mod.Group, change.ItemName)
 				}
 			}
 
 			for _, inSync := range plan.InSync {
 				for _, item := range inSync.Items {
-					fmt.Printf("  %s %s/%s: %s\n", style.IconOK, inSync.Kind, inSync.Group, item.Name)
+					fmt.Printf("  %s %s/%s: %s\n", style.IconSuccess, inSync.Kind, inSync.Group, item.Name)
 				}
 			}
 		}

@@ -55,19 +55,46 @@ func (p *NpmProvider) Reconcile(
 		stateGroup, exists := stateIndex[group.Name]
 
 		if !exists {
-			items := filterInstallableNpmItems(group.Items, installed)
-			if len(items) > 0 {
+			// New group - check which items are already installed vs need installation
+			var toInstall, toImport []resource.ResourceItem
+
+			for _, item := range group.Items {
+				if _, isInstalled := installed[item.Name]; isInstalled {
+					// Already installed - needs to be imported
+					toImport = append(toImport, item)
+				} else {
+					// Not installed - needs installation
+					toInstall = append(toInstall, item)
+				}
+			}
+
+			// Add items that need installation
+			if len(toInstall) > 0 {
 				plan.Additions = append(plan.Additions, provider.GroupAddition{
 					Kind:  group.Kind,
 					Group: group.Name,
-					Items: items,
+					Items: toInstall,
 				})
 			}
-			if len(items) == 0 && len(group.Items) > 0 {
-				plan.InSync = append(plan.InSync, provider.GroupState{
+
+			// Add items that are already installed (for import)
+			if len(toImport) > 0 {
+				plan.Additions = append(plan.Additions, provider.GroupAddition{
 					Kind:  group.Kind,
 					Group: group.Name,
-					Items: npmItemsToState(group.Items, installed),
+					Items: toImport,
+				})
+
+				// Add warning about import
+				itemNames := make([]string, 0, len(toImport))
+				for _, item := range toImport {
+					itemNames = append(itemNames, item.Name)
+				}
+				plan.Warnings = append(plan.Warnings, provider.PlanWarning{
+					GroupID:    fmt.Sprintf("%s/%s", group.Kind, group.Name),
+					Severity:   "warning",
+					Message:    fmt.Sprintf("Items already installed but not tracked: %s", strings.Join(itemNames, ", ")),
+					Suggestion: fmt.Sprintf("dotisan state import %s/%s <item>", group.Kind, group.Name),
 				})
 			}
 		} else {

@@ -81,21 +81,51 @@ func (p *BrewProvider) Reconcile(
 		stateGroup, exists := stateIndex[group.Name]
 
 		if !exists {
-			// New group - all items are additions
-			items := filterInstallableItems(group.Items, installed)
-			if len(items) > 0 {
+			// New group - check which items are already installed vs need installation
+			var toInstall, toImport []resource.ResourceItem
+
+			for _, item := range group.Items {
+				name := item.Name
+				if strings.HasSuffix(name, " (cask)") {
+					name = strings.TrimSuffix(name, " (cask)")
+				}
+
+				if _, isInstalled := installed[name]; isInstalled {
+					// Already installed - needs to be imported
+					toImport = append(toImport, item)
+				} else {
+					// Not installed - needs installation
+					toInstall = append(toInstall, item)
+				}
+			}
+
+			// Add items that need installation
+			if len(toInstall) > 0 {
 				plan.Additions = append(plan.Additions, provider.GroupAddition{
 					Kind:  group.Kind,
 					Group: group.Name,
-					Items: items,
+					Items: toInstall,
 				})
 			}
-			// Group is in sync if no items need installation
-			if len(items) == 0 && len(group.Items) > 0 {
-				plan.InSync = append(plan.InSync, provider.GroupState{
+
+			// Add items that are already installed (for import)
+			if len(toImport) > 0 {
+				plan.Additions = append(plan.Additions, provider.GroupAddition{
 					Kind:  group.Kind,
 					Group: group.Name,
-					Items: itemsToState(group.Items, installed),
+					Items: toImport,
+				})
+
+				// Add warning about import
+				itemNames := make([]string, 0, len(toImport))
+				for _, item := range toImport {
+					itemNames = append(itemNames, item.Name)
+				}
+				plan.Warnings = append(plan.Warnings, provider.PlanWarning{
+					GroupID:    fmt.Sprintf("%s/%s", group.Kind, group.Name),
+					Severity:   "warning",
+					Message:    fmt.Sprintf("Items already installed but not tracked: %s", strings.Join(itemNames, ", ")),
+					Suggestion: fmt.Sprintf("dotisan state import %s/%s <item>", group.Kind, group.Name),
 				})
 			}
 		} else {
