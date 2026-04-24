@@ -3,7 +3,6 @@ package providers
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/wasilak/dotisan/pkg/cmdutil"
@@ -11,7 +10,7 @@ import (
 	"github.com/wasilak/dotisan/pkg/resource"
 )
 
-// CargoProvider implements the Provider interface for Rust crates.
+// CargoProvider implements the Provider interface for Cargo packages
 type CargoProvider struct{}
 
 // NewCargoProvider creates a new CargoProvider.
@@ -24,45 +23,112 @@ func (p *CargoProvider) Name() string {
 	return "cargo"
 }
 
-// Available checks if the cargo executable is available on this system.
+// Available checks if cargo is available on this system.
 func (p *CargoProvider) Available() (bool, string) {
-	path := cmdutil.CheckExecutable("cargo")
-	if path == "" {
-		return false, "cargo not found in PATH; install Rust from https://rustup.rs"
+	if path := cmdutil.CheckExecutable("cargo"); path == "" {
+		return false, "cargo not found in PATH; install Rust from https://rustup.rs/"
 	}
-	return true, fmt.Sprintf("cargo found at %s", path)
+	return true, "cargo found"
 }
 
-// Reconcile compares the desired packages with the current system state.
-func (p *CargoProvider) Reconcile(desired []resource.Resource, state []provider.ResourceState) provider.Plan {
-	plan := provider.Plan{}
+// Reconcile compares the desired resource groups with the current system state.
+func (p *CargoProvider) Reconcile(
+	desired []resource.ResourceGroup,
+	state []provider.ResourceState,
+) provider.GroupPlan {
+	plan := provider.GroupPlan{}
 
-	// Build state map
-	stateMap := make(map[string]provider.ResourceState)
+	stateIndex := make(map[string]provider.ResourceState)
 	for _, s := range state {
-		stateMap[s.ID] = s
-	}
-
-	desiredIDs := make(map[string]bool)
-
-	for _, res := range desired {
-		switch r := res.(type) {
-		case *resource.CargoPackages:
-			p.reconcileCargoPackages(r, stateMap, &plan, desiredIDs)
+		if s.Kind == "CargoPackages" {
+			stateIndex[s.Group] = s
 		}
 	}
 
-	// Check for removals
-	for id, s := range stateMap {
-		if !desiredIDs[id] && s.Kind == "CargoPackages" {
-			plan.Removals = append(plan.Removals, &resource.CargoPackages{
-				BaseResource: resource.BaseResource{
-					Kind: s.Kind,
-					Metadata: resource.Metadata{
-						Name:      s.Name,
-						Namespace: s.Namespace,
-					},
-				},
+	installed := p.getInstalledPackages()
+
+	for _, group := range desired {
+		if group.Kind != "CargoPackages" {
+			continue
+		}
+
+		stateGroup, exists := stateIndex[group.Name]
+
+		if !exists {
+			items := filterInstallableCargoItems(group.Items, installed)
+			if len(items) > 0 {
+				plan.Additions = append(plan.Additions, provider.GroupAddition{
+					Kind:  group.Kind,
+					Group: group.Name,
+					Items: items,
+				})
+			}
+			if len(items) == 0 && len(group.Items) > 0 {
+				plan.InSync = append(plan.InSync, provider.GroupState{
+					Kind:  group.Kind,
+					Group: group.Name,
+					Items: cargoItemsToState(group.Items, installed),
+				})
+			}
+		} else {
+			additions, removals, modifications, inSync := p.compareGroupItems(
+				group, stateGroup, installed,
+			)
+
+			if len(additions) > 0 {
+				plan.Additions = append(plan.Additions, provider.GroupAddition{
+					Kind:  group.Kind,
+					Group: group.Name,
+					Items: additions,
+				})
+			}
+
+			if len(removals) > 0 {
+				plan.Removals = append(plan.Removals, provider.GroupRemoval{
+					Kind:  group.Kind,
+					Group: group.Name,
+					Items: removals,
+				})
+			}
+
+			if len(modifications) > 0 {
+				plan.Modifications = append(plan.Modifications, provider.GroupModification{
+					Kind:    group.Kind,
+					Group:   group.Name,
+					Changes: modifications,
+				})
+			}
+
+			if len(inSync) > 0 && len(additions) == 0 && len(removals) == 0 && len(modifications) == 0 {
+				plan.InSync = append(plan.InSync, provider.GroupState{
+					Kind:  group.Kind,
+					Group: group.Name,
+					Items: inSync,
+				})
+			}
+		}
+	}
+
+	desiredGroups := make(map[string]bool)
+	for _, group := range desired {
+		if group.Kind == "CargoPackages" {
+			desiredGroups[group.Name] = true
+		}
+	}
+
+	for groupName, stateGroup := range stateIndex {
+		if !desiredGroups[groupName] {
+			items := make([]resource.ResourceItem, 0, len(stateGroup.Items))
+			for _, item := range stateGroup.Items {
+				items = append(items, resource.ResourceItem{
+					Name:    item.Name,
+					Version: item.Version,
+				})
+			}
+			plan.Removals = append(plan.Removals, provider.GroupRemoval{
+				Kind:  "CargoPackages",
+				Group: groupName,
+				Items: items,
 			})
 		}
 	}
@@ -70,176 +136,197 @@ func (p *CargoProvider) Reconcile(desired []resource.Resource, state []provider.
 	return plan
 }
 
-// reconcileCargoPackages reconciles a single CargoPackages resource.
-func (p *CargoProvider) reconcileCargoPackages(
-	cp *resource.CargoPackages,
-	stateMap map[string]provider.ResourceState,
-	plan *provider.Plan,
-	desiredIDs map[string]bool,
-) {
-	// Build resource ID using kind and name (Terraform-style: files/dirs are for human org only)
-	id := fmt.Sprintf("CargoPackages/%s", cp.GetMetadata().Name)
-	desiredIDs[id] = true
-
-	// Get current installed packages
-	installed, err := p.getInstalledPackages()
-	if err != nil {
-		// Can't get installed state, mark all as additions
-		for _, pkg := range cp.Spec.Packages {
-			plan.Additions = append(plan.Additions, &resource.CargoPackages{
-				BaseResource: resource.BaseResource{
-					Kind: "CargoPackages",
-					Metadata: resource.Metadata{
-						Name:      pkg.Name,
-						Namespace: cp.GetMetadata().GetNamespace(),
-					},
-				},
-				Spec: resource.CargoPackagesSpec{
-					Packages: []resource.Package{{Name: pkg.Name, Version: pkg.Version}},
-				},
-			})
-		}
-		return
+func (p *CargoProvider) compareGroupItems(
+	group resource.ResourceGroup,
+	stateGroup provider.ResourceState,
+	installed map[string]string,
+) (additions, removals []resource.ResourceItem, modifications []provider.ItemChange, inSync []resource.ItemState) {
+	stateItems := make(map[string]resource.ItemState)
+	for _, item := range stateGroup.Items {
+		stateItems[item.Name] = item
 	}
 
-	// Check each desired package
-	for _, pkg := range cp.Spec.Packages {
-		pkgName := pkg.Name
-		if !p.isPackageInstalled(pkgName, installed) {
-			// Package needs to be installed
-			plan.Additions = append(plan.Additions, &resource.CargoPackages{
-				BaseResource: resource.BaseResource{
-					Kind: "CargoPackages",
-					Metadata: resource.Metadata{
-						Name:      pkgName,
-						Namespace: cp.GetMetadata().GetNamespace(),
+	for _, desiredItem := range group.Items {
+		name := desiredItem.Name
+		_, inState := stateItems[name]
+		_, isInstalled := installed[name]
+
+		if !isInstalled {
+			additions = append(additions, desiredItem)
+		} else if inState {
+			stateItem := stateItems[name]
+			if stateItem.Version != desiredItem.Version && desiredItem.Version != "" {
+				modifications = append(modifications, provider.ItemChange{
+					ItemName: name,
+					OldState: stateItem,
+					NewState: resource.ItemState{
+						Name:    name,
+						Version: desiredItem.Version,
 					},
-				},
-				Spec: resource.CargoPackagesSpec{
-					Packages: []resource.Package{{Name: pkgName, Version: pkg.Version}},
-				},
-			})
+					Diff: fmt.Sprintf("version: %s -> %s", stateItem.Version, desiredItem.Version),
+				})
+			} else {
+				inSync = append(inSync, stateItem)
+			}
+		} else {
+			additions = append(additions, desiredItem)
 		}
 	}
 
-	// Check if resource is in sync
-	if len(plan.Additions) == 0 && len(plan.Modifications) == 0 {
-		plan.InSync = append(plan.InSync, cp)
+	desiredItems := make(map[string]bool)
+	for _, item := range group.Items {
+		desiredItems[item.Name] = true
 	}
+
+	for name, stateItem := range stateItems {
+		if !desiredItems[name] {
+			removals = append(removals, resource.ResourceItem{
+				Name:    name,
+				Version: stateItem.Version,
+			})
+		}
+	}
+
+	return
 }
 
-// cargoPackage represents a cargo package from cargo install --list.
-type cargoPackage struct {
-	Name    string
-	Version string
-}
-
-// getInstalledPackages retrieves currently installed cargo crates.
-func (p *CargoProvider) getInstalledPackages() (map[string]string, error) {
+func (p *CargoProvider) getInstalledPackages() map[string]string {
 	ctx := context.Background()
+	// List installed crates
 	stdout, _, err := cmdutil.RunSimple(ctx, "cargo", "install", "--list")
 	if err != nil {
-		return nil, fmt.Errorf("failed to list installed crates: %w", err)
+		return make(map[string]string)
 	}
 
-	packages := make(map[string]string)
-
-	// Parse output like:
-	// ripgrep v13.0.0:
-	//     ripgrep
-	// fd v8.7.0:
-	//     fd
+	installed := make(map[string]string)
 	lines := strings.Split(stdout, "\n")
-	var currentPackage string
-
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
+		// Format: "crate_name v1.0.0:"
+		if strings.Contains(line, " v") && strings.HasSuffix(line, ":") {
+			parts := strings.Split(line, " ")
+			if len(parts) >= 2 {
+				name := parts[0]
+				version := strings.TrimSuffix(parts[1], ":")
+				version = strings.TrimPrefix(version, "v")
+				installed[name] = version
+			}
 		}
+	}
+	return installed
+}
 
-		// Check if this is a package header line (contains " v" followed by version and ":")
-		// Pattern: package-name v1.2.3:
-		re := regexp.MustCompile(`^(\S+)\s+v([\d.]+):`)
-		matches := re.FindStringSubmatch(line)
-		if len(matches) == 3 {
-			currentPackage = matches[1]
-			version := matches[2]
-			packages[currentPackage] = version
+func filterInstallableCargoItems(items []resource.ResourceItem, installed map[string]string) []resource.ResourceItem {
+	var result []resource.ResourceItem
+	for _, item := range items {
+		if _, isInstalled := installed[item.Name]; !isInstalled {
+			result = append(result, item)
+		}
+	}
+	return result
+}
+
+func cargoItemsToState(items []resource.ResourceItem, installed map[string]string) []resource.ItemState {
+	var result []resource.ItemState
+	for _, item := range items {
+		version := item.Version
+		if version == "" {
+			version = installed[item.Name]
+		}
+		result = append(result, resource.ItemState{
+			Name:    item.Name,
+			Version: version,
+			Status:  "present",
+		})
+	}
+	return result
+}
+
+// Apply executes the given GroupPlan
+func (p *CargoProvider) Apply(ctx context.Context, plan provider.GroupPlan) error {
+	for _, addition := range plan.Additions {
+		if err := p.applyGroupAddition(ctx, addition); err != nil {
+			return fmt.Errorf("failed to add to %s: %w", addition.Group, err)
 		}
 	}
 
-	return packages, nil
-}
-
-// isPackageInstalled checks if a crate is installed.
-func (p *CargoProvider) isPackageInstalled(name string, installed map[string]string) bool {
-	_, exists := installed[name]
-	return exists
-}
-
-// Apply executes the given plan.
-func (p *CargoProvider) Apply(ctx context.Context, plan provider.Plan) error {
-	// Process additions
-	for _, res := range plan.Additions {
-		if err := p.applyAddition(ctx, res); err != nil {
-			return fmt.Errorf("failed to add %s: %w", res.GetMetadata().ResourceID(), err)
+	for _, removal := range plan.Removals {
+		if err := p.applyGroupRemoval(ctx, removal); err != nil {
+			return fmt.Errorf("failed to remove from %s: %w", removal.Group, err)
 		}
 	}
 
-	// Process removals
-	for _, res := range plan.Removals {
-		if err := p.applyRemoval(ctx, res); err != nil {
-			return fmt.Errorf("failed to remove %s: %w", res.GetMetadata().ResourceID(), err)
+	for _, modification := range plan.Modifications {
+		if err := p.applyGroupModification(ctx, modification); err != nil {
+			return fmt.Errorf("failed to modify %s: %w", modification.Group, err)
 		}
 	}
 
 	return nil
 }
 
-// applyAddition installs cargo crates.
-func (p *CargoProvider) applyAddition(ctx context.Context, res resource.Resource) error {
-	cp, ok := res.(*resource.CargoPackages)
-	if !ok {
-		return fmt.Errorf("not a CargoPackages resource")
-	}
-
-	// Install each package
-	for _, pkg := range cp.Spec.Packages {
-		args := []string{"install", pkg.Name}
-		if pkg.Version != "" {
-			args = append(args, "--version", pkg.Version)
+func (p *CargoProvider) applyGroupAddition(ctx context.Context, addition provider.GroupAddition) error {
+	for _, item := range addition.Items {
+		crate := item.Name
+		if item.Version != "" {
+			crate = fmt.Sprintf("%s@%s", item.Name, item.Version)
 		}
-		if _, stderr, err := cmdutil.RunSimple(ctx, "cargo", args...); err != nil {
-			return fmt.Errorf("failed to install %s: %s: %w", pkg.Name, stderr, err)
+		if _, stderr, err := cmdutil.RunSimple(ctx, "cargo", "install", crate); err != nil {
+			return fmt.Errorf("failed to install %s: %s: %w", item.Name, stderr, err)
 		}
 	}
-
 	return nil
 }
 
-// applyRemoval uninstalls cargo crates.
-func (p *CargoProvider) applyRemoval(ctx context.Context, res resource.Resource) error {
-	cp, ok := res.(*resource.CargoPackages)
-	if !ok {
-		return fmt.Errorf("not a CargoPackages resource")
-	}
-
-	// Uninstall each package
-	for _, pkg := range cp.Spec.Packages {
-		if _, stderr, err := cmdutil.RunSimple(ctx, "cargo", "uninstall", pkg.Name); err != nil {
-			return fmt.Errorf("failed to uninstall %s: %s: %w", pkg.Name, stderr, err)
+func (p *CargoProvider) applyGroupRemoval(ctx context.Context, removal provider.GroupRemoval) error {
+	for _, item := range removal.Items {
+		if _, stderr, err := cmdutil.RunSimple(ctx, "cargo", "uninstall", item.Name); err != nil {
+			return fmt.Errorf("failed to uninstall %s: %s: %w", item.Name, stderr, err)
 		}
 	}
-
 	return nil
 }
 
-// Import discovers an existing crate and returns its state.
-func (p *CargoProvider) Import(ctx context.Context, id string) (provider.ResourceState, error) {
-	return provider.ResourceState{}, fmt.Errorf("import not yet implemented")
+func (p *CargoProvider) applyGroupModification(ctx context.Context, modification provider.GroupModification) error {
+	return p.applyGroupAddition(ctx, provider.GroupAddition{
+		Kind:  modification.Kind,
+		Group: modification.Group,
+		Items: func() []resource.ResourceItem {
+			var items []resource.ResourceItem
+			for _, change := range modification.Changes {
+				items = append(items, resource.ResourceItem{
+					Name:    change.ItemName,
+					Version: change.NewState.Version,
+				})
+			}
+			return items
+		}(),
+	})
 }
 
-func (p *CargoProvider) ImportItem(ctx context.Context, resourceName string, itemKey string) (provider.ResourceState, error) {
-	return provider.ResourceState{}, fmt.Errorf("ImportItem not implemented for CargoProvider")
+// Import is not supported for cargo (use ImportItem)
+func (p *CargoProvider) Import(ctx context.Context, group string) (provider.ResourceState, error) {
+	return provider.ResourceState{}, fmt.Errorf("use ImportItem to import specific cargo crates")
+}
+
+// ImportItem imports a specific cargo crate
+func (p *CargoProvider) ImportItem(ctx context.Context, group string, item string) (provider.ResourceState, error) {
+	// Check if crate is installed
+	installed := p.getInstalledPackages()
+	if _, isInstalled := installed[item]; !isInstalled {
+		return provider.ResourceState{}, fmt.Errorf("crate %s is not installed", item)
+	}
+
+	return provider.ResourceState{
+		Kind:      "CargoPackages",
+		Group:     group,
+		Namespace: "default",
+		Items: []resource.ItemState{
+			{
+				Name:    item,
+				Version: installed[item],
+				Status:  "present",
+			},
+		},
+	}, nil
 }

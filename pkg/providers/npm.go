@@ -2,7 +2,6 @@ package providers
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -11,7 +10,7 @@ import (
 	"github.com/wasilak/dotisan/pkg/resource"
 )
 
-// NpmProvider implements the Provider interface for npm packages.
+// NpmProvider implements the Provider interface for npm packages
 type NpmProvider struct{}
 
 // NewNpmProvider creates a new NpmProvider.
@@ -24,45 +23,112 @@ func (p *NpmProvider) Name() string {
 	return "npm"
 }
 
-// Available checks if the npm executable is available on this system.
+// Available checks if npm is available on this system.
 func (p *NpmProvider) Available() (bool, string) {
-	path := cmdutil.CheckExecutable("npm")
-	if path == "" {
-		return false, "npm not found in PATH; install Node.js from https://nodejs.org"
+	if path := cmdutil.CheckExecutable("npm"); path == "" {
+		return false, "npm not found in PATH; install Node.js from https://nodejs.org/"
 	}
-	return true, fmt.Sprintf("npm found at %s", path)
+	return true, "npm found"
 }
 
-// Reconcile compares the desired packages with the current system state.
-func (p *NpmProvider) Reconcile(desired []resource.Resource, state []provider.ResourceState) provider.Plan {
-	plan := provider.Plan{}
+// Reconcile compares the desired resource groups with the current system state.
+func (p *NpmProvider) Reconcile(
+	desired []resource.ResourceGroup,
+	state []provider.ResourceState,
+) provider.GroupPlan {
+	plan := provider.GroupPlan{}
 
-	// Build state map
-	stateMap := make(map[string]provider.ResourceState)
+	stateIndex := make(map[string]provider.ResourceState)
 	for _, s := range state {
-		stateMap[s.ID] = s
-	}
-
-	desiredIDs := make(map[string]bool)
-
-	for _, res := range desired {
-		switch r := res.(type) {
-		case *resource.NpmPackages:
-			p.reconcileNpmPackages(r, stateMap, &plan, desiredIDs)
+		if s.Kind == "NpmPackages" {
+			stateIndex[s.Group] = s
 		}
 	}
 
-	// Check for removals
-	for id, s := range stateMap {
-		if !desiredIDs[id] && s.Kind == "NpmPackages" {
-			plan.Removals = append(plan.Removals, &resource.NpmPackages{
-				BaseResource: resource.BaseResource{
-					Kind: s.Kind,
-					Metadata: resource.Metadata{
-						Name:      s.Name,
-						Namespace: s.Namespace,
-					},
-				},
+	installed := p.getInstalledPackages()
+
+	for _, group := range desired {
+		if group.Kind != "NpmPackages" {
+			continue
+		}
+
+		stateGroup, exists := stateIndex[group.Name]
+
+		if !exists {
+			items := filterInstallableNpmItems(group.Items, installed)
+			if len(items) > 0 {
+				plan.Additions = append(plan.Additions, provider.GroupAddition{
+					Kind:  group.Kind,
+					Group: group.Name,
+					Items: items,
+				})
+			}
+			if len(items) == 0 && len(group.Items) > 0 {
+				plan.InSync = append(plan.InSync, provider.GroupState{
+					Kind:  group.Kind,
+					Group: group.Name,
+					Items: npmItemsToState(group.Items, installed),
+				})
+			}
+		} else {
+			additions, removals, modifications, inSync := p.compareGroupItems(
+				group, stateGroup, installed,
+			)
+
+			if len(additions) > 0 {
+				plan.Additions = append(plan.Additions, provider.GroupAddition{
+					Kind:  group.Kind,
+					Group: group.Name,
+					Items: additions,
+				})
+			}
+
+			if len(removals) > 0 {
+				plan.Removals = append(plan.Removals, provider.GroupRemoval{
+					Kind:  group.Kind,
+					Group: group.Name,
+					Items: removals,
+				})
+			}
+
+			if len(modifications) > 0 {
+				plan.Modifications = append(plan.Modifications, provider.GroupModification{
+					Kind:    group.Kind,
+					Group:   group.Name,
+					Changes: modifications,
+				})
+			}
+
+			if len(inSync) > 0 && len(additions) == 0 && len(removals) == 0 && len(modifications) == 0 {
+				plan.InSync = append(plan.InSync, provider.GroupState{
+					Kind:  group.Kind,
+					Group: group.Name,
+					Items: inSync,
+				})
+			}
+		}
+	}
+
+	desiredGroups := make(map[string]bool)
+	for _, group := range desired {
+		if group.Kind == "NpmPackages" {
+			desiredGroups[group.Name] = true
+		}
+	}
+
+	for groupName, stateGroup := range stateIndex {
+		if !desiredGroups[groupName] {
+			items := make([]resource.ResourceItem, 0, len(stateGroup.Items))
+			for _, item := range stateGroup.Items {
+				items = append(items, resource.ResourceItem{
+					Name:    item.Name,
+					Version: item.Version,
+				})
+			}
+			plan.Removals = append(plan.Removals, provider.GroupRemoval{
+				Kind:  "NpmPackages",
+				Group: groupName,
+				Items: items,
 			})
 		}
 	}
@@ -70,222 +136,194 @@ func (p *NpmProvider) Reconcile(desired []resource.Resource, state []provider.Re
 	return plan
 }
 
-// reconcileNpmPackages reconciles a single NpmPackages resource.
-func (p *NpmProvider) reconcileNpmPackages(
-	np *resource.NpmPackages,
-	stateMap map[string]provider.ResourceState,
-	plan *provider.Plan,
-	desiredIDs map[string]bool,
-) {
-	// Build resource ID using kind and name (Terraform-style: files/dirs are for human org only)
-	id := fmt.Sprintf("NpmPackages/%s", np.GetMetadata().Name)
-	desiredIDs[id] = true
-
-	// Get current installed packages
-	installed, err := p.getInstalledPackages()
-	if err != nil {
-		// Can't get installed state, skip reconciliation
-		return
+func (p *NpmProvider) compareGroupItems(
+	group resource.ResourceGroup,
+	stateGroup provider.ResourceState,
+	installed map[string]string,
+) (additions, removals []resource.ResourceItem, modifications []provider.ItemChange, inSync []resource.ItemState) {
+	stateItems := make(map[string]resource.ItemState)
+	for _, item := range stateGroup.Items {
+		stateItems[item.Name] = item
 	}
 
-	// Check each desired package
-	for _, pkg := range np.Spec.Packages {
-		pkgName := pkg.Name
-		if !p.isPackageInstalled(pkgName, installed) {
-			// Package needs to be installed
-			plan.Additions = append(plan.Additions, &resource.NpmPackages{
-				BaseResource: resource.BaseResource{
-					Kind: "NpmPackages",
-					Metadata: resource.Metadata{
-						Name:      pkgName,
-						Namespace: np.GetMetadata().GetNamespace(),
+	for _, desiredItem := range group.Items {
+		name := desiredItem.Name
+		_, inState := stateItems[name]
+		_, isInstalled := installed[name]
+
+		if !isInstalled {
+			additions = append(additions, desiredItem)
+		} else if inState {
+			stateItem := stateItems[name]
+			if stateItem.Version != desiredItem.Version && desiredItem.Version != "" {
+				modifications = append(modifications, provider.ItemChange{
+					ItemName: name,
+					OldState: stateItem,
+					NewState: resource.ItemState{
+						Name:    name,
+						Version: desiredItem.Version,
 					},
-				},
-				Spec: resource.NpmPackagesSpec{
-					Packages: []resource.Package{{Name: pkgName, Version: pkg.Version}},
-				},
+					Diff: fmt.Sprintf("version: %s -> %s", stateItem.Version, desiredItem.Version),
+				})
+			} else {
+				inSync = append(inSync, stateItem)
+			}
+		} else {
+			additions = append(additions, desiredItem)
+		}
+	}
+
+	desiredItems := make(map[string]bool)
+	for _, item := range group.Items {
+		desiredItems[item.Name] = true
+	}
+
+	for name, stateItem := range stateItems {
+		if !desiredItems[name] {
+			removals = append(removals, resource.ResourceItem{
+				Name:    name,
+				Version: stateItem.Version,
 			})
 		}
 	}
 
-	// Detect drift: check if packages in saved state are still installed
-	p.detectNpmDrift(np, stateMap, plan, installed)
-
-	// Check if resource is in sync
-	if len(plan.Additions) == 0 && len(plan.Modifications) == 0 && len(plan.Warnings) == 0 {
-		plan.InSync = append(plan.InSync, np)
-	}
+	return
 }
 
-// detectNpmDrift checks if packages in saved state are still installed on the system.
-func (p *NpmProvider) detectNpmDrift(
-	np *resource.NpmPackages,
-	stateMap map[string]provider.ResourceState,
-	plan *provider.Plan,
-	installed map[string]string,
-) {
-	id := fmt.Sprintf("NpmPackages/%s", np.GetMetadata().Name)
-	savedState, exists := stateMap[id]
-	if !exists {
-		return
+func (p *NpmProvider) getInstalledPackages() map[string]string {
+	ctx := context.Background()
+	stdout, _, err := cmdutil.RunSimple(ctx, "npm", "list", "-g", "--depth=0", "--json")
+	if err != nil {
+		return make(map[string]string)
 	}
 
-	var savedPackages []string
-	if savedState.Extra != nil {
-		if pkgs, ok := savedState.Extra["packages"].(map[string]interface{}); ok {
-			for name := range pkgs {
-				savedPackages = append(savedPackages, name)
+	// Simple parsing - look for package names
+	installed := make(map[string]string)
+	lines := strings.Split(stdout, "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "\"") && strings.Contains(line, "\": {") {
+			// Extract package name
+			parts := strings.Split(line, "\"")
+			if len(parts) >= 2 && parts[1] != "dependencies" && parts[1] != "name" {
+				installed[parts[1]] = ""
 			}
 		}
 	}
+	return installed
+}
 
-	if len(savedPackages) == 0 {
-		return
+func filterInstallableNpmItems(items []resource.ResourceItem, installed map[string]string) []resource.ResourceItem {
+	var result []resource.ResourceItem
+	for _, item := range items {
+		if _, isInstalled := installed[item.Name]; !isInstalled {
+			result = append(result, item)
+		}
 	}
+	return result
+}
 
-	var driftMsg []string
-	for _, pkgName := range savedPackages {
-		if _, stillInstalled := installed[pkgName]; !stillInstalled {
-			driftMsg = append(driftMsg, fmt.Sprintf("Package '%s' was uninstalled outside of dotisan", pkgName))
+func npmItemsToState(items []resource.ResourceItem, installed map[string]string) []resource.ItemState {
+	var result []resource.ItemState
+	for _, item := range items {
+		result = append(result, resource.ItemState{
+			Name:    item.Name,
+			Version: item.Version,
+			Status:  "present",
+		})
+	}
+	return result
+}
+
+// Apply executes the given GroupPlan
+func (p *NpmProvider) Apply(ctx context.Context, plan provider.GroupPlan) error {
+	for _, addition := range plan.Additions {
+		if err := p.applyGroupAddition(ctx, addition); err != nil {
+			return fmt.Errorf("failed to add to %s: %w", addition.Group, err)
 		}
 	}
 
-	if len(driftMsg) > 0 {
-		warning := provider.PlanWarning{
-			ResourceID: id,
-			Severity:   "warning",
-			Message:   fmt.Sprintf("NpmPackages/%s has drift. %s", np.GetMetadata().Name, strings.Join(driftMsg, ". ")),
-			Suggestion: "Run 'dotisan apply' to restore",
+	for _, removal := range plan.Removals {
+		if err := p.applyGroupRemoval(ctx, removal); err != nil {
+			return fmt.Errorf("failed to remove from %s: %w", removal.Group, err)
 		}
-		plan.Warnings = append(plan.Warnings, warning)
 	}
+
+	for _, modification := range plan.Modifications {
+		if err := p.applyGroupModification(ctx, modification); err != nil {
+			return fmt.Errorf("failed to modify %s: %w", modification.Group, err)
+		}
+	}
+
+	return nil
 }
 
-// npmPackage represents an npm package from npm list output.
-type npmPackage struct {
-	Name    string `json:"name"`
-	Version string `json:"version"`
+func (p *NpmProvider) applyGroupAddition(ctx context.Context, addition provider.GroupAddition) error {
+	for _, item := range addition.Items {
+		pkg := item.Name
+		if item.Version != "" {
+			pkg = fmt.Sprintf("%s@%s", item.Name, item.Version)
+		}
+		if _, stderr, err := cmdutil.RunSimple(ctx, "npm", "install", "-g", pkg); err != nil {
+			return fmt.Errorf("failed to install %s: %s: %w", item.Name, stderr, err)
+		}
+	}
+	return nil
 }
 
-// npmListOutput represents the JSON output of npm list --json.
-type npmListOutput struct {
-	Dependencies map[string]npmPackage `json:"dependencies"`
+func (p *NpmProvider) applyGroupRemoval(ctx context.Context, removal provider.GroupRemoval) error {
+	for _, item := range removal.Items {
+		if _, stderr, err := cmdutil.RunSimple(ctx, "npm", "uninstall", "-g", item.Name); err != nil {
+			return fmt.Errorf("failed to uninstall %s: %s: %w", item.Name, stderr, err)
+		}
+	}
+	return nil
 }
 
-// getInstalledPackages retrieves currently installed global npm packages.
-func (p *NpmProvider) getInstalledPackages() (map[string]string, error) {
+func (p *NpmProvider) applyGroupModification(ctx context.Context, modification provider.GroupModification) error {
+	return p.applyGroupAddition(ctx, provider.GroupAddition{
+		Kind:  modification.Kind,
+		Group: modification.Group,
+		Items: func() []resource.ResourceItem {
+			var items []resource.ResourceItem
+			for _, change := range modification.Changes {
+				items = append(items, resource.ResourceItem{
+					Name:    change.ItemName,
+					Version: change.NewState.Version,
+				})
+			}
+			return items
+		}(),
+	})
+}
+
+// Import is not supported for npm (use ImportItem)
+func (p *NpmProvider) Import(ctx context.Context, group string) (provider.ResourceState, error) {
+	return provider.ResourceState{}, fmt.Errorf("use ImportItem to import specific npm packages")
+}
+
+// ImportItem imports a specific npm package
+func (p *NpmProvider) ImportItem(ctx context.Context, group string, item string) (provider.ResourceState, error) {
+	// Check if package is installed
 	ctx := context.Background()
-	stdout, _, err := cmdutil.RunSimple(ctx, "npm", "list", "-g", "--json")
+	stdout, _, err := cmdutil.RunSimple(ctx, "npm", "list", "-g", "--depth=0", item)
 	if err != nil {
-		// npm list returns error when packages are missing, but still outputs valid JSON
-		// We continue to parse the output
+		return provider.ResourceState{}, fmt.Errorf("package %s is not installed globally", item)
 	}
 
-	var listOutput npmListOutput
-	if err := json.Unmarshal([]byte(stdout), &listOutput); err != nil {
-		return nil, fmt.Errorf("failed to parse npm list output: %w", err)
-	}
-
-	packages := make(map[string]string)
-	for name, pkg := range listOutput.Dependencies {
-		packages[name] = pkg.Version
-	}
-
-	return packages, nil
-}
-
-// isPackageInstalled checks if a package is installed.
-func (p *NpmProvider) isPackageInstalled(name string, installed map[string]string) bool {
-	_, exists := installed[name]
-	return exists
-}
-
-// Apply executes the given plan.
-func (p *NpmProvider) Apply(ctx context.Context, plan provider.Plan) error {
-	// Process additions
-	for _, res := range plan.Additions {
-		if err := p.applyAddition(ctx, res); err != nil {
-			return fmt.Errorf("failed to add %s: %w", res.GetMetadata().ResourceID(), err)
-		}
-	}
-
-	// Process removals
-	for _, res := range plan.Removals {
-		if err := p.applyRemoval(ctx, res); err != nil {
-			return fmt.Errorf("failed to remove %s: %w", res.GetMetadata().ResourceID(), err)
-		}
-	}
-
-	return nil
-}
-
-// applyAddition installs npm packages.
-func (p *NpmProvider) applyAddition(ctx context.Context, res resource.Resource) error {
-	np, ok := res.(*resource.NpmPackages)
-	if !ok {
-		return fmt.Errorf("not a NpmPackages resource")
-	}
-
-	// Install each package
-	for _, pkg := range np.Spec.Packages {
-		args := []string{"install", "-g", pkg.Name}
-		if pkg.Version != "" {
-			args[2] = fmt.Sprintf("%s@%s", pkg.Name, pkg.Version)
-		}
-		if _, stderr, err := cmdutil.RunSimple(ctx, "npm", args...); err != nil {
-			return fmt.Errorf("failed to install %s: %s: %w", pkg.Name, stderr, err)
-		}
-	}
-
-	return nil
-}
-
-// applyRemoval uninstalls npm packages.
-func (p *NpmProvider) applyRemoval(ctx context.Context, res resource.Resource) error {
-	np, ok := res.(*resource.NpmPackages)
-	if !ok {
-		return fmt.Errorf("not a NpmPackages resource")
-	}
-
-	// Uninstall each package
-	for _, pkg := range np.Spec.Packages {
-		if _, stderr, err := cmdutil.RunSimple(ctx, "npm", "uninstall", "-g", pkg.Name); err != nil {
-			return fmt.Errorf("failed to uninstall %s: %s: %w", pkg.Name, stderr, err)
-		}
-	}
-
-	return nil
-}
-
-// Import discovers all installed global npm packages and returns their state.
-func (p *NpmProvider) Import(ctx context.Context, id string) (provider.ResourceState, error) {
-	stdout, _, err := cmdutil.RunSimple(ctx, "npm", "list", "-g", "--json")
-	if err != nil {
-		// npm list returns error when packages are missing, but still outputs valid JSON
-		// We continue to parse the output
-	}
-
-	var listOutput npmListOutput
-	if err := json.Unmarshal([]byte(stdout), &listOutput); err != nil {
-		return provider.ResourceState{}, fmt.Errorf("failed to parse npm list output: %w", err)
-	}
-
-	packages := make(map[string]string)
-	for name, pkg := range listOutput.Dependencies {
-		packages[name] = pkg.Version
+	if !strings.Contains(stdout, item) {
+		return provider.ResourceState{}, fmt.Errorf("package %s is not installed globally", item)
 	}
 
 	return provider.ResourceState{
-		ID:      "NpmPackages/global",
-		Kind:    "NpmPackages",
-		Name:    "global",
-		Version: "all",
-		Extra: map[string]interface{}{
-			"packages": packages,
+		Kind:      "NpmPackages",
+		Group:     group,
+		Namespace: "default",
+		Items: []resource.ItemState{
+			{
+				Name:   item,
+				Status: "present",
+			},
 		},
 	}, nil
-}
-
-func (p *NpmProvider) ImportItem(ctx context.Context, resourceName string, itemKey string) (provider.ResourceState, error) {
-	return provider.ResourceState{}, fmt.Errorf("ImportItem not implemented for NpmProvider")
 }

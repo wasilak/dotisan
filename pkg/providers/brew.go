@@ -15,7 +15,6 @@ import (
 
 // BrewProvider implements the Provider interface for Homebrew packages.
 type BrewProvider struct {
-	// httpClient is used for API requests
 	httpClient *http.Client
 }
 
@@ -30,7 +29,7 @@ func NewBrewProvider() *BrewProvider {
 
 // Name returns the provider name.
 func (p *BrewProvider) Name() string {
-	return "brew"
+	return "homebrew"
 }
 
 // Available checks if the brew executable is available on this system.
@@ -42,483 +41,411 @@ func (p *BrewProvider) Available() (bool, string) {
 	return true, fmt.Sprintf("brew found at %s", path)
 }
 
-// Reconcile compares the desired packages with the current system state.
-func (p *BrewProvider) Reconcile(desired []resource.Resource, state []provider.ResourceState) provider.Plan {
-	plan := provider.Plan{}
+// Reconcile compares the desired resource groups with the current system state.
+func (p *BrewProvider) Reconcile(
+	desired []resource.ResourceGroup,
+	state []provider.ResourceState,
+) provider.GroupPlan {
+	plan := provider.GroupPlan{}
 
-	// Build state map
-	stateMap := make(map[string]provider.ResourceState)
+	// Index state by group name for quick lookup
+	stateIndex := make(map[string]provider.ResourceState)
 	for _, s := range state {
-		stateMap[s.ID] = s
-	}
-
-	desiredIDs := make(map[string]bool)
-
-	for _, res := range desired {
-		switch r := res.(type) {
-		case *resource.BrewPackages:
-			p.reconcileBrewPackages(r, stateMap, &plan, desiredIDs)
+		if s.Kind == "BrewPackages" {
+			stateIndex[s.Group] = s
 		}
 	}
 
-	// Check for removals
-	for id, s := range stateMap {
-		if s.Kind == "BrewPackages" {
-			// Check if this exact ID is desired OR if parent resource is desired
-			isDesired := desiredIDs[id]
-			if !isDesired {
-				// Check parent ID (without item key)
-				parentID := fmt.Sprintf("BrewPackages/%s", s.Name)
-				isDesired = desiredIDs[parentID]
-			}
-			if !isDesired {
-				plan.Removals = append(plan.Removals, &resource.BrewPackages{
-					BaseResource: resource.BaseResource{
-						Kind: s.Kind,
-						Metadata: resource.Metadata{
-							Name:      s.Name,
-							Namespace: s.Namespace,
-						},
-					},
+	// Get currently installed packages
+	installed, err := p.getInstalledPackages()
+	if err != nil {
+		// Can't get installed state, mark all as additions
+		for _, group := range desired {
+			if group.Kind == "BrewPackages" {
+				plan.Additions = append(plan.Additions, provider.GroupAddition{
+					Kind:  group.Kind,
+					Group: group.Name,
+					Items: group.Items,
 				})
 			}
+		}
+		return plan
+	}
+
+	// Process each desired group
+	for _, group := range desired {
+		if group.Kind != "BrewPackages" {
+			continue
+		}
+
+		stateGroup, exists := stateIndex[group.Name]
+
+		if !exists {
+			// New group - all items are additions
+			items := filterInstallableItems(group.Items, installed)
+			if len(items) > 0 {
+				plan.Additions = append(plan.Additions, provider.GroupAddition{
+					Kind:  group.Kind,
+					Group: group.Name,
+					Items: items,
+				})
+			}
+			// Group is in sync if no items need installation
+			if len(items) == 0 && len(group.Items) > 0 {
+				plan.InSync = append(plan.InSync, provider.GroupState{
+					Kind:  group.Kind,
+					Group: group.Name,
+					Items: itemsToState(group.Items, installed),
+				})
+			}
+		} else {
+			// Existing group - compare items
+			additions, removals, modifications, inSync := p.compareGroupItems(
+				group, stateGroup, installed,
+			)
+
+			if len(additions) > 0 {
+				plan.Additions = append(plan.Additions, provider.GroupAddition{
+					Kind:  group.Kind,
+					Group: group.Name,
+					Items: additions,
+				})
+			}
+
+			if len(removals) > 0 {
+				plan.Removals = append(plan.Removals, provider.GroupRemoval{
+					Kind:  group.Kind,
+					Group: group.Name,
+					Items: removals,
+				})
+			}
+
+			if len(modifications) > 0 {
+				plan.Modifications = append(plan.Modifications, provider.GroupModification{
+					Kind:    group.Kind,
+					Group:   group.Name,
+					Changes: modifications,
+				})
+			}
+
+			if len(inSync) > 0 && len(additions) == 0 && len(removals) == 0 && len(modifications) == 0 {
+				plan.InSync = append(plan.InSync, provider.GroupState{
+					Kind:  group.Kind,
+					Group: group.Name,
+					Items: inSync,
+				})
+			}
+		}
+	}
+
+	// Check for removals (groups in state but not in desired)
+	desiredGroups := make(map[string]bool)
+	for _, group := range desired {
+		if group.Kind == "BrewPackages" {
+			desiredGroups[group.Name] = true
+		}
+	}
+
+	for groupName, stateGroup := range stateIndex {
+		if !desiredGroups[groupName] {
+			// Entire group should be removed
+			items := make([]resource.ResourceItem, 0, len(stateGroup.Items))
+			for _, item := range stateGroup.Items {
+				items = append(items, resource.ResourceItem{
+					Name:    item.Name,
+					Version: item.Version,
+				})
+			}
+			plan.Removals = append(plan.Removals, provider.GroupRemoval{
+				Kind:  "BrewPackages",
+				Group: groupName,
+				Items: items,
+			})
 		}
 	}
 
 	return plan
 }
 
-// reconcileBrewPackages reconciles a single BrewPackages resource.
-func (p *BrewProvider) reconcileBrewPackages(
-	bp *resource.BrewPackages,
-	stateMap map[string]provider.ResourceState,
-	plan *provider.Plan,
-	desiredIDs map[string]bool,
-) {
-	// Build resource ID using kind and name (Terraform-style: files/dirs are for human org only)
-	id := fmt.Sprintf("BrewPackages/%s", bp.GetMetadata().Name)
-
-	// Get current installed packages
-	installed, err := p.getInstalledPackages()
-	if err != nil {
-		// Can't get installed state, skip reconciliation
-		return
+// compareGroupItems compares desired group items with state and installed packages
+func (p *BrewProvider) compareGroupItems(
+	group resource.ResourceGroup,
+	stateGroup provider.ResourceState,
+	installed map[string]string,
+) (additions, removals []resource.ResourceItem, modifications []provider.ItemChange, inSync []resource.ItemState) {
+	// Index state items by name
+	stateItems := make(map[string]resource.ItemState)
+	for _, item := range stateGroup.Items {
+		stateItems[item.Name] = item
 	}
 
-	// Check taps
-	for _, tap := range bp.Spec.Taps {
-		tapName := tap.Name
-		if !p.isTapInstalled(tapName, installed) {
-			// Tap needs to be added
-			plan.Additions = append(plan.Additions, &resource.BrewPackages{
-				BaseResource: resource.BaseResource{
-					Kind: "BrewPackages",
-					Metadata: resource.Metadata{
-						Name:      fmt.Sprintf("tap-%s", tapName),
-						Namespace: bp.GetMetadata().GetNamespace(),
-					},
-				},
-				Spec: resource.BrewPackagesSpec{
-					Taps: []resource.Tap{{Name: tapName}},
-				},
-			})
+	// Check each desired item
+	for _, desiredItem := range group.Items {
+		name := desiredItem.Name
+		// Strip (cask) suffix for lookup
+		isCask := strings.HasSuffix(name, " (cask)")
+		if isCask {
+			name = strings.TrimSuffix(name, " (cask)")
 		}
-	}
 
-	// Check formulae - only mark as desired if there are formulae to manage
-	if len(bp.Spec.Formulae) > 0 {
-		desiredIDs[id] = true
-	}
-
-	// Check formulae - add ALL packages from manifest to plan (in or not in state)
-	for _, pkg := range bp.Spec.Formulae {
-		pkgName := pkg.Name
-		_, isInstalled := installed[pkgName]
-		_, inState := stateMap[fmt.Sprintf("BrewPackages/%s[%s]", bp.GetMetadata().Name, pkgName)]
+		_, inState := stateItems[name]
+		_, isInstalled := installed[name]
 
 		if !isInstalled {
-			// Package needs to be installed
-			plan.Additions = append(plan.Additions, &resource.BrewPackages{
-				BaseResource: resource.BaseResource{
-					Kind: "BrewPackages",
-					Metadata: resource.Metadata{
-						Name:      fmt.Sprintf("%s[%s]", bp.GetMetadata().Name, pkgName),
-						Namespace: bp.GetMetadata().GetNamespace(),
+			// Not installed - needs to be added
+			additions = append(additions, desiredItem)
+		} else if inState {
+			// Installed and tracked - check for modifications
+			stateItem := stateItems[name]
+			if stateItem.Version != desiredItem.Version && desiredItem.Version != "" {
+				modifications = append(modifications, provider.ItemChange{
+					ItemName: name,
+					OldState: stateItem,
+					NewState: resource.ItemState{
+						Name:    name,
+						Version: desiredItem.Version,
 					},
-				},
-				Spec: resource.BrewPackagesSpec{
-					Formulae: []resource.Package{{Name: pkgName, Version: pkg.Version}},
-				},
-			})
-		} else if !inState {
-			// Package installed but not tracked - show as addition (will be imported)
-			plan.Additions = append(plan.Additions, &resource.BrewPackages{
-				BaseResource: resource.BaseResource{
-					Kind: "BrewPackages",
-					Metadata: resource.Metadata{
-						Name:      fmt.Sprintf("%s[%s]", bp.GetMetadata().Name, pkgName),
-						Namespace: bp.GetMetadata().GetNamespace(),
-					},
-				},
-				Spec: resource.BrewPackagesSpec{
-					Formulae: []resource.Package{{Name: pkgName, Version: pkg.Version}},
-				},
-			})
+					Diff: fmt.Sprintf("version: %s -> %s", stateItem.Version, desiredItem.Version),
+				})
+			} else {
+				// In sync
+				inSync = append(inSync, stateItem)
+			}
+		} else {
+			// Installed but not in state - will be imported
+			additions = append(additions, desiredItem)
 		}
-
-		// Always mark as desired so it's not flagged for removal
-		stateID := fmt.Sprintf("BrewPackages/%s[%s]", bp.GetMetadata().Name, pkgName)
-		desiredIDs[stateID] = true
-		desiredIDs[id] = true
 	}
 
-	// Check casks
-	for _, pkg := range bp.Spec.Casks {
-		pkgName := pkg.Name
-		if !p.isCaskInstalled(pkgName, installed) {
-			// Cask needs to be installed
-			plan.Additions = append(plan.Additions, &resource.BrewPackages{
-				BaseResource: resource.BaseResource{
-					Kind: "BrewPackages",
-					Metadata: resource.Metadata{
-						Name:      pkgName,
-						Namespace: bp.GetMetadata().GetNamespace(),
-					},
-				},
-				Spec: resource.BrewPackagesSpec{
-					Casks: []resource.Package{{Name: pkgName, Version: pkg.Version}},
-				},
+	// Check for items in state but not in desired (removals)
+	desiredItems := make(map[string]bool)
+	for _, item := range group.Items {
+		name := item.Name
+		if strings.HasSuffix(name, " (cask)") {
+			name = strings.TrimSuffix(name, " (cask)")
+		}
+		desiredItems[name] = true
+	}
+
+	for name, stateItem := range stateItems {
+		if !desiredItems[name] {
+			removals = append(removals, resource.ResourceItem{
+				Name:    name,
+				Version: stateItem.Version,
 			})
 		}
 	}
 
-	// Drift detection: check if packages in state are still installed
-	p.detectDrift(bp, stateMap, plan)
-
-	// Check if resource is in sync
-	if len(plan.Additions) == 0 && len(plan.Modifications) == 0 && len(plan.Warnings) == 0 {
-		plan.InSync = append(plan.InSync, bp)
-	}
+	return
 }
 
-// detectDrift checks if packages in saved state are still installed on the system.
-// If a package was managed by dotisan but is no longer installed, it generates a PlanWarning.
-func (p *BrewProvider) detectDrift(
-	bp *resource.BrewPackages,
-	stateMap map[string]provider.ResourceState,
-	plan *provider.Plan,
-) {
-	// Get the saved state for this BrewPackages resource
-	id := fmt.Sprintf("BrewPackages/%s", bp.GetMetadata().Name)
-	savedState, exists := stateMap[id]
-	if !exists {
-		return
+// filterInstallableItems returns items that are not currently installed
+func filterInstallableItems(items []resource.ResourceItem, installed map[string]string) []resource.ResourceItem {
+	var result []resource.ResourceItem
+	for _, item := range items {
+		name := item.Name
+		if strings.HasSuffix(name, " (cask)") {
+			name = strings.TrimSuffix(name, " (cask)")
+		}
+		if _, isInstalled := installed[name]; !isInstalled {
+			result = append(result, item)
+		}
 	}
+	return result
+}
 
-	// Extract formulae from saved state
-	var formulae []string
-	if savedState.Extra != nil {
-		if pkgs, ok := savedState.Extra["formulae"].([]interface{}); ok {
-			for _, pkg := range pkgs {
-				if name, ok := pkg.(string); ok {
-					formulae = append(formulae, name)
-				}
+// itemsToState converts ResourceItems to ItemStates with version info
+func itemsToState(items []resource.ResourceItem, installed map[string]string) []resource.ItemState {
+	var result []resource.ItemState
+	for _, item := range items {
+		name := item.Name
+		if strings.HasSuffix(name, " (cask)") {
+			name = strings.TrimSuffix(name, " (cask)")
+		}
+		version := item.Version
+		if version == "" {
+			version = installed[name]
+		}
+		result = append(result, resource.ItemState{
+			Name:    item.Name,
+			Version: version,
+			Status:  "present",
+		})
+	}
+	return result
+}
+
+// getInstalledPackages retrieves currently installed Homebrew packages
+func (p *BrewProvider) getInstalledPackages() (map[string]string, error) {
+	ctx := context.Background()
+	packages := make(map[string]string)
+
+	// Get formulae
+	stdout, _, err := cmdutil.RunSimple(ctx, "brew", "list", "--formula", "--versions")
+	if err == nil {
+		lines := strings.Split(stdout, "\n")
+		for _, line := range lines {
+			parts := strings.Fields(line)
+			if len(parts) >= 2 {
+				packages[parts[0]] = parts[1]
 			}
 		}
 	}
 
-	if len(formulae) == 0 {
-		return
-	}
-
-	// Check actual status using brew info
-	status, err := p.checkFormulaeStatus(formulae)
-	if err != nil {
-		return
-	}
-
-	// Generate warnings for uninstalled packages
-	var driftMsg []string
-	for _, formula := range formulae {
-		if installed, ok := status[formula]; ok && !installed {
-			driftMsg = append(driftMsg, fmt.Sprintf("Package '%s' was uninstalled outside of dotisan", formula))
-		}
-	}
-
-	if len(driftMsg) > 0 {
-		warning := provider.PlanWarning{
-			ResourceID: id,
-			Severity:   "warning",
-			Message:    fmt.Sprintf("BrewPackages/%s has drift. %s", bp.GetMetadata().Name, strings.Join(driftMsg, ". ")),
-			Suggestion: "Run 'dotisan apply' to restore",
-		}
-		plan.Warnings = append(plan.Warnings, warning)
-	}
-}
-
-// getInstalledPackages retrieves currently installed Homebrew packages.
-func (p *BrewProvider) getInstalledPackages() (map[string]string, error) {
-	ctx := context.Background()
-	stdout, _, err := cmdutil.RunSimple(ctx, "brew", "list", "--formula", "--versions")
-	if err != nil {
-		return nil, fmt.Errorf("failed to list installed formulae: %w", err)
-	}
-
-	packages := make(map[string]string)
-	lines := strings.Split(stdout, "\n")
-	for _, line := range lines {
-		parts := strings.Fields(line)
-		if len(parts) >= 2 {
-			name := parts[0]
-			version := parts[1]
-			packages[name] = version
+	// Get casks
+	stdout, _, err = cmdutil.RunSimple(ctx, "brew", "list", "--cask", "--versions")
+	if err == nil {
+		lines := strings.Split(stdout, "\n")
+		for _, line := range lines {
+			parts := strings.Fields(line)
+			if len(parts) >= 1 {
+				name := parts[0]
+				version := ""
+				if len(parts) >= 2 {
+					version = parts[1]
+				}
+				packages[name+" (cask)"] = version
+			}
 		}
 	}
 
 	return packages, nil
 }
 
-// checkFormulaeStatus checks the installation status of specific Homebrew formulae.
-// It returns a map where the key is the formula name and the value indicates if it's installed.
-func (p *BrewProvider) checkFormulaeStatus(formulae []string) (map[string]bool, error) {
-	if len(formulae) == 0 {
-		return make(map[string]bool), nil
-	}
-
-	ctx := context.Background()
-	args := append([]string{"info", "--json"}, formulae...)
-	stdout, stderr, err := cmdutil.RunSimple(ctx, "brew", args...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to run brew info: %w (stderr: %s)", err, stderr)
-	}
-
-	var results []brewInfoResult
-	if err := json.Unmarshal([]byte(stdout), &results); err != nil {
-		return nil, fmt.Errorf("failed to parse brew info output: %w", err)
-	}
-
-	status := make(map[string]bool)
-	for _, result := range results {
-		status[result.Name] = len(result.Installed) > 0
-	}
-
-	return status, nil
-}
-
-// brewInfoResult represents the JSON structure returned by `brew info --json v1`.
-type brewInfoResult struct {
-	Name      string        `json:"name"`
-	Installed []interface{} `json:"installed"`
-}
-
-// isTapInstalled checks if a tap is installed.
-func (p *BrewProvider) isTapInstalled(tap string, installed map[string]string) bool {
-	ctx := context.Background()
-	stdout, _, err := cmdutil.RunSimple(ctx, "brew", "tap")
-	if err != nil {
-		return false
-	}
-
-	taps := strings.Split(stdout, "\n")
-	for _, t := range taps {
-		if strings.TrimSpace(t) == tap {
-			return true
-		}
-	}
-	return false
-}
-
-// isPackageInstalled checks if a formula is installed.
-func (p *BrewProvider) isPackageInstalled(name string, installed map[string]string) bool {
-	_, exists := installed[name]
-	return exists
-}
-
-// isCaskInstalled checks if a cask is installed.
-func (p *BrewProvider) isCaskInstalled(name string, installed map[string]string) bool {
-	ctx := context.Background()
-	stdout, _, err := cmdutil.RunSimple(ctx, "brew", "list", "--cask")
-	if err != nil {
-		return false
-	}
-
-	casks := strings.Split(stdout, "\n")
-	for _, c := range casks {
-		if strings.TrimSpace(c) == name {
-			return true
-		}
-	}
-	return false
-}
-
-// Apply executes the given plan.
-func (p *BrewProvider) Apply(ctx context.Context, plan provider.Plan) error {
+// Apply executes the given GroupPlan
+func (p *BrewProvider) Apply(ctx context.Context, plan provider.GroupPlan) error {
 	// Process additions
-	for _, res := range plan.Additions {
-		if err := p.applyAddition(ctx, res); err != nil {
-			return fmt.Errorf("failed to add %s: %w", res.GetMetadata().ResourceID(), err)
+	for _, addition := range plan.Additions {
+		if err := p.applyGroupAddition(ctx, addition); err != nil {
+			return fmt.Errorf("failed to add to %s: %w", addition.Group, err)
 		}
 	}
 
 	// Process removals
-	for _, res := range plan.Removals {
-		if err := p.applyRemoval(ctx, res); err != nil {
-			return fmt.Errorf("failed to remove %s: %w", res.GetMetadata().ResourceID(), err)
+	for _, removal := range plan.Removals {
+		if err := p.applyGroupRemoval(ctx, removal); err != nil {
+			return fmt.Errorf("failed to remove from %s: %w", removal.Group, err)
+		}
+	}
+
+	// Process modifications
+	for _, modification := range plan.Modifications {
+		if err := p.applyGroupModification(ctx, modification); err != nil {
+			return fmt.Errorf("failed to modify %s: %w", modification.Group, err)
 		}
 	}
 
 	return nil
 }
 
-// applyAddition installs a package or taps a repository.
-func (p *BrewProvider) applyAddition(ctx context.Context, res resource.Resource) error {
-	bp, ok := res.(*resource.BrewPackages)
-	if !ok {
-		return fmt.Errorf("not a BrewPackages resource")
-	}
+// applyGroupAddition installs items in a group
+func (p *BrewProvider) applyGroupAddition(ctx context.Context, addition provider.GroupAddition) error {
+	for _, item := range addition.Items {
+		name := item.Name
+		isCask := strings.HasSuffix(name, " (cask)")
+		if isCask {
+			name = strings.TrimSuffix(name, " (cask)")
+		}
 
-	// Handle taps
-	for _, tap := range bp.Spec.Taps {
-		if _, stderr, err := cmdutil.RunSimple(ctx, "brew", "tap", tap.Name); err != nil {
-			return fmt.Errorf("failed to tap %s: %s: %w", tap.Name, stderr, err)
+		if isCask {
+			if _, stderr, err := cmdutil.RunSimple(ctx, "brew", "install", "--cask", name); err != nil {
+				return fmt.Errorf("failed to install cask %s: %s: %w", name, stderr, err)
+			}
+		} else {
+			if _, stderr, err := cmdutil.RunSimple(ctx, "brew", "install", name); err != nil {
+				return fmt.Errorf("failed to install %s: %s: %w", name, stderr, err)
+			}
 		}
 	}
-
-	// Handle formulae
-	for _, pkg := range bp.Spec.Formulae {
-		args := []string{"install", pkg.Name}
-		if _, stderr, err := cmdutil.RunSimple(ctx, "brew", args...); err != nil {
-			return fmt.Errorf("failed to install %s: %s: %w", pkg.Name, stderr, err)
-		}
-	}
-
-	// Handle casks
-	for _, pkg := range bp.Spec.Casks {
-		args := []string{"install", "--cask", pkg.Name}
-		if _, stderr, err := cmdutil.RunSimple(ctx, "brew", args...); err != nil {
-			return fmt.Errorf("failed to install cask %s: %s: %w", pkg.Name, stderr, err)
-		}
-	}
-
 	return nil
 }
 
-// applyRemoval uninstalls a package.
-func (p *BrewProvider) applyRemoval(ctx context.Context, res resource.Resource) error {
-	bp, ok := res.(*resource.BrewPackages)
-	if !ok {
-		return fmt.Errorf("not a BrewPackages resource")
-	}
+// applyGroupRemoval uninstalls items from a group
+func (p *BrewProvider) applyGroupRemoval(ctx context.Context, removal provider.GroupRemoval) error {
+	for _, item := range removal.Items {
+		name := item.Name
+		isCask := strings.HasSuffix(name, " (cask)")
+		if isCask {
+			name = strings.TrimSuffix(name, " (cask)")
+		}
 
-	// Uninstall formulae
-	for _, pkg := range bp.Spec.Formulae {
-		if _, stderr, err := cmdutil.RunSimple(ctx, "brew", "uninstall", pkg.Name); err != nil {
-			return fmt.Errorf("failed to uninstall %s: %s: %w", pkg.Name, stderr, err)
+		if isCask {
+			if _, stderr, err := cmdutil.RunSimple(ctx, "brew", "uninstall", "--cask", name); err != nil {
+				return fmt.Errorf("failed to uninstall cask %s: %s: %w", name, stderr, err)
+			}
+		} else {
+			if _, stderr, err := cmdutil.RunSimple(ctx, "brew", "uninstall", name); err != nil {
+				return fmt.Errorf("failed to uninstall %s: %s: %w", name, stderr, err)
+			}
 		}
 	}
-
-	// Uninstall casks
-	for _, pkg := range bp.Spec.Casks {
-		if _, stderr, err := cmdutil.RunSimple(ctx, "brew", "uninstall", "--cask", pkg.Name); err != nil {
-			return fmt.Errorf("failed to uninstall cask %s: %s: %w", pkg.Name, stderr, err)
-		}
-	}
-
 	return nil
 }
 
-// Import discovers an existing package and returns its state.
-func (p *BrewProvider) Import(ctx context.Context, id string) (provider.ResourceState, error) {
-	// Try regular formula first
-	stdout, _, err := cmdutil.RunSimple(ctx, "brew", "list", "--versions", id)
-	if err == nil {
-		// Regular formula found
-		parts := strings.Fields(stdout)
-		version := ""
-		if len(parts) >= 2 {
-			version = parts[1]
+// applyGroupModification updates items in a group
+func (p *BrewProvider) applyGroupModification(ctx context.Context, modification provider.GroupModification) error {
+	for _, change := range modification.Changes {
+		// For now, reinstall to update version
+		name := change.ItemName
+		if _, stderr, err := cmdutil.RunSimple(ctx, "brew", "reinstall", name); err != nil {
+			return fmt.Errorf("failed to update %s: %s: %w", name, stderr, err)
 		}
-		return provider.ResourceState{
-			ID:      fmt.Sprintf("BrewPackages/%s", id),
-			Kind:    "BrewPackages",
-			Name:    id,
-			Version: version,
-			Extra: map[string]interface{}{
-				"type": "formula",
-			},
-		}, nil
 	}
-
-	// Try cask
-	stdout, _, err = cmdutil.RunSimple(ctx, "brew", "list", "--cask", "--versions", id)
-	if err == nil {
-		// Cask found
-		parts := strings.Fields(stdout)
-		version := ""
-		if len(parts) >= 2 {
-			version = parts[1]
-		}
-		return provider.ResourceState{
-			ID:      fmt.Sprintf("BrewPackages/%s", id),
-			Kind:    "BrewPackages",
-			Name:    id,
-			Version: version,
-			Extra: map[string]interface{}{
-				"type": "cask",
-			},
-		}, nil
-	}
-
-	return provider.ResourceState{}, fmt.Errorf("package %s not found (tried both formula and cask)", id)
+	return nil
 }
 
-// ImportItem imports a specific package from a BrewPackages resource.
-// The itemKey is the package name (e.g., "ripgrep", "fd").
-func (p *BrewProvider) ImportItem(ctx context.Context, resourceName string, itemKey string) (provider.ResourceState, error) {
-	// Check if the package is installed using brew info
-	status, err := p.checkFormulaeStatus([]string{itemKey})
+// Import discovers an existing package group
+func (p *BrewProvider) Import(ctx context.Context, group string) (provider.ResourceState, error) {
+	// For BrewProvider, Import doesn't make sense for entire groups
+	// Use ImportItem instead
+	return provider.ResourceState{}, fmt.Errorf("use ImportItem to import specific packages")
+}
+
+// ImportItem imports a specific package
+func (p *BrewProvider) ImportItem(ctx context.Context, group string, item string) (provider.ResourceState, error) {
+	// Check if package is installed
+	stdout, _, err := cmdutil.RunSimple(ctx, "brew", "list", "--versions", item)
 	if err != nil {
-		return provider.ResourceState{}, fmt.Errorf("failed to check package status: %w", err)
+		// Try cask
+		stdout, _, err = cmdutil.RunSimple(ctx, "brew", "list", "--cask", "--versions", item)
+		if err != nil {
+			return provider.ResourceState{}, fmt.Errorf("package %s is not installed", item)
+		}
 	}
 
-	installed, ok := status[itemKey]
-	if !ok || !installed {
-		return provider.ResourceState{}, fmt.Errorf("package %s is not installed", itemKey)
-	}
-
-	// Get version info
-	stdout, _, err := cmdutil.RunSimple(ctx, "brew", "list", "--versions", itemKey)
-	if err != nil {
-		return provider.ResourceState{}, fmt.Errorf("failed to get version for %s: %w", itemKey, err)
-	}
-
+	// Parse version
 	version := ""
 	lines := strings.Split(stdout, "\n")
 	for _, line := range lines {
 		parts := strings.Fields(line)
-		if len(parts) >= 1 && strings.HasPrefix(parts[0], itemKey) {
-			if len(parts) >= 2 {
-				version = parts[1]
-			}
+		if len(parts) >= 2 {
+			version = parts[1]
 			break
 		}
 	}
 
-	// Build the ResourceState ID
-	stateID := fmt.Sprintf("BrewPackages/%s[%s]", resourceName, itemKey)
-
 	return provider.ResourceState{
-		ID:   stateID,
-		Kind: "BrewPackages",
-		Name: resourceName,
-		Extra: map[string]interface{}{
-			"formulae": []string{itemKey},
-			"version":  version,
+		Kind:      "BrewPackages",
+		Group:     group,
+		Namespace: "default",
+		Items: []resource.ItemState{
+			{
+				Name:    item,
+				Version: version,
+				Status:  "present",
+			},
 		},
 	}, nil
 }
 
-// getFormulaInfo fetches formula information from the Homebrew API.
+// brewFormulaInfo represents information about a Homebrew formula
+type brewFormulaInfo struct {
+	Name     string            `json:"name"`
+	Versions map[string]string `json:"versions"`
+	Desc     string            `json:"desc"`
+}
+
+// getFormulaInfo fetches formula information from the Homebrew API
 func (p *BrewProvider) getFormulaInfo(name string) (*brewFormulaInfo, error) {
 	url := fmt.Sprintf("https://formulae.brew.sh/api/formula/%s.json", name)
 
@@ -538,11 +465,4 @@ func (p *BrewProvider) getFormulaInfo(name string) (*brewFormulaInfo, error) {
 	}
 
 	return &info, nil
-}
-
-// brewFormulaInfo represents information about a Homebrew formula.
-type brewFormulaInfo struct {
-	Name     string            `json:"name"`
-	Versions map[string]string `json:"versions"`
-	Desc     string            `json:"desc"`
 }

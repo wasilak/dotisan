@@ -3,6 +3,9 @@ package providers
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/wasilak/dotisan/pkg/cmdutil"
@@ -10,8 +13,10 @@ import (
 	"github.com/wasilak/dotisan/pkg/resource"
 )
 
-// GoProvider implements the Provider interface for Go modules.
-type GoProvider struct{}
+// GoProvider implements the Provider interface for Go packages
+type GoProvider struct {
+	goBin string
+}
 
 // NewGoProvider creates a new GoProvider.
 func NewGoProvider() *GoProvider {
@@ -25,43 +30,118 @@ func (p *GoProvider) Name() string {
 
 // Available checks if the go executable is available on this system.
 func (p *GoProvider) Available() (bool, string) {
-	path := cmdutil.CheckExecutable("go")
-	if path == "" {
-		return false, "go not found in PATH; install from https://golang.org"
+	path, err := exec.LookPath("go")
+	if err != nil {
+		return false, "go not found in PATH; install from https://golang.org/dl/"
 	}
+	p.goBin = path
 	return true, fmt.Sprintf("go found at %s", path)
 }
 
-// Reconcile compares the desired packages with the current system state.
-func (p *GoProvider) Reconcile(desired []resource.Resource, state []provider.ResourceState) provider.Plan {
-	plan := provider.Plan{}
+// Reconcile compares the desired resource groups with the current system state.
+func (p *GoProvider) Reconcile(
+	desired []resource.ResourceGroup,
+	state []provider.ResourceState,
+) provider.GroupPlan {
+	plan := provider.GroupPlan{}
 
-	// Build state map
-	stateMap := make(map[string]provider.ResourceState)
+	// Index state by group name
+	stateIndex := make(map[string]provider.ResourceState)
 	for _, s := range state {
-		stateMap[s.ID] = s
+		if s.Kind == "GoPackages" {
+			stateIndex[s.Group] = s
+		}
 	}
 
-	desiredIDs := make(map[string]bool)
+	// Get currently installed packages
+	installed := p.getInstalledPackages()
 
-	for _, res := range desired {
-		switch r := res.(type) {
-		case *resource.GoPackages:
-			p.reconcileGoPackages(r, stateMap, &plan, desiredIDs)
+	// Process each desired group
+	for _, group := range desired {
+		if group.Kind != "GoPackages" {
+			continue
+		}
+
+		stateGroup, exists := stateIndex[group.Name]
+
+		if !exists {
+			// New group
+			items := filterInstallableGoItems(group.Items, installed)
+			if len(items) > 0 {
+				plan.Additions = append(plan.Additions, provider.GroupAddition{
+					Kind:  group.Kind,
+					Group: group.Name,
+					Items: items,
+				})
+			}
+			if len(items) == 0 && len(group.Items) > 0 {
+				plan.InSync = append(plan.InSync, provider.GroupState{
+					Kind:  group.Kind,
+					Group: group.Name,
+					Items: goItemsToState(group.Items, installed),
+				})
+			}
+		} else {
+			// Existing group
+			additions, removals, modifications, inSync := p.compareGroupItems(
+				group, stateGroup, installed,
+			)
+
+			if len(additions) > 0 {
+				plan.Additions = append(plan.Additions, provider.GroupAddition{
+					Kind:  group.Kind,
+					Group: group.Name,
+					Items: additions,
+				})
+			}
+
+			if len(removals) > 0 {
+				plan.Removals = append(plan.Removals, provider.GroupRemoval{
+					Kind:  group.Kind,
+					Group: group.Name,
+					Items: removals,
+				})
+			}
+
+			if len(modifications) > 0 {
+				plan.Modifications = append(plan.Modifications, provider.GroupModification{
+					Kind:    group.Kind,
+					Group:   group.Name,
+					Changes: modifications,
+				})
+			}
+
+			if len(inSync) > 0 && len(additions) == 0 && len(removals) == 0 && len(modifications) == 0 {
+				plan.InSync = append(plan.InSync, provider.GroupState{
+					Kind:  group.Kind,
+					Group: group.Name,
+					Items: inSync,
+				})
+			}
 		}
 	}
 
 	// Check for removals
-	for id, s := range stateMap {
-		if !desiredIDs[id] && s.Kind == "GoPackages" {
-			plan.Removals = append(plan.Removals, &resource.GoPackages{
-				BaseResource: resource.BaseResource{
-					Kind: s.Kind,
-					Metadata: resource.Metadata{
-						Name:      s.Name,
-						Namespace: s.Namespace,
-					},
-				},
+	desiredGroups := make(map[string]bool)
+	for _, group := range desired {
+		if group.Kind == "GoPackages" {
+			desiredGroups[group.Name] = true
+		}
+	}
+
+	for groupName, stateGroup := range stateIndex {
+		if !desiredGroups[groupName] {
+			items := make([]resource.ResourceItem, 0, len(stateGroup.Items))
+			for _, item := range stateGroup.Items {
+				items = append(items, resource.ResourceItem{
+					Name:    item.Name,
+					Version: item.Version,
+				})
+			}
+			plan.Removals = append(plan.Removals, provider.GroupRemoval{
+				Kind:  "GoPackages",
+				Group: groupName,
+				Items: items,
 			})
 		}
 	}
@@ -69,256 +149,285 @@ func (p *GoProvider) Reconcile(desired []resource.Resource, state []provider.Res
 	return plan
 }
 
-// reconcileGoPackages reconciles a single GoPackages resource.
-func (p *GoProvider) reconcileGoPackages(
-	gp *resource.GoPackages,
-	stateMap map[string]provider.ResourceState,
-	plan *provider.Plan,
-	desiredIDs map[string]bool,
-) {
-	// Build resource ID using kind and name (Terraform-style: files/dirs are for human org only)
-	id := fmt.Sprintf("GoPackages/%s", gp.GetMetadata().Name)
-	desiredIDs[id] = true
+// compareGroupItems compares desired group items with state and installed packages
+func (p *GoProvider) compareGroupItems(
+	group resource.ResourceGroup,
+	stateGroup provider.ResourceState,
+	installed map[string]string,
+) (additions, removals []resource.ResourceItem, modifications []provider.ItemChange, inSync []resource.ItemState) {
+	stateItems := make(map[string]resource.ItemState)
+	for _, item := range stateGroup.Items {
+		stateItems[item.Name] = item
+	}
 
-	// Get current installed packages
-	installed, err := p.getInstalledPackages()
-	if err != nil {
-		// Can't get installed state, mark all as additions
-		for _, pkg := range gp.Spec.Packages {
-			plan.Additions = append(plan.Additions, &resource.GoPackages{
-				BaseResource: resource.BaseResource{
-					Kind: "GoPackages",
-					Metadata: resource.Metadata{
-						Name:      pkg.Module,
-						Namespace: gp.GetMetadata().GetNamespace(),
+	for _, desiredItem := range group.Items {
+		name := desiredItem.Name
+		_, inState := stateItems[name]
+		_, isInstalled := installed[name]
+
+		if !isInstalled {
+			additions = append(additions, desiredItem)
+		} else if inState {
+			stateItem := stateItems[name]
+			if stateItem.Version != desiredItem.Version && desiredItem.Version != "" {
+				modifications = append(modifications, provider.ItemChange{
+					ItemName: name,
+					OldState: stateItem,
+					NewState: resource.ItemState{
+						Name:    name,
+						Version: desiredItem.Version,
 					},
-				},
-				Spec: resource.GoPackagesSpec{
-					Packages: []resource.GoPackage{{Module: pkg.Module, Version: pkg.Version}},
-				},
+					Diff: fmt.Sprintf("version: %s -> %s", stateItem.Version, desiredItem.Version),
+				})
+			} else {
+				inSync = append(inSync, stateItem)
+			}
+		} else {
+			additions = append(additions, desiredItem)
+		}
+	}
+
+	desiredItems := make(map[string]bool)
+	for _, item := range group.Items {
+		desiredItems[item.Name] = true
+	}
+
+	for name, stateItem := range stateItems {
+		if !desiredItems[name] {
+			removals = append(removals, resource.ResourceItem{
+				Name:    name,
+				Version: stateItem.Version,
 			})
 		}
-		return
 	}
 
-	// Check each desired package - add ALL to plan
-	for _, pkg := range gp.Spec.Packages {
-		moduleName := pkg.Module
-		_, isInstalled := installed[moduleName]
-		_, inState := stateMap[fmt.Sprintf("GoPackages/%s[%s]", gp.GetMetadata().Name, moduleName)]
-
-		if !isInstalled || !inState {
-			// Needs install or not in state
-			plan.Additions = append(plan.Additions, &resource.GoPackages{
-				BaseResource: resource.BaseResource{
-					Kind: "GoPackages",
-					Metadata: resource.Metadata{
-						Name:      fmt.Sprintf("%s[%s]", gp.GetMetadata().Name, moduleName),
-						Namespace: gp.GetMetadata().GetNamespace(),
-					},
-				},
-				Spec: resource.GoPackagesSpec{
-					Packages: []resource.GoPackage{{Module: moduleName, Version: pkg.Version}},
-				},
-			})
-		}
-
-		// Mark as desired
-		desiredIDs[fmt.Sprintf("GoPackages/%s[%s]", gp.GetMetadata().Name, moduleName)] = true
-	}
-
-	// Detect drift: check if modules in saved state are still installed
-	p.detectGoDrift(gp, stateMap, plan, installed)
-
-	// Check if resource is in sync
-	if len(plan.Additions) == 0 && len(plan.Modifications) == 0 && len(plan.Warnings) == 0 {
-		plan.InSync = append(plan.InSync, gp)
-	}
+	return
 }
 
-// detectGoDrift checks if modules in saved state are still installed on the system.
-func (p *GoProvider) detectGoDrift(
-	gp *resource.GoPackages,
-	stateMap map[string]provider.ResourceState,
-	plan *provider.Plan,
-	installed map[string]string,
-) {
-	id := fmt.Sprintf("GoPackages/%s", gp.GetMetadata().Name)
-	savedState, exists := stateMap[id]
-	if !exists {
-		return
+// getInstalledPackages retrieves currently installed Go packages
+func (p *GoProvider) getInstalledPackages() map[string]string {
+	installed := make(map[string]string)
+	
+	goBin := p.goBin
+	if goBin == "" {
+		goBin = "go"
 	}
 
-	var savedModules []string
-	if savedState.Extra != nil {
-		if mods, ok := savedState.Extra["modules"].(map[string]interface{}); ok {
-			for name := range mods {
-				savedModules = append(savedModules, name)
+	// Get GOBIN or GOPATH/bin
+	ctx := context.Background()
+	stdout, _, err := cmdutil.RunSimple(ctx, goBin, "env", "GOBIN")
+	if err != nil {
+		return installed
+	}
+
+	goBin := strings.TrimSpace(stdout)
+	if goBin == "" {
+		stdout, _, err = cmdutil.RunSimple(ctx, goBin, "env", "GOPATH")
+		if err != nil {
+			return installed
+		}
+		goBin = filepath.Join(strings.TrimSpace(stdout), "bin")
+	}
+
+	// List binaries in GOBIN
+	entries, err := os.ReadDir(goBin)
+	if err != nil {
+		return installed
+	}
+
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			info, err := entry.Info()
+			if err == nil {
+				installed[entry.Name()] = fmt.Sprintf("modtime:%d", info.ModTime().Unix())
 			}
 		}
 	}
 
-	if len(savedModules) == 0 {
-		return
-	}
-
-	var driftMsg []string
-	for _, moduleName := range savedModules {
-		if _, stillInstalled := installed[moduleName]; !stillInstalled {
-			driftMsg = append(driftMsg, fmt.Sprintf("Module '%s' was removed outside of dotisan", moduleName))
-		}
-	}
-
-	if len(driftMsg) > 0 {
-		warning := provider.PlanWarning{
-			ResourceID: id,
-			Severity:   "warning",
-			Message:   fmt.Sprintf("GoPackages/%s has drift. %s", gp.GetMetadata().Name, strings.Join(driftMsg, ". ")),
-			Suggestion: "Run 'dotisan apply' to restore",
-		}
-		plan.Warnings = append(plan.Warnings, warning)
-	}
+	return installed
 }
 
-// getInstalledPackages retrieves currently installed Go modules.
-func (p *GoProvider) getInstalledPackages() (map[string]string, error) {
-	ctx := context.Background()
-	stdout, _, err := cmdutil.RunSimple(ctx, "go", "list", "-m", "all")
-	if err != nil {
-		return nil, fmt.Errorf("failed to list Go modules: %w", err)
-	}
-
-	result := make(map[string]string)
-	lines := strings.Split(strings.TrimSpace(stdout), "\n")
-	for _, line := range lines {
-		parts := strings.Fields(line)
-		if len(parts) == 0 {
-			continue
-		}
-		module := parts[0]
-		version := ""
-		if len(parts) > 1 {
-			version = parts[1]
-		}
-		result[module] = version
-	}
-
-	return result, nil
-}
-
-// isPackageInstalled checks if a Go module is installed.
-// This checks if the binary exists in GOPATH/bin or PATH.
-func (p *GoProvider) isPackageInstalled(module string, installed map[string]string) bool {
-	// Extract binary name from module path
-	parts := strings.Split(module, "/")
-	if len(parts) == 0 {
-		return false
-	}
-	binaryName := parts[len(parts)-1]
-
-	// Check if binary exists in PATH
-	ctx := context.Background()
-	_, _, err := cmdutil.RunSimple(ctx, "which", binaryName)
-	return err == nil
-}
-
-// Apply executes the given plan.
-func (p *GoProvider) Apply(ctx context.Context, plan provider.Plan) error {
-	// Process additions
-	for _, res := range plan.Additions {
-		if err := p.applyAddition(ctx, res); err != nil {
-			return fmt.Errorf("failed to add %s: %w", res.GetMetadata().ResourceID(), err)
-		}
-	}
-
-	// Process removals
-	for _, res := range plan.Removals {
-		if err := p.applyRemoval(ctx, res); err != nil {
-			return fmt.Errorf("failed to remove %s: %w", res.GetMetadata().ResourceID(), err)
-		}
-	}
-
-	return nil
-}
-
-// applyAddition installs Go modules.
-func (p *GoProvider) applyAddition(ctx context.Context, res resource.Resource) error {
-	gp, ok := res.(*resource.GoPackages)
-	if !ok {
-		return fmt.Errorf("not a GoPackages resource")
-	}
-
-	// Install each module
-	for _, pkg := range gp.Spec.Packages {
-		// When running outside a Go module (from /tmp), go install REQUIRES a version suffix
-		// Build module path with @version (use "latest" if no version specified)
-		version := pkg.Version
-		if version == "" {
-			version = "latest"
-		}
-		modulePath := fmt.Sprintf("%s@%s", pkg.Module, version)
-
-		// Run go install from temp directory to avoid picking up local go.mod
-		// This ensures we install the binary globally, not as a project dependency
-		_, stderr, err := cmdutil.RunWithDir(ctx, "/tmp", "go", "install", modulePath)
-		if err != nil {
-			return fmt.Errorf("failed to install %s: %s: %w", pkg.Module, stderr, err)
-		}
-	}
-
-	return nil
-}
-
-// applyRemoval removes Go binaries.
-func (p *GoProvider) applyRemoval(ctx context.Context, res resource.Resource) error {
-	gp, ok := res.(*resource.GoPackages)
-	if !ok {
-		return fmt.Errorf("not a GoPackages resource")
-	}
-
-	// Remove each binary
-	for _, pkg := range gp.Spec.Packages {
+// filterInstallableGoItems returns items that are not currently installed
+func filterInstallableGoItems(items []resource.ResourceItem, installed map[string]string) []resource.ResourceItem {
+	var result []resource.ResourceItem
+	for _, item := range items {
 		// Extract binary name from module path
-		parts := strings.Split(pkg.Module, "/")
-		if len(parts) == 0 {
-			continue
+		parts := strings.Split(item.Name, "/")
+		binaryName := parts[len(parts)-1]
+		
+		if _, isInstalled := installed[binaryName]; !isInstalled {
+			result = append(result, item)
 		}
+	}
+	return result
+}
+
+// goItemsToState converts ResourceItems to ItemStates
+func goItemsToState(items []resource.ResourceItem, installed map[string]string) []resource.ItemState {
+	var result []resource.ItemState
+	for _, item := range items {
+		parts := strings.Split(item.Name, "/")
+		binaryName := parts[len(parts)-1]
+		
+		version := item.Version
+		if version == "" {
+			version = installed[binaryName]
+		}
+		result = append(result, resource.ItemState{
+			Name:    item.Name,
+			Version: version,
+			Status:  "present",
+		})
+	}
+	return result
+}
+
+// Apply executes the given GroupPlan
+func (p *GoProvider) Apply(ctx context.Context, plan provider.GroupPlan) error {
+	for _, addition := range plan.Additions {
+		if err := p.applyGroupAddition(ctx, addition); err != nil {
+			return fmt.Errorf("failed to add to %s: %w", addition.Group, err)
+		}
+	}
+
+	for _, removal := range plan.Removals {
+		if err := p.applyGroupRemoval(ctx, removal); err != nil {
+			return fmt.Errorf("failed to remove from %s: %w", removal.Group, err)
+		}
+	}
+
+	for _, modification := range plan.Modifications {
+		if err := p.applyGroupModification(ctx, modification); err != nil {
+			return fmt.Errorf("failed to modify %s: %w", modification.Group, err)
+		}
+	}
+
+	return nil
+}
+
+// applyGroupAddition installs Go packages
+func (p *GoProvider) applyGroupAddition(ctx context.Context, addition provider.GroupAddition) error {
+	goBin := p.goBin
+	if goBin == "" {
+		goBin = "go"
+	}
+
+	for _, item := range addition.Items {
+		module := item.Name
+		version := item.Version
+
+		// Build install path
+		installPath := module
+		if version != "" && version != "latest" {
+			installPath = fmt.Sprintf("%s@%s", module, version)
+		}
+
+		if _, stderr, err := cmdutil.RunSimple(ctx, goBin, "install", installPath); err != nil {
+			return fmt.Errorf("failed to install %s: %s: %w", module, stderr, err)
+		}
+	}
+	return nil
+}
+
+// applyGroupRemoval removes Go binaries
+func (p *GoProvider) applyGroupRemoval(ctx context.Context, removal provider.GroupRemoval) error {
+	// Get GOBIN
+	goBin := p.goBin
+	if goBin == "" {
+		goBin = "go"
+	}
+
+	stdout, _, err := cmdutil.RunSimple(ctx, goBin, "env", "GOBIN")
+	if err != nil {
+		return fmt.Errorf("failed to get GOBIN: %w", err)
+	}
+
+	goBinPath := strings.TrimSpace(stdout)
+	if goBinPath == "" {
+		stdout, _, err = cmdutil.RunSimple(ctx, goBin, "env", "GOPATH")
+		if err != nil {
+			return fmt.Errorf("failed to get GOPATH: %w", err)
+		}
+		goBinPath = filepath.Join(strings.TrimSpace(stdout), "bin")
+	}
+
+	for _, item := range removal.Items {
+		// Extract binary name
+		parts := strings.Split(item.Name, "/")
 		binaryName := parts[len(parts)-1]
 
-		// Find the binary location
-		stdout, _, err := cmdutil.RunSimple(ctx, "which", binaryName)
-		if err != nil {
-			// Binary not found, skip
-			continue
-		}
-
-		// Remove the binary
-		if _, stderr, err := cmdutil.RunSimple(ctx, "rm", stdout); err != nil {
-			return fmt.Errorf("failed to remove %s: %s: %w", binaryName, stderr, err)
+		binaryPath := filepath.Join(goBinPath, binaryName)
+		if err := os.Remove(binaryPath); err != nil {
+			return fmt.Errorf("failed to remove %s: %w", binaryName, err)
 		}
 	}
-
 	return nil
 }
 
-// Import discovers all installed Go modules and returns their state.
-func (p *GoProvider) Import(ctx context.Context, id string) (provider.ResourceState, error) {
-	modules, err := p.getInstalledPackages()
+// applyGroupModification updates Go packages (reinstall)
+func (p *GoProvider) applyGroupModification(ctx context.Context, modification provider.GroupModification) error {
+	// Reinstall with new version
+	return p.applyGroupAddition(ctx, provider.GroupAddition{
+		Kind:  modification.Kind,
+		Group: modification.Group,
+		Items: func() []resource.ResourceItem {
+			var items []resource.ResourceItem
+			for _, change := range modification.Changes {
+				items = append(items, resource.ResourceItem{
+					Name:    change.ItemName,
+					Version: change.NewState.Version,
+				})
+			}
+			return items
+		}(),
+	})
+}
+
+// Import is not supported for Go packages (use ImportItem)
+func (p *GoProvider) Import(ctx context.Context, group string) (provider.ResourceState, error) {
+	return provider.ResourceState{}, fmt.Errorf("use ImportItem to import specific Go packages")
+}
+
+// ImportItem imports a specific Go package
+func (p *GoProvider) ImportItem(ctx context.Context, group string, item string) (provider.ResourceState, error) {
+	goBin := p.goBin
+	if goBin == "" {
+		goBin = "go"
+	}
+
+	// Check if binary exists in GOBIN
+	stdout, _, err := cmdutil.RunSimple(ctx, goBin, "env", "GOBIN")
 	if err != nil {
-		return provider.ResourceState{}, fmt.Errorf("failed to list Go modules: %w", err)
+		return provider.ResourceState{}, err
+	}
+
+	goBinPath := strings.TrimSpace(stdout)
+	if goBinPath == "" {
+		stdout, _, err = cmdutil.RunSimple(ctx, goBin, "env", "GOPATH")
+		if err != nil {
+			return provider.ResourceState{}, err
+		}
+		goBinPath = filepath.Join(strings.TrimSpace(stdout), "bin")
+	}
+
+	// Extract binary name
+	parts := strings.Split(item, "/")
+	binaryName := parts[len(parts)-1]
+
+	binaryPath := filepath.Join(goBinPath, binaryName)
+	if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
+		return provider.ResourceState{}, fmt.Errorf("binary %s not found in GOBIN", binaryName)
 	}
 
 	return provider.ResourceState{
-		ID:      "GoPackages/global",
-		Kind:    "GoPackages",
-		Name:    "global",
-		Version: "all",
-		Extra: map[string]interface{}{
-			"modules": modules,
+		Kind:      "GoPackages",
+		Group:     group,
+		Namespace: "default",
+		Items: []resource.ItemState{
+			{
+				Name:   item,
+				Status: "present",
+			},
 		},
 	}, nil
-}
-
-func (p *GoProvider) ImportItem(ctx context.Context, resourceName string, itemKey string) (provider.ResourceState, error) {
-	return provider.ResourceState{}, fmt.Errorf("ImportItem not implemented for GoProvider")
 }
