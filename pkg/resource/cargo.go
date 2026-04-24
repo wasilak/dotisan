@@ -16,3 +16,23 @@ type CargoPackagesSpec struct {
 func (r CargoPackages) Validate() error {
 	return ValidateStruct(r)
 }
+
+// ToGroup implements Resource.ToGroup.
+func (r CargoPackages) ToGroup() ResourceGroup {
+	items := make([]ResourceItem, 0, len(r.Spec.Packages))
+
+	for _, p := range r.Spec.Packages {
+		items = append(items, ResourceItem{
+			Name:    p.Name,
+			Version: p.Version,
+		})
+	}
+
+	return ResourceGroup{
+		Kind:      r.Kind,
+		Name:      r.Metadata.Name,
+		Namespace: r.Metadata.GetNamespace(),
+		Items:     items,
+		RawSpec:   r.Spec,
+	}
+}

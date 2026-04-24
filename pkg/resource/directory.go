@@ -85,3 +85,35 @@ func (r ManagedDirectory) GetDirectories() []DirectorySpec {
 		Exclude:     r.Spec.Exclude,
 	}}
 }
+
+// ToGroup implements Resource.ToGroup.
+func (r ManagedDirectory) ToGroup() ResourceGroup {
+	dirs := r.GetDirectories()
+	items := make([]ResourceItem, 0, len(dirs))
+
+	for i, d := range dirs {
+		itemName := d.Destination
+		if itemName == "" {
+			itemName = fmt.Sprintf("directory-%d", i)
+		}
+
+		items = append(items, ResourceItem{
+			Name: itemName,
+			Extra: map[string]interface{}{
+				"sourceDir":   d.SourceDir,
+				"destination": d.Destination,
+				"recursive":   d.Recursive,
+				"clean":       d.Clean,
+				"exclude":     d.Exclude,
+			},
+		})
+	}
+
+	return ResourceGroup{
+		Kind:      r.Kind,
+		Name:      r.Metadata.Name,
+		Namespace: r.Metadata.GetNamespace(),
+		Items:     items,
+		RawSpec:   r.Spec,
+	}
+}

@@ -18,31 +18,84 @@ import (
 	"github.com/wasilak/dotisan/pkg/resource"
 )
 
-// Plan represents the changes needed to reconcile desired state with actual state.
-type Plan struct {
-	// Additions are resources that need to be created
-	Additions []resource.Resource
+// GroupPlan represents the changes needed to reconcile desired state with actual state.
+// Organized by resource groups (3-level hierarchy: Kind -> Group -> Items)
+type GroupPlan struct {
+	// Additions are groups/items that need to be created
+	Additions []GroupAddition
 
-	// Modifications are resources that need to be updated
-	Modifications []Modification
+	// Modifications are groups that need item-level updates
+	Modifications []GroupModification
 
-	// Removals are resources that need to be deleted
-	Removals []resource.Resource
+	// Removals are groups/items that need to be deleted
+	Removals []GroupRemoval
 
-	// InSync are resources that match desired state
-	InSync []resource.Resource
+	// InSync are groups that match desired state
+	InSync []GroupState
 
-	// Drifted are resources that have changed outside of dotisan's management
-	Drifted []Drift
+	// Drifted are items that have changed outside of dotisan's management
+	Drifted []ItemDrift
+
 	// Warnings are provider-generated advisory messages that do not block apply
 	Warnings []PlanWarning
+}
+
+// GroupAddition represents items to add within a resource group
+type GroupAddition struct {
+	Kind  string
+	Group string
+	Items []resource.ResourceItem
+}
+
+// GroupModification represents changes within an existing group
+type GroupModification struct {
+	Kind    string
+	Group   string
+	Changes []ItemChange
+}
+
+// ItemChange represents a change to a specific item
+type ItemChange struct {
+	ItemName string
+	OldState resource.ItemState
+	NewState resource.ItemState
+	Diff     string
+}
+
+// GroupRemoval represents items to remove from a group
+type GroupRemoval struct {
+	Kind  string
+	Group string
+	Items []resource.ResourceItem
+}
+
+// GroupState represents a group that is in sync
+type GroupState struct {
+	Kind    string
+	Group   string
+	Items   []resource.ItemState
+	Version string
+}
+
+// ItemDrift represents an item that has drifted from expected state
+type ItemDrift struct {
+	Kind          string
+	Group         string
+	Item          string
+	ExpectedState resource.ItemState
+	ActualState   resource.ItemState
+	Description   string
+	Diff          string
 }
 
 // PlanWarning represents a non-blocking advisory produced during reconcile.
 // It can point to a resource and optionally include a suggestion (copy-pasteable).
 type PlanWarning struct {
-	// ResourceID is an optional kind/name identifier (e.g., "ManagedFile/zshrc")
-	ResourceID string
+	// GroupID is an optional kind/group identifier (e.g., "BrewPackages/core-tools")
+	GroupID string
+
+	// ItemID is an optional item identifier (e.g., "ripgrep")
+	ItemID string
 
 	// Severity indicates importance: "warning" or "info"
 	Severity string
@@ -54,64 +107,20 @@ type PlanWarning struct {
 	Suggestion string
 }
 
-// Modification represents a change to an existing resource.
-type Modification struct {
-	// Resource is the desired state
-	Resource resource.Resource
-
-	// OldState is the current state from the system
-	OldState ResourceState
-
-	// NewState is the desired state to be applied
-	NewState ResourceState
-
-	// Diff is a human-readable description of the changes
-	Diff string
-}
-
-// Drift represents a resource that has changed outside of dotisan's management.
-type Drift struct {
-	// Resource is the managed resource
-	Resource resource.Resource
-
-	// ExpectedState is what dotisan thinks the state should be
-	ExpectedState ResourceState
-
-	// ActualState is what's actually on the system
-	ActualState ResourceState
-
-	// Description explains what changed
-	Description string
-
-	// Diff is a human-readable diff showing the changes
-	Diff string
-}
-
-// ResourceState represents the state of a resource as tracked by dotisan.
+// ResourceState represents the state of a resource group as tracked by dotisan.
+// Uses 3-level hierarchy: Kind -> Group -> Items
 type ResourceState struct {
-	// ID uniquely identifies the resource
-	ID string `json:"id"`
-
-	// Kind is the resource type
+	// Kind is the resource type (e.g., "BrewPackages")
 	Kind string `json:"kind"`
 
-	// Name is the resource name
-	Name string `json:"name"`
+	// Group is the resource group name (e.g., "core-tools")
+	Group string `json:"group"`
 
 	// Namespace is the resource namespace
 	Namespace string `json:"namespace"`
 
-	// Version is the resource version (if applicable)
-	Version string `json:"version,omitempty"`
-
-	// Checksum is a hash of the resource content
-	Checksum string `json:"checksum,omitempty"`
-
-	// SourceHash is a hash of the source (for files)
-	SourceHash string `json:"source_hash,omitempty"`
-
-	// DestHash is a hash of the destination (for files)
-	DestHash string `json:"dest_hash,omitempty"`
+	// Items are the individual items within this group
+	Items []resource.ItemState `json:"items"`
 
 	// Extra contains provider-specific state data
 	Extra map[string]interface{} `json:"extra,omitempty"`
@@ -127,24 +136,23 @@ type Provider interface {
 	// Returns true if available, false with a descriptive message if not.
 	Available() (bool, string)
 
-	// Reconcile compares the desired resources with the current system state
+	// Reconcile compares the desired resource groups with the current system state
 	// and returns a plan of changes needed to reach the desired state.
 	// The state parameter contains the previously saved state for these resources.
-	Reconcile(desired []resource.Resource, state []ResourceState) Plan
+	Reconcile(desired []resource.ResourceGroup, state []ResourceState) GroupPlan
 
 	// Apply executes the given plan, making actual changes to the system.
 	// Returns an error if any operation fails.
-	Apply(ctx context.Context, plan Plan) error
+	Apply(ctx context.Context, plan GroupPlan) error
 
 	// Import discovers an existing resource on the system and returns its state.
 	// This is used by the `state import` command to bring unmanaged resources
 	// under dotisan's control.
-	Import(ctx context.Context, id string) (ResourceState, error)
+	Import(ctx context.Context, group string) (ResourceState, error)
 
 	// ImportItem imports a specific item from a list-based resource.
-	// The resourceName identifies the resource (e.g., "core-tools").
-	// The itemKey identifies the specific item (e.g., "ripgrep" for packages,
-	// "0" for file index, or "/path/to/file" for file path).
+	// The group identifies the resource group (e.g., "core-tools").
+	// The item identifies the specific item (e.g., "ripgrep").
 	// Returns the ResourceState for the imported item.
-	ImportItem(ctx context.Context, resourceName string, itemKey string) (ResourceState, error)
+	ImportItem(ctx context.Context, group string, item string) (ResourceState, error)
 }

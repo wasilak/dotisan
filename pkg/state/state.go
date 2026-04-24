@@ -3,7 +3,7 @@
 // State represents the current state of all managed resources as tracked by dotisan.
 // The state file is stored at ~/.config/dotisan/state.json (local) or in S3-compatible storage.
 //
-// Example state.json:
+// Example state.json (hierarchical 3-level structure):
 //
 //	{
 //	  "version": "1.0",
@@ -11,12 +11,13 @@
 //	  "updated_at": "2024-01-15T10:30:00Z",
 //	  "resources": [
 //	    {
-//	      "id": "brew/core-tools/ripgrep",
 //	      "kind": "BrewPackages",
-//	      "name": "core-tools",
+//	      "group": "core-tools",
 //	      "namespace": "default",
-//	      "version": "13.0.0",
-//	      "checksum": "sha256:abc123..."
+//	      "items": [
+//	        {"name": "ripgrep", "version": "14.0.0"},
+//	        {"name": "htop", "version": "3.2.0"}
+//	      ]
 //	    }
 //	  ]
 //	}
@@ -30,6 +31,7 @@ import (
 )
 
 // State represents the complete state of managed resources.
+// Uses hierarchical 3-level structure: Kind -> Group -> Items
 type State struct {
 	// Version is the state file format version
 	Version string `json:"version"`
@@ -40,7 +42,7 @@ type State struct {
 	// UpdatedAt is when the state file was last modified
 	UpdatedAt time.Time `json:"updated_at"`
 
-	// Resources contains the state of all managed resources
+	// Resources contains the state of all managed resource groups
 	Resources []provider.ResourceState `json:"resources"`
 }
 
@@ -58,24 +60,24 @@ func NewState() *State {
 	}
 }
 
-// GetResource retrieves a resource state by ID.
-func (s *State) GetResource(id string) (provider.ResourceState, bool) {
+// GetResourceGroup retrieves a resource group state by kind and group name.
+func (s *State) GetResourceGroup(kind, group string) (provider.ResourceState, bool) {
 	for _, r := range s.Resources {
-		if r.ID == id {
+		if r.Kind == kind && r.Group == group {
 			return r, true
 		}
 	}
 	return provider.ResourceState{}, false
 }
 
-// SetResource adds or updates a resource state.
-func (s *State) SetResource(r provider.ResourceState) {
+// SetResourceGroup adds or updates a resource group state.
+func (s *State) SetResourceGroup(r provider.ResourceState) {
 	// Update the UpdatedAt timestamp
 	s.UpdatedAt = time.Now().UTC()
 
 	// Check if resource already exists
 	for i, existing := range s.Resources {
-		if existing.ID == r.ID {
+		if existing.Kind == r.Kind && existing.Group == r.Group {
 			// Update existing resource
 			s.Resources[i] = r
 			return
@@ -86,12 +88,45 @@ func (s *State) SetResource(r provider.ResourceState) {
 	s.Resources = append(s.Resources, r)
 }
 
-// RemoveResource removes a resource state by ID.
+// RemoveResourceGroup removes a resource group state by kind and group name.
 // Returns true if the resource was found and removed.
-func (s *State) RemoveResource(id string) bool {
+func (s *State) RemoveResourceGroup(kind, group string) bool {
 	for i, r := range s.Resources {
-		if r.ID == id {
+		if r.Kind == kind && r.Group == group {
 			// Remove by swapping with last and truncating
+			s.Resources[i] = s.Resources[len(s.Resources)-1]
+			s.Resources = s.Resources[:len(s.Resources)-1]
+			s.UpdatedAt = time.Now().UTC()
+			return true
+		}
+	}
+	return false
+}
+
+// GetResource retrieves a resource state by ID (legacy method, use GetResourceGroup).
+// Deprecated: Use GetResourceGroup(kind, group) instead.
+func (s *State) GetResource(id string) (provider.ResourceState, bool) {
+	for _, r := range s.Resources {
+		// Legacy ID format was "Kind/group[item]" - try to match
+		if r.Group == id {
+			return r, true
+		}
+	}
+	return provider.ResourceState{}, false
+}
+
+// SetResource adds or updates a resource state (legacy method, use SetResourceGroup).
+// Deprecated: Use SetResourceGroup(r) instead.
+func (s *State) SetResource(r provider.ResourceState) {
+	s.SetResourceGroup(r)
+}
+
+// RemoveResource removes a resource state by ID (legacy method, use RemoveResourceGroup).
+// Deprecated: Use RemoveResourceGroup(kind, group) instead.
+func (s *State) RemoveResource(id string) bool {
+	// Legacy removal - will match on Group field
+	for i, r := range s.Resources {
+		if r.Group == id {
 			s.Resources[i] = s.Resources[len(s.Resources)-1]
 			s.Resources = s.Resources[:len(s.Resources)-1]
 			s.UpdatedAt = time.Now().UTC()

@@ -100,3 +100,39 @@ func (r ManagedFile) GetFiles() []FileSpec {
 		Mode:        r.Spec.Mode,
 	}}
 }
+
+// ToGroup implements Resource.ToGroup.
+func (r ManagedFile) ToGroup() ResourceGroup {
+	files := r.GetFiles()
+	items := make([]ResourceItem, 0, len(files))
+
+	for i, f := range files {
+		itemName := f.Destination
+		if itemName == "" {
+			itemName = fmt.Sprintf("file-%d", i)
+		}
+
+		source := f.SourceFile
+		if source == "" {
+			source = "(inline)"
+		}
+
+		items = append(items, ResourceItem{
+			Name: itemName,
+			Extra: map[string]interface{}{
+				"source":      source,
+				"template":    f.Template,
+				"mode":        f.Mode,
+				"destination": f.Destination,
+			},
+		})
+	}
+
+	return ResourceGroup{
+		Kind:      r.Kind,
+		Name:      r.Metadata.Name,
+		Namespace: r.Metadata.GetNamespace(),
+		Items:     items,
+		RawSpec:   r.Spec,
+	}
+}

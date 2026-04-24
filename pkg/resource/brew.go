@@ -38,3 +38,34 @@ type Package struct {
 func (r BrewPackages) Validate() error {
 	return ValidateStruct(r)
 }
+
+// ToGroup implements Resource.ToGroup.
+func (r BrewPackages) ToGroup() ResourceGroup {
+	items := make([]ResourceItem, 0)
+
+	// Add formulae as items
+	for _, f := range r.Spec.Formulae {
+		items = append(items, ResourceItem{
+			Name:    f.Name,
+			Version: f.Version,
+		})
+	}
+
+	// Add casks as items
+	for _, c := range r.Spec.Casks {
+		items = append(items, ResourceItem{
+			Name:    c.Name + " (cask)",
+			Version: c.Version,
+		})
+	}
+
+	// Note: Taps are not items - they're infrastructure for the group
+
+	return ResourceGroup{
+		Kind:      r.Kind,
+		Name:      r.Metadata.Name,
+		Namespace: r.Metadata.GetNamespace(),
+		Items:     items,
+		RawSpec:   r.Spec,
+	}
+}

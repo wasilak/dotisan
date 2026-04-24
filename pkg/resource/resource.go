@@ -55,6 +55,10 @@ type Resource interface {
 
 	// Validate validates the resource spec and returns any validation errors
 	Validate() error
+
+	// ToGroup converts this resource to a ResourceGroup representation
+	// This extracts items from the spec and creates the 3-level hierarchy
+	ToGroup() ResourceGroup
 }
 
 // Metadata contains common metadata for all resources.
