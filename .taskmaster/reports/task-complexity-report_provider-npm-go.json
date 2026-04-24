@@ -1,9 +1,7 @@
 {
 	"meta": {
-		"generatedAt": "2026-04-22T13:31:23.599Z",
-		"tasksAnalyzed": 10,
-		"totalTasks": 10,
-		"analysisCount": 10,
+		"generatedAt": "2026-04-24T16:49:23.769Z",
+		"tasksAnalyzed": 0,
 		"thresholdScore": 5,
 		"projectName": "Task Master",
 		"usedResearch": true

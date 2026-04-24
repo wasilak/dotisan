@@ -23,8 +23,8 @@ func TestNewBrewProvider(t *testing.T) {
 func TestBrewProvider_Name(t *testing.T) {
 	p := NewBrewProvider()
 
-	if name := p.Name(); name != "brew" {
-		t.Errorf("Name() = %q, want %q", name, "brew")
+	if name := p.Name(); name != "homebrew" {
+		t.Errorf("Name() = %q, want %q", name, "homebrew")
 	}
 }
 
@@ -46,7 +46,7 @@ func TestBrewProvider_Reconcile_Empty(t *testing.T) {
 	p := NewBrewProvider()
 
 	// Reconcile with no desired resources
-	desired := []resource.Resource{}
+	desired := []resource.ResourceGroup{}
 	state := []provider.ResourceState{}
 	plan := p.Reconcile(desired, state)
 
@@ -61,173 +61,62 @@ func TestBrewProvider_Reconcile_Empty(t *testing.T) {
 func TestBrewProvider_Reconcile_Additions(t *testing.T) {
 	p := NewBrewProvider()
 
-	// Create desired BrewPackages
-	bp := &resource.BrewPackages{
-		BaseResource: resource.BaseResource{
-			APIVersion: "github.com/wasilak/dotisan/v1",
-			Kind:       "BrewPackages",
-			Metadata:   resource.Metadata{Name: "core-tools", Namespace: "default"},
-		},
-		Spec: resource.BrewPackagesSpec{
-			Formulae: []resource.Package{
-				{Name: "ripgrep"},
-				{Name: "fd"},
-			},
-			Casks: []resource.Package{
-				{Name: "visual-studio-code"},
-			},
+	// Reconcile with desired resources
+	desired := []resource.ResourceGroup{
+		{
+			Kind:  "BrewPackages",
+			Name:  "core-tools",
+			Items: []resource.ResourceItem{{Name: "ripgrep"}},
 		},
 	}
-
-	desired := []resource.Resource{bp}
 	state := []provider.ResourceState{}
-
-	// Note: This test may fail if brew is not installed
-	// We're just testing that Reconcile doesn't panic
 	plan := p.Reconcile(desired, state)
 
-	t.Logf("Plan: %d additions, %d removals, %d in-sync",
-		len(plan.Additions), len(plan.Removals), len(plan.InSync))
+	// Note: result depends on whether brew is installed
+	// Just verify Reconcile runs without error
+	t.Logf("Plan Additions: %d, Modifications: %d, Removals: %d, InSync: %d",
+		len(plan.Additions), len(plan.Modifications), len(plan.Removals), len(plan.InSync))
 }
 
-func TestBrewProvider_isPackageInstalled(t *testing.T) {
+func TestBrewProvider_Apply(t *testing.T) {
 	p := NewBrewProvider()
 
-	installed := map[string]string{
-		"ripgrep": "13.0.0",
-		"fd":      "8.7.0",
-	}
+	// Apply empty plan
+	plan := provider.GroupPlan{}
+	err := p.Apply(context.Background(), plan)
 
-	tests := []struct {
-		name     string
-		expected bool
-	}{
-		{"ripgrep", true},
-		{"fd", true},
-		{"nonexistent", false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := p.isPackageInstalled(tt.name, installed)
-			if result != tt.expected {
-				t.Errorf("isPackageInstalled(%q) = %v, want %v", tt.name, result, tt.expected)
-			}
-		})
-	}
-}
-
-func TestBrewProvider_isTapInstalled(t *testing.T) {
-	p := NewBrewProvider()
-
-	// This test requires brew to be installed
-	// We'll just verify the method doesn't panic
-	installed := make(map[string]string)
-	result := p.isTapInstalled("homebrew/core", installed)
-	t.Logf("isTapInstalled() = %v", result)
-}
-
-func TestBrewProvider_isCaskInstalled(t *testing.T) {
-	p := NewBrewProvider()
-
-	// This test requires brew to be installed
-	// We'll just verify the method doesn't panic
-	installed := make(map[string]string)
-	result := p.isCaskInstalled("firefox", installed)
-	t.Logf("isCaskInstalled() = %v", result)
-}
-
-func TestBrewProvider_getFormulaInfo(t *testing.T) {
-	p := NewBrewProvider()
-
-	// Test fetching formula info from API
-	// This may fail if there's no network connectivity
-	info, err := p.getFormulaInfo("ripgrep")
+	// Should not error with empty plan
 	if err != nil {
-		t.Logf("getFormulaInfo() returned error (may be expected without network): %v", err)
+		t.Errorf("Apply() with empty plan error: %v", err)
+	}
+}
+
+func TestBrewProvider_Import(t *testing.T) {
+	p := NewBrewProvider()
+
+	// Import should handle non-empty group name
+	state, err := p.Import(context.Background(), "core-tools")
+	if err != nil {
+		t.Logf("Import() error (may be expected without brew): %v", err)
 		return
 	}
 
-	if info.Name == "" {
-		t.Error("formula info should have a name")
+	if state.Kind != "BrewPackages" {
+		t.Errorf("Import() Kind = %q, want BrewPackages", state.Kind)
 	}
-
-	t.Logf("Formula info: name=%s", info.Name)
 }
 
-func TestBrewProvider_Apply_ContextCancellation(t *testing.T) {
+func TestBrewProvider_ImportItem(t *testing.T) {
 	p := NewBrewProvider()
 
-	// Create a cancelled context
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-
-	// Try to apply empty plan
-	plan := provider.Plan{}
-	err := p.Apply(ctx, plan)
-
+	// ImportItem should handle non-empty args
+	state, err := p.ImportItem(context.Background(), "core-tools", "ripgrep")
 	if err != nil {
-		t.Logf("Apply() returned error for cancelled context (may be expected): %v", err)
+		t.Logf("ImportItem() error (may be expected): %v", err)
+		return
 	}
-}
 
-func TestBrewProvider_checkFormulaeStatus(t *testing.T) {
-	p := NewBrewProvider()
-
-	t.Run("empty list returns empty map", func(t *testing.T) {
-		result, err := p.checkFormulaeStatus([]string{})
-		if err != nil {
-			t.Errorf("checkFormulaeStatus([]) returned error: %v", err)
-			return
-		}
-		if len(result) != 0 {
-			t.Errorf("checkFormulaeStatus([]) = %v, want empty map", result)
-		}
-	})
-
-	t.Run("returns map with formula names", func(t *testing.T) {
-		formulae := []string{"ripgrep", "fd"}
-		result, err := p.checkFormulaeStatus(formulae)
-		if err != nil {
-			t.Logf("checkFormulaeStatus() error (may fail without brew): %v", err)
-			return
-		}
-
-		if len(result) == 0 {
-			t.Log("checkFormulaeStatus returned empty map - may be expected if brew not available")
-			return
-		}
-
-		for _, formula := range formulae {
-			if _, ok := result[formula]; !ok {
-				t.Errorf("checkFormulaeStatus() missing key %q in result %v", formula, result)
-			}
-			if result[formula] != true && result[formula] != false {
-				t.Errorf("checkFormulaeStatus()[%q] = %v, want bool", formula, result[formula])
-			}
-			t.Logf("checkFormulaeStatus(%q) = %v", formula, result[formula])
-		}
-	})
-
-	t.Run("nonexistent formula handled gracefully", func(t *testing.T) {
-		formulae := []string{"nonexistent-formula-xyz-123"}
-		result, err := p.checkFormulaeStatus(formulae)
-		if err != nil {
-			t.Logf("checkFormulaeStatus() error (may fail without brew): %v", err)
-			return
-		}
-
-		if result == nil {
-			t.Error("checkFormulaeStatus() returned nil map")
-			return
-		}
-
-		if installed, ok := result["nonexistent-formula-xyz-123"]; !ok {
-			t.Errorf("checkFormulaeStatus() missing nonexistent formula in result %v", result)
-		} else if installed {
-			t.Error("checkFormulaeStatus() reported nonexistent formula as installed")
-		} else {
-			t.Log("checkFormulaeStatus() correctly reported nonexistent formula as not installed")
-		}
-	})
+	if state.Group != "core-tools" {
+		t.Errorf("ImportItem() Group = %q, want core-tools", state.Group)
+	}
 }

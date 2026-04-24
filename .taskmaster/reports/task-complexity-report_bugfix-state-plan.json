@@ -1,0 +1,93 @@
+{
+	"meta": {
+		"generatedAt": "2026-04-24T16:52:03.115Z",
+		"tasksAnalyzed": 10,
+		"totalTasks": 10,
+		"analysisCount": 10,
+		"thresholdScore": 5,
+		"projectName": "Task Master",
+		"usedResearch": true
+	},
+	"complexityAnalysis": [
+		{
+			"taskId": 1,
+			"taskTitle": "Fix State Persistence: Implement State Merging Logic",
+			"complexityScore": 9,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Break down the core logic into distinct, testable functional units: 1. State Loading/Fallback, 2. State Merging Algorithm Implementation, 3. Merging Specific Resource Types (e.g., credentials, specific metadata fields), and 4. State Saving/Commitment.\n\nSpecifically, create subtasks for: a) Initializing the state object correctly (new vs. loaded). b) Implementing the idempotent merge logic for existing resource structures. c) Testing conflict resolution scenarios (e.g., manual state vs. desired state). d) Finalizing state backend integration points.",
+			"reasoning": "This is the most critical, high-risk task (High Priority). It involves modifying core engine logic and complex state management structures. The requirement to correctly read, *merge*, and rewrite state while maintaining existing, potentially complex, historical data (idempotency) significantly elevates the risk and complexity. Requires deep understanding of the state object schema."
+		},
+		{
+			"taskId": 2,
+			"taskTitle": "Fix TotalAdditions Count: Count Individual Items",
+			"complexityScore": 4,
+			"recommendedSubtasks": 2,
+			"expansionPrompt": "Split the calculation logic across the required metrics. Subtasks should be: 1. Implement item counting for Additions in `pkg/engine/engine.go`. 2. Implement item counting for Modifications, Removals, and InSync status metrics, ensuring consistency across all relevant plan summary calculations in the file.",
+			"reasoning": "This is a localized calculation bug fix (Medium complexity, elevated by multiple required updates). While simple in concept (looping and summing lengths), its necessity across four different metrics (`TotalAdditions`, `TotalModifications`, etc.) increases the coordination effort and testing surface area."
+		},
+		{
+			"taskId": 3,
+			"taskTitle": "Detect InSync Resources After State Persistence",
+			"complexityScore": 8,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Decompose the changes across providers and engine logic. Subtasks should include: 1. Modifying the provider reconciliation entry point to accept the state context. 2. Implementing the 'InSync' decision logic within the provider's reconcile function, comparing runtime state vs. stored state. 3. Updating the engine context to reliably pass the loaded state object to all relevant providers during plan/apply phases.\n\nFocus on isolating the state lookup mechanism within the provider framework.",
+			"reasoning": "This task is highly dependent on Task 1 succeeding. It requires modifying external components (providers) based on internal state knowledge (engine context). The logic is complex because it requires changing *behavior* (from 'assume non-existent' to 'check state') across multiple layers, making it high risk."
+		},
+		{
+			"taskId": 4,
+			"taskTitle": "State List View: One Row Per Item Display",
+			"complexityScore": 5,
+			"recommendedSubtasks": 2,
+			"expansionPrompt": "Focus the refactoring on the presentation layer. Subtasks: 1. Analyzing the current table rendering mechanism in `cmd/state.go` to identify the aggregation point. 2. Rewriting the rendering loop to iterate over `res.Items` and dynamically call `t.Row()` for each item, while preserving metadata for the entire group.",
+			"reasoning": "This is primarily a UI/Presentation layer change (Medium complexity). While it requires traversing the resource data structure, the underlying business logic is sound. The risk lies in preserving the visual integrity (columns, grouping) across the expanded row set."
+		},
+		{
+			"taskId": 5,
+			"taskTitle": "Verify InSync Handling in DisplayPlanList",
+			"complexityScore": 4,
+			"recommendedSubtasks": 1,
+			"expansionPrompt": "Develop a focused PR/Code Review task: Analyze the filtering mechanism in `cmd/plan.go` for the `DisplayPlanList` function. Create a dedicated unit test case focusing solely on the `skipEmpty` parameter interaction to ensure InSync items are never erroneously filtered out when they should be displayed.",
+			"reasoning": "This task is an assurance/review task, dependent on Task 3. The complexity is low-to-medium because it likely involves adjusting existing conditional logic (a boundary condition check) rather than implementing new complex logic."
+		},
+		{
+			"taskId": 6,
+			"taskTitle": "Add Debug Logging for State Operations",
+			"complexityScore": 3,
+			"recommendedSubtasks": 2,
+			"expansionPrompt": "Separate the logging implementation from the main business logic modifications. Subtasks: 1. Implementing logging wrappers around `Load()` and `Save()` calls in `pkg/engine/engine.go`. 2. Creating the necessary conditional check (`--debug-state`) and ensuring logging functions only activate under this flag in both `pkg/engine/engine.go` and `pkg/state/state.go`.",
+			"reasoning": "This is a straightforward enhancement task (Low complexity). It involves careful placement of logging calls and conditional compilation/runtime checks, which are pattern-based and predictable."
+		},
+		{
+			"taskId": 7,
+			"taskTitle": "Implement Integration Test for Apply -> Plan Lifecycle",
+			"complexityScore": 6,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Deconstruct the test structure: 1. Mocking the StateBackend interface for isolation. 2. Writing the initial 'Apply' execution block (Run 1) and asserting the resulting state object content. 3. Writing the subsequent 'Plan' execution block (Run 2) and asserting the plan output reflects the state changes correctly.\n\nCrucially, identify and mock any external calls that might interfere with state determinism.",
+			"reasoning": "This is an Infrastructure/Quality task (Medium complexity). While no application code is changed, writing comprehensive, deterministic integration tests that mock complex backend interactions (like a real file system state backend) is notoriously difficult and requires deep knowledge of the testing harness framework."
+		},
+		{
+			"taskId": 8,
+			"taskTitle": "Refine Plan Calculation for All Metrics",
+			"complexityScore": 5,
+			"recommendedSubtasks": 2,
+			"expansionPrompt": "Focus on systematic review: Subtasks should be: 1. Reviewing `plan.Modifications` iteration logic to count items instead of groups. 2. Reviewing `plan.Removals` iteration logic to count items instead of groups. This requires cross-referencing the structure of the plan object against the item count methodology established in Task 2.",
+			"reasoning": "This is a clean-up/refactoring task (Medium complexity). It builds directly on Task 2. The challenge is the breadth—ensuring *all* similar collection types in the plan object are updated identically, minimizing the chance of missing one."
+		},
+		{
+			"taskId": 9,
+			"taskTitle": "Address Missing Error Handling in State Load/Save",
+			"complexityScore": 5,
+			"recommendedSubtasks": 2,
+			"expansionPrompt": "Focus on failure modes: Subtasks should be: 1. Implementing specific deserialization error handling in `pkg/state/state.go` (e.g., detecting structural corruption). 2. Implementing a critical failure path in `pkg/engine/engine.go` that halts execution immediately and outputs a detailed, actionable error message upon unrecoverable state write failure, overriding previous soft error handling.",
+			"reasoning": "This is a defensive programming task (Medium complexity). It requires identifying points where existing error handling is too permissive (silent failure) and replacing it with rigorous, loud failure modes, which often requires deep knowledge of the surrounding error propagation path."
+		},
+		{
+			"taskId": 10,
+			"taskTitle": "Review and Update Initial Plan Assumptions",
+			"complexityScore": 3,
+			"recommendedSubtasks": 1,
+			"expansionPrompt": "Develop a single, comprehensive test case that forces zero differences (no Add, Mod, or Remove) and verifies the resulting console output string exactly matches the expected 'No changes required' message, ensuring all preceding successful state steps support this outcome.",
+			"reasoning": "This is a final polish/UX task (Low complexity). It is highly dependent on all other tasks working correctly. The complexity is low because the required change is likely conditional output logic based on aggregated zero counts, which is less complex than state merging or provider logic."
+		}
+	]
+}

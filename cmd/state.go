@@ -330,20 +330,23 @@ func displayStateTable(currentState *state.State) error {
 		}
 		return cellStyle
 	})
-	t.Headers("KIND", "GROUP", "ITEMS", "STATUS")
+	t.Headers("KIND", "GROUP", "NAME", "STATUS")
 
 	for _, res := range currentState.Resources {
-		itemNames := make([]string, 0, len(res.Items))
 		for _, item := range res.Items {
-			itemNames = append(itemNames, item.Name)
+			t.Row(res.Kind, res.Group, item.Name, item.Status)
 		}
-		t.Row(res.Kind, res.Group, strings.Join(itemNames, ", "), "managed")
 	}
 
 	fmt.Println(style.Header.Render("Managed Resources"))
 	fmt.Println()
 	fmt.Println(t.Render())
-	fmt.Printf("\nTotal: %d resource groups\n", len(currentState.Resources))
+
+	totalItems := 0
+	for _, res := range currentState.Resources {
+		totalItems += len(res.Items)
+	}
+	fmt.Printf("\nTotal: %d resources across %d groups\n", totalItems, len(currentState.Resources))
 	return nil
 }
 

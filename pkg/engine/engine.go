@@ -4,12 +4,18 @@ package engine
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
+
+	"github.com/charmbracelet/bubbles/progress"
+	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/wasilak/dotisan/pkg/config"
 	"github.com/wasilak/dotisan/pkg/provider"
 	"github.com/wasilak/dotisan/pkg/providers"
 	"github.com/wasilak/dotisan/pkg/resource"
 	"github.com/wasilak/dotisan/pkg/state"
+	"github.com/wasilak/dotisan/pkg/style"
 )
 
 // Engine orchestrates the plan and apply operations.
@@ -117,12 +123,22 @@ func (e *Engine) Plan(ctx context.Context) (*PlanResult, error) {
 		plan := prov.Reconcile(providerGroups, providerState)
 		providerPlans[providerName] = plan
 
-		// Update counts
-		result.TotalAdditions += len(plan.Additions)
-		result.TotalModifications += len(plan.Modifications)
-		result.TotalRemovals += len(plan.Removals)
-		result.TotalInSync += len(plan.InSync)
-		result.TotalDrifted += len(plan.Drifted)
+		// Update counts - sum individual items within each plan group
+		for _, add := range plan.Additions {
+			result.TotalAdditions += len(add.Items)
+		}
+		for _, mod := range plan.Modifications {
+			result.TotalModifications += len(mod.Changes)
+		}
+		for _, rem := range plan.Removals {
+			result.TotalRemovals += len(rem.Items)
+		}
+		for _, sync := range plan.InSync {
+			result.TotalInSync += len(sync.Items)
+		}
+		for _ = range plan.Drifted {
+			result.TotalDrifted++
+		}
 	}
 
 	result.HasChanges = result.TotalAdditions > 0 || result.TotalModifications > 0 ||
@@ -229,11 +245,19 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 	}
 
 	// Update state
-	newState := state.NewState()
+	existingState, err := e.StateBackend.Load(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to load existing state: %w", err)
+	}
+
+	stateToSave := existingState
+	if stateToSave.Resources == nil {
+		stateToSave = state.NewState()
+	}
 	for _, plan := range result.ProviderPlans {
 		// Add in-sync resources
 		for _, inSync := range plan.InSync {
-			newState.SetResourceGroup(provider.ResourceState{
+			stateToSave.SetResourceGroup(provider.ResourceState{
 				Kind:      inSync.Kind,
 				Group:     inSync.Group,
 				Items:     inSync.Items,
@@ -250,7 +274,7 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 					Status:  "present",
 				})
 			}
-			newState.SetResourceGroup(provider.ResourceState{
+			stateToSave.SetResourceGroup(provider.ResourceState{
 				Kind:      addition.Kind,
 				Group:     addition.Group,
 				Items:     items,
@@ -259,7 +283,7 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 		}
 	}
 
-	if err := e.StateBackend.Save(ctx, newState); err != nil {
+	if err := e.StateBackend.Save(ctx, stateToSave); err != nil {
 		return fmt.Errorf("failed to save state: %w", err)
 	}
 
@@ -268,7 +292,375 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 
 // ApplyWithProgress executes the planned changes with progress reporting.
 func (e *Engine) ApplyWithProgress(ctx context.Context, result *PlanResult, opts ApplyOptions) error {
-	return e.Apply(ctx, result, opts)
+	if !result.HasChanges {
+		fmt.Println(style.Info.Render("No changes to apply."))
+		return nil
+	}
+
+	workItems := e.collectWorkItems(result)
+	if len(workItems) == 0 {
+		fmt.Println(style.Info.Render("No changes to apply."))
+		return nil
+	}
+
+	totalOps := len(workItems)
+	prog := progress.New(
+		progress.WithDefaultGradient(),
+		progress.WithWidth(40),
+	)
+
+	m := applyProgressModel{
+		progress:   prog,
+		current:   0,
+		total:     totalOps,
+		completed: []resourceResult{},
+	}
+
+	p := tea.NewProgram(m)
+
+	var results []resourceResult
+	go func() {
+		for i, item := range workItems {
+			resourceID := fmt.Sprintf("%s/%s/%s", item.kind, item.group, item.item)
+			var action string
+			switch item.action {
+			case "create":
+				action = "Creating"
+			case "remove":
+				action = "Removing"
+			case "update":
+				action = "Updating"
+			case "restore":
+				action = "Restoring"
+			default:
+				action = strings.Title(item.action)
+			}
+
+			p.Send(applyProgressMsg{
+				resource:  resourceID,
+				action:    action,
+				completed: results,
+				current:   i,
+				total:     totalOps,
+				percent:   float64(i) / float64(totalOps),
+			})
+
+			var err error
+			prov := e.Providers[item.provider]
+
+			plan := provider.GroupPlan{}
+			switch item.action {
+			case "create":
+				plan.Additions = []provider.GroupAddition{{
+					Kind:  item.kind,
+					Group: item.group,
+					Items: []resource.ResourceItem{{Name: item.item, Version: item.version}},
+				}}
+			case "update":
+				plan.Modifications = []provider.GroupModification{{
+					Kind:  item.kind,
+					Group: item.group,
+					Changes: []provider.ItemChange{{
+						ItemName:  item.item,
+						OldState: resource.ItemState{Version: item.oldVersion},
+						NewState: resource.ItemState{Version: item.version},
+					}},
+				}}
+			case "remove":
+				plan.Removals = []provider.GroupRemoval{{
+					Kind:  item.kind,
+					Group: item.group,
+					Items: []resource.ResourceItem{{Name: item.item}},
+				}}
+			case "restore":
+				plan.Drifted = []provider.ItemDrift{{
+					Kind:          item.kind,
+					Group:         item.group,
+					Item:          item.item,
+					ExpectedState: resource.ItemState{Version: item.version},
+				}}
+			}
+
+			err = prov.Apply(ctx, plan)
+
+			completed := i + 1
+			res := resourceResult{
+				resource: resourceID,
+				action:   item.action,
+				success:  err == nil,
+				err:      err,
+			}
+			results = append(results, res)
+
+			p.Send(applyProgressMsg{
+				resource:  resourceID,
+				action:    action,
+				completed: results,
+				current:   completed,
+				total:     totalOps,
+				percent:   float64(completed) / float64(totalOps),
+			})
+		}
+
+		successCount := 0
+		failCount := 0
+		for _, r := range results {
+			if r.success {
+				successCount++
+			} else {
+				failCount++
+			}
+		}
+		p.Send(applyCompleteMsg{results: results, successCount: successCount, failCount: failCount})
+	}()
+
+	if _, err := p.Run(); err != nil {
+		return e.Apply(ctx, result, opts)
+	}
+
+	successCount := 0
+	failCount := 0
+	for _, r := range results {
+		if r.success {
+			successCount++
+		} else {
+			failCount++
+		}
+	}
+
+	fmt.Println()
+	singular := ""
+	if successCount == 1 {
+		singular = "s"
+	}
+	if failCount == 0 {
+		fmt.Printf("%s Apply complete! %d resource%s synchronized\n",
+			style.IconSuccess, successCount, singular)
+	} else if successCount == 0 {
+		errMsg := style.ErrorBox.Render(
+			style.Error.Render("✖ Apply failed") + "\n\n" +
+				fmt.Sprintf("All %d resources failed to apply", failCount),
+		)
+		fmt.Println(errMsg)
+	} else {
+		var summary strings.Builder
+		summary.WriteString(style.Warning.Render("⚠ Apply completed with errors") + "\n\n")
+		summary.WriteString(fmt.Sprintf("%s %d succeeded\n", style.IconSuccess, successCount))
+		summary.WriteString(fmt.Sprintf("%s %d failed\n\n", style.IconError, failCount))
+		summary.WriteString(style.Bold.Render("Failed resources:"))
+		summary.WriteString("\n")
+		for _, res := range results {
+			if !res.success {
+				summary.WriteString(fmt.Sprintf("  • %s: %s\n", res.resource, res.err))
+			}
+		}
+		fmt.Println(style.WarningBox.Render(summary.String()))
+	}
+
+	if successCount > 0 {
+		existingState, err := e.StateBackend.Load(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to load existing state: %w", err)
+		}
+
+		stateToSave := existingState
+
+		if stateToSave.Resources == nil {
+			stateToSave = state.NewState()
+		}
+
+		for i, item := range workItems {
+			if results[i].success {
+				stateToSave.SetResourceGroup(provider.ResourceState{
+					Kind:      item.kind,
+					Group:     item.group,
+					Items:     []resource.ItemState{{Name: item.item, Version: item.version, Status: "present"}},
+					Namespace: "default",
+				})
+			}
+		}
+		if err := e.StateBackend.Save(ctx, stateToSave); err != nil {
+			return fmt.Errorf("failed to save state: %w", err)
+		}
+	}
+
+	if failCount > 0 {
+		return fmt.Errorf("%d resource(s) failed to apply", failCount)
+	}
+
+	return nil
+}
+
+type workItem struct {
+	provider   string
+	kind       string
+	group      string
+	item       string
+	oldVersion string
+	version    string
+	action     string
+}
+
+func (e *Engine) collectWorkItems(result *PlanResult) []workItem {
+	var items []workItem
+	for providerName, plan := range result.ProviderPlans {
+		for _, add := range plan.Additions {
+			for _, item := range add.Items {
+				items = append(items, workItem{
+					provider: providerName,
+					kind:     add.Kind,
+					group:    add.Group,
+					item:     item.Name,
+					version:  item.Version,
+					action:   "create",
+				})
+			}
+		}
+		for _, mod := range plan.Modifications {
+			for _, change := range mod.Changes {
+				items = append(items, workItem{
+					provider:   providerName,
+					kind:      mod.Kind,
+					group:     mod.Group,
+					item:      change.ItemName,
+					oldVersion: change.OldState.Version,
+					version:   change.NewState.Version,
+					action:    "update",
+				})
+			}
+		}
+		for _, rem := range plan.Removals {
+			for _, item := range rem.Items {
+				items = append(items, workItem{
+					provider: providerName,
+					kind:     rem.Kind,
+					group:    rem.Group,
+					item:     item.Name,
+					action:   "remove",
+				})
+			}
+		}
+		for _, drift := range plan.Drifted {
+			items = append(items, workItem{
+				provider:   providerName,
+				kind:      drift.Kind,
+				group:     drift.Group,
+				item:      drift.Item,
+				version:   drift.ExpectedState.Version,
+				oldVersion: drift.ActualState.Version,
+				action:    "restore",
+			})
+		}
+	}
+	return items
+}
+
+type resourceResult struct {
+	resource string
+	action   string
+	success  bool
+	err      error
+}
+
+type applyProgressMsg struct {
+	resource  string
+	action    string
+	completed []resourceResult
+	current   int
+	total     int
+	percent   float64
+}
+
+type applyCompleteMsg struct {
+	results      []resourceResult
+	successCount int
+	failCount    int
+}
+
+type applyTickMsg struct{}
+
+type applyProgressModel struct {
+	progress  progress.Model
+	current   int
+	total     int
+	percent   float64
+	resource  string
+	action    string
+	completed []resourceResult
+	done      bool
+}
+
+func (m applyProgressModel) Init() tea.Cmd {
+	return m.tickCmd()
+}
+
+func (m applyProgressModel) tickCmd() tea.Cmd {
+	return tea.Tick(time.Millisecond*100, func(time.Time) tea.Msg {
+		return applyTickMsg{}
+	})
+}
+
+func (m applyProgressModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		if msg.Type == tea.KeyCtrlC {
+			return m, tea.Quit
+		}
+		return m, nil
+	case applyTickMsg:
+		if m.done {
+			return m, tea.Quit
+		}
+		return m, m.tickCmd()
+	case applyProgressMsg:
+		m.current = msg.current
+		m.total = msg.total
+		m.percent = msg.percent
+		m.resource = msg.resource
+		m.action = msg.action
+		m.completed = msg.completed
+		return m, nil
+	case applyCompleteMsg:
+		m.completed = msg.results
+		m.done = true
+		return m, tea.Quit
+	}
+	return m, nil
+}
+
+func (m applyProgressModel) View() string {
+	if m.done {
+		return ""
+	}
+
+	var s strings.Builder
+	s.WriteString("\n")
+	s.WriteString(style.Header.Render("Applying changes..."))
+	s.WriteString("\n\n")
+
+	s.WriteString(m.progress.ViewAs(m.percent))
+	s.WriteString(fmt.Sprintf("  %d/%d\n", m.current, m.total))
+
+	if m.action != "" && m.resource != "" {
+		s.WriteString(fmt.Sprintf("\n%s %s %s\n", style.Dim.Render("→"), style.Info.Render(m.action), style.Dim.Render(m.resource)))
+	}
+
+	if len(m.completed) > 0 {
+		s.WriteString("\n")
+		start := len(m.completed) - 3
+		if start < 0 {
+			start = 0
+		}
+		for _, res := range m.completed[start:] {
+			if res.success {
+				s.WriteString(fmt.Sprintf("  %s %s\n", style.IconSuccess, style.Dim.Render(res.resource)))
+			} else {
+				s.WriteString(fmt.Sprintf("  %s %s\n", style.IconError, style.Error.Render(res.resource)))
+			}
+		}
+	}
+
+	return s.String()
 }
 
 // DisplayPlan displays the plan result (placeholder for backward compatibility)

@@ -22,20 +22,20 @@ func (m *mockProvider) Available() (bool, string) {
 	return m.available, m.message
 }
 
-func (m *mockProvider) Reconcile(desired []resource.Resource, state []ResourceState) Plan {
-	return Plan{}
+func (m *mockProvider) Reconcile(desired []resource.ResourceGroup, state []ResourceState) GroupPlan {
+	return GroupPlan{}
 }
 
-func (m *mockProvider) Apply(ctx context.Context, plan Plan) error {
+func (m *mockProvider) Apply(ctx context.Context, plan GroupPlan) error {
 	return nil
 }
 
-func (m *mockProvider) Import(ctx context.Context, id string) (ResourceState, error) {
-	return ResourceState{ID: id}, nil
+func (m *mockProvider) Import(ctx context.Context, group string) (ResourceState, error) {
+	return ResourceState{Kind: "test", Group: group}, nil
 }
 
-func (m *mockProvider) ImportItem(ctx context.Context, resourceName string, itemKey string) (ResourceState, error) {
-	return ResourceState{ID: resourceName + "[" + itemKey + "]"}, nil
+func (m *mockProvider) ImportItem(ctx context.Context, group string, item string) (ResourceState, error) {
+	return ResourceState{Kind: "test", Group: group, Items: []resource.ItemState{{Name: item}}}, nil
 }
 
 func TestRegisterAndGet(t *testing.T) {

@@ -39,7 +39,7 @@ func TestCargoProvider_Available(t *testing.T) {
 func TestCargoProvider_Reconcile_Empty(t *testing.T) {
 	p := NewCargoProvider()
 
-	desired := []resource.Resource{}
+	desired := []resource.ResourceGroup{}
 	state := []provider.ResourceState{}
 	plan := p.Reconcile(desired, state)
 
@@ -54,78 +54,41 @@ func TestCargoProvider_Reconcile_Empty(t *testing.T) {
 func TestCargoProvider_Reconcile_Additions(t *testing.T) {
 	p := NewCargoProvider()
 
-	cp := &resource.CargoPackages{
-		BaseResource: resource.BaseResource{
-			APIVersion: "github.com/wasilak/dotisan/v1",
-			Kind:       "CargoPackages",
-			Metadata:   resource.Metadata{Name: "rust-tools", Namespace: "default"},
-		},
-		Spec: resource.CargoPackagesSpec{
-			Packages: []resource.Package{
-				{Name: "ripgrep"},
-				{Name: "tokei"},
-			},
+	desired := []resource.ResourceGroup{
+		{
+			Kind:  "CargoPackages",
+			Name:  "dev-tools",
+			Items: []resource.ResourceItem{{Name: "bat"}},
 		},
 	}
-
-	desired := []resource.Resource{cp}
 	state := []provider.ResourceState{}
-
 	plan := p.Reconcile(desired, state)
 
-	t.Logf("Plan: %d additions, %d removals, %d in-sync",
-		len(plan.Additions), len(plan.Removals), len(plan.InSync))
+	t.Logf("Plan Additions: %d, Modifications: %d, Removals: %d, InSync: %d",
+		len(plan.Additions), len(plan.Modifications), len(plan.Removals), len(plan.InSync))
 }
 
-func TestCargoProvider_isPackageInstalled(t *testing.T) {
+func TestCargoProvider_Apply(t *testing.T) {
 	p := NewCargoProvider()
 
-	installed := map[string]string{
-		"ripgrep": "13.0.0",
-		"tokei":   "12.1.0",
-	}
-
-	tests := []struct {
-		name     string
-		expected bool
-	}{
-		{"ripgrep", true},
-		{"tokei", true},
-		{"nonexistent", false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := p.isPackageInstalled(tt.name, installed)
-			if result != tt.expected {
-				t.Errorf("isPackageInstalled(%q) = %v, want %v", tt.name, result, tt.expected)
-			}
-		})
-	}
-}
-
-func TestCargoProvider_Apply_ContextCancellation(t *testing.T) {
-	p := NewCargoProvider()
-
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-
-	plan := provider.Plan{}
-	err := p.Apply(ctx, plan)
+	plan := provider.GroupPlan{}
+	err := p.Apply(context.Background(), plan)
 
 	if err != nil {
-		t.Logf("Apply() returned error for cancelled context (may be expected): %v", err)
+		t.Errorf("Apply() with empty plan error: %v", err)
 	}
 }
 
-func TestCargoProvider_parseInstallList(t *testing.T) {
-	// The getInstalledPackages method is tested indirectly through Reconcile
-	// Let's verify a simple map works
-	packages := make(map[string]string)
-	packages["ripgrep"] = "13.0.0"
-	packages["fd"] = "8.7.0"
+func TestCargoProvider_Import(t *testing.T) {
+	p := NewCargoProvider()
 
-	if len(packages) != 2 {
-		t.Errorf("expected 2 packages, got %d", len(packages))
+	state, err := p.Import(context.Background(), "dev-tools")
+	if err != nil {
+		t.Logf("Import() error (may be expected without cargo): %v", err)
+		return
+	}
+
+	if state.Kind != "CargoPackages" {
+		t.Errorf("Import() Kind = %q, want CargoPackages", state.Kind)
 	}
 }

@@ -52,6 +52,14 @@ var (
 	StyledIconAdd = Success.Render(IconAdd)
 )
 
+// Styles for rendering full item lines (icon + text)
+var (
+	ItemSuccess  = Success
+	ItemError   = Error
+	ItemWarning = Warning
+	ItemInfo   = Info
+)
+
 // Header styles
 var (
 	Header = lipgloss.NewStyle().Bold(true)

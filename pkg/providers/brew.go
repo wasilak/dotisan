@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"path"
 	"strings"
 	"time"
 
@@ -212,33 +213,61 @@ func (p *BrewProvider) compareGroupItems(
 	// Check each desired item
 	for _, desiredItem := range group.Items {
 		name := desiredItem.Name
-		// Strip (cask) suffix for lookup
+		// Normalize name: strip (cask) suffix for lookup
+		lookupName := name
 		isCask := strings.HasSuffix(name, " (cask)")
 		if isCask {
-			name = strings.TrimSuffix(name, " (cask)")
+			lookupName = strings.TrimSuffix(name, " (cask)")
 		}
 
-		_, inState := stateItems[name]
-		_, isInstalled := installed[name]
+		// Try to find in installed - check full name first, then base name for tap packages
+		isInstalled := false
+		installedVersion := ""
+		if v, ok := installed[lookupName]; ok {
+			isInstalled = true
+			installedVersion = v
+		} else if strings.Contains(lookupName, "/") {
+			// Try base name for tap packages (e.g., "dagger/tap/dagger" -> "dagger")
+			baseName := path.Base(lookupName)
+			if v, ok := installed[baseName]; ok {
+				isInstalled = true
+				installedVersion = v
+			}
+		}
+
+		// Check state - full name and base name for tap packages
+		stateItem, inState := stateItems[lookupName]
+		if !inState && strings.Contains(lookupName, "/") {
+			// Try base name for tap packages in state
+			if si, ok := stateItems[path.Base(lookupName)]; ok {
+				stateItem = si
+				inState = true
+			}
+		}
 
 		if !isInstalled {
 			// Not installed - needs to be added
 			additions = append(additions, desiredItem)
 		} else if inState {
 			// Installed and tracked - check for modifications
-			stateItem := stateItems[name]
-			if stateItem.Version != desiredItem.Version && desiredItem.Version != "" {
+			// Use installed version for comparison
+			compareVersion := installedVersion
+			if compareVersion == "" {
+				compareVersion = stateItem.Version
+			}
+			if compareVersion != desiredItem.Version && desiredItem.Version != "" {
 				modifications = append(modifications, provider.ItemChange{
-					ItemName: name,
+					ItemName: lookupName,
 					OldState: stateItem,
 					NewState: resource.ItemState{
-						Name:    name,
+						Name:    lookupName,
 						Version: desiredItem.Version,
 					},
-					Diff: fmt.Sprintf("version: %s -> %s", stateItem.Version, desiredItem.Version),
+					Diff: fmt.Sprintf("version: %s -> %s", compareVersion, desiredItem.Version),
 				})
 			} else {
-				// In sync
+				// In sync - update state with actual version
+				stateItem.Version = installedVersion
 				inSync = append(inSync, stateItem)
 			}
 		} else {

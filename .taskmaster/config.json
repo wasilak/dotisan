@@ -2,19 +2,19 @@
   "models": {
     "main": {
       "provider": "ollama",
-      "modelId": "gemma4:e4b",
+      "modelId": "qwen3:14b",
       "maxTokens": 64000,
       "temperature": 0.2
     },
     "research": {
       "provider": "ollama",
-      "modelId": "gemma4:e4b",
+      "modelId": "qwen3:14b",
       "maxTokens": 64000,
       "temperature": 0.1
     },
     "fallback": {
       "provider": "ollama",
-      "modelId": "gemma4:e4b",
+      "modelId": "qwen3:14b",
       "maxTokens": 64000,
       "temperature": 0.2
     }

@@ -79,31 +79,7 @@ func runApply() error {
 		fmt.Println(style.Header.Render("Plan Summary"))
 		fmt.Println()
 
-		for providerName, plan := range result.ProviderPlans {
-			if len(plan.Additions) == 0 && len(plan.Removals) == 0 && len(plan.Modifications) == 0 {
-				continue
-			}
-
-			fmt.Printf("%s:\n", providerName)
-
-			for _, addition := range plan.Additions {
-				for _, item := range addition.Items {
-					fmt.Printf("  %s %s/%s: %s\n", style.IconAdd, addition.Kind, addition.Group, item.Name)
-				}
-			}
-
-			for _, removal := range plan.Removals {
-				for _, item := range removal.Items {
-					fmt.Printf("  %s %s/%s: %s\n", style.IconRemove, removal.Kind, removal.Group, item.Name)
-				}
-			}
-
-			for _, mod := range plan.Modifications {
-				for _, change := range mod.Changes {
-					fmt.Printf("  %s %s/%s: %s\n", style.IconEdit, mod.Kind, mod.Group, change.ItemName)
-				}
-			}
-		}
+		DisplayPlanList(result.ProviderPlans, true)
 
 		fmt.Println()
 		fmt.Printf("Plan: %s to add, %s to destroy\n",
@@ -151,11 +127,13 @@ func runApply() error {
 		}
 
 		response = strings.TrimSpace(strings.ToLower(response))
-		if response != "y" && response != "yes" {
+		if !strings.HasPrefix(response, "y") {
 			fmt.Println()
 			fmt.Println(style.Info.Render("→ Apply cancelled."))
 			return nil
 		}
+
+		opts.Confirm = true
 
 		// Apply with progress
 		if err := eng.ApplyWithProgress(ctx, result, opts); err != nil {

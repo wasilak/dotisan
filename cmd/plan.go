@@ -6,9 +6,14 @@ import (
 	"fmt"
 	"os"
 
+	"charm.land/lipgloss/v2"
+	"charm.land/lipgloss/v2/list"
+
 	"github.com/wasilak/dotisan/pkg/diff"
 	"github.com/wasilak/dotisan/pkg/engine"
 	"github.com/wasilak/dotisan/pkg/output"
+	"github.com/wasilak/dotisan/pkg/provider"
+	"github.com/wasilak/dotisan/pkg/resource"
 	"github.com/wasilak/dotisan/pkg/style"
 
 	"github.com/spf13/cobra"
@@ -79,34 +84,7 @@ func runPlan() error {
 		fmt.Println(style.Header.Render("Plan Summary"))
 		fmt.Println()
 
-		for providerName, plan := range result.ProviderPlans {
-			// Show all resources, not just changes
-			fmt.Printf("%s:\n", providerName)
-
-			for _, addition := range plan.Additions {
-				for _, item := range addition.Items {
-					fmt.Printf("  %s %s/%s: %s\n", style.StyledIconAdd, addition.Kind, addition.Group, item.Name)
-				}
-			}
-
-			for _, removal := range plan.Removals {
-				for _, item := range removal.Items {
-					fmt.Printf("  %s %s/%s: %s\n", style.IconError, removal.Kind, removal.Group, item.Name)
-				}
-			}
-
-			for _, mod := range plan.Modifications {
-				for _, change := range mod.Changes {
-					fmt.Printf("  %s %s/%s: %s\n", style.IconWarning, mod.Kind, mod.Group, change.ItemName)
-				}
-			}
-
-			for _, inSync := range plan.InSync {
-				for _, item := range inSync.Items {
-					fmt.Printf("  %s %s/%s: %s\n", style.IconSuccess, inSync.Kind, inSync.Group, item.Name)
-				}
-			}
-		}
+		DisplayPlanList(result.ProviderPlans, false)
 
 		fmt.Println()
 		fmt.Printf("Plan: %s to add, %s to destroy\n",
@@ -145,6 +123,157 @@ func displayPlanJSON(result *engine.PlanResult) error {
 	encoder := json.NewEncoder(os.Stdout)
 	encoder.SetIndent("", "  ")
 	return encoder.Encode(output)
+}
+
+func kindToFullKind(kind string) string {
+	switch kind {
+	case "BrewPackages":
+		return "HomebrewPackages"
+	case "NpmPackages":
+		return "NpmPackages"
+	case "GoPackages":
+		return "GoPackages"
+	case "CargoPackages":
+		return "CargoPackages"
+	case "ManagedFile":
+		return "ManagedFile"
+	case "ManagedDirectory":
+		return "ManagedDirectory"
+	default:
+		return kind
+	}
+}
+
+func DisplayPlanList(plans map[string]provider.GroupPlan, skipEmpty bool) {
+	emptyEnumerator := func(l list.Items, i int) string {
+		return ""
+	}
+
+	for providerName, plan := range plans {
+		// Group items by group name and action type
+		groups := make(map[string]map[string][]resource.ResourceItem)
+		for _, add := range plan.Additions {
+			if groups[add.Group] == nil {
+				groups[add.Group] = make(map[string][]resource.ResourceItem)
+			}
+			groups[add.Group]["add"] = append(groups[add.Group]["add"], add.Items...)
+		}
+		for _, rem := range plan.Removals {
+			if groups[rem.Group] == nil {
+				groups[rem.Group] = make(map[string][]resource.ResourceItem)
+			}
+			groups[rem.Group]["remove"] = append(groups[rem.Group]["remove"], rem.Items...)
+		}
+		for _, mod := range plan.Modifications {
+			if groups[mod.Group] == nil {
+				groups[mod.Group] = make(map[string][]resource.ResourceItem)
+			}
+			for _, change := range mod.Changes {
+				groups[mod.Group]["modify"] = append(groups[mod.Group]["modify"], resource.ResourceItem{
+					Name:    change.ItemName,
+					Version: change.NewState.Version,
+				})
+			}
+		}
+		for _, drift := range plan.Drifted {
+			if groups[drift.Group] == nil {
+				groups[drift.Group] = make(map[string][]resource.ResourceItem)
+			}
+			groups[drift.Group]["drift"] = append(groups[drift.Group]["drift"], resource.ResourceItem{
+				Name: drift.Item,
+			})
+		}
+
+		// Only include InSync if not skipping empty (plan shows all resources)
+		if !skipEmpty {
+			for _, sync := range plan.InSync {
+				if groups[sync.Group] == nil {
+					groups[sync.Group] = make(map[string][]resource.ResourceItem)
+				}
+				// Convert []resource.ItemState to []resource.ResourceItem
+				for _, item := range sync.Items {
+					groups[sync.Group]["sync"] = append(groups[sync.Group]["sync"], resource.ResourceItem{
+						Name:    item.Name,
+						Version: item.Version,
+					})
+				}
+			}
+		}
+
+		// Build nested list for each group
+		var groupListArgs []any
+		for groupName, actions := range groups {
+			var itemStrings []string
+
+			// Additions
+			for _, item := range actions["add"] {
+				itemStrings = append(itemStrings, "     "+style.ItemSuccess.Render(style.StyledIconAdd+" "+item.Name))
+			}
+			// Removals
+			for _, item := range actions["remove"] {
+				itemStrings = append(itemStrings, "     "+style.ItemError.Render(style.IconError+" "+item.Name))
+			}
+			// Modifications
+			for _, item := range actions["modify"] {
+				itemStrings = append(itemStrings, "     "+style.ItemWarning.Render(style.IconWarning+" "+item.Name))
+			}
+			// In-sync
+			for _, item := range actions["sync"] {
+				itemStrings = append(itemStrings, "     "+style.ItemSuccess.Render(style.IconSuccess+" "+item.Name))
+			}
+			// Drift
+			for _, item := range actions["drift"] {
+				itemStrings = append(itemStrings, "     "+style.ItemWarning.Render(style.IconWarning+" "+item.Name))
+			}
+
+			if len(itemStrings) == 0 {
+				continue
+			}
+
+			// If skipping empty, verify there are actual changes (not just InSync)
+			if skipEmpty {
+				hasChanges := len(actions["add"]) > 0 || len(actions["remove"]) > 0 ||
+					len(actions["modify"]) > 0 || len(actions["drift"]) > 0
+				if !hasChanges {
+					continue
+				}
+			}
+
+			// Create child list for this group
+			childListArgs := make([]any, len(itemStrings)*2)
+			for i, s := range itemStrings {
+				childListArgs[i*2] = s
+			}
+			childList := list.New(childListArgs...).
+				Enumerator(emptyEnumerator)
+
+			groupListArgs = append(groupListArgs, " "+groupName, childList)
+		}
+
+		if len(groupListArgs) == 0 {
+			continue
+		}
+
+		// Determine full kind name from first non-empty group
+		fullKind := providerName
+		if len(plan.Additions) > 0 {
+			fullKind = kindToFullKind(plan.Additions[0].Kind)
+		} else if len(plan.Removals) > 0 {
+			fullKind = kindToFullKind(plan.Removals[0].Kind)
+		} else if len(plan.Modifications) > 0 {
+			fullKind = kindToFullKind(plan.Modifications[0].Kind)
+		} else if len(plan.InSync) > 0 {
+			fullKind = kindToFullKind(plan.InSync[0].Kind)
+		}
+
+		// Build parent list with all groups
+		providerList := list.New(groupListArgs...).
+			Enumerator(emptyEnumerator)
+
+		// Print top-level kind separately, then groups list
+		lipgloss.Println(fullKind)
+		lipgloss.Println(providerList)
+	}
 }
 
 func init() {

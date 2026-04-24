@@ -2954,5 +2954,454 @@
         "provider-npm-go"
       ]
     }
+  },
+  "bugfix-state-plan": {
+    "tasks": [
+      {
+        "id": "1",
+        "title": "Fix State Persistence: Implement State Merging Logic",
+        "description": "Resolve the critical bug where the state file is completely overwritten on every 'apply' run, causing loss of previously tracked resources. The new logic must load the existing state and merge successful new items into it, preserving old entries.",
+        "status": "done",
+        "dependencies": [],
+        "priority": "high",
+        "details": "Modify `pkg/engine/engine.go` at lines 442-456. The implementation must follow these steps: 1. Attempt to load the existing state using `e.StateBackend.Load(ctx)`. 2. If loading fails or no state exists, initialize a new state. 3. If an existing state is loaded, iterate over its resources to preserve them. 4. Iterate over the current run's successful items (`results[i].success == true`) and merge them into the existing or new state object, rather than creating a brand new state from scratch. 5. Ensure the final state is saved correctly via `e.StateBackend.Save(ctx, newState)`.\n\n**Pseudo-code Concept:**\n```go\n// Load state first\nexistingState, err := e.StateBackend.Load(ctx)\nif err != nil && !errors.Is(err, state.ErrNotFound) { /* handle error */ }\n\nvar stateToSave *state.State\nif existingState != nil { \n    stateToSave = existingState // Use existing state\n} else {\n    stateToSave = state.NewState() // Create new if none exists\n}\n\n// Merge logic\nfor i, item := range workItems {\n    if results[i].success {\n        // Merge item into stateToSave instead of creating newState\n        stateToSave.SetResourceGroup(...) \n    }\n}\n\n// Save the merged state\ne.StateBackend.Save(ctx, stateToSave)\n```",
+        "testStrategy": "Execute Test Scenario 3 (State Persistence). Run `dotisan apply --confirm` with 3 packages. Confirm state is saved. Then, run `dotisan apply --confirm` again with the *same* 3 packages. Verify that `dotisan plan` shows all 3 packages as '✓ in-sync' and that the state list shows all 3 packages tracked, confirming no loss of history.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement State Loading and Fallback Logic",
+            "description": "Implement the logic to load an existing state or initialize a new state if loading fails or no state exists.",
+            "dependencies": [],
+            "details": "Modify `pkg/engine/engine.go` to handle state loading and fallback. Use `e.StateBackend.Load(ctx)` to attempt loading the state. If an error occurs or the state is not found, initialize a new state using `state.NewState()`.",
+            "status": "done",
+            "testStrategy": "Test by running `dotisan apply --confirm` with an existing state file and verify that the state is loaded correctly. Then, test with a missing state file to ensure a new state is initialized.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-24T17:52:37.684Z"
+          },
+          {
+            "id": 2,
+            "title": "Implement Idempotent Merge Logic for Resource Structures",
+            "description": "Implement the logic to merge successful items from the current run into the existing or new state object.",
+            "dependencies": [
+              1
+            ],
+            "details": "Iterate over the current run's successful items (`results[i].success == true`) and merge them into the existing or new state object using `stateToSave.SetResourceGroup(...)`. Ensure that this logic is idempotent and does not overwrite existing resources.",
+            "status": "done",
+            "testStrategy": "Test by running `dotisan apply --confirm` with a mix of new and existing resources. Verify that only new or updated resources are merged into the state without affecting existing entries.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-24T17:52:37.689Z"
+          },
+          {
+            "id": 3,
+            "title": "Implement Conflict Resolution for State Merge Scenarios",
+            "description": "Implement logic to handle conflicts during the merge process, such as manual state vs. desired state.",
+            "dependencies": [
+              2
+            ],
+            "details": "Add logic to detect and resolve conflicts during the merge process. This includes handling scenarios where the manual state differs from the desired state, ensuring that the merge logic does not overwrite critical data.",
+            "status": "done",
+            "testStrategy": "Create test scenarios with conflicting states (e.g., manually modified state vs. desired state) and verify that the merge logic correctly resolves the conflicts without data loss.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-24T17:52:37.693Z"
+          },
+          {
+            "id": 4,
+            "title": "Finalize State Backend Integration for Save and Commit",
+            "description": "Implement the final steps to save the merged state using the state backend.",
+            "dependencies": [
+              3
+            ],
+            "details": "Ensure that the final merged state is saved correctly using `e.StateBackend.Save(ctx, stateToSave)`. Add error handling for state save operations to ensure robustness and reliability.",
+            "status": "done",
+            "testStrategy": "Test by running `dotisan apply --confirm` and verifying that the merged state is saved correctly. Then, test with corrupted state files to ensure that the save operation fails gracefully and provides actionable error messages.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-24T17:52:37.697Z"
+          }
+        ],
+        "complexity": 9,
+        "recommendedSubtasks": 4,
+        "expansionPrompt": "Break down the core logic into distinct, testable functional units: 1. State Loading/Fallback, 2. State Merging Algorithm Implementation, 3. Merging Specific Resource Types (e.g., credentials, specific metadata fields), and 4. State Saving/Commitment.\n\nSpecifically, create subtasks for: a) Initializing the state object correctly (new vs. loaded). b) Implementing the idempotent merge logic for existing resource structures. c) Testing conflict resolution scenarios (e.g., manual state vs. desired state). d) Finalizing state backend integration points.",
+        "updatedAt": "2026-04-24T17:52:37.697Z"
+      },
+      {
+        "id": "2",
+        "title": "Fix TotalAdditions Count: Count Individual Items",
+        "description": "Correct the plan summary calculation to count the total number of individual items slated for addition, rather than just counting the number of resource groups.",
+        "status": "done",
+        "dependencies": [],
+        "priority": "high",
+        "details": "Modify `pkg/engine/engine.go` at line 127. The calculation must change from summing group counts to summing the item counts within each addition group. This fix must be applied identically to `TotalModifications`, `TotalRemovals`, and `TotalInSync` for consistency.\n\n**Required Change:**\n```go\n// Old: result.TotalAdditions += len(plan.Additions) \n// New Logic:\nfor _, additionGroup := range plan.Additions {\n    result.TotalAdditions += len(additionGroup.Items) // Sum individual item counts\n}\n// Repeat for TotalModifications, TotalRemovals, etc.\n```",
+        "testStrategy": "Execute Test Scenario 1 (Fresh Apply). Set up a test case where 4 distinct packages are added across two different groups. Run `dotisan plan`. Verify that the footer correctly reports '4 to add' (or the expected total count), confirming the summation logic works for all plan summary metrics.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement item counting for Additions in `pkg/engine/engine.go`",
+            "description": "Modify the logic in `pkg/engine/engine.go` to count individual items in addition groups rather than the number of groups.",
+            "dependencies": [],
+            "details": "Update line 127 in `pkg/engine/engine.go` to loop through each addition group and sum the number of items in each group. This change should ensure that the `TotalAdditions` metric reflects the total number of individual items, not just the number of groups.",
+            "status": "done",
+            "testStrategy": "Execute Test Scenario 1 (Fresh Apply) with multiple groups containing items. Confirm that the plan footer reports the correct total number of items to add.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-24T17:52:37.700Z"
+          },
+          {
+            "id": 2,
+            "title": "Implement item counting for Modifications, Removals, and InSync metrics",
+            "description": "Extend the item counting logic from `TotalAdditions` to `TotalModifications`, `TotalRemovals`, and `TotalInSync` in `pkg/engine/engine.go`.",
+            "dependencies": [
+              1
+            ],
+            "details": "Apply the same logic used for `TotalAdditions` to the other metrics. Replace group-level counting with item-level counting for all relevant plan summary calculations in the file to maintain consistency.",
+            "status": "done",
+            "testStrategy": "Run a test case with modifications, removals, and in-sync resources. Confirm that the plan footer reflects the correct counts for all metrics based on individual items.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-24T17:52:37.703Z"
+          }
+        ],
+        "complexity": 4,
+        "recommendedSubtasks": 2,
+        "expansionPrompt": "Split the calculation logic across the required metrics. Subtasks should be: 1. Implement item counting for Additions in `pkg/engine/engine.go`. 2. Implement item counting for Modifications, Removals, and InSync status metrics, ensuring consistency across all relevant plan summary calculations in the file.",
+        "updatedAt": "2026-04-24T17:52:37.703Z"
+      },
+      {
+        "id": "3",
+        "title": "Detect InSync Resources After State Persistence",
+        "description": "Ensure that resources already managed by the system (and tracked in state) are correctly detected as 'InSync' on subsequent plan runs, especially after Task 1 fixes state persistence.",
+        "status": "done",
+        "dependencies": [
+          "1"
+        ],
+        "priority": "high",
+        "details": "Requires changes in `pkg/providers/brew.go` and `pkg/engine/engine.go`. The provider's reconcile logic must be updated to check the loaded state (via the engine context) to determine if a resource exists. If it exists in state and matches the current desired state, the result should be marked 'InSync' rather than being ignored or flagged as 'Added'.\n\n**Implementation Focus:** Enhance the resource reconciliation loop to consult the state object loaded during the apply phase to determine the operational status (Created, Modified, Deleted, or InSync).",
+        "testStrategy": "Execute Test Scenario 1 (Fresh Apply) and immediately follow up with running `dotisan plan` (without any actual changes). Verify that all 4 packages shown in the state list are marked with '✓ in-sync' in the plan output, confirming Task 1's state persistence facilitated correct InSync detection.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Modify Provider Reconciliation Entry Point to Accept State Context",
+            "description": "Update the provider's reconcile logic to accept the state context from the engine, enabling state checks during reconciliation.",
+            "dependencies": [],
+            "details": "Modify the entry point in `pkg/providers/brew.go` to accept a state context parameter. This will allow the provider to access the state during reconciliation and determine if a resource exists in the state.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-24T17:52:37.706Z"
+          },
+          {
+            "id": 2,
+            "title": "Implement 'InSync' Decision Logic in Provider Reconcile Function",
+            "description": "Enhance the provider's reconcile function to compare the current desired state with the stored state and mark resources as 'InSync' if they match.",
+            "dependencies": [
+              1
+            ],
+            "details": "Update the provider's reconcile logic to compare the runtime state with the stored state from the engine context. If the resource exists in the state and matches the desired state, mark it as 'InSync'.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-24T17:52:37.709Z"
+          },
+          {
+            "id": 3,
+            "title": "Update Engine Context to Pass State Object to Providers",
+            "description": "Modify the engine logic to ensure the loaded state object is reliably passed to all relevant providers during the plan/apply phases.",
+            "dependencies": [],
+            "details": "Update `pkg/engine/engine.go` to include the loaded state object in the context passed to providers during the plan and apply phases. This ensures that providers can consult the state during reconciliation.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-24T17:52:37.712Z"
+          }
+        ],
+        "complexity": 8,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Decompose the changes across providers and engine logic. Subtasks should include: 1. Modifying the provider reconciliation entry point to accept the state context. 2. Implementing the 'InSync' decision logic within the provider's reconcile function, comparing runtime state vs. stored state. 3. Updating the engine context to reliably pass the loaded state object to all relevant providers during plan/apply phases.\n\nFocus on isolating the state lookup mechanism within the provider framework.",
+        "updatedAt": "2026-04-24T17:52:37.712Z"
+      },
+      {
+        "id": "4",
+        "title": "State List View: One Row Per Item Display",
+        "description": "Refactor the state list command to display each tracked resource item on its own dedicated row in the CLI table, rather than grouping multiple items into a single cell entry.",
+        "status": "done",
+        "dependencies": [],
+        "priority": "medium",
+        "details": "Modify `cmd/state.go` at line 340. Instead of joining all item names with a comma and rendering one row, the code must loop through every item name found in `res.Items`. For each item, it must call `t.Row()` once, duplicating the Kind, Group, and Status information to ensure the UI remains consistent across multiple rows. Handle cases where `res.Items` might be empty gracefully by skipping row creation.",
+        "testStrategy": "Execute Test Scenario 3 (State Persistence) and then run `dotisan state list`. Verify that for a group containing 'ripgrep, htop, podman', there are exactly three distinct rows rendered in the terminal output, one for each package.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Analyze the Current Table Rendering Mechanism in `cmd/state.go`",
+            "description": "Identify the aggregation point in the current code to understand how items are grouped into a single cell entry.",
+            "dependencies": [],
+            "details": "Review the code in `cmd/state.go` at line 340 to determine where and how items are aggregated into a single row. Identify the logic that joins item names with a comma and how the table is currently rendered.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-24T17:52:37.715Z"
+          },
+          {
+            "id": 2,
+            "title": "Rewrite the Rendering Loop to Display Each Item on a Separate Row",
+            "description": "Iterate over `res.Items` and dynamically call `t.Row()` for each item while preserving metadata.",
+            "dependencies": [
+              1
+            ],
+            "details": "Modify the code to loop through each item in `res.Items`, and for each item, call `t.Row()` to create a new row. Ensure that the Kind, Group, and Status information is duplicated for each row and handle empty `res.Items` cases gracefully.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-24T17:52:37.718Z"
+          }
+        ],
+        "complexity": 5,
+        "recommendedSubtasks": 2,
+        "expansionPrompt": "Focus the refactoring on the presentation layer. Subtasks: 1. Analyzing the current table rendering mechanism in `cmd/state.go` to identify the aggregation point. 2. Rewriting the rendering loop to iterate over `res.Items` and dynamically call `t.Row()` for each item, while preserving metadata for the entire group.",
+        "updatedAt": "2026-04-24T17:52:37.718Z"
+      },
+      {
+        "id": "5",
+        "title": "Verify InSync Handling in DisplayPlanList",
+        "description": "Review and potentially adjust `cmd/plan.go` logic to correctly render 'InSync' resources when `skipEmpty=false` is used during plan display, ensuring the '✓' icon is visible.",
+        "status": "done",
+        "dependencies": [
+          "3"
+        ],
+        "priority": "medium",
+        "details": "Review `cmd/plan.go:DisplayPlanList`. If the current logic filters out any plan entries that are purely InSync when `skipEmpty=false`, modify the filtering condition. The logic should prioritize displaying all resources found in state that are not marked for action (Add/Modify/Remove) if the user explicitly requests a full plan view.",
+        "testStrategy": "Manually trigger the plan view after running an apply where 2/4 packages were found InSync. Run the plan listing twice: first with the default/empty skip, then explicitly forcing the display of all types to confirm InSync items are visible.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Analyze and Modify Filtering Logic in DisplayPlanList",
+            "description": "Analyze the filtering mechanism in `cmd/plan.go` for the `DisplayPlanList` function to ensure InSync resources are displayed correctly when `skipEmpty=false`, and create a dedicated unit test case to verify this behavior.",
+            "dependencies": [
+              3
+            ],
+            "details": "Review the current logic in `DisplayPlanList` to determine if it filters out InSync resources when `skipEmpty=false`. If it does, adjust the filtering condition to ensure InSync items are displayed. Create a focused unit test to verify that InSync resources are not erroneously filtered out when `skipEmpty=false` is explicitly set.",
+            "status": "done",
+            "testStrategy": "Write and execute a unit test that specifically tests the interaction of the `skipEmpty` parameter with the `DisplayPlanList` function, ensuring that InSync items are rendered correctly when `skipEmpty=false`.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-24T17:52:37.720Z"
+          }
+        ],
+        "complexity": 4,
+        "recommendedSubtasks": 1,
+        "expansionPrompt": "Develop a focused PR/Code Review task: Analyze the filtering mechanism in `cmd/plan.go` for the `DisplayPlanList` function. Create a dedicated unit test case focusing solely on the `skipEmpty` parameter interaction to ensure InSync items are never erroneously filtered out when they should be displayed.",
+        "updatedAt": "2026-04-24T17:52:37.720Z"
+      },
+      {
+        "id": "6",
+        "title": "Add Debug Logging for State Operations",
+        "description": "Implement comprehensive logging across state loading and saving mechanisms to improve debuggability during complex state management bugs.",
+        "status": "pending",
+        "dependencies": [
+          "1"
+        ],
+        "priority": "low",
+        "details": "Update `pkg/engine/engine.go` and `pkg/state/state.go`:\n1. On loading state: Log the successful load, including the resource count and source path.\n2. On saving state: Log the action taken and the final count of resources being persisted.\n3. Implement a runtime flag (e.g., `--debug-state`) that enables these verbose logs when the CLI is run.",
+        "testStrategy": "Run `dotisan apply --debug-state --confirm`. Check the terminal output to confirm that detailed logging messages appear confirming both the load operation details and the subsequent save operation details.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Logging Wrappers for Load() and Save() in engine.go",
+            "description": "Add logging wrappers around the Load() and Save() functions in `pkg/engine/engine.go` to capture resource count and source path during loading and action taken during saving.",
+            "dependencies": [],
+            "details": "Wrap the Load() and Save() calls with logging statements to output the resource count and source path on load, and the action taken and resource count on save. Ensure these logs are conditional on the `--debug-state` flag.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Implement Conditional Debug Logging Flag in engine.go and state.go",
+            "description": "Implement the `--debug-state` runtime flag and ensure that logging functions are only activated when this flag is set in both `pkg/engine/engine.go` and `pkg/state/state.go`.",
+            "dependencies": [
+              1
+            ],
+            "details": "Introduce a conditional check for the `--debug-state` flag in both files. Modify the logging functions to only execute when the flag is enabled. Ensure compatibility with the CLI execution context.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 3,
+        "recommendedSubtasks": 2,
+        "expansionPrompt": "Separate the logging implementation from the main business logic modifications. Subtasks: 1. Implementing logging wrappers around `Load()` and `Save()` calls in `pkg/engine/engine.go`. 2. Creating the necessary conditional check (`--debug-state`) and ensuring logging functions only activate under this flag in both `pkg/engine/engine.go` and `pkg/state/state.go`."
+      },
+      {
+        "id": "7",
+        "title": "Implement Integration Test for Apply -> Plan Lifecycle",
+        "description": "Create a comprehensive, isolated unit/integration test file to cover the entire lifecycle: initial apply, state capture, and subsequent plan validation to prevent regression.",
+        "status": "pending",
+        "dependencies": [
+          "1",
+          "2"
+        ],
+        "priority": "medium",
+        "details": "Create/update `pkg/engine/engine_test.go`. Implement the `TestApplyPlanLifecycle` function following the provided structure. This test must mock or properly initialize the `StateBackend` to guarantee deterministic testing of state writes and subsequent reads.\n\n**Test Steps:** Setup -> Apply (Run 1) -> Assert State -> Plan (Run 2) -> Assert Plan.",
+        "testStrategy": "Run the test suite. The test must pass successfully, indicating that the state saved during the first 'apply' is correctly read and interpreted as 'InSync' during the second 'plan' check.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Mock the StateBackend Interface for Isolation",
+            "description": "Implement a mock for the StateBackend interface to ensure deterministic testing of state writes and reads during the Apply and Plan phases.",
+            "dependencies": [],
+            "details": "Create a mock implementation of the StateBackend interface that can be used in the test environment. This mock should support methods for loading and saving state, and should return predictable results for testing purposes.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Implement Apply Execution Block (Run 1) and State Assertions",
+            "description": "Write the initial Apply execution block and assert that the resulting state object is correctly populated with expected values.",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement the first part of the test lifecycle, which involves running an Apply operation and verifying that the state object is updated correctly. Ensure that the test checks for the presence and correctness of state data after the Apply operation.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Implement Plan Execution Block (Run 2) and Plan Validation",
+            "description": "Write the subsequent Plan execution block and validate that the plan output reflects the state changes correctly.",
+            "dependencies": [
+              2
+            ],
+            "details": "Implement the second part of the test lifecycle, which involves running a Plan operation and verifying that the plan output reflects the state changes from the Apply operation. Ensure that the test checks that the Plan output correctly identifies resources as 'InSync' where applicable.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 6,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Deconstruct the test structure: 1. Mocking the StateBackend interface for isolation. 2. Writing the initial 'Apply' execution block (Run 1) and asserting the resulting state object content. 3. Writing the subsequent 'Plan' execution block (Run 2) and asserting the plan output reflects the state changes correctly.\n\nCrucially, identify and mock any external calls that might interfere with state determinism."
+      },
+      {
+        "id": "8",
+        "title": "Refine Plan Calculation for All Metrics",
+        "description": "Expand the item counting fix from Task 2 to ensure all summary metrics (Additions, Modifications, Removals, InSync) use the item-level counting logic.",
+        "status": "done",
+        "dependencies": [
+          "2"
+        ],
+        "priority": "medium",
+        "details": "This task formalizes the application of the counting fix from Task 2 across the entire plan summary block. Review the PRD's implication for other counts and ensure that if a plan structure contains `plan.Modifications` or `plan.Removals`, these loops also sum `len(item.Items)` rather than `len(plan.Modifications)`.",
+        "testStrategy": "Test an edge case where modifications are required for 5 items, but only 1 group defines those modifications. Verify the plan footer shows '5 to modify' using the new item-counting mechanism.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Review `plan.Modifications` Iteration Logic",
+            "description": "Ensure that the iteration logic for `plan.Modifications` counts individual items rather than groups, aligning with the item-level counting methodology established in Task 2.",
+            "dependencies": [
+              2
+            ],
+            "details": "Review the code implementation for `plan.Modifications` and verify that the logic sums `len(item.Items)` instead of `len(plan.Modifications)` across all relevant sections of the plan summary block.",
+            "status": "done",
+            "testStrategy": "Test an edge case where modifications are required for 5 items, but only 1 group defines those modifications. Verify the plan footer shows '5 to modify' using the new item-counting mechanism.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-24T17:52:37.723Z"
+          },
+          {
+            "id": 2,
+            "title": "Review `plan.Removals` Iteration Logic",
+            "description": "Ensure that the iteration logic for `plan.Removals` counts individual items rather than groups, aligning with the item-level counting methodology established in Task 2.",
+            "dependencies": [
+              2
+            ],
+            "details": "Review the code implementation for `plan.Removals` and verify that the logic sums `len(item.Items)` instead of `len(plan.Removals)` across all relevant sections of the plan summary block.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-24T17:52:37.725Z"
+          }
+        ],
+        "complexity": 5,
+        "recommendedSubtasks": 2,
+        "expansionPrompt": "Focus on systematic review: Subtasks should be: 1. Reviewing `plan.Modifications` iteration logic to count items instead of groups. 2. Reviewing `plan.Removals` iteration logic to count items instead of groups. This requires cross-referencing the structure of the plan object against the item count methodology established in Task 2.",
+        "updatedAt": "2026-04-24T17:52:37.725Z"
+      },
+      {
+        "id": "9",
+        "title": "Address Missing Error Handling in State Load/Save",
+        "description": "Implement robust error handling paths for state persistence operations, particularly when the state file exists but is corrupted or unreadable.",
+        "status": "done",
+        "dependencies": [
+          "1"
+        ],
+        "priority": "low",
+        "details": "In `pkg/state/state.go` and `pkg/engine/engine.go`, wrap all calls to `StateBackend.Load()` and `StateBackend.Save()` within comprehensive `try-catch`/error handling blocks. On critical save failure, the CLI should fail loudly with actionable steps, rather than silently proceeding with an incorrect state.",
+        "testStrategy": "Manually corrupt a test state file (e.g., manually change a character in the JSON). Run the apply command and verify that the application fails gracefully, reporting the corruption and stopping execution, rather than failing silently.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Deserialization Error Handling in `pkg/state/state.go`",
+            "description": "Wrap calls to `StateBackend.Load()` in `pkg/state/state.go` with comprehensive error handling to detect structural corruption during deserialization.",
+            "dependencies": [],
+            "details": "Add specific error handling for deserialization failures in `pkg/state/state.go`, such as detecting corrupted or unreadable state files. This includes identifying malformed JSON, unexpected data types, or missing required fields.",
+            "status": "done",
+            "testStrategy": "Manually corrupt a test state file (e.g., change a character in the JSON). Run the apply command and verify that the application fails gracefully, reporting the corruption and stopping execution.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-24T17:52:37.728Z"
+          },
+          {
+            "id": 2,
+            "title": "Implement Critical Failure Path in `pkg/engine/engine.go`",
+            "description": "Wrap calls to `StateBackend.Save()` in `pkg/engine/engine.go` with error handling that halts execution and outputs a detailed, actionable error message on unrecoverable state write failure.",
+            "dependencies": [],
+            "details": "Modify `pkg/engine/engine.go` to include error handling for critical failures during state save. Ensure that on failure, the CLI fails loudly with actionable steps, overriding any previous soft error handling.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-24T17:52:37.730Z"
+          }
+        ],
+        "complexity": 5,
+        "recommendedSubtasks": 2,
+        "expansionPrompt": "Focus on failure modes: Subtasks should be: 1. Implementing specific deserialization error handling in `pkg/state/state.go` (e.g., detecting structural corruption). 2. Implementing a critical failure path in `pkg/engine/engine.go` that halts execution immediately and outputs a detailed, actionable error message upon unrecoverable state write failure, overriding previous soft error handling.",
+        "updatedAt": "2026-04-24T17:52:37.730Z"
+      },
+      {
+        "id": "10",
+        "title": "Review and Update Initial Plan Assumptions",
+        "description": "Final cleanup task to review the `dotisan plan` command logic to ensure it accurately reflects the desired state if no state file exists and no changes are found, providing helpful user feedback.",
+        "status": "done",
+        "dependencies": [
+          "3"
+        ],
+        "priority": "low",
+        "details": "Review `cmd/plan.go`. If the plan calculation results in zero differences (no Additions, Modifications, or Removals found), and the state is loaded correctly, ensure the output clearly states something like: 'System is up-to-date. No changes required.' rather than just being silent or confusing the user.",
+        "testStrategy": "Run `dotisan plan` when the system is known to be in a desired, stable state (i.e., after a successful apply run where no changes were detected). Confirm the user receives a clear, actionable 'Success/No Changes' message.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement and Verify 'No Changes Required' Output Logic",
+            "description": "Implement logic in `cmd/plan.go` to display the 'System is up-to-date. No changes required.' message when zero differences are found and the state is loaded correctly. Develop a comprehensive test case to verify this behavior.",
+            "dependencies": [
+              3
+            ],
+            "details": "Update the `cmd/plan.go` file to check for zero differences (no Additions, Modifications, or Removals) and ensure the state is loaded correctly. If both conditions are met, display the 'System is up-to-date. No changes required.' message. Create a test case that forces zero differences and verifies the output string exactly matches the expected message.",
+            "status": "done",
+            "testStrategy": "Run `dotisan plan` in a scenario where the system is in a desired, stable state (e.g., after a successful apply run with no changes detected). Confirm the output displays the 'System is up-to-date. No changes required.' message and that all preceding steps (e.g., state loading) support this outcome.",
+            "parentId": "undefined",
+            "updatedAt": "2026-04-24T17:52:37.733Z"
+          }
+        ],
+        "complexity": 3,
+        "recommendedSubtasks": 1,
+        "expansionPrompt": "Develop a single, comprehensive test case that forces zero differences (no Add, Mod, or Remove) and verifies the resulting console output string exactly matches the expected 'No changes required' message, ensuring all preceding successful state steps support this outcome.",
+        "updatedAt": "2026-04-24T17:52:37.733Z"
+      }
+    ],
+    "metadata": {
+      "version": "1.0.0",
+      "lastModified": "2026-04-24T17:52:37.733Z",
+      "taskCount": 10,
+      "completedCount": 8,
+      "tags": [
+        "bugfix-state-plan"
+      ]
+    }
   }
 }

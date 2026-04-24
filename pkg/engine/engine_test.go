@@ -25,14 +25,6 @@ func TestNewEngine(t *testing.T) {
 		t.Error("StateBackend should be initialized")
 	}
 
-	if eng.DiffEngine == nil {
-		t.Error("DiffEngine should be initialized")
-	}
-
-	if eng.PlanFormatter == nil {
-		t.Error("PlanFormatter should be initialized")
-	}
-
 	if len(eng.Providers) == 0 {
 		t.Error("Providers should be initialized")
 	}

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/wasilak/dotisan/pkg/provider"
+	"github.com/wasilak/dotisan/pkg/resource"
 )
 
 func TestNewState(t *testing.T) {
@@ -29,40 +30,41 @@ func TestNewState(t *testing.T) {
 	}
 }
 
-func TestState_GetResource(t *testing.T) {
+func TestState_GetResourceGroup(t *testing.T) {
 	s := NewState()
 	s.Resources = []provider.ResourceState{
-		{ID: "test-1", Name: "test1"},
-		{ID: "test-2", Name: "test2"},
+		{Kind: "BrewPackages", Group: "core-tools", Items: []resource.ItemState{{Name: "ripgrep"}}},
+		{Kind: "BrewPackages", Group: "dev-tools", Items: []resource.ItemState{{Name: "jq"}}},
 	}
 
 	// Get existing resource
-	r, found := s.GetResource("test-1")
+	r, found := s.GetResourceGroup("BrewPackages", "core-tools")
 	if !found {
-		t.Error("GetResource() should find existing resource")
+		t.Error("GetResourceGroup() should find existing resource")
 	}
-	if r.Name != "test1" {
-		t.Errorf("GetResource() name = %q, want %q", r.Name, "test1")
+	if len(r.Items) != 1 || r.Items[0].Name != "ripgrep" {
+		t.Errorf("GetResourceGroup() items = %v, want [ripgrep]", r.Items)
 	}
 
 	// Get non-existent resource
-	_, found = s.GetResource("nonexistent")
+	_, found = s.GetResourceGroup("BrewPackages", "nonexistent")
 	if found {
-		t.Error("GetResource() should not find non-existent resource")
+		t.Error("GetResourceGroup() should not find non-existent resource")
 	}
 }
 
-func TestState_SetResource_New(t *testing.T) {
+func TestState_SetResourceGroup_New(t *testing.T) {
 	s := NewState()
 
-	s.SetResource(provider.ResourceState{ID: "test-1", Name: "test1"})
+	s.SetResourceGroup(provider.ResourceState{
+		Kind:      "BrewPackages",
+		Group:     "core-tools",
+		Items:     []resource.ItemState{{Name: "ripgrep"}},
+		Namespace: "default",
+	})
 
 	if len(s.Resources) != 1 {
 		t.Errorf("len(Resources) = %d, want 1", len(s.Resources))
-	}
-
-	if s.Resources[0].ID != "test-1" {
-		t.Errorf("Resource ID = %q, want %q", s.Resources[0].ID, "test-1")
 	}
 
 	if s.UpdatedAt.IsZero() {
@@ -70,29 +72,50 @@ func TestState_SetResource_New(t *testing.T) {
 	}
 }
 
-func TestState_SetResource_Update(t *testing.T) {
+func TestState_SetResourceGroup_Update(t *testing.T) {
 	s := NewState()
-	s.SetResource(provider.ResourceState{ID: "test-1", Name: "old-name"})
+	s.SetResourceGroup(provider.ResourceState{
+		Kind:      "BrewPackages",
+		Group:    "core-tools",
+		Items:    []resource.ItemState{{Name: "ripgrep"}},
+		Namespace: "default",
+	})
 
-	s.SetResource(provider.ResourceState{ID: "test-1", Name: "new-name"})
+	s.SetResourceGroup(provider.ResourceState{
+		Kind:      "BrewPackages",
+		Group:    "core-tools",
+		Items:    []resource.ItemState{{Name: "ripgrep"}, {Name: "jq"}},
+		Namespace: "default",
+	})
 
 	if len(s.Resources) != 1 {
 		t.Errorf("len(Resources) = %d, want 1", len(s.Resources))
 	}
 
-	if s.Resources[0].Name != "new-name" {
-		t.Errorf("Resource name = %q, want %q", s.Resources[0].Name, "new-name")
+	// Should merge items
+	if len(s.Resources[0].Items) != 2 {
+		t.Errorf("Resource items = %d, want 2", len(s.Resources[0].Items))
 	}
 }
 
-func TestState_RemoveResource(t *testing.T) {
+func TestState_RemoveResourceGroup(t *testing.T) {
 	s := NewState()
-	s.SetResource(provider.ResourceState{ID: "test-1", Name: "test1"})
-	s.SetResource(provider.ResourceState{ID: "test-2", Name: "test2"})
+	s.SetResourceGroup(provider.ResourceState{
+		Kind:      "BrewPackages",
+		Group:    "core-tools",
+		Items:    []resource.ItemState{{Name: "ripgrep"}},
+		Namespace: "default",
+	})
+	s.SetResourceGroup(provider.ResourceState{
+		Kind:      "BrewPackages",
+		Group:    "dev-tools",
+		Items:    []resource.ItemState{{Name: "jq"}},
+		Namespace: "default",
+	})
 
-	removed := s.RemoveResource("test-1")
+	removed := s.RemoveResourceGroup("BrewPackages", "core-tools")
 	if !removed {
-		t.Error("RemoveResource() should return true for existing resource")
+		t.Error("RemoveResourceGroup() should return true for existing resource")
 	}
 
 	if len(s.Resources) != 1 {
@@ -100,9 +123,9 @@ func TestState_RemoveResource(t *testing.T) {
 	}
 
 	// Remove non-existent
-	removed = s.RemoveResource("nonexistent")
+	removed = s.RemoveResourceGroup("BrewPackages", "nonexistent")
 	if removed {
-		t.Error("RemoveResource() should return false for non-existent resource")
+		t.Error("RemoveResourceGroup() should return false for non-existent resource")
 	}
 }
 
@@ -114,13 +137,13 @@ func TestLocalBackend_SaveAndLoad(t *testing.T) {
 
 	// Create and save state
 	state := NewState()
-	state.SetResource(provider.ResourceState{
-		ID:        "brew/core-tools/ripgrep",
+	state.SetResourceGroup(provider.ResourceState{
 		Kind:      "BrewPackages",
-		Name:      "core-tools",
+		Group:     "core-tools",
 		Namespace: "default",
-		Version:   "13.0.0",
-		Checksum:  "abc123",
+		Items: []resource.ItemState{
+			{Name: "ripgrep", Version: "15.0.0"},
+		},
 	})
 
 	ctx := context.Background()
@@ -148,8 +171,8 @@ func TestLocalBackend_SaveAndLoad(t *testing.T) {
 		t.Fatalf("len(Resources) = %d, want 1", len(loaded.Resources))
 	}
 
-	if loaded.Resources[0].ID != "brew/core-tools/ripgrep" {
-		t.Errorf("Resource ID = %q, want %q", loaded.Resources[0].ID, "brew/core-tools/ripgrep")
+	if loaded.Resources[0].Group != "core-tools" {
+		t.Errorf("Resource Group = %q, want %q", loaded.Resources[0].Group, "core-tools")
 	}
 }
 

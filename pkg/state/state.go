@@ -70,7 +70,7 @@ func (s *State) GetResourceGroup(kind, group string) (provider.ResourceState, bo
 	return provider.ResourceState{}, false
 }
 
-// SetResourceGroup adds or updates a resource group state.
+// SetResourceGroup adds or updates a resource group state, merging items with existing groups.
 func (s *State) SetResourceGroup(r provider.ResourceState) {
 	// Update the UpdatedAt timestamp
 	s.UpdatedAt = time.Now().UTC()
@@ -78,8 +78,16 @@ func (s *State) SetResourceGroup(r provider.ResourceState) {
 	// Check if resource already exists
 	for i, existing := range s.Resources {
 		if existing.Kind == r.Kind && existing.Group == r.Group {
-			// Update existing resource
-			s.Resources[i] = r
+			// Merge items - add new items that don't exist yet
+			existingItems := make(map[string]bool)
+			for _, item := range s.Resources[i].Items {
+				existingItems[item.Name] = true
+			}
+			for _, newItem := range r.Items {
+				if !existingItems[newItem.Name] {
+					s.Resources[i].Items = append(s.Resources[i].Items, newItem)
+				}
+			}
 			return
 		}
 	}
