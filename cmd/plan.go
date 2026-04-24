@@ -80,10 +80,7 @@ func runPlan() error {
 		fmt.Println()
 
 		for providerName, plan := range result.ProviderPlans {
-			if len(plan.Additions) == 0 && len(plan.Removals) == 0 && len(plan.Modifications) == 0 {
-				continue
-			}
-
+			// Show all resources, not just changes
 			fmt.Printf("%s:\n", providerName)
 
 			for _, addition := range plan.Additions {
@@ -101,6 +98,12 @@ func runPlan() error {
 			for _, mod := range plan.Modifications {
 				for _, change := range mod.Changes {
 					fmt.Printf("  %s %s/%s: %s\n", style.IconEdit, mod.Kind, mod.Group, change.ItemName)
+				}
+			}
+
+			for _, inSync := range plan.InSync {
+				for _, item := range inSync.Items {
+					fmt.Printf("  %s %s/%s: %s\n", style.IconOK, inSync.Kind, inSync.Group, item.Name)
 				}
 			}
 		}
