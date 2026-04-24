@@ -5,24 +5,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"regexp"
-	"time"
 
-	"github.com/charmbracelet/bubbles/progress"
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/wasilak/dotisan/pkg/diff"
 	"github.com/wasilak/dotisan/pkg/engine"
 	"github.com/wasilak/dotisan/pkg/output"
-	"github.com/wasilak/dotisan/pkg/resource"
 	"github.com/wasilak/dotisan/pkg/style"
-	"golang.org/x/term"
 
 	"github.com/spf13/cobra"
 )
 
-var (
-	planOutputFlag string
-)
+var planOutputFlag string
 
 // planCmd represents the plan command
 var planCmd = &cobra.Command{
@@ -34,98 +26,11 @@ on each provider to show a structured diff of what would change.
 
 Output formats:
   plain (default): table view with symbols and colors
-  tree:            3-level tree view (Kind / Name / Items)
-  json:            machine-readable JSON output
-
-Use --output/-o to specify the format.`,
+  tree:            3-level tree view (Kind / Group / Items)
+  json:            machine-readable JSON output`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runPlan()
 	},
-}
-
-// progressModel represents the progress bar model for Bubble Tea
-type progressModel struct {
-	progress  progress.Model
-	percent   float64
-	message   string
-	result    *engine.PlanResult
-	err       error
-	done      bool
-	eng       *engine.Engine
-}
-
-// tickMsg is sent when we want to update the progress
-type tickMsg struct{}
-
-func (m progressModel) Init() tea.Cmd {
-	return m.tickCmd()
-}
-
-func (m progressModel) tickCmd() tea.Cmd {
-	return tea.Tick(time.Millisecond*100, func(time.Time) tea.Msg {
-		return tickMsg{}
-	})
-}
-
-func (m progressModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		if msg.Type == tea.KeyCtrlC || msg.Type == tea.KeyEsc {
-			return m, tea.Quit
-		}
-		return m, nil
-
-	case tickMsg:
-		if m.done {
-			return m, tea.Quit
-		}
-		return m, m.tickCmd()
-
-	case progressMsg:
-		m.percent = msg.percent
-		m.message = msg.message
-		// Note: we don't set m.done here - we wait for resultMsg or errorMsg
-		return m, nil
-
-	case resultMsg:
-		m.result = msg.result
-		m.done = true
-		return m, tea.Quit
-
-	case errorMsg:
-		m.err = msg.err
-		m.done = true
-		return m, tea.Quit
-	}
-
-	return m, nil
-}
-
-func (m progressModel) View() string {
-	if m.done {
-		return ""
-	}
-
-	var s string
-	s += "\n"
-	s += style.Header.Render("Planning...") + "\n\n"
-	s += m.message + "\n"
-	s += m.progress.ViewAs(m.percent) + "\n"
-	s += fmt.Sprintf("%.0f%%\n", m.percent*100)
-	return s
-}
-
-// Messages for communicating with the Bubble Tea model
-type progressMsg struct {
-	percent float64
-	message string
-}
-
-type resultMsg struct {
-	result *engine.PlanResult
-}
-type errorMsg struct {
-	err error
 }
 
 func runPlan() error {
@@ -135,10 +40,9 @@ func runPlan() error {
 		return fmt.Errorf("failed to initialize: %w", err)
 	}
 
-	// Determine output format from flag or config
+	// Determine output format
 	outputFormat := output.Format(planOutputFlag)
 	if outputFormat == "" {
-		// Use config if flag not set
 		if eng.Config.UI.Output != "" {
 			outputFormat = output.Format(eng.Config.UI.Output)
 		} else {
@@ -146,155 +50,71 @@ func runPlan() error {
 		}
 	}
 
-	// For JSON output, skip the progress bar
-	if outputFormat == output.FormatJSON {
-		ctx := context.Background()
-		result, err := eng.Plan(ctx, nil)
-		if err != nil {
-			return fmt.Errorf("plan failed: %w", err)
-		}
-		return displayJSON(result)
-	}
-
-	// Check if we're in an interactive terminal
-	if !isTerminal() {
-		// Non-interactive mode: run plan without progress bar
-		ctx := context.Background()
-		result, err := eng.Plan(ctx, func(percent float64, message string) {
-			// Simple text progress for non-interactive mode
-			if message != "" {
-				fmt.Printf("→ %s\n", message)
-			}
-		})
-		if err != nil {
-			return fmt.Errorf("plan failed: %w", err)
-		}
-		// Render based on output format
-		switch outputFormat {
-		case output.FormatTree:
-			treeFormatter := diff.NewTreeFormatter()
-			planInfo := diff.PlanResultInfo{
-				ProviderPlans:      result.ProviderPlans,
-				TotalAdditions:     result.TotalAdditions,
-				TotalModifications: result.TotalModifications,
-				TotalRemovals:      result.TotalRemovals,
-				TotalDrifted:       result.TotalDrifted,
-			}
-			fmt.Println(treeFormatter.FormatPlanAsTree(planInfo))
-			fmt.Println()
-			fmt.Println(eng.PlanFormatter.FormatSummary(result.TotalAdditions, result.TotalModifications, result.TotalRemovals, result.TotalInSync))
-		default:
-			eng.DisplayPlan(result)
-		}
-		return nil
-	}
-
-	// Interactive mode: use Bubble Tea progress bar
-	// Get terminal width for full-width progress bar
-	barWidth := 40 // default fallback
-	if w, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil && w > 0 {
-		barWidth = w - 10 // Leave some margin for padding/decorations
-		if barWidth < 20 {
-			barWidth = 20 // minimum width
-		}
-	}
-
-	prog := progress.New(
-		progress.WithDefaultGradient(),
-		progress.WithWidth(barWidth),
-	)
-
-	m := progressModel{
-		progress: prog,
-		percent:  0,
-		message:  "Initializing...",
-		eng:      eng,
-	}
-
-	// Run Bubble Tea program
-	p := tea.NewProgram(m)
-
-	// Run plan in background and send updates
-	var result *engine.PlanResult
-	var planErr error
-	go func() {
-		ctx := context.Background()
-		result, planErr = eng.Plan(ctx, func(percent float64, message string) {
-			p.Send(progressMsg{percent: percent, message: message})
-		})
-
-		if planErr != nil {
-			p.Send(errorMsg{err: planErr})
-		} else {
-			p.Send(resultMsg{result: result})
-		}
-	}()
-
-	// Run the program
-	var fallbackUsed bool
-	finalModel, err := p.Run()
+	// Run plan
+	ctx := context.Background()
+	result, err := eng.Plan(ctx)
 	if err != nil {
-		// Fall back to simple progress on TTY error
-		fmt.Printf("→ Running plan...\n")
-		ctx := context.Background()
-		result, err = eng.Plan(ctx, func(percent float64, message string) {
-			if message != "" {
-				fmt.Printf("  %s\n", message)
-			}
-		})
-		if err != nil {
-			return fmt.Errorf("plan failed: %w", err)
-		}
-		fallbackUsed = true
-	} else {
-		// Extract result from the model
-		if m, ok := finalModel.(progressModel); ok && m.result != nil {
-			result = m.result
-		}
-		// If model extraction failed, result should already be set by the goroutine
-	}
-
-	// Only check planErr if we didn't use the fallback
-	if !fallbackUsed && planErr != nil {
-		return fmt.Errorf("plan failed: %w", planErr)
-	}
-
-	// Check if we have a result
-	if result == nil {
-		return fmt.Errorf("plan failed: no result returned")
+		return fmt.Errorf("plan failed: %w", err)
 	}
 
 	// Display results based on output format
 	switch outputFormat {
+	case output.FormatJSON:
+		return displayPlanJSON(result)
 	case output.FormatTree:
 		treeFormatter := diff.NewTreeFormatter()
-		planInfo := diff.PlanResultInfo{
-			ProviderPlans:      result.ProviderPlans,
-			TotalAdditions:     result.TotalAdditions,
-			TotalModifications: result.TotalModifications,
-			TotalRemovals:      result.TotalRemovals,
-			TotalDrifted:       result.TotalDrifted,
+		for providerName, plan := range result.ProviderPlans {
+			if len(plan.Additions) > 0 || len(plan.Removals) > 0 || len(plan.Modifications) > 0 {
+				fmt.Printf("\n%s:\n", providerName)
+				fmt.Println(treeFormatter.FormatGroupPlanAsTree(diff.GroupPlanInfo{Plan: plan}))
+			}
 		}
-		fmt.Println(treeFormatter.FormatPlanAsTree(planInfo))
-		fmt.Println()
-		fmt.Println(eng.PlanFormatter.FormatSummary(result.TotalAdditions, result.TotalModifications, result.TotalRemovals, result.TotalInSync))
 	default:
-		eng.DisplayPlan(result)
+		// Plain text output
+		if !result.HasChanges {
+			fmt.Println(style.Info.Render("No changes to apply."))
+			return nil
+		}
+
+		fmt.Println(style.Header.Render("Plan Summary"))
+		fmt.Println()
+
+		for providerName, plan := range result.ProviderPlans {
+			if len(plan.Additions) == 0 && len(plan.Removals) == 0 && len(plan.Modifications) == 0 {
+				continue
+			}
+
+			fmt.Printf("%s:\n", providerName)
+
+			for _, addition := range plan.Additions {
+				for _, item := range addition.Items {
+					fmt.Printf("  %s %s/%s: %s\n", style.IconAdd, addition.Kind, addition.Group, item.Name)
+				}
+			}
+
+			for _, removal := range plan.Removals {
+				for _, item := range removal.Items {
+					fmt.Printf("  %s %s/%s: %s\n", style.IconRemove, removal.Kind, removal.Group, item.Name)
+				}
+			}
+
+			for _, mod := range plan.Modifications {
+				for _, change := range mod.Changes {
+					fmt.Printf("  %s %s/%s: %s\n", style.IconEdit, mod.Kind, mod.Group, change.ItemName)
+				}
+			}
+		}
+
+		fmt.Println()
+		fmt.Printf("Plan: %s to add, %s to destroy\n",
+			style.Success.Render(fmt.Sprintf("%d", result.TotalAdditions)),
+			style.Error.Render(fmt.Sprintf("%d", result.TotalRemovals)))
 	}
 
 	return nil
 }
 
-// isTerminal checks if stdout is a terminal
-func isTerminal() bool {
-	stat, err := os.Stdout.Stat()
-	if err != nil {
-		return false
-	}
-	return (stat.Mode() & os.ModeCharDevice) == os.ModeCharDevice
-}
-
-func displayJSON(result *engine.PlanResult) error {
+func displayPlanJSON(result *engine.PlanResult) error {
 	output := map[string]interface{}{
 		"summary": map[string]int{
 			"additions":     result.TotalAdditions,
@@ -304,144 +124,24 @@ func displayJSON(result *engine.PlanResult) error {
 			"drifted":       result.TotalDrifted,
 		},
 		"has_changes": result.HasChanges,
-		"resources":   []map[string]interface{}{},
+		"providers":   map[string]interface{}{},
 	}
 
-	// Group by kind -> name -> items (3-level structure like tree)
-	// Map: kind -> name -> []items
-	byKind := make(map[string]map[string][]map[string]string)
-
-	for _, plan := range result.ProviderPlans {
-		for _, res := range plan.Additions {
-			addResourceToMap(res, "add", byKind)
-		}
-		for _, mod := range plan.Modifications {
-			addResourceToMap(mod.Resource, "modify", byKind)
-		}
-		for _, res := range plan.Removals {
-			addResourceToMap(res, "remove", byKind)
-		}
-		for _, drift := range plan.Drifted {
-			addResourceToMap(drift.Resource, "drift", byKind)
+	providers := make(map[string]interface{})
+	for name, plan := range result.ProviderPlans {
+		providers[name] = map[string]interface{}{
+			"additions":     plan.Additions,
+			"modifications": plan.Modifications,
+			"removals":      plan.Removals,
+			"in_sync":       plan.InSync,
+			"drifted":       plan.Drifted,
 		}
 	}
-
-	// Build hierarchical resources list
-	resources := []map[string]interface{}{}
-	for kind, namesMap := range byKind {
-		kindRes := map[string]interface{}{
-			"kind":      kind,
-			"resources": []map[string]interface{}{},
-		}
-
-		var nameList []map[string]interface{}
-		for name, items := range namesMap {
-			nameRes := map[string]interface{}{
-				"name":  name,
-				"items": items,
-			}
-			nameList = append(nameList, nameRes)
-		}
-		kindRes["resources"] = nameList
-		resources = append(resources, kindRes)
-	}
-
-	output["resources"] = resources
+	output["providers"] = providers
 
 	encoder := json.NewEncoder(os.Stdout)
 	encoder.SetIndent("", "  ")
 	return encoder.Encode(output)
-}
-
-// addResourceToMap adds a resource to the nested map structure
-// Parses names like "core-tools[ripgrep]" to extract base name and item
-func addResourceToMap(res resource.Resource, action string, byKind map[string]map[string][]map[string]string) {
-	kind := res.GetKind()
-	fullName := res.GetMetadata().Name
-
-	// Try to parse name as "basename[itemkey]"
-	baseName, itemKey, hasItemKey := parseJSONResourceName(fullName)
-
-	if byKind[kind] == nil {
-		byKind[kind] = make(map[string][]map[string]string)
-	}
-
-	if hasItemKey {
-		// This is an indexed resource
-		item := map[string]string{
-			"name":   itemKey,
-			"action": action,
-		}
-		byKind[kind][baseName] = append(byKind[kind][baseName], item)
-	} else {
-		// Try to extract items from resource spec
-		items := extractJSONItems(res, action)
-		if len(items) > 0 {
-			byKind[kind][fullName] = append(byKind[kind][fullName], items...)
-		} else {
-			// No items - use resource name itself
-			item := map[string]string{
-				"name":   fullName,
-				"action": action,
-			}
-			byKind[kind][fullName] = append(byKind[kind][fullName], item)
-		}
-	}
-}
-
-// parseJSONResourceName parses a resource name that may contain an item key
-// Returns (baseName, itemKey, hasItemKey)
-func parseJSONResourceName(name string) (string, string, bool) {
-	matches := jsonResourceNameRegex.FindStringSubmatch(name)
-	if matches == nil {
-		return name, "", false
-	}
-	return matches[1], matches[2], true
-}
-
-// jsonResourceNameRegex matches resource names with item keys like "core-tools[ripgrep]"
-var jsonResourceNameRegex = regexp.MustCompile(`^([^\[]+)\[(.+)\]$`)
-
-// extractJSONItems extracts child items from a resource
-func extractJSONItems(res resource.Resource, action string) []map[string]string {
-	switch r := res.(type) {
-	case *resource.BrewPackages:
-		var items []map[string]string
-		for _, formula := range r.Spec.Formulae {
-			items = append(items, map[string]string{"name": formula.Name, "action": action})
-		}
-		for _, cask := range r.Spec.Casks {
-			items = append(items, map[string]string{"name": cask.Name + " (cask)", "action": action})
-		}
-		return items
-	case *resource.NpmPackages:
-		var items []map[string]string
-		for _, pkg := range r.Spec.Packages {
-			items = append(items, map[string]string{"name": pkg.Name, "action": action})
-		}
-		return items
-	case *resource.GoPackages:
-		var items []map[string]string
-		for _, pkg := range r.Spec.Packages {
-			items = append(items, map[string]string{"name": pkg.Module, "action": action})
-		}
-		return items
-	case *resource.CargoPackages:
-		var items []map[string]string
-		for _, pkg := range r.Spec.Packages {
-			items = append(items, map[string]string{"name": pkg.Name, "action": action})
-		}
-		return items
-	case *resource.ManagedFile:
-		if r.Spec.SourceFile != "" {
-			return []map[string]string{{"name": r.Spec.SourceFile, "action": action}}
-		}
-		return []map[string]string{{"name": "(inline content)", "action": action}}
-	case *resource.ManagedDirectory:
-		return []map[string]string{{"name": r.Spec.SourceDir + " → " + r.Spec.Destination, "action": action}}
-	default:
-		return nil
-	}
 }
 
 func init() {

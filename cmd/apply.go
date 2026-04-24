@@ -43,7 +43,7 @@ func runApply() error {
 
 	// Run plan first
 	ctx := context.Background()
-	result, err := eng.Plan(ctx, nil)
+	result, err := eng.Plan(ctx)
 	if err != nil {
 		return fmt.Errorf("plan failed: %w", err)
 	}
@@ -54,12 +54,7 @@ func runApply() error {
 		return nil
 	}
 
-	// Apply with options
-	opts := engine.ApplyOptions{
-		Confirm: confirmFlag,
-	}
-
-	// Determine output format from flag or config
+	// Determine output format
 	outputFormat := output.Format(applyOutputFlag)
 	if outputFormat == "" {
 		if eng.Config.UI.Output != "" {
@@ -69,98 +64,111 @@ func runApply() error {
 		}
 	}
 
+	// Display plan
+	switch outputFormat {
+	case output.FormatTree:
+		treeFormatter := diff.NewTreeFormatter()
+		for providerName, plan := range result.ProviderPlans {
+			if len(plan.Additions) > 0 || len(plan.Removals) > 0 || len(plan.Modifications) > 0 {
+				fmt.Printf("\n%s:\n", providerName)
+				fmt.Println(treeFormatter.FormatGroupPlanAsTree(diff.GroupPlanInfo{Plan: plan}))
+			}
+		}
+	default:
+		// Plain text output
+		fmt.Println(style.Header.Render("Plan Summary"))
+		fmt.Println()
+
+		for providerName, plan := range result.ProviderPlans {
+			if len(plan.Additions) == 0 && len(plan.Removals) == 0 && len(plan.Modifications) == 0 {
+				continue
+			}
+
+			fmt.Printf("%s:\n", providerName)
+
+			for _, addition := range plan.Additions {
+				for _, item := range addition.Items {
+					fmt.Printf("  %s %s/%s: %s\n", style.IconAdd, addition.Kind, addition.Group, item.Name)
+				}
+			}
+
+			for _, removal := range plan.Removals {
+				for _, item := range removal.Items {
+					fmt.Printf("  %s %s/%s: %s\n", style.IconRemove, removal.Kind, removal.Group, item.Name)
+				}
+			}
+
+			for _, mod := range plan.Modifications {
+				for _, change := range mod.Changes {
+					fmt.Printf("  %s %s/%s: %s\n", style.IconEdit, mod.Kind, mod.Group, change.ItemName)
+				}
+			}
+		}
+
+		fmt.Println()
+		fmt.Printf("Plan: %s to add, %s to destroy\n",
+			style.Success.Render(fmt.Sprintf("%d", result.TotalAdditions)),
+			style.Error.Render(fmt.Sprintf("%d", result.TotalRemovals)))
+	}
+
+	// Apply with options
+	opts := engine.ApplyOptions{
+		Confirm: confirmFlag,
+	}
+
 	// Execute apply based on mode
 	if confirmFlag {
-		// Non-interactive mode: display plan then apply
-		switch outputFormat {
-		case output.FormatTree:
-			treeFormatter := diff.NewTreeFormatter()
-			planInfo := diff.PlanResultInfo{
-				ProviderPlans:      result.ProviderPlans,
-				TotalAdditions:     result.TotalAdditions,
-				TotalModifications: result.TotalModifications,
-				TotalRemovals:      result.TotalRemovals,
-				TotalDrifted:       result.TotalDrifted,
-			}
-			fmt.Println(treeFormatter.FormatPlanAsTree(planInfo))
-			fmt.Println()
-			fmt.Println(eng.PlanFormatter.FormatSummary(result.TotalAdditions, result.TotalModifications, result.TotalRemovals, result.TotalInSync))
-		default:
-			eng.DisplayPlan(result)
-		}
+		// Non-interactive mode
 		if err := eng.Apply(ctx, result, opts); err != nil {
 			return fmt.Errorf("apply failed: %w", err)
 		}
+		fmt.Println(style.IconSuccess + " Changes applied successfully.")
 	} else {
-		// Interactive mode: display plan and ask for confirmation
-		switch outputFormat {
-		case output.FormatTree:
-			treeFormatter := diff.NewTreeFormatter()
-			planInfo := diff.PlanResultInfo{
-				ProviderPlans:      result.ProviderPlans,
-				TotalAdditions:     result.TotalAdditions,
-				TotalModifications: result.TotalModifications,
-				TotalRemovals:      result.TotalRemovals,
-				TotalDrifted:       result.TotalDrifted,
-			}
-			fmt.Println(treeFormatter.FormatPlanAsTree(planInfo))
-			fmt.Println()
-			fmt.Println(eng.PlanFormatter.FormatSummary(result.TotalAdditions, result.TotalModifications, result.TotalRemovals, result.TotalInSync))
-		default:
-			eng.DisplayPlan(result)
+		// Interactive mode: ask for confirmation
+		totalChanges := result.TotalAdditions + result.TotalModifications + result.TotalRemovals + result.TotalDrifted
+
+		var changeSummary string
+		if totalChanges == 1 {
+			changeSummary = "Apply 1 change?"
+		} else {
+			changeSummary = fmt.Sprintf("Apply %d changes?", totalChanges)
 		}
-		if !askForConfirmation(result) {
+
+		box := style.InfoBox.Render(
+			style.Bold.Render(changeSummary) + "\n\n" +
+				fmt.Sprintf("%s %s\n", style.Info.Render("[Y]"), style.Dim.Render("Yes, apply changes")) +
+				fmt.Sprintf("%s %s", style.Info.Render("[N]"), style.Dim.Render("No, cancel")),
+		)
+
+		fmt.Println()
+		fmt.Print(box)
+		fmt.Print("\n: ")
+
+		reader := bufio.NewReader(os.Stdin)
+		response, err := reader.ReadString('\n')
+		if err != nil {
+			return fmt.Errorf("failed to read response: %w", err)
+		}
+
+		response = strings.TrimSpace(strings.ToLower(response))
+		if response != "y" && response != "yes" {
 			fmt.Println()
 			fmt.Println(style.Info.Render("→ Apply cancelled."))
 			return nil
 		}
-		// Use apply with progress bar
+
+		// Apply with progress
 		if err := eng.ApplyWithProgress(ctx, result, opts); err != nil {
 			return fmt.Errorf("apply failed: %w", err)
 		}
+		fmt.Println(style.IconSuccess + " Changes applied successfully.")
 	}
 
 	return nil
 }
 
-// askForConfirmation prompts the user to confirm the apply operation
-func askForConfirmation(result *engine.PlanResult) bool {
-	// Calculate total changes
-	totalChanges := result.TotalAdditions + result.TotalModifications + result.TotalRemovals + result.TotalDrifted
-
-	// Build confirmation message
-	var changeSummary string
-	if totalChanges == 1 {
-		changeSummary = "Apply 1 change?"
-	} else {
-		changeSummary = fmt.Sprintf("Apply %d changes?", totalChanges)
-	}
-
-	// Styled confirmation box
-	box := style.InfoBox.Render(
-		style.Bold.Render(changeSummary) + "\n\n" +
-			fmt.Sprintf("%s %s\n", style.Info.Render("[Y]"), style.Dim.Render("Yes, apply changes")) +
-			fmt.Sprintf("%s %s", style.Info.Render("[N]"), style.Dim.Render("No, cancel")),
-	)
-
-	fmt.Println()
-	fmt.Print(box)
-	fmt.Print("\n: ")
-
-	// Read user input
-	reader := bufio.NewReader(os.Stdin)
-	response, err := reader.ReadString('\n')
-	if err != nil {
-		return false
-	}
-
-	response = strings.TrimSpace(strings.ToLower(response))
-	return response == "y" || response == "yes"
-}
-
 func init() {
 	rootCmd.AddCommand(applyCmd)
-
 	applyCmd.Flags().BoolVar(&confirmFlag, "confirm", false, "Skip confirmation and apply immediately")
 	applyCmd.Flags().StringVarP(&applyOutputFlag, "output", "o", "", "Output format (plain, tree, json)")
 }

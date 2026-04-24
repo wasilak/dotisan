@@ -1,13 +1,11 @@
 package diff
 
 import (
-	"regexp"
 	"strings"
 
 	"charm.land/lipgloss/v2/tree"
 	lipgloss "charm.land/lipgloss/v2"
 	"github.com/wasilak/dotisan/pkg/provider"
-	"github.com/wasilak/dotisan/pkg/resource"
 	"github.com/wasilak/dotisan/pkg/style"
 )
 
@@ -31,96 +29,60 @@ func NewTreeFormatter() *TreeFormatter {
 	}
 }
 
-// PlanResultInfo holds the plan counts for tree rendering
-type PlanResultInfo struct {
-	ProviderPlans      map[string]provider.Plan
-	TotalAdditions     int
-	TotalModifications int
-	TotalRemovals      int
-	TotalDrifted       int
+// GroupPlanInfo holds the plan for tree rendering
+type GroupPlanInfo struct {
+	Plan provider.GroupPlan
 }
 
-// FormatPlanAsTree renders the entire plan as a 3-level tree
-func (f *TreeFormatter) FormatPlanAsTree(result PlanResultInfo) string {
+// FormatGroupPlanAsTree renders the entire plan as a 3-level tree
+func (f *TreeFormatter) FormatGroupPlanAsTree(info GroupPlanInfo) string {
 	var sections []string
 
-	if result.TotalRemovals > 0 {
-		sections = append(sections, f.formatSection("Resources to be removed", result.ProviderPlans, "remove", style.Error))
+	if len(info.Plan.Removals) > 0 {
+		sections = append(sections, f.formatRemovals(info.Plan.Removals))
 	}
-	if result.TotalAdditions > 0 {
-		sections = append(sections, f.formatSection("Resources to be created", result.ProviderPlans, "create", style.Success))
+	if len(info.Plan.Additions) > 0 {
+		sections = append(sections, f.formatAdditions(info.Plan.Additions))
 	}
-	if result.TotalModifications > 0 {
-		sections = append(sections, f.formatSection("Resources to be modified", result.ProviderPlans, "modify", style.Warning))
+	if len(info.Plan.Modifications) > 0 {
+		sections = append(sections, f.formatModifications(info.Plan.Modifications))
 	}
-	if result.TotalDrifted > 0 {
-		sections = append(sections, f.formatSection("Drifted resources (will be restored)", result.ProviderPlans, "restore", style.Warning))
+	if len(info.Plan.Drifted) > 0 {
+		sections = append(sections, f.formatDrifted(info.Plan.Drifted))
 	}
 
 	return strings.Join(sections, "\n\n")
 }
 
-// itemKeyRegex matches resource names with item keys like "core-tools[ripgrep]"
-var itemKeyRegex = regexp.MustCompile(`^([^\[]+)\[(.+)\]$`)
-
-// parseResourceName parses a resource name that may contain an item key
-// Returns (baseName, itemKey, hasItemKey)
-func parseResourceName(name string) (string, string, bool) {
-	matches := itemKeyRegex.FindStringSubmatch(name)
-	if matches == nil {
-		return name, "", false
-	}
-	return matches[1], matches[2], true
-}
-
-func (f *TreeFormatter) formatSection(title string, providerPlans map[string]provider.Plan, actionType string, titleStyle lipgloss.Style) string {
-	root := tree.Root(titleStyle.Render(title)).
+func (f *TreeFormatter) formatAdditions(additions []provider.GroupAddition) string {
+	root := tree.Root(style.Success.Render("Resources to be created")).
 		Enumerator(tree.RoundedEnumerator).
 		EnumeratorStyle(f.enumeratorStyle)
 
-	// Collect resources grouped by Kind, then by Name
-	// Map: Kind -> Name -> []items
-	byKind := make(map[string]map[string][]string)
-
-	for _, plan := range providerPlans {
-		switch actionType {
-		case "create":
-			for _, res := range plan.Additions {
-				f.addResourceToMap(res, "will be created", byKind)
-			}
-		case "remove":
-			for _, res := range plan.Removals {
-				f.addResourceToMap(res, "will be destroyed", byKind)
-			}
-		case "modify":
-			for _, mod := range plan.Modifications {
-				f.addResourceToMap(mod.Resource, "will be updated", byKind)
-			}
-		case "restore":
-			for _, drift := range plan.Drifted {
-				f.addResourceToMap(drift.Resource, "will be restored", byKind)
-			}
-		}
+	// Group by Kind
+	byKind := make(map[string][]provider.GroupAddition)
+	for _, addition := range additions {
+		byKind[addition.Kind] = append(byKind[addition.Kind], addition)
 	}
 
-	// Build tree: Kind -> Name -> Items with action
-	for kind, namesMap := range byKind {
+	for kind, groups := range byKind {
 		kindNode := tree.New().
 			Root(f.kindStyle.Render(kind)).
 			Enumerator(tree.RoundedEnumerator).
 			EnumeratorStyle(f.enumeratorStyle)
 
-		for name, items := range namesMap {
-			nameNode := tree.New().
-				Root(f.nameStyle.Render(name)).
+		for _, group := range groups {
+			groupNode := tree.New().
+				Root(f.nameStyle.Render(group.Group)).
 				Enumerator(tree.RoundedEnumerator).
 				EnumeratorStyle(f.enumeratorStyle)
 
-			for _, item := range items {
-				nameNode.Child(f.itemStyle.Render(item))
+			for _, item := range group.Items {
+				itemText := f.itemStyle.Render(item.Name) + " " + f.actionStyle.Render("will be created")
+				groupNode.Child(itemText)
 			}
 
-			kindNode.Child(nameNode)
+			kindNode.Child(groupNode)
 		}
 
 		root.Child(kindNode)
@@ -129,81 +91,111 @@ func (f *TreeFormatter) formatSection(title string, providerPlans map[string]pro
 	return root.String()
 }
 
-// addResourceToMap adds a resource's items to the nested map structure
-func (f *TreeFormatter) addResourceToMap(res resource.Resource, action string, byKind map[string]map[string][]string) {
-	kind := res.GetKind()
-	fullName := res.GetMetadata().Name
+func (f *TreeFormatter) formatRemovals(removals []provider.GroupRemoval) string {
+	root := tree.Root(style.Error.Render("Resources to be removed")).
+		Enumerator(tree.RoundedEnumerator).
+		EnumeratorStyle(f.enumeratorStyle)
 
-	// Try to parse name as "basename[itemkey]"
-	baseName, itemKey, hasItemKey := parseResourceName(fullName)
-
-	// Initialize nested maps if needed
-	if byKind[kind] == nil {
-		byKind[kind] = make(map[string][]string)
+	byKind := make(map[string][]provider.GroupRemoval)
+	for _, removal := range removals {
+		byKind[removal.Kind] = append(byKind[removal.Kind], removal)
 	}
 
-	if hasItemKey {
-		// This is an indexed resource - itemKey is the actual item
-		byKind[kind][baseName] = append(byKind[kind][baseName], itemKey+" "+action)
-	} else {
-		// Try to extract items from the resource spec
-		items := extractItemsWithAction(res, action)
-		if len(items) > 0 {
-			byKind[kind][fullName] = append(byKind[kind][fullName], items...)
-		} else {
-			// No items - use resource name itself
-			byKind[kind][fullName] = append(byKind[kind][fullName], fullName+" "+action)
+	for kind, groups := range byKind {
+		kindNode := tree.New().
+			Root(f.kindStyle.Render(kind)).
+			Enumerator(tree.RoundedEnumerator).
+			EnumeratorStyle(f.enumeratorStyle)
+
+		for _, group := range groups {
+			groupNode := tree.New().
+				Root(f.nameStyle.Render(group.Group)).
+				Enumerator(tree.RoundedEnumerator).
+				EnumeratorStyle(f.enumeratorStyle)
+
+			for _, item := range group.Items {
+				itemText := f.itemStyle.Render(item.Name) + " " + f.actionStyle.Render("will be destroyed")
+				groupNode.Child(itemText)
+			}
+
+			kindNode.Child(groupNode)
 		}
+
+		root.Child(kindNode)
 	}
+
+	return root.String()
 }
 
-// extractItemsWithAction extracts child items from a resource and appends action
-func extractItemsWithAction(res resource.Resource, action string) []string {
-	switch r := res.(type) {
-	case *resource.BrewPackages:
-		var items []string
-		for _, formula := range r.Spec.Formulae {
-			items = append(items, formula.Name+" "+action)
-		}
-		for _, cask := range r.Spec.Casks {
-			items = append(items, cask.Name+" (cask) "+action)
-		}
-		return items
-	case *resource.NpmPackages:
-		var items []string
-		for _, pkg := range r.Spec.Packages {
-			items = append(items, pkg.Name+" "+action)
-		}
-		return items
-	case *resource.GoPackages:
-		var items []string
-		for _, pkg := range r.Spec.Packages {
-			items = append(items, pkg.Module+" "+action)
-		}
-		return items
-	case *resource.CargoPackages:
-		var items []string
-		for _, pkg := range r.Spec.Packages {
-			items = append(items, pkg.Name+" "+action)
-		}
-		return items
-	case *resource.ManagedFile:
-		if r.Spec.SourceFile != "" {
-			return []string{r.Spec.SourceFile + " " + action}
-		}
-		return []string{"(inline content) " + action}
-	case *resource.ManagedDirectory:
-		return []string{r.Spec.SourceDir + " → " + r.Spec.Destination + " " + action}
-	default:
-		return nil
+func (f *TreeFormatter) formatModifications(modifications []provider.GroupModification) string {
+	root := tree.Root(style.Warning.Render("Resources to be modified")).
+		Enumerator(tree.RoundedEnumerator).
+		EnumeratorStyle(f.enumeratorStyle)
+
+	byKind := make(map[string][]provider.GroupModification)
+	for _, mod := range modifications {
+		byKind[mod.Kind] = append(byKind[mod.Kind], mod)
 	}
+
+	for kind, groups := range byKind {
+		kindNode := tree.New().
+			Root(f.kindStyle.Render(kind)).
+			Enumerator(tree.RoundedEnumerator).
+			EnumeratorStyle(f.enumeratorStyle)
+
+		for _, group := range groups {
+			groupNode := tree.New().
+				Root(f.nameStyle.Render(group.Group)).
+				Enumerator(tree.RoundedEnumerator).
+				EnumeratorStyle(f.enumeratorStyle)
+
+			for _, change := range group.Changes {
+				itemText := f.itemStyle.Render(change.ItemName) + " " + f.actionStyle.Render("will be updated")
+				groupNode.Child(itemText)
+			}
+
+			kindNode.Child(groupNode)
+		}
+
+		root.Child(kindNode)
+	}
+
+	return root.String()
+}
+
+func (f *TreeFormatter) formatDrifted(drifted []provider.ItemDrift) string {
+	root := tree.Root(style.Warning.Render("Drifted resources (will be restored)")).
+		Enumerator(tree.RoundedEnumerator).
+		EnumeratorStyle(f.enumeratorStyle)
+
+	byKind := make(map[string][]provider.ItemDrift)
+	for _, drift := range drifted {
+		byKind[drift.Kind] = append(byKind[drift.Kind], drift)
+	}
+
+	for kind, items := range byKind {
+		kindNode := tree.New().
+			Root(f.kindStyle.Render(kind)).
+			Enumerator(tree.RoundedEnumerator).
+			EnumeratorStyle(f.enumeratorStyle)
+
+		for _, drift := range items {
+			itemText := f.nameStyle.Render(drift.Group) + "/" + f.itemStyle.Render(drift.Item)
+			itemText += " " + f.actionStyle.Render("will be restored")
+			kindNode.Child(itemText)
+		}
+
+		root.Child(kindNode)
+	}
+
+	return root.String()
 }
 
 // StateResource represents a resource in state for tree rendering
 type StateResource struct {
 	Kind   string
-	Name   string
-	ID     string
+	Group  string
+	Items  []string
 	Status string
 }
 
@@ -213,51 +205,30 @@ func (f *TreeFormatter) FormatStateAsTree(resources []StateResource) string {
 		Enumerator(tree.RoundedEnumerator).
 		EnumeratorStyle(f.enumeratorStyle)
 
-	// Group by Kind, then by Name
-	byKind := make(map[string]map[string][]string)
-
+	// Group by Kind
+	byKind := make(map[string][]StateResource)
 	for _, res := range resources {
-		// Parse name to extract base name and item key
-		baseName, itemKey, hasItemKey := parseResourceName(res.Name)
-
-		if byKind[res.Kind] == nil {
-			byKind[res.Kind] = make(map[string][]string)
-		}
-
-		if hasItemKey {
-			// The itemKey is the actual package/item
-			itemText := itemKey
-			if res.Status != "" {
-				itemText = itemText + " " + res.Status
-			}
-			byKind[res.Kind][baseName] = append(byKind[res.Kind][baseName], itemText)
-		} else {
-			// No item key - use the full name
-			itemText := res.ID
-			if res.Status != "" {
-				itemText = itemText + " " + res.Status
-			}
-			byKind[res.Kind][res.Name] = append(byKind[res.Kind][res.Name], itemText)
-		}
+		byKind[res.Kind] = append(byKind[res.Kind], res)
 	}
 
-	for kind, namesMap := range byKind {
+	for kind, groups := range byKind {
 		kindNode := tree.New().
 			Root(f.kindStyle.Render(kind)).
 			Enumerator(tree.RoundedEnumerator).
 			EnumeratorStyle(f.enumeratorStyle)
 
-		for name, items := range namesMap {
-			nameNode := tree.New().
-				Root(f.nameStyle.Render(name)).
+		for _, group := range groups {
+			groupNode := tree.New().
+				Root(f.nameStyle.Render(group.Group)).
 				Enumerator(tree.RoundedEnumerator).
 				EnumeratorStyle(f.enumeratorStyle)
 
-			for _, item := range items {
-				nameNode.Child(f.itemStyle.Render(item))
+			for _, item := range group.Items {
+				itemText := f.itemStyle.Render(item) + " " + f.actionStyle.Render(group.Status)
+				groupNode.Child(itemText)
 			}
 
-			kindNode.Child(nameNode)
+			kindNode.Child(groupNode)
 		}
 
 		root.Child(kindNode)

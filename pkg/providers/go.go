@@ -220,17 +220,17 @@ func (p *GoProvider) getInstalledPackages() map[string]string {
 		return installed
 	}
 
-	goBin := strings.TrimSpace(stdout)
-	if goBin == "" {
+	goBinPath := strings.TrimSpace(stdout)
+	if goBinPath == "" {
 		stdout, _, err = cmdutil.RunSimple(ctx, goBin, "env", "GOPATH")
 		if err != nil {
 			return installed
 		}
-		goBin = filepath.Join(strings.TrimSpace(stdout), "bin")
+		goBinPath = filepath.Join(strings.TrimSpace(stdout), "bin")
 	}
 
 	// List binaries in GOBIN
-	entries, err := os.ReadDir(goBin)
+	entries, err := os.ReadDir(goBinPath)
 	if err != nil {
 		return installed
 	}

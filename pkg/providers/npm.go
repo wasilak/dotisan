@@ -305,7 +305,6 @@ func (p *NpmProvider) Import(ctx context.Context, group string) (provider.Resour
 // ImportItem imports a specific npm package
 func (p *NpmProvider) ImportItem(ctx context.Context, group string, item string) (provider.ResourceState, error) {
 	// Check if package is installed
-	ctx := context.Background()
 	stdout, _, err := cmdutil.RunSimple(ctx, "npm", "list", "-g", "--depth=0", item)
 	if err != nil {
 		return provider.ResourceState{}, fmt.Errorf("package %s is not installed globally", item)
