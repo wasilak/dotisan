@@ -727,26 +727,62 @@ func runStatePush() error {
 	return nil
 }
 
-// displayStateJSON outputs state as JSON
+// displayStateJSON outputs state as JSON with 3-level structure
 func displayStateJSON(resources []provider.ResourceState, statusMap map[string]string) error {
 	output := map[string]interface{}{
 		"resources": []map[string]interface{}{},
 	}
 
-	var result []map[string]interface{}
+	// Group by kind -> name -> items (3-level structure like tree)
+	byKind := make(map[string]map[string][]map[string]string)
+
 	for _, r := range resources {
+		// Parse name to extract base name and item key
+		baseName, itemKey, hasItemKey := parseStateResourceName(r.Name)
 		status := "unknown"
 		if s, ok := statusMap[r.ID]; ok {
 			status = s
 		}
 
-		res := map[string]interface{}{
-			"kind":   r.Kind,
-			"name":   r.Name,
-			"id":     r.ID,
-			"status": status,
+		if byKind[r.Kind] == nil {
+			byKind[r.Kind] = make(map[string][]map[string]string)
 		}
-		result = append(result, res)
+
+		if hasItemKey {
+			// The itemKey is the actual package/item
+			item := map[string]string{
+				"name":   itemKey,
+				"status": status,
+			}
+			byKind[r.Kind][baseName] = append(byKind[r.Kind][baseName], item)
+		} else {
+			// No item key - use the full name
+			item := map[string]string{
+				"name":   r.Name,
+				"status": status,
+			}
+			byKind[r.Kind][r.Name] = append(byKind[r.Kind][r.Name], item)
+		}
+	}
+
+	// Build hierarchical resources list
+	var result []map[string]interface{}
+	for kind, namesMap := range byKind {
+		kindRes := map[string]interface{}{
+			"kind":      kind,
+			"resources": []map[string]interface{}{},
+		}
+
+		var nameList []map[string]interface{}
+		for name, items := range namesMap {
+			nameRes := map[string]interface{}{
+				"name":  name,
+				"items": items,
+			}
+			nameList = append(nameList, nameRes)
+		}
+		kindRes["resources"] = nameList
+		result = append(result, kindRes)
 	}
 
 	output["resources"] = result
@@ -755,6 +791,19 @@ func displayStateJSON(resources []provider.ResourceState, statusMap map[string]s
 	encoder.SetIndent("", "  ")
 	return encoder.Encode(output)
 }
+
+// parseStateResourceName parses a resource name that may contain an item key
+// Returns (baseName, itemKey, hasItemKey)
+func parseStateResourceName(name string) (string, string, bool) {
+	matches := stateResourceNameRegex.FindStringSubmatch(name)
+	if matches == nil {
+		return name, "", false
+	}
+	return matches[1], matches[2], true
+}
+
+// stateResourceNameRegex matches resource names with item keys like "core-tools[ripgrep]"
+var stateResourceNameRegex = regexp.MustCompile(`^([^\[]+)\[(.+)\]$`)
 
 func init() {
 	rootCmd.AddCommand(stateCmd)

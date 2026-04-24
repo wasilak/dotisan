@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
 	"time"
 
 	"github.com/charmbracelet/bubbles/progress"
@@ -12,6 +13,7 @@ import (
 	"github.com/wasilak/dotisan/pkg/diff"
 	"github.com/wasilak/dotisan/pkg/engine"
 	"github.com/wasilak/dotisan/pkg/output"
+	"github.com/wasilak/dotisan/pkg/resource"
 	"github.com/wasilak/dotisan/pkg/style"
 	"golang.org/x/term"
 
@@ -305,49 +307,43 @@ func displayJSON(result *engine.PlanResult) error {
 		"resources":   []map[string]interface{}{},
 	}
 
-	// Build resources list
-	resources := []map[string]interface{}{}
+	// Group by kind -> name -> items (3-level structure like tree)
+	// Map: kind -> name -> []items
+	byKind := make(map[string]map[string][]map[string]string)
 
-	for providerName, plan := range result.ProviderPlans {
+	for _, plan := range result.ProviderPlans {
 		for _, res := range plan.Additions {
-			resources = append(resources, map[string]interface{}{
-				"action":    "add",
-				"provider":  providerName,
-				"kind":      res.GetKind(),
-				"name":      res.GetMetadata().Name,
-				"namespace": res.GetMetadata().GetNamespace(),
-			})
+			addResourceToMap(res, "add", byKind)
 		}
 		for _, mod := range plan.Modifications {
-			resources = append(resources, map[string]interface{}{
-				"action":    "modify",
-				"provider":  providerName,
-				"kind":      mod.Resource.GetKind(),
-				"name":      mod.Resource.GetMetadata().Name,
-				"namespace": mod.Resource.GetMetadata().GetNamespace(),
-				"diff":      mod.Diff,
-			})
+			addResourceToMap(mod.Resource, "modify", byKind)
 		}
 		for _, res := range plan.Removals {
-			resources = append(resources, map[string]interface{}{
-				"action":    "remove",
-				"provider":  providerName,
-				"kind":      res.GetKind(),
-				"name":      res.GetMetadata().Name,
-				"namespace": res.GetMetadata().GetNamespace(),
-			})
+			addResourceToMap(res, "remove", byKind)
 		}
 		for _, drift := range plan.Drifted {
-			resources = append(resources, map[string]interface{}{
-				"action":      "drift",
-				"provider":    providerName,
-				"kind":        drift.Resource.GetKind(),
-				"name":        drift.Resource.GetMetadata().Name,
-				"namespace":   drift.Resource.GetMetadata().GetNamespace(),
-				"description": drift.Description,
-				"diff":        drift.Diff,
-			})
+			addResourceToMap(drift.Resource, "drift", byKind)
 		}
+	}
+
+	// Build hierarchical resources list
+	resources := []map[string]interface{}{}
+	for kind, namesMap := range byKind {
+		kindRes := map[string]interface{}{
+			"kind":      kind,
+			"resources": []map[string]interface{}{},
+		}
+
+		var nameList []map[string]interface{}
+		for name, items := range namesMap {
+			nameRes := map[string]interface{}{
+				"name":  name,
+				"items": items,
+			}
+			nameList = append(nameList, nameRes)
+		}
+		kindRes["resources"] = nameList
+		resources = append(resources, kindRes)
 	}
 
 	output["resources"] = resources
@@ -355,6 +351,97 @@ func displayJSON(result *engine.PlanResult) error {
 	encoder := json.NewEncoder(os.Stdout)
 	encoder.SetIndent("", "  ")
 	return encoder.Encode(output)
+}
+
+// addResourceToMap adds a resource to the nested map structure
+// Parses names like "core-tools[ripgrep]" to extract base name and item
+func addResourceToMap(res resource.Resource, action string, byKind map[string]map[string][]map[string]string) {
+	kind := res.GetKind()
+	fullName := res.GetMetadata().Name
+
+	// Try to parse name as "basename[itemkey]"
+	baseName, itemKey, hasItemKey := parseJSONResourceName(fullName)
+
+	if byKind[kind] == nil {
+		byKind[kind] = make(map[string][]map[string]string)
+	}
+
+	if hasItemKey {
+		// This is an indexed resource
+		item := map[string]string{
+			"name":   itemKey,
+			"action": action,
+		}
+		byKind[kind][baseName] = append(byKind[kind][baseName], item)
+	} else {
+		// Try to extract items from resource spec
+		items := extractJSONItems(res, action)
+		if len(items) > 0 {
+			byKind[kind][fullName] = append(byKind[kind][fullName], items...)
+		} else {
+			// No items - use resource name itself
+			item := map[string]string{
+				"name":   fullName,
+				"action": action,
+			}
+			byKind[kind][fullName] = append(byKind[kind][fullName], item)
+		}
+	}
+}
+
+// parseJSONResourceName parses a resource name that may contain an item key
+// Returns (baseName, itemKey, hasItemKey)
+func parseJSONResourceName(name string) (string, string, bool) {
+	matches := jsonResourceNameRegex.FindStringSubmatch(name)
+	if matches == nil {
+		return name, "", false
+	}
+	return matches[1], matches[2], true
+}
+
+// jsonResourceNameRegex matches resource names with item keys like "core-tools[ripgrep]"
+var jsonResourceNameRegex = regexp.MustCompile(`^([^\[]+)\[(.+)\]$`)
+
+// extractJSONItems extracts child items from a resource
+func extractJSONItems(res resource.Resource, action string) []map[string]string {
+	switch r := res.(type) {
+	case *resource.BrewPackages:
+		var items []map[string]string
+		for _, formula := range r.Spec.Formulae {
+			items = append(items, map[string]string{"name": formula.Name, "action": action})
+		}
+		for _, cask := range r.Spec.Casks {
+			items = append(items, map[string]string{"name": cask.Name + " (cask)", "action": action})
+		}
+		return items
+	case *resource.NpmPackages:
+		var items []map[string]string
+		for _, pkg := range r.Spec.Packages {
+			items = append(items, map[string]string{"name": pkg.Name, "action": action})
+		}
+		return items
+	case *resource.GoPackages:
+		var items []map[string]string
+		for _, pkg := range r.Spec.Packages {
+			items = append(items, map[string]string{"name": pkg.Module, "action": action})
+		}
+		return items
+	case *resource.CargoPackages:
+		var items []map[string]string
+		for _, pkg := range r.Spec.Packages {
+			items = append(items, map[string]string{"name": pkg.Name, "action": action})
+		}
+		return items
+	case *resource.ManagedFile:
+		if r.Spec.SourceFile != "" {
+			return []map[string]string{{"name": r.Spec.SourceFile, "action": action}}
+		}
+		return []map[string]string{{"name": "(inline content)", "action": action}}
+	case *resource.ManagedDirectory:
+		return []map[string]string{{"name": r.Spec.SourceDir + " → " + r.Spec.Destination, "action": action}}
+	default:
+		return nil
+	}
 }
 
 func init() {
