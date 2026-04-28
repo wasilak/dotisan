@@ -243,32 +243,6 @@ func (p *CargoProvider) getInstalledPackages() map[string]string {
 	return installed
 }
 
-func filterInstallableCargoItems(items []resource.ResourceItem, installed map[string]string) []resource.ResourceItem {
-	var result []resource.ResourceItem
-	for _, item := range items {
-		if _, isInstalled := installed[item.Name]; !isInstalled {
-			result = append(result, item)
-		}
-	}
-	return result
-}
-
-func cargoItemsToState(items []resource.ResourceItem, installed map[string]string) []resource.ItemState {
-	var result []resource.ItemState
-	for _, item := range items {
-		version := item.Version
-		if version == "" {
-			version = installed[item.Name]
-		}
-		result = append(result, resource.ItemState{
-			Name:    item.Name,
-			Version: version,
-			Status:  "present",
-		})
-	}
-	return result
-}
-
 // Apply executes the given GroupPlan
 func (p *CargoProvider) Apply(ctx context.Context, plan provider.GroupPlan) error {
 	for _, addition := range plan.Additions {

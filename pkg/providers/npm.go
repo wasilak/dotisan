@@ -240,28 +240,6 @@ func (p *NpmProvider) getInstalledPackages() map[string]string {
 	return installed
 }
 
-func filterInstallableNpmItems(items []resource.ResourceItem, installed map[string]string) []resource.ResourceItem {
-	var result []resource.ResourceItem
-	for _, item := range items {
-		if _, isInstalled := installed[item.Name]; !isInstalled {
-			result = append(result, item)
-		}
-	}
-	return result
-}
-
-func npmItemsToState(items []resource.ResourceItem, installed map[string]string) []resource.ItemState {
-	var result []resource.ItemState
-	for _, item := range items {
-		result = append(result, resource.ItemState{
-			Name:    item.Name,
-			Version: item.Version,
-			Status:  "present",
-		})
-	}
-	return result
-}
-
 // Apply executes the given GroupPlan
 func (p *NpmProvider) Apply(ctx context.Context, plan provider.GroupPlan) error {
 	for _, addition := range plan.Additions {

@@ -169,18 +169,3 @@ func TestLoadAndRenderValues_InvalidYAML(t *testing.T) {
 		t.Error("LoadAndRenderValues() should return error for invalid YAML")
 	}
 }
-
-func TestRenderString(t *testing.T) {
-	ctx := NewTemplateContext()
-
-	result, err := RenderString(ctx, "Hello {{ .Env.HOME }}")
-	if err != nil {
-		t.Fatalf("RenderString() failed: %v", err)
-	}
-
-	expectedHome := os.Getenv("HOME")
-	expected := "Hello " + expectedHome
-	if result != expected {
-		t.Errorf("RenderString() = %q, want %q", result, expected)
-	}
-}

@@ -277,41 +277,6 @@ func (p *GoProvider) getInstalledPackages() map[string]string {
 	return installed
 }
 
-// filterInstallableGoItems returns items that are not currently installed
-func filterInstallableGoItems(items []resource.ResourceItem, installed map[string]string) []resource.ResourceItem {
-	var result []resource.ResourceItem
-	for _, item := range items {
-		// Extract binary name from module path
-		parts := strings.Split(item.Name, "/")
-		binaryName := parts[len(parts)-1]
-		
-		if _, isInstalled := installed[binaryName]; !isInstalled {
-			result = append(result, item)
-		}
-	}
-	return result
-}
-
-// goItemsToState converts ResourceItems to ItemStates
-func goItemsToState(items []resource.ResourceItem, installed map[string]string) []resource.ItemState {
-	var result []resource.ItemState
-	for _, item := range items {
-		parts := strings.Split(item.Name, "/")
-		binaryName := parts[len(parts)-1]
-		
-		version := item.Version
-		if version == "" {
-			version = installed[binaryName]
-		}
-		result = append(result, resource.ItemState{
-			Name:    item.Name,
-			Version: version,
-			Status:  "present",
-		})
-	}
-	return result
-}
-
 // Apply executes the given GroupPlan
 func (p *GoProvider) Apply(ctx context.Context, plan provider.GroupPlan) error {
 	for _, addition := range plan.Additions {

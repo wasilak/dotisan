@@ -1,8 +1,6 @@
 package style
 
 import (
-	"strings"
-
 	lipgloss "charm.land/lipgloss/v2"
 )
 
@@ -143,90 +141,4 @@ type tableStyles struct {
 	Row    lipgloss.Style
 	RowAlt lipgloss.Style
 	Cell   lipgloss.Style
-}
-
-// RenderTableRow renders a table row with cells.
-func RenderTableRow(cols []string, widths []int, isAlt bool) string {
-    st := TableStyles.Row
-    if isAlt {
-        st = TableStyles.RowAlt
-    }
-    var result string
-    for i, col := range cols {
-        // Let lipgloss handle width, padding and truncation so measurements stay consistent.
-        // In v2, methods return new styles, so we can chain directly.
-        cellStyle := TableStyles.Cell.Width(widths[i])
-        result += cellStyle.Render(col)
-    }
-    return st.Render(result)
-}
-
-// RenderTableHeader renders the table header.
-func RenderTableHeader(cols []string, widths []int) string {
-    var result string
-    for i, col := range cols {
-        // Use the cell style with the requested width to ensure
-        // the rendered header cell and the border measurement match exactly.
-        // In v2, methods return new styles, so we can chain directly.
-        cellStyle := TableStyles.Cell.Width(widths[i])
-        result += cellStyle.Render(col)
-    }
-    return TableStyles.Header.Render(result)
-}
-
-// RenderTableBorder renders the table border line.
-func RenderTableBorder(widths []int) string {
-    var line string
-    // For each column, render a sample cell at the desired width and measure
-    // its visible width using lipgloss.Width. This avoids fragile assumptions
-    // about padding/truncation and keeps the border aligned with rendered cells.
-    for _, w := range widths {
-        // In v2, methods return new styles, so we can chain directly.
-        cellStyle := TableStyles.Cell.Width(w)
-        // Render a sequence of characters of length w to force the cell to
-        // occupy the intended width; then measure the visible width including
-        // padding applied by the style.
-        sample := strings.Repeat("X", w)
-        rendered := cellStyle.Render(sample)
-        segWidth := lipgloss.Width(rendered)
-        if segWidth <= 0 {
-            // Fallback to the old heuristic if measurement fails for some reason.
-            segWidth = w + 2
-        }
-        line += "+" + strings.Repeat("-", segWidth)
-    }
-    return lipgloss.NewStyle().Foreground(lipgloss.Color(Gray)).Render(line + "+")
-}
-
-// padCol pads a column value to fit the width.
-// Uses lipgloss.Width() equivalent for proper width calculation.
-func padCol(s string, w int) string {
-	runes := []rune(s)
-	if len(runes) >= w {
-		return string(runes[:w-3]) + "..."
-	}
-	return s + strings.Repeat(" ", w-len(runes))
-}
-
-// WrapText wraps text to a given width using lipgloss.
-func WrapText(text string, width int) string {
-	return lipgloss.NewStyle().Width(width).Render(text)
-}
-
-// Indent indents text by the given number of spaces.
-func Indent(text string, spaces int) string {
-	indent := strings.Repeat(" ", spaces)
-	return indent + text
-}
-
-// Truncate truncates text to maxWidth with ellipsis.
-func Truncate(text string, maxWidth int) string {
-	runes := []rune(text)
-	if len(runes) <= maxWidth {
-		return text
-	}
-	if maxWidth < 3 {
-		return strings.Repeat(".", maxWidth)
-	}
-	return string(runes[:maxWidth-3]) + "..."
 }

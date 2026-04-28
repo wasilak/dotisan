@@ -7,7 +7,6 @@ package cmdutil
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"os/exec"
 	"strings"
 	"time"
@@ -91,14 +90,6 @@ func RunSimple(ctx context.Context, name string, args ...string) (stdout, stderr
 	return result.Stdout, result.Stderr, result.Error
 }
 
-// RunWithDir runs a command in a specific working directory.
-// Returns stdout, stderr, and error.
-func RunWithDir(ctx context.Context, dir string, name string, args ...string) (stdout, stderr string, err error) {
-	opts := &RunOptions{Dir: dir}
-	result := Run(ctx, name, args, opts)
-	return result.Stdout, result.Stderr, result.Error
-}
-
 // CheckExecutable checks if an executable exists in PATH.
 // Returns the path to the executable if found, empty string if not.
 func CheckExecutable(name string) string {
@@ -107,18 +98,4 @@ func CheckExecutable(name string) string {
 		return ""
 	}
 	return path
-}
-
-// FormatError formats a command error with context.
-func FormatError(name string, args []string, result Result) error {
-	var parts []string
-	parts = append(parts, fmt.Sprintf("command failed: %s %s", name, strings.Join(args, " ")))
-	parts = append(parts, fmt.Sprintf("exit code: %d", result.ExitCode))
-	if result.Stderr != "" {
-		parts = append(parts, fmt.Sprintf("stderr: %s", result.Stderr))
-	}
-	if result.Error != nil {
-		parts = append(parts, fmt.Sprintf("error: %v", result.Error))
-	}
-	return fmt.Errorf("%s", strings.Join(parts, "; "))
 }

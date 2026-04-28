@@ -2,7 +2,6 @@ package providers
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"path"
@@ -459,33 +458,4 @@ func (p *BrewProvider) ImportItem(ctx context.Context, group string, item string
 			},
 		},
 	}, nil
-}
-
-// brewFormulaInfo represents information about a Homebrew formula
-type brewFormulaInfo struct {
-	Name     string            `json:"name"`
-	Versions map[string]string `json:"versions"`
-	Desc     string            `json:"desc"`
-}
-
-// getFormulaInfo fetches formula information from the Homebrew API
-func (p *BrewProvider) getFormulaInfo(name string) (*brewFormulaInfo, error) {
-	url := fmt.Sprintf("https://formulae.brew.sh/api/formula/%s.json", name)
-
-	resp, err := p.httpClient.Get(url)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch formula info: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("formula not found: %s", name)
-	}
-
-	var info brewFormulaInfo
-	if err := json.NewDecoder(resp.Body).Decode(&info); err != nil {
-		return nil, fmt.Errorf("failed to decode formula info: %w", err)
-	}
-
-	return &info, nil
 }

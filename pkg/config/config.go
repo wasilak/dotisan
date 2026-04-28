@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -122,45 +121,4 @@ func LoadValues(path string) (map[string]interface{}, error) {
 	}
 
 	return values, nil
-}
-
-// ParseResources parses YAML content containing multiple resource definitions.
-// It returns a slice of resource objects (as map[string]interface{}).
-func ParseResources(data []byte) ([]interface{}, error) {
-	// Split by document separator
-	docs := splitYAMLDocuments(string(data))
-
-	var resources []interface{}
-	for _, doc := range docs {
-		doc = strings.TrimSpace(doc)
-		if doc == "" {
-			continue
-		}
-
-		var resource map[string]interface{}
-		if err := yaml.Unmarshal([]byte(doc), &resource); err != nil {
-			return nil, fmt.Errorf("failed to parse resource: %w", err)
-		}
-
-		if len(resource) > 0 {
-			resources = append(resources, resource)
-		}
-	}
-
-	return resources, nil
-}
-
-// MarshalResource serializes a resource object to YAML.
-func MarshalResource(resource interface{}) ([]byte, error) {
-	return yaml.Marshal(resource)
-}
-
-// splitYAMLDocuments splits a YAML file containing multiple documents (--- separated).
-func splitYAMLDocuments(content string) []string {
-	var docs []string
-	parts := strings.Split(content, "---")
-	for _, part := range parts {
-		docs = append(docs, part)
-	}
-	return docs
 }
