@@ -49,6 +49,9 @@ func (p *BrewProvider) Reconcile(
 ) provider.GroupPlan {
 	plan := provider.GroupPlan{}
 
+	// Track items already processed to avoid duplicates
+	processedItems := make(map[string]bool) // key: "group/item"
+
 	// Index state by group name for quick lookup
 	stateIndex := make(map[string]provider.ResourceState)
 	for _, s := range state {
@@ -143,19 +146,36 @@ func (p *BrewProvider) Reconcile(
 				})
 			}
 
-			if len(removals) > 0 {
+				// Filter out already processed items and track new ones
+			var filteredRemovals []resource.ResourceItem
+			for _, item := range removals {
+				key := fmt.Sprintf("%s/%s", group.Name, item.Name)
+				if !processedItems[key] {
+					processedItems[key] = true
+					filteredRemovals = append(filteredRemovals, item)
+				}
+			}
+			if len(filteredRemovals) > 0 {
 				plan.Removals = append(plan.Removals, provider.GroupRemoval{
 					Kind:  group.Kind,
 					Group: group.Name,
-					Items: removals,
+					Items: filteredRemovals,
 				})
 			}
 
-			if len(cleanupItems) > 0 {
+			var filteredCleanup []resource.ResourceItem
+			for _, item := range cleanupItems {
+				key := fmt.Sprintf("%s/%s", group.Name, item.Name)
+				if !processedItems[key] {
+					processedItems[key] = true
+					filteredCleanup = append(filteredCleanup, item)
+				}
+			}
+			if len(filteredCleanup) > 0 {
 				plan.Cleanup = append(plan.Cleanup, provider.GroupCleanup{
 					Kind:   group.Kind,
 					Group:  group.Name,
-					Items:  cleanupItems,
+					Items:  filteredCleanup,
 					Reason: "not_in_config_and_not_installed",
 				})
 			}
@@ -210,6 +230,12 @@ func (p *BrewProvider) Reconcile(
 					}
 				}
 
+					key := fmt.Sprintf("%s/%s", groupName, item.Name)
+				if processedItems[key] {
+					// Skip already processed items
+					continue
+				}
+
 				if isInstalled {
 					removalItems = append(removalItems, resource.ResourceItem{
 						Name:    item.Name,
@@ -221,6 +247,7 @@ func (p *BrewProvider) Reconcile(
 						Version: item.Version,
 					})
 				}
+				processedItems[key] = true
 			}
 
 			if len(removalItems) > 0 {
