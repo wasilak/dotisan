@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/wasilak/dotisan/pkg/provider"
+	"github.com/wasilak/dotisan/pkg/resource"
 )
 
 // State represents the complete state of managed resources.
@@ -109,6 +110,86 @@ func (s *State) RemoveResourceGroup(kind, group string) bool {
 		}
 	}
 	return false
+}
+
+// MoveItem moves an item from one resource group to another.
+// Returns the moved item and true on success, or empty item and false if source not found.
+func (s *State) MoveItem(srcKind, srcGroup, srcItem, dstKind, dstGroup, dstItem string) (provider.ResourceState, bool) {
+	s.UpdatedAt = time.Now().UTC()
+
+	// Find source resource group
+	var srcResource *provider.ResourceState
+	var srcIndex int
+	for i, r := range s.Resources {
+		if r.Kind == srcKind && r.Group == srcGroup {
+			srcResource = &s.Resources[i]
+			srcIndex = i
+			break
+		}
+	}
+
+	if srcResource == nil {
+		return provider.ResourceState{}, false
+	}
+
+	// Find the item to move
+	var itemToMove resource.ItemState
+	var itemIndex int
+	found := false
+	for i, item := range srcResource.Items {
+		if item.Name == srcItem {
+			itemToMove = item
+			itemIndex = i
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		return provider.ResourceState{}, false
+	}
+
+	// Update item name if destination name is different
+	if dstItem != srcItem {
+		itemToMove.Name = dstItem
+	}
+
+	// Find or create destination resource group
+	var dstResource *provider.ResourceState
+	for i, r := range s.Resources {
+		if r.Kind == dstKind && r.Group == dstGroup {
+			dstResource = &s.Resources[i]
+			break
+		}
+	}
+
+	if dstResource == nil {
+		// Create new resource group
+		s.Resources = append(s.Resources, provider.ResourceState{
+			Kind:      dstKind,
+			Group:     dstGroup,
+			Namespace: srcResource.Namespace,
+			Items:     []resource.ItemState{itemToMove},
+		})
+	} else {
+		// Add item to existing group
+		dstResource.Items = append(dstResource.Items, itemToMove)
+	}
+
+	// Remove item from source
+	srcResource.Items = append(srcResource.Items[:itemIndex], srcResource.Items[itemIndex+1:]...)
+
+	// Clean up empty source resource group
+	if len(srcResource.Items) == 0 {
+		s.Resources = append(s.Resources[:srcIndex], s.Resources[srcIndex+1:]...)
+	}
+
+	return provider.ResourceState{
+		Kind:      dstKind,
+		Group:     dstGroup,
+		Namespace: srcResource.Namespace,
+		Items:     []resource.ItemState{itemToMove},
+	}, true
 }
 
 // GetResource retrieves a resource state by ID (legacy method, use GetResourceGroup).

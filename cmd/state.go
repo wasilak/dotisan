@@ -10,6 +10,7 @@ import (
 
 	"github.com/wasilak/dotisan/pkg/config"
 	"github.com/wasilak/dotisan/pkg/diff"
+	"github.com/wasilak/dotisan/pkg/engine"
 	"github.com/wasilak/dotisan/pkg/output"
 	"github.com/wasilak/dotisan/pkg/provider"
 	"github.com/wasilak/dotisan/pkg/providers"
@@ -165,6 +166,56 @@ func ensureProvidersRegistered() {
 	if _, err := provider.Get("cargo"); err != nil {
 		provider.Register("cargo", providers.NewCargoProvider())
 	}
+}
+
+// stateMvCmd moves an item between resource groups in state
+var stateMvCmd = &cobra.Command{
+	Use:          "mv SOURCE DESTINATION",
+	SilenceUsage: true,
+	Short:        "Move an item between resource groups in state",
+	Long: `mv moves an item from one resource group to another in state only.
+The actual system resource is not modified.
+
+Source and destination format: Kind/Group/Item or Kind/Group
+If destination item name is not provided, the source item name is used.
+
+The destination group must exist in the desired configuration.
+
+Examples:
+  dotisan state mv BrewPackages/core-tools/ripgrep BrewPackages/homebrew-packages/ripgrep
+  dotisan state mv BrewPackages/core-tools/ripgrep BrewPackages/homebrew-packages/`,
+	Args: cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runStateMv(args[0], args[1])
+	},
+}
+
+func runStateMv(source, destination string) error {
+	ctx := context.Background()
+
+	// Create engine
+	eng, err := engine.NewEngine()
+	if err != nil {
+		return fmt.Errorf("failed to initialize: %w", err)
+	}
+
+	// Run state mv
+	result, err := eng.StateMv(ctx, engine.StateMvOptions{
+		Source:      source,
+		Destination: destination,
+	})
+	if err != nil {
+		fmt.Println()
+		fmt.Println(style.Error.Render("✖ Move failed"))
+		fmt.Println()
+		fmt.Printf("  %s\n", err)
+		fmt.Println()
+		return fmt.Errorf("state mv failed")
+	}
+
+	// Display result
+	engine.DisplayStateMvResult(result)
+	return nil
 }
 
 // stateRemoveCmd removes a resource from state
@@ -353,6 +404,7 @@ func displayStateTable(currentState *state.State) error {
 func init() {
 	rootCmd.AddCommand(stateCmd)
 	stateCmd.AddCommand(stateImportCmd)
+	stateCmd.AddCommand(stateMvCmd)
 	stateCmd.AddCommand(stateRemoveCmd)
 	stateCmd.AddCommand(stateListCmd)
 	stateListCmd.Flags().StringVarP(&stateOutputFlag, "output", "o", "", "Output format (plain, tree, json)")
