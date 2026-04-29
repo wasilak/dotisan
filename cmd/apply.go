@@ -16,8 +16,9 @@ import (
 )
 
 var (
-	confirmFlag     bool
-	applyOutputFlag string
+    confirmFlag     bool
+    applyOutputFlag string
+    applyTargetFlags []string
 )
 
 // applyCmd represents the apply command
@@ -41,12 +42,19 @@ func runApply() error {
 		return fmt.Errorf("failed to initialize: %w", err)
 	}
 
-	// Run plan first
-	ctx := context.Background()
-	result, err := eng.Plan(ctx)
-	if err != nil {
-		return fmt.Errorf("plan failed: %w", err)
-	}
+    // Run plan first
+    ctx := context.Background()
+    result, err := eng.Plan(ctx, engine.PlanOptions{Targets: applyTargetFlags})
+    if err != nil {
+        return fmt.Errorf("plan failed: %w", err)
+    }
+
+    // Print warnings for unmatched targets
+    if len(result.UnmatchedTargets) > 0 {
+        for _, t := range result.UnmatchedTargets {
+            fmt.Fprintf(os.Stderr, "%s target %q did not match any resources\n", style.Warning.Render("Warning:"), t)
+        }
+    }
 
 	// Check if there are changes
 	if !result.HasChanges {
@@ -146,7 +154,8 @@ func runApply() error {
 }
 
 func init() {
-	rootCmd.AddCommand(applyCmd)
-	applyCmd.Flags().BoolVar(&confirmFlag, "confirm", false, "Skip confirmation and apply immediately")
-	applyCmd.Flags().StringVarP(&applyOutputFlag, "output", "o", "", "Output format (plain, tree, json)")
+    rootCmd.AddCommand(applyCmd)
+    applyCmd.Flags().BoolVar(&confirmFlag, "confirm", false, "Skip confirmation and apply immediately")
+    applyCmd.Flags().StringVarP(&applyOutputFlag, "output", "o", "", "Output format (plain, tree, json)")
+    applyCmd.Flags().StringArrayVarP(&applyTargetFlags, "target", "t", nil, "Target specific resources (format: Kind, Kind/Group, or Kind/Group/Item)")
 }

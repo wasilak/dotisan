@@ -23,10 +23,11 @@ const (
 const (
 	IconAdd    = "✚"
 	IconRemove = "✖"
-	IconEdit  = "✎"
-	IconWarn = "⚠"
-	IconOK   = "✓"
-	IconInfo = "ℹ"
+	IconEdit   = "✎"
+	IconWarn   = "⚠"
+	IconOK     = "✓"
+	IconInfo   = "ℹ"
+	IconTrash  = "🗑️"
 )
 
 // Base text styles
@@ -45,9 +46,10 @@ var (
 var (
 	IconSuccess    = Success.Render(IconOK)
 	IconError      = Error.Render(IconRemove)
-	IconWarning   = Warning.Render(IconWarn)
+	IconWarning    = Warning.Render(IconWarn)
 	StyledIconInfo = Info.Render(IconInfo)
-	StyledIconAdd = Success.Render(IconAdd)
+	StyledIconAdd  = Success.Render(IconAdd)
+	IconTrashBin   = Dim.Render(IconTrash)
 )
 
 // Styles for rendering full item lines (icon + text)

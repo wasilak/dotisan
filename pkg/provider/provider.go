@@ -30,6 +30,10 @@ type GroupPlan struct {
 	// Removals are groups/items that need to be deleted
 	Removals []GroupRemoval
 
+	// Cleanup are items that exist in state but not in config or system.
+	// These will be removed from state only (no system changes).
+	Cleanup []GroupCleanup
+
 	// InSync are groups that match desired state
 	InSync []GroupState
 
@@ -67,6 +71,15 @@ type GroupRemoval struct {
 	Kind  string
 	Group string
 	Items []resource.ResourceItem
+}
+
+// GroupCleanup represents items that exist in state but not in config or system.
+// These will be removed from state only (no system changes).
+type GroupCleanup struct {
+	Kind   string
+	Group  string
+	Items  []resource.ResourceItem
+	Reason string // e.g., "not_in_config_and_not_installed"
 }
 
 // GroupState represents a group that is in sync

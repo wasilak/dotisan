@@ -1,16 +1,17 @@
 package providers
 
 import (
-	"context"
-	"fmt"
-	"net/http"
-	"path"
-	"strings"
-	"time"
+    "context"
+    "fmt"
+    "net/http"
+    "os"
+    "path"
+    "strings"
+    "time"
 
-	"github.com/wasilak/dotisan/pkg/cmdutil"
-	"github.com/wasilak/dotisan/pkg/provider"
-	"github.com/wasilak/dotisan/pkg/resource"
+    "github.com/wasilak/dotisan/pkg/cmdutil"
+    "github.com/wasilak/dotisan/pkg/provider"
+    "github.com/wasilak/dotisan/pkg/resource"
 )
 
 // BrewProvider implements the Provider interface for Homebrew packages.
@@ -130,7 +131,7 @@ func (p *BrewProvider) Reconcile(
 			}
 		} else {
 			// Existing group - compare items
-			additions, removals, modifications, inSync := p.compareGroupItems(
+			additions, removals, cleanupItems, modifications, inSync := p.compareGroupItems(
 				group, stateGroup, installed,
 			)
 
@@ -150,6 +151,15 @@ func (p *BrewProvider) Reconcile(
 				})
 			}
 
+			if len(cleanupItems) > 0 {
+				plan.Cleanup = append(plan.Cleanup, provider.GroupCleanup{
+					Kind:   group.Kind,
+					Group:  group.Name,
+					Items:  cleanupItems,
+					Reason: "not_in_config_and_not_installed",
+				})
+			}
+
 			if len(modifications) > 0 {
 				plan.Modifications = append(plan.Modifications, provider.GroupModification{
 					Kind:    group.Kind,
@@ -158,7 +168,7 @@ func (p *BrewProvider) Reconcile(
 				})
 			}
 
-			if len(inSync) > 0 && len(additions) == 0 && len(removals) == 0 && len(modifications) == 0 {
+			if len(inSync) > 0 && len(additions) == 0 && len(removals) == 0 && len(cleanupItems) == 0 && len(modifications) == 0 {
 				plan.InSync = append(plan.InSync, provider.GroupState{
 					Kind:  group.Kind,
 					Group: group.Name,
@@ -178,31 +188,71 @@ func (p *BrewProvider) Reconcile(
 
 	for groupName, stateGroup := range stateIndex {
 		if !desiredGroups[groupName] {
-			// Entire group should be removed
-			items := make([]resource.ResourceItem, 0, len(stateGroup.Items))
+			// Entire group should be removed - but distinguish between
+			// actual removals (installed) and cleanup (not installed)
+			var removalItems []resource.ResourceItem
+			var cleanupItems []resource.ResourceItem
+
 			for _, item := range stateGroup.Items {
-				items = append(items, resource.ResourceItem{
-					Name:    item.Name,
-					Version: item.Version,
+				name := item.Name
+				if strings.HasSuffix(name, " (cask)") {
+					name = strings.TrimSuffix(name, " (cask)")
+				}
+
+				// Check if installed (handle tap packages with base name fallback)
+				isInstalled := false
+				if _, ok := installed[name]; ok {
+					isInstalled = true
+				} else if strings.Contains(name, "/") {
+					baseName := path.Base(name)
+					if _, ok := installed[baseName]; ok {
+						isInstalled = true
+					}
+				}
+
+				if isInstalled {
+					removalItems = append(removalItems, resource.ResourceItem{
+						Name:    item.Name,
+						Version: item.Version,
+					})
+				} else {
+					cleanupItems = append(cleanupItems, resource.ResourceItem{
+						Name:    item.Name,
+						Version: item.Version,
+					})
+				}
+			}
+
+			if len(removalItems) > 0 {
+				plan.Removals = append(plan.Removals, provider.GroupRemoval{
+					Kind:  "BrewPackages",
+					Group: groupName,
+					Items: removalItems,
 				})
 			}
-			plan.Removals = append(plan.Removals, provider.GroupRemoval{
-				Kind:  "BrewPackages",
-				Group: groupName,
-				Items: items,
-			})
+
+			if len(cleanupItems) > 0 {
+				plan.Cleanup = append(plan.Cleanup, provider.GroupCleanup{
+					Kind:   "BrewPackages",
+					Group:  groupName,
+					Items:  cleanupItems,
+					Reason: "not_in_config_and_not_installed",
+				})
+			}
 		}
 	}
 
 	return plan
 }
 
-// compareGroupItems compares desired group items with state and installed packages
+// compareGroupItems compares desired group items with state and installed packages.
+// Returns additions, removals (installed items to uninstall), cleanup (not installed - state only),
+// modifications, and inSync items.
 func (p *BrewProvider) compareGroupItems(
 	group resource.ResourceGroup,
 	stateGroup provider.ResourceState,
 	installed map[string]string,
-) (additions, removals []resource.ResourceItem, modifications []provider.ItemChange, inSync []resource.ItemState) {
+) (additions, removals, cleanup []resource.ResourceItem, modifications []provider.ItemChange, inSync []resource.ItemState) {
 	// Index state items by name
 	stateItems := make(map[string]resource.ItemState)
 	for _, item := range stateGroup.Items {
@@ -275,7 +325,7 @@ func (p *BrewProvider) compareGroupItems(
 		}
 	}
 
-	// Check for items in state but not in desired (removals)
+	// Check for items in state but not in desired (removals or cleanup)
 	desiredItems := make(map[string]bool)
 	for _, item := range group.Items {
 		name := item.Name
@@ -287,10 +337,33 @@ func (p *BrewProvider) compareGroupItems(
 
 	for name, stateItem := range stateItems {
 		if !desiredItems[name] {
-			removals = append(removals, resource.ResourceItem{
-				Name:    name,
-				Version: stateItem.Version,
-			})
+			// Check if installed to determine if removal or cleanup
+			lookupName := name
+			if strings.HasSuffix(name, " (cask)") {
+				lookupName = strings.TrimSuffix(name, " (cask)")
+			}
+
+			isInstalled := false
+			if _, ok := installed[lookupName]; ok {
+				isInstalled = true
+			} else if strings.Contains(lookupName, "/") {
+				baseName := path.Base(lookupName)
+				if _, ok := installed[baseName]; ok {
+					isInstalled = true
+				}
+			}
+
+			if isInstalled {
+				removals = append(removals, resource.ResourceItem{
+					Name:    name,
+					Version: stateItem.Version,
+				})
+			} else {
+				cleanup = append(cleanup, resource.ResourceItem{
+					Name:    name,
+					Version: stateItem.Version,
+				})
+			}
 		}
 	}
 
@@ -384,24 +457,50 @@ func (p *BrewProvider) applyGroupAddition(ctx context.Context, addition provider
 
 // applyGroupRemoval uninstalls items from a group
 func (p *BrewProvider) applyGroupRemoval(ctx context.Context, removal provider.GroupRemoval) error {
-	for _, item := range removal.Items {
-		name := item.Name
-		isCask := strings.HasSuffix(name, " (cask)")
-		if isCask {
-			name = strings.TrimSuffix(name, " (cask)")
-		}
-
-		if isCask {
-			if _, stderr, err := cmdutil.RunSimple(ctx, "brew", "uninstall", "--cask", name); err != nil {
-				return fmt.Errorf("failed to uninstall cask %s: %s: %w", name, stderr, err)
-			}
-		} else {
-			if _, stderr, err := cmdutil.RunSimple(ctx, "brew", "uninstall", name); err != nil {
-				return fmt.Errorf("failed to uninstall %s: %s: %w", name, stderr, err)
-			}
-		}
-	}
-	return nil
+    for _, item := range removal.Items {
+        name := item.Name
+        isCask := strings.HasSuffix(name, " (cask)")
+        if isCask {
+            name = strings.TrimSuffix(name, " (cask)")
+        }
+        if isCask {
+            _, stderr, err := cmdutil.RunSimple(ctx, "brew", "uninstall", "--cask", name)
+            if err != nil {
+                // If the formula/cask is not present on this system, treat as no-op
+                if strings.Contains(stderr, "No available formula or cask with the name") || strings.Contains(stderr, "is not installed") {
+                    // Already absent, log and continue
+                    fmt.Fprintf(os.Stderr, "Warning: package %s not installed; skipping uninstall\n", name)
+                    continue
+                }
+                // If Homebrew refuses due to dependencies, surface helpful message
+                if strings.Contains(stderr, "Refusing to uninstall") {
+                    return fmt.Errorf("failed to uninstall %s: %s", name, stderr)
+                }
+                return fmt.Errorf("failed to uninstall cask %s: %s: %w", name, stderr, err)
+            }
+        } else {
+            _, stderr, err := cmdutil.RunSimple(ctx, "brew", "uninstall", name)
+            if err != nil {
+                // If the formula is not present on this system, treat as no-op
+                if strings.Contains(stderr, "No available formula or cask with the name") || strings.Contains(stderr, "is not installed") {
+                    fmt.Fprintf(os.Stderr, "Warning: package %s not installed; skipping uninstall\n", name)
+                    continue
+                }
+                // If Homebrew refuses due to dependencies, surface helpful message
+                if strings.Contains(stderr, "Refusing to uninstall") {
+                    // Attempt to list installed dependents to give the user more context
+                    depsOut, _, _ := cmdutil.RunSimple(ctx, "brew", "uses", "--installed", name)
+                    hint := strings.TrimSpace(depsOut)
+                    if hint != "" {
+                        stderr = stderr + "\nInstalled dependents:\n" + hint
+                    }
+                    return fmt.Errorf("failed to uninstall %s: %s", name, stderr)
+                }
+                return fmt.Errorf("failed to uninstall %s: %s: %w", name, stderr, err)
+            }
+        }
+    }
+    return nil
 }
 
 // applyGroupModification updates items in a group

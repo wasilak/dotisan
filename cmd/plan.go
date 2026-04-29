@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"charm.land/lipgloss/v2"
 	"charm.land/lipgloss/v2/list"
@@ -20,6 +21,7 @@ import (
 )
 
 var planOutputFlag string
+var planTargetFlags []string
 
 // planCmd represents the plan command
 var planCmd = &cobra.Command{
@@ -55,12 +57,19 @@ func runPlan() error {
 		}
 	}
 
-	// Run plan
-	ctx := context.Background()
-	result, err := eng.Plan(ctx)
-	if err != nil {
-		return fmt.Errorf("plan failed: %w", err)
-	}
+    // Run plan
+    ctx := context.Background()
+    result, err := eng.Plan(ctx, engine.PlanOptions{Targets: planTargetFlags})
+    if err != nil {
+        return fmt.Errorf("plan failed: %w", err)
+    }
+
+    // Print warnings for unmatched targets
+    if len(result.UnmatchedTargets) > 0 {
+        for _, t := range result.UnmatchedTargets {
+            fmt.Fprintf(os.Stderr, "%s target %q did not match any resources\n", style.Warning.Render("Warning:"), t)
+        }
+    }
 
 	// Display results based on output format
 	switch outputFormat {
@@ -87,9 +96,14 @@ func runPlan() error {
 		DisplayPlanList(result.ProviderPlans, false)
 
 		fmt.Println()
-		fmt.Printf("Plan: %s to add, %s to destroy\n",
-			style.Success.Render(fmt.Sprintf("%d", result.TotalAdditions)),
-			style.Error.Render(fmt.Sprintf("%d", result.TotalRemovals)))
+		planParts := []string{
+			fmt.Sprintf("%s to add", style.Success.Render(fmt.Sprintf("%d", result.TotalAdditions))),
+			fmt.Sprintf("%s to destroy", style.Error.Render(fmt.Sprintf("%d", result.TotalRemovals))),
+		}
+		if result.TotalCleanup > 0 {
+			planParts = append(planParts, fmt.Sprintf("%s cleanup (will be removed from state)", style.Dim.Render(fmt.Sprintf("%d", result.TotalCleanup))))
+		}
+		fmt.Printf("Plan: %s\n", strings.Join(planParts, ", "))
 	}
 
 	return nil
@@ -101,6 +115,7 @@ func displayPlanJSON(result *engine.PlanResult) error {
 			"additions":     result.TotalAdditions,
 			"modifications": result.TotalModifications,
 			"removals":      result.TotalRemovals,
+			"cleanup":       result.TotalCleanup,
 			"in_sync":       result.TotalInSync,
 			"drifted":       result.TotalDrifted,
 		},
@@ -114,6 +129,7 @@ func displayPlanJSON(result *engine.PlanResult) error {
 			"additions":     plan.Additions,
 			"modifications": plan.Modifications,
 			"removals":      plan.Removals,
+			"cleanup":       plan.Cleanup,
 			"in_sync":       plan.InSync,
 			"drifted":       plan.Drifted,
 		}
@@ -125,24 +141,7 @@ func displayPlanJSON(result *engine.PlanResult) error {
 	return encoder.Encode(output)
 }
 
-func kindToFullKind(kind string) string {
-	switch kind {
-	case "BrewPackages":
-		return "HomebrewPackages"
-	case "NpmPackages":
-		return "NpmPackages"
-	case "GoPackages":
-		return "GoPackages"
-	case "CargoPackages":
-		return "CargoPackages"
-	case "ManagedFile":
-		return "ManagedFile"
-	case "ManagedDirectory":
-		return "ManagedDirectory"
-	default:
-		return kind
-	}
-}
+// Note: resources use the full/display kind names (e.g. HomebrewPackages).
 
 func DisplayPlanList(plans map[string]provider.GroupPlan, skipEmpty bool) {
 	emptyEnumerator := func(l list.Items, i int) string {
@@ -163,6 +162,12 @@ func DisplayPlanList(plans map[string]provider.GroupPlan, skipEmpty bool) {
 				groups[rem.Group] = make(map[string][]resource.ResourceItem)
 			}
 			groups[rem.Group]["remove"] = append(groups[rem.Group]["remove"], rem.Items...)
+		}
+		for _, cleanup := range plan.Cleanup {
+			if groups[cleanup.Group] == nil {
+				groups[cleanup.Group] = make(map[string][]resource.ResourceItem)
+			}
+			groups[cleanup.Group]["cleanup"] = append(groups[cleanup.Group]["cleanup"], cleanup.Items...)
 		}
 		for _, mod := range plan.Modifications {
 			if groups[mod.Group] == nil {
@@ -213,6 +218,10 @@ func DisplayPlanList(plans map[string]provider.GroupPlan, skipEmpty bool) {
 			for _, item := range actions["remove"] {
 				itemStrings = append(itemStrings, "     "+style.ItemError.Render(style.IconError+" "+item.Name))
 			}
+			// Cleanup
+			for _, item := range actions["cleanup"] {
+				itemStrings = append(itemStrings, "     "+style.Dim.Render(style.IconTrashBin+" "+item.Name+" (cleanup — will be removed from state)"))
+			}
 			// Modifications
 			for _, item := range actions["modify"] {
 				itemStrings = append(itemStrings, "     "+style.ItemWarning.Render(style.IconWarning+" "+item.Name))
@@ -233,7 +242,7 @@ func DisplayPlanList(plans map[string]provider.GroupPlan, skipEmpty bool) {
 			// If skipping empty, verify there are actual changes (not just InSync)
 			if skipEmpty {
 				hasChanges := len(actions["add"]) > 0 || len(actions["remove"]) > 0 ||
-					len(actions["modify"]) > 0 || len(actions["drift"]) > 0
+					len(actions["cleanup"]) > 0 || len(actions["modify"]) > 0 || len(actions["drift"]) > 0
 				if !hasChanges {
 					continue
 				}
@@ -254,17 +263,21 @@ func DisplayPlanList(plans map[string]provider.GroupPlan, skipEmpty bool) {
 			continue
 		}
 
-		// Determine full kind name from first non-empty group
-		fullKind := providerName
-		if len(plan.Additions) > 0 {
-			fullKind = kindToFullKind(plan.Additions[0].Kind)
-		} else if len(plan.Removals) > 0 {
-			fullKind = kindToFullKind(plan.Removals[0].Kind)
-		} else if len(plan.Modifications) > 0 {
-			fullKind = kindToFullKind(plan.Modifications[0].Kind)
-		} else if len(plan.InSync) > 0 {
-			fullKind = kindToFullKind(plan.InSync[0].Kind)
-		}
+        // Determine full kind name from first non-empty group. Resources
+        // already use the full/display kind names (e.g. "HomebrewPackages"),
+        // so use the kind directly.
+        fullKind := providerName
+        if len(plan.Additions) > 0 {
+            fullKind = plan.Additions[0].Kind
+        } else if len(plan.Removals) > 0 {
+            fullKind = plan.Removals[0].Kind
+        } else if len(plan.Cleanup) > 0 {
+            fullKind = plan.Cleanup[0].Kind
+        } else if len(plan.Modifications) > 0 {
+            fullKind = plan.Modifications[0].Kind
+        } else if len(plan.InSync) > 0 {
+            fullKind = plan.InSync[0].Kind
+        }
 
 		// Build parent list with all groups
 		providerList := list.New(groupListArgs...).
@@ -277,6 +290,7 @@ func DisplayPlanList(plans map[string]provider.GroupPlan, skipEmpty bool) {
 }
 
 func init() {
-	rootCmd.AddCommand(planCmd)
-	planCmd.Flags().StringVarP(&planOutputFlag, "output", "o", "", "Output format (plain, tree, json)")
+    rootCmd.AddCommand(planCmd)
+    planCmd.Flags().StringVarP(&planOutputFlag, "output", "o", "", "Output format (plain, tree, json)")
+    planCmd.Flags().StringArrayVarP(&planTargetFlags, "target", "t", nil, "Target specific resources (format: Kind, Kind/Group, or Kind/Group/Item)")
 }
