@@ -2377,7 +2377,7 @@
   "provider-npm-go": {
     "tasks": [
       {
-        "id": "1",
+        "id": 1,
         "title": "Fix Go Provider: Implement accurate getInstalledPackages() logic",
         "description": "Resolve the critical bug in go.go where getInstalledPackages() always returns an empty map. The function must accurately report existing installed Go modules/binaries.",
         "status": "done",
@@ -2430,7 +2430,7 @@
         "updatedAt": "2026-04-22T15:26:41.412Z"
       },
       {
-        "id": "2",
+        "id": 2,
         "title": "Implement NPM Provider Import Capability (FR2)",
         "description": "Update the npm provider to discover and report existing global npm packages when running a state import command.",
         "status": "done",
@@ -2485,7 +2485,7 @@
         "updatedAt": "2026-04-22T15:26:41.420Z"
       },
       {
-        "id": "3",
+        "id": 3,
         "title": "Implement Go Provider Import Capability (FR3)",
         "description": "Update the go provider to discover and report existing Go modules when running a state import command.",
         "status": "done",
@@ -2542,7 +2542,7 @@
         "updatedAt": "2026-04-22T15:26:41.427Z"
       },
       {
-        "id": "4",
+        "id": 4,
         "title": "Implement npm Drift Detection (FR4)",
         "description": "Enhance the npm provider to detect packages that have been manually uninstalled since the last recorded state.",
         "status": "done",
@@ -2598,7 +2598,7 @@
         "updatedAt": "2026-04-22T15:26:41.434Z"
       },
       {
-        "id": "5",
+        "id": 5,
         "title": "Implement Go Drift Detection (FR5)",
         "description": "Enhance the go provider to detect binaries that have been manually removed from the system.",
         "status": "done",
@@ -2656,7 +2656,7 @@
         "updatedAt": "2026-04-22T15:26:41.441Z"
       },
       {
-        "id": "6",
+        "id": 6,
         "title": "Integrate State Tracking for NPM (Version/Presence)",
         "description": "Ensure the state file accurately records and manages the presence and potentially versions of global npm packages for reconciliation.",
         "status": "done",
@@ -2702,7 +2702,7 @@
         "updatedAt": "2026-04-22T15:26:41.446Z"
       },
       {
-        "id": "7",
+        "id": 7,
         "title": "Integrate State Tracking for Go (Version/Presence)",
         "description": "Ensure the state file accurately records and manages the presence and metadata of installed Go modules.",
         "status": "done",
@@ -2748,7 +2748,7 @@
         "updatedAt": "2026-04-22T15:26:41.451Z"
       },
       {
-        "id": "8",
+        "id": 8,
         "title": "Develop Comprehensive NPM E2E Verification Suite (Task 4 Expansion)",
         "description": "Develop the comprehensive E2E workflow tests covering the full lifecycle of an npm package resource.",
         "status": "done",
@@ -2803,7 +2803,7 @@
         "updatedAt": "2026-04-22T15:26:41.457Z"
       },
       {
-        "id": "9",
+        "id": 9,
         "title": "Develop Comprehensive Go E2E Verification Suite (Task 5 Expansion)",
         "description": "Develop the comprehensive E2E workflow tests covering the full lifecycle of a Go module resource.",
         "status": "done",
@@ -2860,7 +2860,7 @@
         "updatedAt": "2026-04-22T15:26:41.464Z"
       },
       {
-        "id": "10",
+        "id": 10,
         "title": "Final System Validation and Integration Testing",
         "description": "Execute end-to-end tests ensuring that state tracking, drift detection, and importing function correctly together for both providers in a single cohesive run.",
         "status": "done",
@@ -2952,13 +2952,16 @@
       "completedCount": 10,
       "tags": [
         "provider-npm-go"
-      ]
+      ],
+      "created": "2026-04-28T18:01:18.481Z",
+      "description": "Tasks for provider-npm-go context",
+      "updated": "2026-04-28T18:01:18.481Z"
     }
   },
   "bugfix-state-plan": {
     "tasks": [
       {
-        "id": "1",
+        "id": 1,
         "title": "Fix State Persistence: Implement State Merging Logic",
         "description": "Resolve the critical bug where the state file is completely overwritten on every 'apply' run, causing loss of previously tracked resources. The new logic must load the existing state and merge successful new items into it, preserving old entries.",
         "status": "done",
@@ -3024,7 +3027,7 @@
         "updatedAt": "2026-04-24T17:52:37.697Z"
       },
       {
-        "id": "2",
+        "id": 2,
         "title": "Fix TotalAdditions Count: Count Individual Items",
         "description": "Correct the plan summary calculation to count the total number of individual items slated for addition, rather than just counting the number of resource groups.",
         "status": "done",
@@ -3064,7 +3067,7 @@
         "updatedAt": "2026-04-24T17:52:37.703Z"
       },
       {
-        "id": "3",
+        "id": 3,
         "title": "Detect InSync Resources After State Persistence",
         "description": "Ensure that resources already managed by the system (and tracked in state) are correctly detected as 'InSync' on subsequent plan runs, especially after Task 1 fixes state persistence.",
         "status": "done",
@@ -3117,7 +3120,7 @@
         "updatedAt": "2026-04-24T17:52:37.712Z"
       },
       {
-        "id": "4",
+        "id": 4,
         "title": "State List View: One Row Per Item Display",
         "description": "Refactor the state list command to display each tracked resource item on its own dedicated row in the CLI table, rather than grouping multiple items into a single cell entry.",
         "status": "done",
@@ -3157,7 +3160,7 @@
         "updatedAt": "2026-04-24T17:52:37.718Z"
       },
       {
-        "id": "5",
+        "id": 5,
         "title": "Verify InSync Handling in DisplayPlanList",
         "description": "Review and potentially adjust `cmd/plan.go` logic to correctly render 'InSync' resources when `skipEmpty=false` is used during plan display, ensuring the '✓' icon is visible.",
         "status": "done",
@@ -3188,7 +3191,7 @@
         "updatedAt": "2026-04-24T17:52:37.720Z"
       },
       {
-        "id": "6",
+        "id": 6,
         "title": "Add Debug Logging for State Operations",
         "description": "Implement comprehensive logging across state loading and saving mechanisms to improve debuggability during complex state management bugs.",
         "status": "pending",
@@ -3227,7 +3230,7 @@
         "expansionPrompt": "Separate the logging implementation from the main business logic modifications. Subtasks: 1. Implementing logging wrappers around `Load()` and `Save()` calls in `pkg/engine/engine.go`. 2. Creating the necessary conditional check (`--debug-state`) and ensuring logging functions only activate under this flag in both `pkg/engine/engine.go` and `pkg/state/state.go`."
       },
       {
-        "id": "7",
+        "id": 7,
         "title": "Implement Integration Test for Apply -> Plan Lifecycle",
         "description": "Create a comprehensive, isolated unit/integration test file to cover the entire lifecycle: initial apply, state capture, and subsequent plan validation to prevent regression.",
         "status": "pending",
@@ -3279,7 +3282,7 @@
         "expansionPrompt": "Deconstruct the test structure: 1. Mocking the StateBackend interface for isolation. 2. Writing the initial 'Apply' execution block (Run 1) and asserting the resulting state object content. 3. Writing the subsequent 'Plan' execution block (Run 2) and asserting the plan output reflects the state changes correctly.\n\nCrucially, identify and mock any external calls that might interfere with state determinism."
       },
       {
-        "id": "8",
+        "id": 8,
         "title": "Refine Plan Calculation for All Metrics",
         "description": "Expand the item counting fix from Task 2 to ensure all summary metrics (Additions, Modifications, Removals, InSync) use the item-level counting logic.",
         "status": "done",
@@ -3323,7 +3326,7 @@
         "updatedAt": "2026-04-24T17:52:37.725Z"
       },
       {
-        "id": "9",
+        "id": 9,
         "title": "Address Missing Error Handling in State Load/Save",
         "description": "Implement robust error handling paths for state persistence operations, particularly when the state file exists but is corrupted or unreadable.",
         "status": "done",
@@ -3363,7 +3366,7 @@
         "updatedAt": "2026-04-24T17:52:37.730Z"
       },
       {
-        "id": "10",
+        "id": 10,
         "title": "Review and Update Initial Plan Assumptions",
         "description": "Final cleanup task to review the `dotisan plan` command logic to ensure it accurately reflects the desired state if no state file exists and no changes are found, providing helpful user feedback.",
         "status": "done",
@@ -3401,6 +3404,683 @@
       "completedCount": 8,
       "tags": [
         "bugfix-state-plan"
+      ],
+      "created": "2026-04-28T18:01:18.481Z",
+      "description": "Tasks for bugfix-state-plan context",
+      "updated": "2026-04-28T18:01:18.481Z"
+    }
+  },
+  "chezmoi-to-dotisan-migration": {
+    "tasks": [
+      {
+        "id": "1",
+        "title": "Initialize Dotisan Repository and Structure",
+        "description": "Set up the new dotisan dotfiles repository with proper directory structure and initialize dotisan",
+        "details": "1. Create new repository at ~/git/dotisan-dotfiles\n2. Initialize git repository\n3. Create directory structure: resources/{00-packages,10-shell,20-terminals,30-tools,40-ai-tools,50-agents,99-generated}\n4. Initialize dotisan with 'dotisan init'\n5. Add .gitignore and README.md",
+        "testStrategy": "Verify repository structure, check that dotisan init command succeeds, confirm all directories exist",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Dotisan Repository Directory",
+            "description": "Create the main repository directory at ~/git/dotisan-dotfiles with proper permissions",
+            "dependencies": [],
+            "details": "Implement directory creation with proper error handling for existing directories and permission issues. Use mkdir -p with appropriate permissions and check if directory already exists before creating.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:10:36.363Z"
+          },
+          {
+            "id": 2,
+            "title": "Initialize Git Repository",
+            "description": "Initialize a new git repository in the dotisan-dotfiles directory",
+            "dependencies": [
+              1
+            ],
+            "details": "Execute git init command in the repository directory and handle potential errors. Ensure proper git configuration and check if repository is already initialized. Add basic gitignore rules for common dotfiles patterns.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:10:36.369Z"
+          },
+          {
+            "id": 3,
+            "title": "Setup Directory Structure",
+            "description": "Create the required directory structure for dotisan resources",
+            "dependencies": [
+              2
+            ],
+            "details": "Create the resources directory with subdirectories: 00-packages, 10-shell, 20-terminals, 30-tools, 40-ai-tools, 50-agents, 99-generated. Implement error handling for permission issues and existing directory conflicts.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:10:36.374Z"
+          },
+          {
+            "id": 4,
+            "title": "Initialize Dotisan Framework",
+            "description": "Initialize dotisan framework in the repository with proper configuration",
+            "dependencies": [
+              3
+            ],
+            "details": "Execute 'dotisan init' command and verify successful initialization. Handle potential errors and ensure proper dotisan configuration files are created. Validate that dotisan is properly installed and accessible.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:10:36.378Z"
+          },
+          {
+            "id": 5,
+            "title": "Create Essential Configuration Files",
+            "description": "Create .gitignore and README.md files in the repository",
+            "dependencies": [
+              4
+            ],
+            "details": "Generate a comprehensive .gitignore file that excludes appropriate dotfiles and temporary files. Create a detailed README.md file with repository description, setup instructions, and usage guidelines. Ensure proper file permissions and encoding.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:10:36.382Z"
+          }
+        ],
+        "complexity": 3,
+        "recommendedSubtasks": 0,
+        "expansionPrompt": "Break down the repository initialization into specific steps: repository creation, git initialization, directory structure setup, dotisan initialization, and file creation. Consider potential edge cases like existing repository or permission issues.",
+        "updatedAt": "2026-04-29T13:10:36.382Z"
+      },
+      {
+        "id": "2",
+        "title": "Create Consolidated values.yaml File",
+        "description": "Consolidate all chezmoi data files into a single values.yaml file",
+        "details": "1. Extract data from all .chezmoidata/*.yaml files\n2. Merge into single values.yaml with proper structure\n3. Map chezmoi variables to dotisan equivalents:\n   - {{ .chezmoi.homeDir }} -> {{ .Env.HOME }}\n   - {{ .chezmoi.sourceDir }} -> {{ .Values.dotfiles_root }}\n   - {{ .chezmoi.os }} -> {{ .OS.GOOS }}\n   - {{ .chezmoi.arch }} -> {{ .OS.GOARCH }}\n   - {{ env \"VAR\" }} -> {{ .Env.VAR }}\n4. Validate YAML structure and syntax",
+        "testStrategy": "Run 'dotisan plan' to verify template rendering works without errors, check that all data is correctly mapped",
+        "priority": "high",
+        "dependencies": [
+          "1"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Extract and Merge Chezmoi Data Files",
+            "description": "Extract data from all .chezmoidata/*.yaml files and merge into a single values.yaml with proper structure",
+            "dependencies": [],
+            "details": "Implement data extraction from multiple YAML files in .chezmoidata directory, merge all data into a single values.yaml file while maintaining proper hierarchical structure. Handle nested data structures and ensure proper YAML formatting. Include logic to detect and resolve potential data conflicts during the merge process.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:21:10.524Z"
+          },
+          {
+            "id": 2,
+            "title": "Map Chezmoi Variables to Dotisan Equivalents",
+            "description": "Transform chezmoi variable references to dotisan equivalents with proper mapping",
+            "dependencies": [
+              1
+            ],
+            "details": "Create variable mapping logic to convert chezmoi template variables to dotisan equivalents: {{ .chezmoi.homeDir }} to {{ .Env.HOME }}, {{ .chezmoi.sourceDir }} to {{ .Values.dotfiles_root }}, {{ .chezmoi.os }} to {{ .OS.GOOS }}, {{ .chezmoi.arch }} to {{ .OS.GOARCH }}, and {{ env \"VAR\" }} to {{ .Env.VAR }}. Implement recursive search and replace across all merged data to ensure complete variable conversion.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:21:11.297Z"
+          },
+          {
+            "id": 3,
+            "title": "Validate YAML Structure and Syntax",
+            "description": "Validate the merged YAML structure and syntax for proper rendering",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Implement comprehensive YAML validation to check structure and syntax correctness. Include tests for proper indentation, valid YAML formatting, and complete data mapping. Verify that the final values.yaml file can be successfully processed by dotisan without errors. Test with 'dotisan plan' command to ensure template rendering works correctly.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:21:12.378Z"
+          }
+        ],
+        "complexity": 6,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Expand this task into subtasks for data extraction, YAML merging, variable mapping, and validation. Include steps for handling nested structures, ensuring proper YAML syntax, and testing the merged file. Consider how to handle conflicts or missing data during the merge process.",
+        "updatedAt": "2026-04-29T13:21:12.378Z"
+      },
+      {
+        "id": "3",
+        "title": "Migrate Homebrew Package Management",
+        "description": "Create dotisan resources for managing homebrew packages, formulas, casks and taps",
+        "details": "1. Create resources/00-packages/homebrew.yaml with BrewPackages resource\n2. Map .Values.packages.brew.taps to taps\n3. Map .Values.packages.brew.formulas to formulae\n4. Map .Values.packages.brew.casks to casks\n5. Use Go templates with range loops to iterate over values\n6. Set proper API version and metadata",
+        "testStrategy": "Run 'dotisan plan' and verify package management resources are correctly rendered, apply with --confirm and verify brew packages are installed",
+        "priority": "high",
+        "dependencies": [
+          "2"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Homebrew Package Resource Structure",
+            "description": "Create the base homebrew.yaml resource file with proper API version and metadata",
+            "dependencies": [],
+            "details": "Implement resources/00-packages/homebrew.yaml with BrewPackages resource definition, set correct API version, add proper metadata including name, namespace, and labels. Configure the resource to handle all brew package types (taps, formulas, casks) with appropriate schema validation.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:22:52.149Z"
+          },
+          {
+            "id": 2,
+            "title": "Implement Package Type Mapping and Template Logic",
+            "description": "Map configuration values to brew package types and implement Go template iteration",
+            "dependencies": [
+              1
+            ],
+            "details": "Create Go template logic to map .Values.packages.brew.taps to taps, .Values.packages.brew.formulas to formulae, and .Values.packages.brew.casks to casks. Implement range loops to iterate over package values, handle dependencies between package types, and ensure proper template structure with conditional logic for different package scenarios.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:22:53.187Z"
+          },
+          {
+            "id": 3,
+            "title": "Validate Package Installation and Dependencies",
+            "description": "Test package management functionality and verify installation behavior",
+            "dependencies": [
+              2
+            ],
+            "details": "Run 'dotisan plan' to verify package management resources are correctly rendered, apply with --confirm flag to test actual package installation behavior, verify brew packages are properly installed, and ensure proper handling of dependencies between different package types including tap dependencies for formulas and casks.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:23:04.597Z"
+          },
+          {
+            "id": 4,
+            "title": "Test Cross-Package Type Dependencies",
+            "description": "Verify proper handling of dependencies between different brew package types",
+            "dependencies": [
+              2
+            ],
+            "details": "Implement comprehensive testing to ensure proper dependency handling between taps, formulas, and casks, verify that tap dependencies are correctly resolved for formula installations, test edge cases with missing dependencies, and validate that the template logic properly handles complex package relationships and ordering requirements.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:23:05.927Z"
+          }
+        ],
+        "complexity": 7,
+        "recommendedSubtasks": 4,
+        "expansionPrompt": "Create subtasks for resource creation, variable mapping, template implementation, and validation. Include steps for handling different brew package types (taps, formulas, casks), proper API versioning, and testing package installation. Consider how to handle dependencies between different package types.",
+        "updatedAt": "2026-04-29T13:23:05.927Z"
+      },
+      {
+        "id": "4",
+        "title": "Migrate Go Package Management",
+        "description": "Create dotisan resources for managing Go packages",
+        "details": "1. Create resources/00-packages/go-tools.yaml with GoPackages resource\n2. Map .Values.packages.go to packages\n3. Set version to 'latest' for all packages\n4. Use Go templates with range loops\n5. Set proper API version and metadata",
+        "testStrategy": "Run 'dotisan plan' and verify Go packages resource is correctly rendered, apply with --confirm and verify go packages are installed",
+        "priority": "high",
+        "dependencies": [
+          "2"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Go Packages Resource Definition",
+            "description": "Create the YAML resource file defining Go packages with proper API version and metadata",
+            "dependencies": [],
+            "details": "Implement resources/00-packages/go-tools.yaml with GoPackages resource definition using proper API version 'v1', include metadata with name, namespace, and labels. Define package structure with version set to 'latest' and ensure proper template rendering with range loops.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:23:54.558Z"
+          },
+          {
+            "id": 2,
+            "title": "Implement Package Mapping and Template Logic",
+            "description": "Map configuration values to packages and implement Go template logic for package management",
+            "dependencies": [
+              1
+            ],
+            "details": "Map .Values.packages.go to packages using Go templates with range loops. Implement version handling logic to set all packages to 'latest' version. Create template logic that properly iterates over package definitions and handles different Go package structures with appropriate error handling.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:23:55.796Z"
+          },
+          {
+            "id": 3,
+            "title": "Validate Go Package Resources and Installation",
+            "description": "Test and validate the Go package resources for proper rendering and installation",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Run 'dotisan plan' to verify Go packages resource is correctly rendered with proper API version and metadata. Apply changes with --confirm flag and verify that go packages are properly installed. Test different package structures and ensure template rendering handles edge cases correctly.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:24:12.035Z"
+          }
+        ],
+        "complexity": 5,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Break down into resource creation, package mapping, template implementation, and validation steps. Include considerations for version handling, proper API metadata, and testing package installation. Consider how to handle different Go package structures and ensure proper template rendering.",
+        "updatedAt": "2026-04-29T13:24:12.035Z"
+      },
+      {
+        "id": "5",
+        "title": "Migrate NPM Package Management",
+        "description": "Create dotisan resources for managing NPM packages",
+        "details": "1. Create resources/00-packages/npm-tools.yaml with NpmPackages resource\n2. Map .Values.packages.npm to packages\n3. Use Go templates with range loops\n4. Set proper API version and metadata",
+        "testStrategy": "Run 'dotisan plan' and verify NPM packages resource is correctly rendered, apply with --confirm and verify npm packages are installed",
+        "priority": "high",
+        "dependencies": [
+          "2"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create NPM Packages Resource Definition",
+            "description": "Create the YAML resource definition for NPM packages with proper API versioning and metadata",
+            "dependencies": [
+              5
+            ],
+            "details": "Implement resources/00-packages/npm-tools.yaml with NpmPackages resource definition using correct API version 'v1' and appropriate metadata including name, namespace, and labels. Define the resource structure to support package management operations and ensure proper schema validation.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:25:22.968Z"
+          },
+          {
+            "id": 2,
+            "title": "Implement Package Mapping and Template Logic",
+            "description": "Map .Values.packages.npm to packages and implement Go template range loops for package rendering",
+            "dependencies": [
+              5
+            ],
+            "details": "Develop the Go template logic to iterate over .Values.packages.npm using range loops and properly map package configurations. Implement handling for different npm package types including dependencies, devDependencies, and peerDependencies. Ensure template rendering supports complex package structures and version specifications.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:25:24.042Z"
+          },
+          {
+            "id": 3,
+            "title": "Validate NPM Package Installation and Structure",
+            "description": "Test package installation and verify proper npm package structure handling",
+            "dependencies": [
+              5
+            ],
+            "details": "Create validation tests to verify npm package installation works correctly with the dotisan resources. Test handling of different npm package types, version specifications, and dependency resolution. Implement testing for package structure validation and ensure proper template rendering for various npm package configurations including scoped packages and custom registries.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:25:37.580Z"
+          }
+        ],
+        "complexity": 5,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Expand into resource creation, package mapping, template implementation, and validation steps. Include considerations for npm package structure, proper API versioning, and testing package installation. Consider how to handle different npm package types and ensure proper template rendering.",
+        "updatedAt": "2026-04-29T13:25:37.580Z"
+      },
+      {
+        "id": "6",
+        "title": "Migrate Shell Configuration Files",
+        "description": "Migrate zsh and fish shell configurations to dotisan managed files",
+        "details": "1. Create resources/10-shell/zsh.yaml with ManagedFile resource for zshrc\n2. Create resources/10-shell/fish.yaml with ManagedFile resource for fish config\n3. Migrate content from dot_zshrc.tmpl and private_dot_config/fish/config.fish\n4. Replace chezmoi variables with dotisan equivalents\n5. Set proper sourceFile, destination, mode and template flags",
+        "testStrategy": "Run 'dotisan plan' and verify shell configuration resources are correctly rendered, apply with --confirm and verify shell configurations are applied",
+        "priority": "medium",
+        "dependencies": [
+          "2"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Shell Configuration File Resources",
+            "description": "Create ManagedFile resources for zsh and fish shell configurations with proper directory structure",
+            "dependencies": [],
+            "details": "Create resources/10-shell/zsh.yaml and resources/10-shell/fish.yaml files with ManagedFile resources. Define sourceFile, destination, mode and template flags for each shell configuration. Ensure proper directory structure and file permissions are set according to dotisan conventions.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:30:01.446Z"
+          },
+          {
+            "id": 2,
+            "title": "Migrate Shell Configuration Content",
+            "description": "Migrate content from existing template and configuration files to dotisan managed resources",
+            "dependencies": [
+              1
+            ],
+            "details": "Copy content from dot_zshrc.tmpl and private_dot_config/fish/config.fish files to the new dotisan managed files. Ensure all shell configuration content is properly migrated while maintaining backward compatibility. Handle complex shell configurations and ensure proper variable replacement.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:30:02.595Z"
+          },
+          {
+            "id": 3,
+            "title": "Replace Variables and Template Logic",
+            "description": "Replace chezmoi variables with dotisan equivalents and implement proper template handling",
+            "dependencies": [
+              2
+            ],
+            "details": "Replace all chezmoi variables with dotisan equivalents in shell configuration files. Implement proper Go template logic including range loops, conditional statements, and variable references. Ensure complex shell configurations are properly handled with appropriate template functions and syntax.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:30:03.826Z"
+          },
+          {
+            "id": 4,
+            "title": "Validate and Test Shell Configuration Migration",
+            "description": "Verify shell configuration files are correctly rendered and applied with dotisan",
+            "dependencies": [
+              3
+            ],
+            "details": "Run 'dotisan plan' to verify shell configuration resources are correctly rendered. Apply changes with --confirm flag and verify that shell configurations are properly applied. Test configuration integrity and ensure backward compatibility is maintained. Validate proper file permissions and directory structures are preserved.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:30:04.971Z"
+          }
+        ],
+        "complexity": 6,
+        "recommendedSubtasks": 4,
+        "expansionPrompt": "Create subtasks for file creation, content migration, variable replacement, and validation. Include steps for handling different shell configurations, proper file permissions, template flags, and ensuring configuration integrity. Consider how to handle complex shell configurations and maintain backward compatibility.",
+        "updatedAt": "2026-04-29T13:30:04.971Z"
+      },
+      {
+        "id": "7",
+        "title": "Migrate Terminal Emulator Configurations",
+        "description": "Migrate WezTerm and Ghostty terminal configurations to dotisan managed files",
+        "details": "1. Create resources/20-terminals/wezterm.yaml with ManagedFile resource for wezterm.lua\n2. Create resources/20-terminals/ghostty.yaml with ManagedFile resource for ghostty config\n3. Migrate content from private_dot_config/wezterm/wezterm.lua and Library/Application Support/com.mitchellh.ghostty/config\n4. Set proper sourceFile, destination, mode and template flags",
+        "testStrategy": "Run 'dotisan plan' and verify terminal configuration resources are correctly rendered, apply with --confirm and verify terminal configurations are applied",
+        "priority": "medium",
+        "dependencies": [
+          "2"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Terminal Configuration Resources",
+            "description": "Create ManagedFile resources for WezTerm and Ghostty terminal configurations",
+            "dependencies": [],
+            "details": "Implement resource files at resources/20-terminals/wezterm.yaml and resources/20-terminals/ghostty.yaml using ManagedFile resources with proper destination paths, source files, and template configurations for both terminal emulators",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:32:14.946Z"
+          },
+          {
+            "id": 2,
+            "title": "Migrate Terminal Configuration Content",
+            "description": "Migrate configuration content from private directories to dotisan managed files",
+            "dependencies": [
+              1
+            ],
+            "details": "Copy content from private_dot_config/wezterm/wezterm.lua and Library/Application Support/com.mitchellh.ghostty/config to the new managed files, ensuring proper handling of complex configuration structures and terminal-specific settings",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:32:16.023Z"
+          },
+          {
+            "id": 3,
+            "title": "Configure File Handling and Permissions",
+            "description": "Set proper file modes, templates, and source/destination paths for terminal configurations",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Configure sourceFile, destination, mode, and template flags for both terminal configuration files, implement proper file permissions, and ensure template logic handles different terminal emulator requirements while maintaining configuration integrity",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:32:16.959Z"
+          },
+          {
+            "id": 4,
+            "title": "Validate Terminal Configuration Migration",
+            "description": "Verify terminal configurations are correctly migrated and applied",
+            "dependencies": [
+              1,
+              2,
+              3
+            ],
+            "details": "Run 'dotisan plan' to verify terminal configuration resources are correctly rendered, apply with --confirm flag, and verify that terminal configurations are properly applied to the system while maintaining proper file structures and handling complex terminal configurations",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:32:18.011Z"
+          }
+        ],
+        "complexity": 6,
+        "recommendedSubtasks": 4,
+        "expansionPrompt": "Break down into resource creation, content migration, file handling, and validation steps. Include considerations for different terminal emulators, proper file permissions, template implementation, and ensuring configuration integrity. Consider how to handle complex terminal configurations and maintain proper file structures.",
+        "updatedAt": "2026-04-29T13:32:18.011Z"
+      },
+      {
+        "id": "8",
+        "title": "Migrate AI Tool Configurations",
+        "description": "Migrate MCP server configurations for OpenCode, Claude Code and VS Code to dotisan managed files",
+        "details": "1. Create resources/40-ai-tools/opencode.yaml with ManagedFile resource for OpenCode config\n2. Create resources/40-ai-tools/claude-code.yaml with ManagedFile resource for Claude Code config\n3. Create resources/40-ai-tools/vscode-mcp.yaml with ManagedFile resource for VS Code MCP config\n4. Migrate content from various .tmpl files and static files\n5. Use Go templates with complex logic including range, if, hasKey, keys, sortAlpha functions\n6. Map MCP server configurations and permissions properly",
+        "testStrategy": "Run 'dotisan plan' and verify AI tool configuration resources are correctly rendered, apply with --confirm and verify configurations are applied",
+        "priority": "medium",
+        "dependencies": [
+          "2"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create ManagedFile Resources for AI Tool Configurations",
+            "description": "Create YAML resource files for each AI tool configuration using ManagedFile resources",
+            "dependencies": [
+              8
+            ],
+            "details": "Implement the creation of three ManagedFile resources in resources/40-ai-tools/ directory: opencode.yaml, claude-code.yaml, and vscode-mcp.yaml with proper resource definitions and configuration mappings",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:36:43.710Z"
+          },
+          {
+            "id": 2,
+            "title": "Migrate Content from Template and Static Files",
+            "description": "Extract and migrate content from existing .tmpl files and static configuration files",
+            "dependencies": [
+              8
+            ],
+            "details": "Identify and migrate content from various .tmpl files and static configuration files to the new ManagedFile resources, ensuring all configuration data is properly transferred and formatted",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:36:44.902Z"
+          },
+          {
+            "id": 3,
+            "title": "Implement Complex Go Template Logic",
+            "description": "Develop Go template logic with range, if, hasKey, keys, and sortAlpha functions",
+            "dependencies": [
+              8
+            ],
+            "details": "Implement complex Go template operations including range loops, conditional if statements, hasKey checks, keys extraction, and sortAlpha sorting for proper configuration rendering and handling of AI tool configurations",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:36:46.095Z"
+          },
+          {
+            "id": 4,
+            "title": "Map MCP Server Configurations and Permissions",
+            "description": "Properly map MCP server configurations and permissions for each AI tool",
+            "dependencies": [
+              8
+            ],
+            "details": "Ensure proper mapping of MCP server configurations and permissions for OpenCode, Claude Code, and VS Code, including correct handling of access controls and server settings for each tool",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:36:47.435Z"
+          },
+          {
+            "id": 5,
+            "title": "Validate Configuration Integrity and Rendering",
+            "description": "Verify that all AI tool configurations are correctly rendered and applied",
+            "dependencies": [
+              8
+            ],
+            "details": "Run 'dotisan plan' to validate AI tool configuration resources are correctly rendered, then apply with --confirm to verify configurations are properly applied and all complex AI tool setups are correctly implemented",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:36:48.392Z"
+          }
+        ],
+        "complexity": 8,
+        "recommendedSubtasks": 5,
+        "expansionPrompt": "Expand into resource creation, content migration, template logic implementation, variable mapping, and validation steps. Include considerations for complex template functions (range, if, hasKey, keys, sortAlpha), proper MCP server configuration mapping, and ensuring configuration integrity. Consider how to handle complex AI tool configurations and multi-file generation.",
+        "updatedAt": "2026-04-29T13:36:48.392Z"
+      },
+      {
+        "id": "9",
+        "title": "Migrate AI Agent Skills Directory",
+        "description": "Migrate AI agent skills directory to dotisan managed directory",
+        "details": "1. Create resources/50-agents/agents.yaml with ManagedDirectory resource\n2. Copy all skill files from dotfiles/dot_agents/skills/ to resources/50-agents/skills/\n3. Set proper sourceDir, destination, recursive and clean flags\n4. Configure directory structure to match original",
+        "testStrategy": "Run 'dotisan plan' and verify agent skills directory resource is correctly rendered, apply with --confirm and verify agent skills are properly placed",
+        "priority": "medium",
+        "dependencies": [
+          "2"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create ManagedDirectory Resource for AI Agent Skills",
+            "description": "Create the agents.yaml file with proper ManagedDirectory resource configuration",
+            "dependencies": [],
+            "details": "Create resources/50-agents/agents.yaml file with ManagedDirectory resource definition that specifies the directory structure, source directory, and destination path for the AI agent skills directory",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:39:44.061Z"
+          },
+          {
+            "id": 2,
+            "title": "Copy and Configure AI Agent Skill Files",
+            "description": "Copy skill files from dotfiles to resources directory with proper configuration",
+            "dependencies": [
+              1
+            ],
+            "details": "Copy all skill files from dotfiles/dot_agents/skills/ to resources/50-agents/skills/ directory, ensuring proper recursive copying, setting clean flags to maintain directory integrity, and configuring sourceDir, destination, recursive and clean flags correctly",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:39:44.774Z"
+          },
+          {
+            "id": 3,
+            "title": "Validate AI Agent Skills Directory Migration",
+            "description": "Verify the migration completed successfully and directory structure is correct",
+            "dependencies": [
+              2
+            ],
+            "details": "Run 'dotisan plan' to verify agent skills directory resource is correctly rendered, apply with --confirm and verify agent skills are properly placed, ensuring directory permissions are correct and recursive copying worked as expected",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:39:45.580Z"
+          }
+        ],
+        "complexity": 5,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Create subtasks for resource creation, directory copying, flag configuration, and validation. Include considerations for proper directory structure, recursive copying, clean flags, and ensuring skills are properly placed. Consider how to handle directory permissions and ensure proper recursive copying.",
+        "updatedAt": "2026-04-29T13:39:45.580Z"
+      },
+      {
+        "id": "10",
+        "title": "Migrate Generated Command Files",
+        "description": "Migrate command generation from Python scripts to dotisan managed files",
+        "details": "1. Create resources/99-generated/opencode-commands.yaml with ManagedFile resource for OpenCode commands\n2. Create resources/99-generated/claude-commands.yaml with ManagedFile resource for Claude commands\n3. Migrate command content from commands.yaml data\n4. Use Go templates with range loops to iterate over commands\n5. Set proper source, destination, mode and template flags\n6. Handle multi-file generation as needed",
+        "testStrategy": "Run 'dotisan plan' and verify generated command resources are correctly rendered, apply with --confirm and verify command files are properly generated",
+        "priority": "medium",
+        "dependencies": [
+          "2"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create ManagedFile Resources for Command Generation",
+            "description": "Create YAML resource files for OpenCode and Claude command generation using ManagedFile resources",
+            "dependencies": [],
+            "details": "Implement resources/99-generated/opencode-commands.yaml and resources/99-generated/claude-commands.yaml with proper ManagedFile resource definitions including source, destination, mode, and template flags for command file generation",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:44:33.565Z"
+          },
+          {
+            "id": 2,
+            "title": "Migrate Command Content and Implement Go Templates",
+            "description": "Migrate command content from commands.yaml and implement Go template logic for command generation",
+            "dependencies": [
+              1
+            ],
+            "details": "Extract command data from commands.yaml and implement Go templates with range loops to iterate over commands, ensuring proper template structure for multi-file generation and handling complex command structures",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:44:34.277Z"
+          },
+          {
+            "id": 3,
+            "title": "Handle Multi-File Generation and Complex Command Structures",
+            "description": "Implement proper handling for multi-file generation and complex command structures",
+            "dependencies": [
+              2
+            ],
+            "details": "Configure template logic to handle multi-file generation scenarios, implement proper template loops for complex command structures, and ensure file handling mechanisms correctly process all command variations and dependencies",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:44:35.144Z"
+          },
+          {
+            "id": 4,
+            "title": "Validate Generated Command Files and Test Implementation",
+            "description": "Validate generated command files and test the complete implementation",
+            "dependencies": [
+              3
+            ],
+            "details": "Run 'dotisan plan' to verify generated command resources are correctly rendered, apply with --confirm flag and verify command files are properly generated, ensuring all command files are correctly created with proper permissions and content",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-04-29T13:44:36.030Z"
+          }
+        ],
+        "complexity": 7,
+        "recommendedSubtasks": 4,
+        "expansionPrompt": "Break down into resource creation, content migration, template implementation, and validation steps. Include considerations for multi-file generation, proper template loops, file handling, and ensuring command files are correctly generated. Consider how to handle complex command structures and ensure proper file generation.",
+        "updatedAt": "2026-04-29T13:44:36.030Z"
+      }
+    ],
+    "metadata": {
+      "version": "1.0.0",
+      "lastModified": "2026-04-29T13:44:36.030Z",
+      "taskCount": 10,
+      "completedCount": 10,
+      "tags": [
+        "chezmoi-to-dotisan-migration"
       ]
     }
   }

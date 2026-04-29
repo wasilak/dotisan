@@ -1,0 +1,93 @@
+{
+	"meta": {
+		"generatedAt": "2026-04-28T18:44:12.605Z",
+		"tasksAnalyzed": 10,
+		"totalTasks": 10,
+		"analysisCount": 10,
+		"thresholdScore": 5,
+		"projectName": "Task Master",
+		"usedResearch": true
+	},
+	"complexityAnalysis": [
+		{
+			"taskId": 1,
+			"taskTitle": "Initialize Dotisan Repository and Structure",
+			"complexityScore": 3,
+			"recommendedSubtasks": 0,
+			"expansionPrompt": "Break down the repository initialization into specific steps: repository creation, git initialization, directory structure setup, dotisan initialization, and file creation. Consider potential edge cases like existing repository or permission issues.",
+			"reasoning": "This is a straightforward setup task that involves basic file operations and command execution. The steps are well-defined and don't require complex logic or integration with external systems. The main challenges are ensuring proper permissions and handling edge cases like existing repositories."
+		},
+		{
+			"taskId": 2,
+			"taskTitle": "Create Consolidated values.yaml File",
+			"complexityScore": 6,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Expand this task into subtasks for data extraction, YAML merging, variable mapping, and validation. Include steps for handling nested structures, ensuring proper YAML syntax, and testing the merged file. Consider how to handle conflicts or missing data during the merge process.",
+			"reasoning": "This task requires data manipulation, YAML processing, and variable mapping. The complexity comes from ensuring proper structure and handling potential data conflicts. It involves multiple steps of data extraction, transformation, and validation, making it moderately complex but well-defined."
+		},
+		{
+			"taskId": 3,
+			"taskTitle": "Migrate Homebrew Package Management",
+			"complexityScore": 7,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Create subtasks for resource creation, variable mapping, template implementation, and validation. Include steps for handling different brew package types (taps, formulas, casks), proper API versioning, and testing package installation. Consider how to handle dependencies between different package types.",
+			"reasoning": "This task involves creating structured resources with proper API versioning, complex mapping of package types, and template logic. The complexity comes from handling multiple package types, ensuring proper API compatibility, and implementing robust template structures with range loops."
+		},
+		{
+			"taskId": 4,
+			"taskTitle": "Migrate Go Package Management",
+			"complexityScore": 5,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Break down into resource creation, package mapping, template implementation, and validation steps. Include considerations for version handling, proper API metadata, and testing package installation. Consider how to handle different Go package structures and ensure proper template rendering.",
+			"reasoning": "This task is moderately complex as it involves creating Go packages resources with proper templating. The complexity comes from ensuring proper API versioning, handling Go package structures, and implementing template logic. However, it's more straightforward than package management with multiple types."
+		},
+		{
+			"taskId": 5,
+			"taskTitle": "Migrate NPM Package Management",
+			"complexityScore": 5,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Expand into resource creation, package mapping, template implementation, and validation steps. Include considerations for npm package structure, proper API versioning, and testing package installation. Consider how to handle different npm package types and ensure proper template rendering.",
+			"reasoning": "Similar to Go package management, this task involves creating NPM package resources with proper templating. The complexity is moderate due to API versioning requirements and template implementation, but the structure is simpler than homebrew package management."
+		},
+		{
+			"taskId": 6,
+			"taskTitle": "Migrate Shell Configuration Files",
+			"complexityScore": 6,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Create subtasks for file creation, content migration, variable replacement, and validation. Include steps for handling different shell configurations, proper file permissions, template flags, and ensuring configuration integrity. Consider how to handle complex shell configurations and maintain backward compatibility.",
+			"reasoning": "This task requires careful handling of configuration files with variable replacement and proper file management. The complexity comes from ensuring correct variable mapping, maintaining file permissions, and handling potentially complex shell configurations while maintaining backward compatibility."
+		},
+		{
+			"taskId": 7,
+			"taskTitle": "Migrate Terminal Emulator Configurations",
+			"complexityScore": 6,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Break down into resource creation, content migration, file handling, and validation steps. Include considerations for different terminal emulators, proper file permissions, template implementation, and ensuring configuration integrity. Consider how to handle complex terminal configurations and maintain proper file structures.",
+			"reasoning": "This task involves migrating complex configuration files for different terminal emulators. The complexity comes from handling different file formats, ensuring proper permissions, and maintaining complex configuration structures while implementing proper template logic."
+		},
+		{
+			"taskId": 8,
+			"taskTitle": "Migrate AI Tool Configurations",
+			"complexityScore": 8,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Expand into resource creation, content migration, template logic implementation, variable mapping, and validation steps. Include considerations for complex template functions (range, if, hasKey, keys, sortAlpha), proper MCP server configuration mapping, and ensuring configuration integrity. Consider how to handle complex AI tool configurations and multi-file generation.",
+			"reasoning": "This is the most complex task due to the sophisticated template logic required, handling of complex functions, and mapping of intricate AI tool configurations. The complexity is high because it involves multiple complex template operations, proper configuration mapping, and ensuring that complex AI tool setups are correctly rendered."
+		},
+		{
+			"taskId": 9,
+			"taskTitle": "Migrate AI Agent Skills Directory",
+			"complexityScore": 5,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Create subtasks for resource creation, directory copying, flag configuration, and validation. Include considerations for proper directory structure, recursive copying, clean flags, and ensuring skills are properly placed. Consider how to handle directory permissions and ensure proper recursive copying.",
+			"reasoning": "This task involves directory management and proper resource configuration. The complexity is moderate as it requires understanding directory structures, proper flag configuration, and ensuring recursive copying works correctly. It's less complex than template-heavy tasks but still requires careful implementation."
+		},
+		{
+			"taskId": 10,
+			"taskTitle": "Migrate Generated Command Files",
+			"complexityScore": 7,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Break down into resource creation, content migration, template implementation, and validation steps. Include considerations for multi-file generation, proper template loops, file handling, and ensuring command files are correctly generated. Consider how to handle complex command structures and ensure proper file generation.",
+			"reasoning": "This task involves complex template logic with range loops and multi-file generation. The complexity comes from implementing proper template structures, handling multi-file generation, and ensuring command files are correctly generated. It's moderately to highly complex due to the template complexity and file generation requirements."
+		}
+	]
+}

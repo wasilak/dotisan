@@ -20,14 +20,15 @@ import (
 
 // Engine orchestrates the plan and apply operations.
 type Engine struct {
-	Config       *config.Config
-	StateBackend state.StateBackend
-	Providers    map[string]provider.Provider
+	Config          *config.Config
+	TemplateContext *config.TemplateContext
+	StateBackend    state.StateBackend
+	Providers       map[string]provider.Provider
 }
 
 // NewEngine creates a new Engine with default configuration.
 func NewEngine() (*Engine, error) {
-	cfg, _, err := config.LoadComplete()
+	cfg, ctx, err := config.LoadComplete()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load configuration: %w", err)
 	}
@@ -65,9 +66,10 @@ func NewEngine() (*Engine, error) {
 	provider.Register("cargo", cargoProvider)
 
 	return &Engine{
-		Config:       cfg,
-		StateBackend: backend,
-		Providers:    providerMap,
+		Config:          cfg,
+		TemplateContext: ctx,
+		StateBackend:    backend,
+		Providers:       providerMap,
 	}, nil
 }
 
@@ -149,7 +151,7 @@ func (e *Engine) Plan(ctx context.Context) (*PlanResult, error) {
 
 // loadResources parses all resource files from the dotfiles directory.
 func (e *Engine) loadResources() ([]resource.Resource, error) {
-	loader := resource.NewLoader(e.Config.DotfilesRoot, nil)
+	loader := resource.NewLoader(e.Config.DotfilesRoot, e.TemplateContext)
 	return loader.LoadResources()
 }
 
