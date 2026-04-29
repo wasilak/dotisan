@@ -74,15 +74,19 @@ func (e *Engine) StateMv(ctx context.Context, opts StateMvOptions) (*StateMvResu
 		return nil, fmt.Errorf("source group %s/%s not found in state", srcKind, srcGroup)
 	}
 
+	// Validate source item exists with better error message
 	found := false
+	var availableItems []string
 	for _, item := range srcRes.Items {
+		availableItems = append(availableItems, item.Name)
 		if item.Name == srcItem {
 			found = true
 			break
 		}
 	}
 	if !found {
-		return nil, fmt.Errorf("source item %s not found in group %s/%s", srcItem, srcKind, srcGroup)
+		return nil, fmt.Errorf("source item %q not found in group %s/%s\n\nAvailable items:\n  %s",
+			srcItem, srcKind, srcGroup, strings.Join(availableItems, "\n  "))
 	}
 
 	// If destination item name not provided, use source item name
@@ -97,16 +101,20 @@ func (e *Engine) StateMv(ctx context.Context, opts StateMvOptions) (*StateMvResu
 
 	// Validate destination group exists in desired config
 	dstGroupExists := false
+	var availableGroups []string
 	for _, res := range resources {
 		if res.GetKind() == dstKind {
-			if res.GetMetadata().Name == dstGroup {
+			groupName := res.GetMetadata().Name
+			availableGroups = append(availableGroups, groupName)
+			if groupName == dstGroup {
 				dstGroupExists = true
 				break
 			}
 		}
 	}
 	if !dstGroupExists {
-		return nil, fmt.Errorf("destination group %s/%s does not exist in desired configuration", dstKind, dstGroup)
+		return nil, fmt.Errorf("destination group %s/%s does not exist in desired configuration\n\nAvailable groups in %s:\n  %s",
+			dstKind, dstGroup, dstKind, strings.Join(availableGroups, "\n  "))
 	}
 
 	// Validate destination doesn't already have the item
