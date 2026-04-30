@@ -3,8 +3,8 @@ package diff
 import (
 	"strings"
 
-	"charm.land/lipgloss/v2/tree"
 	lipgloss "charm.land/lipgloss/v2"
+	"charm.land/lipgloss/v2/tree"
 	"github.com/wasilak/dotisan/pkg/provider"
 	"github.com/wasilak/dotisan/pkg/style"
 )

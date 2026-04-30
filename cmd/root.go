@@ -2,7 +2,11 @@ package cmd
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
+	"strings"
+
+	"github.com/wasilak/dotisan/pkg/config"
 
 	"github.com/spf13/cobra"
 )
@@ -35,7 +39,46 @@ func Execute() {
 }
 
 func init() {
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
+	// Add persistent flag for log level which overrides config
+	rootCmd.PersistentFlags().String("log-level", "", "Log level (debug, info, warn, error)")
+
+	// PersistentPreRun: initialize global slog logger using precedence: flag > config > default(info)
+	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+		// Determine log level from flag
+		lvlFlag, _ := cmd.Flags().GetString("log-level")
+
+		// Load config to read configured log_level (if present)
+		cfg, _ := config.LoadConfigFromDefaultPath()
+
+		chosen := "info"
+		if strings.TrimSpace(lvlFlag) != "" {
+			chosen = strings.ToLower(strings.TrimSpace(lvlFlag))
+		} else if cfg != nil && strings.TrimSpace(cfg.LogLevel) != "" {
+			chosen = strings.ToLower(strings.TrimSpace(cfg.LogLevel))
+		}
+
+		var level slog.Level
+		switch chosen {
+		case "debug":
+			level = slog.LevelDebug
+		case "info":
+			level = slog.LevelInfo
+		case "warn", "warning":
+			level = slog.LevelWarn
+		case "error":
+			level = slog.LevelError
+		default:
+			level = slog.LevelInfo
+		}
+
+		// Choose handler format according to application output setting.
+		// If config requests JSON output, use a JSON handler for logs as well.
+		var h slog.Handler
+		if cfg != nil && strings.ToLower(strings.TrimSpace(cfg.UI.Output)) == "json" {
+			h = slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: level})
+		} else {
+			h = slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level})
+		}
+		slog.SetDefault(slog.New(h))
+	}
 }

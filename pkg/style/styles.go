@@ -35,10 +35,10 @@ var (
 	Success    = lipgloss.NewStyle().Foreground(lipgloss.Color(Green))
 	Error      = lipgloss.NewStyle().Foreground(lipgloss.Color(Red))
 	Warning    = lipgloss.NewStyle().Foreground(lipgloss.Color(Orange))
-	Info      = lipgloss.NewStyle().Foreground(lipgloss.Color(Yellow))
-	Dim       = lipgloss.NewStyle().Foreground(lipgloss.Color(Gray))
+	Info       = lipgloss.NewStyle().Foreground(lipgloss.Color(Yellow))
+	Dim        = lipgloss.NewStyle().Foreground(lipgloss.Color(Gray))
 	RowSuccess = lipgloss.NewStyle().Foreground(lipgloss.Color(RowGreen))
-	RowError  = lipgloss.NewStyle().Foreground(lipgloss.Color(RowRed))
+	RowError   = lipgloss.NewStyle().Foreground(lipgloss.Color(RowRed))
 	RowWarning = lipgloss.NewStyle().Foreground(lipgloss.Color(RowYellow))
 )
 
@@ -54,10 +54,10 @@ var (
 
 // Styles for rendering full item lines (icon + text)
 var (
-	ItemSuccess  = Success
+	ItemSuccess = Success
 	ItemError   = Error
 	ItemWarning = Warning
-	ItemInfo   = Info
+	ItemInfo    = Info
 )
 
 // Header styles
@@ -69,19 +69,19 @@ var (
 // Box styles with borders
 var (
 	SuccessBox = lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color(Green)).
-		Padding(1, 2)
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color(Green)).
+			Padding(1, 2)
 
 	ErrorBox = lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color(Red)).
-		Padding(1, 2)
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color(Red)).
+			Padding(1, 2)
 
 	WarningBox = lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color(Orange)).
-		Padding(1, 2)
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color(Orange)).
+			Padding(1, 2)
 
 	InfoBox = lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
@@ -92,8 +92,8 @@ var (
 // Table styles with width constraints
 var (
 	TableHeader = lipgloss.NewStyle().
-		Bold(true).
-		Underline(true)
+			Bold(true).
+			Underline(true)
 
 	TableRow  = lipgloss.NewStyle()
 	TableCell = lipgloss.NewStyle()
@@ -128,12 +128,12 @@ var (
 	PlanIconSuccess = lipgloss.NewStyle().Foreground(lipgloss.Color(Green))
 	PlanIconError   = lipgloss.NewStyle().Foreground(lipgloss.Color(Red))
 	PlanIconWarn    = lipgloss.NewStyle().Foreground(lipgloss.Color(Orange))
-	PlanIconInfo   = lipgloss.NewStyle().Foreground(lipgloss.Color(Yellow))
+	PlanIconInfo    = lipgloss.NewStyle().Foreground(lipgloss.Color(Yellow))
 
 	PlanSection = lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color(Blue)).
-		MarginBottom(1)
+			Bold(true).
+			Foreground(lipgloss.Color(Blue)).
+			MarginBottom(1)
 
 	PlanSummary = lipgloss.NewStyle().Bold(true)
 )

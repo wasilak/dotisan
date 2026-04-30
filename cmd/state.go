@@ -239,14 +239,28 @@ func init() {
 }
 
 func runStateRemoveByID(id string) error {
-	kind, group, err := parseID(id)
-	if err != nil {
-		return err
+	parts := strings.Split(id, "/")
+	if len(parts) < 2 {
+		return fmt.Errorf("invalid ID format: %s (expected Kind/group or Kind/group/item)", id)
+	}
+
+	kind := parts[0]
+	group := parts[1]
+	item := ""
+	if len(parts) >= 3 {
+		item = parts[2]
 	}
 
 	if !stateRemoveForce {
+		var promptText string
+		if item == "" {
+			promptText = fmt.Sprintf("Remove %s/%s from state?\n", kind, group)
+		} else {
+			promptText = fmt.Sprintf("Remove %s/%s/%s from state?\n", kind, group, item)
+		}
+
 		prompt := style.InfoBox.Render(
-			fmt.Sprintf("Remove %s/%s from state?\n", kind, group) +
+			promptText +
 				style.Dim.Render("  (actual resource will not be modified)\n\n") +
 				fmt.Sprintf("%s %s, remove from state\n", style.Info.Render("[Y]"), style.Dim.Render("Yes")) +
 				fmt.Sprintf("%s %s, keep it\n", style.Info.Render("[N]"), style.Dim.Render("No")),
@@ -277,8 +291,19 @@ func runStateRemoveByID(id string) error {
 		return fmt.Errorf("cannot load state: %w", err)
 	}
 
-	if !currentState.RemoveResourceGroup(kind, group) {
-		fmt.Printf("%s Resource %s/%s not found in state\n", style.IconError, kind, group)
+	var removed bool
+	if item == "" {
+		removed = currentState.RemoveResourceGroup(kind, group)
+	} else {
+		removed = currentState.RemoveResourceItem(kind, group, item)
+	}
+
+	if !removed {
+		if item == "" {
+			fmt.Printf("%s Resource %s/%s not found in state\n", style.IconError, kind, group)
+		} else {
+			fmt.Printf("%s Resource %s/%s/%s not found in state\n", style.IconError, kind, group, item)
+		}
 		return nil
 	}
 
@@ -286,7 +311,11 @@ func runStateRemoveByID(id string) error {
 		return fmt.Errorf("failed to save state: %w", err)
 	}
 
-	fmt.Printf("%s Removed %s/%s from state\n", style.IconSuccess, kind, group)
+	if item == "" {
+		fmt.Printf("%s Removed %s/%s from state\n", style.IconSuccess, kind, group)
+	} else {
+		fmt.Printf("%s Removed %s/%s/%s from state\n", style.IconSuccess, kind, group, item)
+	}
 	return nil
 }
 
@@ -381,11 +410,13 @@ func displayStateTable(currentState *state.State) error {
 		}
 		return cellStyle
 	})
-	t.Headers("KIND", "GROUP", "NAME", "STATUS")
+	t.Headers("KIND", "GROUP", "NAME", "STATUS", "ID")
 
 	for _, res := range currentState.Resources {
 		for _, item := range res.Items {
-			t.Row(res.Kind, res.Group, item.Name, item.Status)
+			// Full item ID format: Kind/Group/Item (used for state commands)
+			id := fmt.Sprintf("%s/%s/%s", res.Kind, res.Group, item.Name)
+			t.Row(res.Kind, res.Group, item.Name, item.Status, id)
 		}
 	}
 

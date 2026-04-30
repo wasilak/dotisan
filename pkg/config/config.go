@@ -44,6 +44,9 @@ type Config struct {
 
 	// UI holds UI/display configuration
 	UI UIConfig `yaml:"ui,omitempty"`
+
+	// LogLevel sets the global logging level (debug, info, warn, error)
+	LogLevel string `yaml:"log_level,omitempty"`
 }
 
 // DefaultConfig returns a Config with default values.

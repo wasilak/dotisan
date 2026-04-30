@@ -57,19 +57,19 @@ func runPlan() error {
 		}
 	}
 
-    // Run plan
-    ctx := context.Background()
-    result, err := eng.Plan(ctx, engine.PlanOptions{Targets: planTargetFlags})
-    if err != nil {
-        return fmt.Errorf("plan failed: %w", err)
-    }
+	// Run plan
+	ctx := context.Background()
+	result, err := eng.Plan(ctx, engine.PlanOptions{Targets: planTargetFlags})
+	if err != nil {
+		return fmt.Errorf("plan failed: %w", err)
+	}
 
-    // Print warnings for unmatched targets
-    if len(result.UnmatchedTargets) > 0 {
-        for _, t := range result.UnmatchedTargets {
-            fmt.Fprintf(os.Stderr, "%s target %q did not match any resources\n", style.Warning.Render("Warning:"), t)
-        }
-    }
+	// Print warnings for unmatched targets
+	if len(result.UnmatchedTargets) > 0 {
+		for _, t := range result.UnmatchedTargets {
+			fmt.Fprintf(os.Stderr, "%s target %q did not match any resources\n", style.Warning.Render("Warning:"), t)
+		}
+	}
 
 	// Display results based on output format
 	switch outputFormat {
@@ -263,21 +263,21 @@ func DisplayPlanList(plans map[string]provider.GroupPlan, skipEmpty bool) {
 			continue
 		}
 
-        // Determine full kind name from first non-empty group. Resources
-        // already use the full/display kind names (e.g. "HomebrewPackages"),
-        // so use the kind directly.
-        fullKind := providerName
-        if len(plan.Additions) > 0 {
-            fullKind = plan.Additions[0].Kind
-        } else if len(plan.Removals) > 0 {
-            fullKind = plan.Removals[0].Kind
-        } else if len(plan.Cleanup) > 0 {
-            fullKind = plan.Cleanup[0].Kind
-        } else if len(plan.Modifications) > 0 {
-            fullKind = plan.Modifications[0].Kind
-        } else if len(plan.InSync) > 0 {
-            fullKind = plan.InSync[0].Kind
-        }
+		// Determine full kind name from first non-empty group. Resources
+		// already use the full/display kind names (e.g. "HomebrewPackages"),
+		// so use the kind directly.
+		fullKind := providerName
+		if len(plan.Additions) > 0 {
+			fullKind = plan.Additions[0].Kind
+		} else if len(plan.Removals) > 0 {
+			fullKind = plan.Removals[0].Kind
+		} else if len(plan.Cleanup) > 0 {
+			fullKind = plan.Cleanup[0].Kind
+		} else if len(plan.Modifications) > 0 {
+			fullKind = plan.Modifications[0].Kind
+		} else if len(plan.InSync) > 0 {
+			fullKind = plan.InSync[0].Kind
+		}
 
 		// Build parent list with all groups
 		providerList := list.New(groupListArgs...).
@@ -290,7 +290,7 @@ func DisplayPlanList(plans map[string]provider.GroupPlan, skipEmpty bool) {
 }
 
 func init() {
-    rootCmd.AddCommand(planCmd)
-    planCmd.Flags().StringVarP(&planOutputFlag, "output", "o", "", "Output format (plain, tree, json)")
-    planCmd.Flags().StringArrayVarP(&planTargetFlags, "target", "t", nil, "Target specific resources (format: Kind, Kind/Group, or Kind/Group/Item)")
+	rootCmd.AddCommand(planCmd)
+	planCmd.Flags().StringVarP(&planOutputFlag, "output", "o", "", "Output format (plain, tree, json)")
+	planCmd.Flags().StringArrayVarP(&planTargetFlags, "target", "t", nil, "Target specific resources (format: Kind, Kind/Group, or Kind/Group/Item)")
 }

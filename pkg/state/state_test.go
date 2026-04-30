@@ -76,15 +76,15 @@ func TestState_SetResourceGroup_Update(t *testing.T) {
 	s := NewState()
 	s.SetResourceGroup(provider.ResourceState{
 		Kind:      "BrewPackages",
-		Group:    "core-tools",
-		Items:    []resource.ItemState{{Name: "ripgrep"}},
+		Group:     "core-tools",
+		Items:     []resource.ItemState{{Name: "ripgrep"}},
 		Namespace: "default",
 	})
 
 	s.SetResourceGroup(provider.ResourceState{
 		Kind:      "BrewPackages",
-		Group:    "core-tools",
-		Items:    []resource.ItemState{{Name: "ripgrep"}, {Name: "jq"}},
+		Group:     "core-tools",
+		Items:     []resource.ItemState{{Name: "ripgrep"}, {Name: "jq"}},
 		Namespace: "default",
 	})
 
@@ -102,14 +102,14 @@ func TestState_RemoveResourceGroup(t *testing.T) {
 	s := NewState()
 	s.SetResourceGroup(provider.ResourceState{
 		Kind:      "BrewPackages",
-		Group:    "core-tools",
-		Items:    []resource.ItemState{{Name: "ripgrep"}},
+		Group:     "core-tools",
+		Items:     []resource.ItemState{{Name: "ripgrep"}},
 		Namespace: "default",
 	})
 	s.SetResourceGroup(provider.ResourceState{
 		Kind:      "BrewPackages",
-		Group:    "dev-tools",
-		Items:    []resource.ItemState{{Name: "jq"}},
+		Group:     "dev-tools",
+		Items:     []resource.ItemState{{Name: "jq"}},
 		Namespace: "default",
 	})
 
@@ -230,6 +230,129 @@ func TestLocalBackendWithDefaultPath(t *testing.T) {
 	// Should contain .config/dotisan/state.json
 	if !contains(path, ".config/dotisan") || !contains(path, "state.json") {
 		t.Errorf("Path() = %q, should contain .config/dotisan and state.json", path)
+	}
+}
+
+func TestState_MoveItem(t *testing.T) {
+	s := NewState()
+
+	// Set up initial state with two groups
+	s.SetResourceGroup(provider.ResourceState{
+		Kind:      "BrewPackages",
+		Group:     "core-tools",
+		Namespace: "default",
+		Items: []resource.ItemState{
+			{Name: "ripgrep", Version: "14.0.0"},
+			{Name: "podman", Version: "4.9.0"},
+		},
+	})
+	s.SetResourceGroup(provider.ResourceState{
+		Kind:      "BrewPackages",
+		Group:     "homebrew-packages",
+		Namespace: "default",
+		Items: []resource.ItemState{
+			{Name: "zsh", Version: "5.9"},
+		},
+	})
+
+	// Move podman from core-tools to homebrew-packages
+	moved, ok := s.MoveItem("BrewPackages", "core-tools", "podman", "BrewPackages", "homebrew-packages", "podman")
+	if !ok {
+		t.Fatal("MoveItem() should return true for valid move")
+	}
+	if moved.Items[0].Name != "podman" {
+		t.Errorf("Moved item name = %q, want %q", moved.Items[0].Name, "podman")
+	}
+
+	// Verify podman was removed from source group
+	srcGroup, exists := s.GetResourceGroup("BrewPackages", "core-tools")
+	if !exists {
+		t.Fatal("Source group should still exist")
+	}
+	for _, item := range srcGroup.Items {
+		if item.Name == "podman" {
+			t.Error("podman should be removed from core-tools group")
+		}
+	}
+	if len(srcGroup.Items) != 1 || srcGroup.Items[0].Name != "ripgrep" {
+		t.Errorf("core-tools items = %v, want [ripgrep]", srcGroup.Items)
+	}
+
+	// Verify podman was added to destination group
+	dstGroup, exists := s.GetResourceGroup("BrewPackages", "homebrew-packages")
+	if !exists {
+		t.Fatal("Destination group should exist")
+	}
+	found := false
+	for _, item := range dstGroup.Items {
+		if item.Name == "podman" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("podman should be in homebrew-packages group")
+	}
+}
+
+func TestState_MoveItem_ToNewGroup(t *testing.T) {
+	s := NewState()
+
+	// Set up initial state with one group
+	s.SetResourceGroup(provider.ResourceState{
+		Kind:      "BrewPackages",
+		Group:     "core-tools",
+		Namespace: "default",
+		Items: []resource.ItemState{
+			{Name: "podman", Version: "4.9.0"},
+		},
+	})
+
+	// Move podman to a new group that doesn't exist yet
+	_, ok := s.MoveItem("BrewPackages", "core-tools", "podman", "BrewPackages", "new-group", "podman")
+	if !ok {
+		t.Fatal("MoveItem() should return true for valid move to new group")
+	}
+
+	// Verify source group was removed (empty after move)
+	_, exists := s.GetResourceGroup("BrewPackages", "core-tools")
+	if exists {
+		t.Error("core-tools group should be removed since it's now empty")
+	}
+
+	// Verify destination group was created
+	dstGroup, exists := s.GetResourceGroup("BrewPackages", "new-group")
+	if !exists {
+		t.Fatal("new-group should exist")
+	}
+	if len(dstGroup.Items) != 1 || dstGroup.Items[0].Name != "podman" {
+		t.Errorf("new-group items = %v, want [podman]", dstGroup.Items)
+	}
+}
+
+func TestState_MoveItem_NotFound(t *testing.T) {
+	s := NewState()
+
+	// Set up initial state
+	s.SetResourceGroup(provider.ResourceState{
+		Kind:      "BrewPackages",
+		Group:     "core-tools",
+		Namespace: "default",
+		Items: []resource.ItemState{
+			{Name: "ripgrep", Version: "14.0.0"},
+		},
+	})
+
+	// Try to move non-existent item
+	_, ok := s.MoveItem("BrewPackages", "core-tools", "nonexistent", "BrewPackages", "other-group", "nonexistent")
+	if ok {
+		t.Error("MoveItem() should return false for non-existent item")
+	}
+
+	// Try to move from non-existent group
+	_, ok = s.MoveItem("BrewPackages", "nonexistent", "ripgrep", "BrewPackages", "other-group", "ripgrep")
+	if ok {
+		t.Error("MoveItem() should return false for non-existent group")
 	}
 }
 

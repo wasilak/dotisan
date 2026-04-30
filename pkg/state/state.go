@@ -112,40 +112,62 @@ func (s *State) RemoveResourceGroup(kind, group string) bool {
 	return false
 }
 
+// RemoveResourceItem removes a single item from a resource group by kind/group/item.
+// Returns true if the item was found and removed.
+func (s *State) RemoveResourceItem(kind, group, item string) bool {
+	for gi, r := range s.Resources {
+		if r.Kind == kind && r.Group == group {
+			// Find item index
+			for ii, it := range s.Resources[gi].Items {
+				if it.Name == item {
+					// Remove the item
+					s.Resources[gi].Items = append(s.Resources[gi].Items[:ii], s.Resources[gi].Items[ii+1:]...)
+					// If group has no items left, remove the group as well
+					if len(s.Resources[gi].Items) == 0 {
+						s.Resources = append(s.Resources[:gi], s.Resources[gi+1:]...)
+					}
+					s.UpdatedAt = time.Now().UTC()
+					return true
+				}
+			}
+			return false
+		}
+	}
+	return false
+}
+
 // MoveItem moves an item from one resource group to another.
 // Returns the moved item and true on success, or empty item and false if source not found.
 func (s *State) MoveItem(srcKind, srcGroup, srcItem, dstKind, dstGroup, dstItem string) (provider.ResourceState, bool) {
 	s.UpdatedAt = time.Now().UTC()
 
-	// Find source resource group
-	var srcResource *provider.ResourceState
-	var srcIndex int
+	// Find source resource group index (use index to avoid pointer issues on slice reallocation)
+	srcIndex := -1
+	var srcNamespace string
 	for i, r := range s.Resources {
 		if r.Kind == srcKind && r.Group == srcGroup {
-			srcResource = &s.Resources[i]
 			srcIndex = i
+			srcNamespace = r.Namespace
 			break
 		}
 	}
 
-	if srcResource == nil {
+	if srcIndex == -1 {
 		return provider.ResourceState{}, false
 	}
 
 	// Find the item to move
 	var itemToMove resource.ItemState
-	var itemIndex int
-	found := false
-	for i, item := range srcResource.Items {
+	itemIndex := -1
+	for i, item := range s.Resources[srcIndex].Items {
 		if item.Name == srcItem {
 			itemToMove = item
 			itemIndex = i
-			found = true
 			break
 		}
 	}
 
-	if !found {
+	if itemIndex == -1 {
 		return provider.ResourceState{}, false
 	}
 
@@ -155,39 +177,40 @@ func (s *State) MoveItem(srcKind, srcGroup, srcItem, dstKind, dstGroup, dstItem 
 	}
 
 	// Find or create destination resource group
-	var dstResource *provider.ResourceState
+	dstIndex := -1
 	for i, r := range s.Resources {
 		if r.Kind == dstKind && r.Group == dstGroup {
-			dstResource = &s.Resources[i]
+			dstIndex = i
 			break
 		}
 	}
 
-	if dstResource == nil {
+	if dstIndex == -1 {
 		// Create new resource group
 		s.Resources = append(s.Resources, provider.ResourceState{
 			Kind:      dstKind,
 			Group:     dstGroup,
-			Namespace: srcResource.Namespace,
+			Namespace: srcNamespace,
 			Items:     []resource.ItemState{itemToMove},
 		})
+		dstIndex = len(s.Resources) - 1
 	} else {
 		// Add item to existing group
-		dstResource.Items = append(dstResource.Items, itemToMove)
+		s.Resources[dstIndex].Items = append(s.Resources[dstIndex].Items, itemToMove)
 	}
 
-	// Remove item from source
-	srcResource.Items = append(srcResource.Items[:itemIndex], srcResource.Items[itemIndex+1:]...)
+	// Remove item from source using index (safe even after slice reallocation)
+	s.Resources[srcIndex].Items = append(s.Resources[srcIndex].Items[:itemIndex], s.Resources[srcIndex].Items[itemIndex+1:]...)
 
 	// Clean up empty source resource group
-	if len(srcResource.Items) == 0 {
+	if len(s.Resources[srcIndex].Items) == 0 {
 		s.Resources = append(s.Resources[:srcIndex], s.Resources[srcIndex+1:]...)
 	}
 
 	return provider.ResourceState{
 		Kind:      dstKind,
 		Group:     dstGroup,
-		Namespace: srcResource.Namespace,
+		Namespace: srcNamespace,
 		Items:     []resource.ItemState{itemToMove},
 	}, true
 }

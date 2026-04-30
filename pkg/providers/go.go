@@ -237,7 +237,7 @@ func (p *GoProvider) compareGroupItems(
 // getInstalledPackages retrieves currently installed Go packages
 func (p *GoProvider) getInstalledPackages() map[string]string {
 	installed := make(map[string]string)
-	
+
 	goBin := p.goBin
 	if goBin == "" {
 		goBin = "go"

@@ -1,5 +1,9 @@
 package resource
 
+import (
+	"log/slog"
+)
+
 // BrewPackages defines Homebrew packages to install.
 // This includes formulae, casks, and taps.
 type BrewPackages struct {
@@ -42,6 +46,19 @@ func (r BrewPackages) Validate() error {
 // ToGroup implements Resource.ToGroup.
 func (r BrewPackages) ToGroup() ResourceGroup {
 	items := make([]ResourceItem, 0)
+
+	// DEBUG: dump spec counts and names for troubleshooting
+	slog.Debug("BrewPackages.ToGroup",
+		"group", r.Metadata.Name,
+		"formulae", len(r.Spec.Formulae),
+		"casks", len(r.Spec.Casks),
+	)
+	for _, f := range r.Spec.Formulae {
+		slog.Debug("brew formula", "name", f.Name)
+	}
+	for _, c := range r.Spec.Casks {
+		slog.Debug("brew cask", "name", c.Name)
+	}
 
 	// Add formulae as items
 	for _, f := range r.Spec.Formulae {

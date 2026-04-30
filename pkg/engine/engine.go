@@ -2,20 +2,20 @@
 package engine
 
 import (
-    "context"
-    "fmt"
-    "strings"
-    "time"
+	"context"
+	"fmt"
+	"strings"
+	"time"
 
-    "github.com/charmbracelet/bubbles/progress"
-    tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/bubbles/progress"
+	tea "github.com/charmbracelet/bubbletea"
 
-    "github.com/wasilak/dotisan/pkg/config"
-    "github.com/wasilak/dotisan/pkg/provider"
-    "github.com/wasilak/dotisan/pkg/providers"
-    "github.com/wasilak/dotisan/pkg/resource"
-    "github.com/wasilak/dotisan/pkg/state"
-    "github.com/wasilak/dotisan/pkg/style"
+	"github.com/wasilak/dotisan/pkg/config"
+	"github.com/wasilak/dotisan/pkg/provider"
+	"github.com/wasilak/dotisan/pkg/providers"
+	"github.com/wasilak/dotisan/pkg/resource"
+	"github.com/wasilak/dotisan/pkg/state"
+	"github.com/wasilak/dotisan/pkg/style"
 )
 
 // Engine orchestrates the plan and apply operations.
@@ -75,17 +75,17 @@ func NewEngine() (*Engine, error) {
 
 // PlanResult contains the result of a plan operation.
 type PlanResult struct {
-    CurrentState       *state.State
-    ProviderPlans      map[string]provider.GroupPlan
-    TotalAdditions     int
-    TotalModifications int
-    TotalRemovals      int
-    TotalCleanup       int
-    TotalInSync        int
-    TotalDrifted       int
-    HasChanges         bool
-    // UnmatchedTargets are targets provided by the user that didn't match any resource
-    UnmatchedTargets []string
+	CurrentState       *state.State
+	ProviderPlans      map[string]provider.GroupPlan
+	TotalAdditions     int
+	TotalModifications int
+	TotalRemovals      int
+	TotalCleanup       int
+	TotalInSync        int
+	TotalDrifted       int
+	HasChanges         bool
+	// UnmatchedTargets are targets provided by the user that didn't match any resource
+	UnmatchedTargets []string
 }
 
 // Plan loads state, parses resources, and generates plans from all providers.
@@ -103,128 +103,128 @@ func (e *Engine) Plan(ctx context.Context, opts PlanOptions) (*PlanResult, error
 		return nil, fmt.Errorf("failed to load resources: %w", err)
 	}
 
-    // Convert resources to groups
-    resourceGroups := e.resourcesToGroups(resources)
+	// Convert resources to groups
+	resourceGroups := e.resourcesToGroups(resources)
 
-    // If targets provided, parse them. We'll not filter out resourceGroups here
-    // (desired) because targets may refer to state-only groups. Instead we will
-    // augment resourceGroups with synthetic groups based on state when needed
-    // and detect unmatched targets against both desired resources and state.
-    var targetMatches []TargetMatch
-    var unmatched []string
-    if len(opts.Targets) > 0 {
-        targetMatches = ParseTargets(opts.Targets)
+	// If targets provided, parse them. We'll not filter out resourceGroups here
+	// (desired) because targets may refer to state-only groups. Instead we will
+	// augment resourceGroups with synthetic groups based on state when needed
+	// and detect unmatched targets against both desired resources and state.
+	var targetMatches []TargetMatch
+	var unmatched []string
+	if len(opts.Targets) > 0 {
+		targetMatches = ParseTargets(opts.Targets)
 
-        // For each parsed target, check if it matches any desired group/item.
-        // If it doesn't but exists in state, add a synthetic empty desired group
-        // so providers will produce plans for removals, and mark as matched.
-        for i, raw := range opts.Targets {
-            t := targetMatches[i]
-            found := false
+		// For each parsed target, check if it matches any desired group/item.
+		// If it doesn't but exists in state, add a synthetic empty desired group
+		// so providers will produce plans for removals, and mark as matched.
+		for i, raw := range opts.Targets {
+			t := targetMatches[i]
+			found := false
 
-            // Check desired groups
-            for _, g := range resourceGroups {
-                if t.Matches(g.Kind, g.Name, "") {
-                    if t.Item == "" {
-                        found = true
-                        break
-                    }
-                    for _, it := range g.Items {
-                        if strings.EqualFold(it.Name, t.Item) {
-                            found = true
-                            break
-                        }
-                    }
-                    if found {
-                        break
-                    }
-                }
-            }
+			// Check desired groups
+			for _, g := range resourceGroups {
+				if t.Matches(g.Kind, g.Name, "") {
+					if t.Item == "" {
+						found = true
+						break
+					}
+					for _, it := range g.Items {
+						if strings.EqualFold(it.Name, t.Item) {
+							found = true
+							break
+						}
+					}
+					if found {
+						break
+					}
+				}
+			}
 
-            if found {
-                continue
-            }
+			if found {
+				continue
+			}
 
-            // Check state resources
-            for _, s := range currentState.Resources {
-                if t.Kind != "" && !strings.EqualFold(t.Kind, s.Kind) {
-                    continue
-                }
-                if t.Group != "" && !strings.EqualFold(t.Group, s.Group) {
-                    continue
-                }
+			// Check state resources
+			for _, s := range currentState.Resources {
+				if t.Kind != "" && !strings.EqualFold(t.Kind, s.Kind) {
+					continue
+				}
+				if t.Group != "" && !strings.EqualFold(t.Group, s.Group) {
+					continue
+				}
 
-                if t.Item == "" {
-                    // match at group level
-                    found = true
-                } else {
-                    for _, it := range s.Items {
-                        if strings.EqualFold(it.Name, t.Item) {
-                            found = true
-                            break
-                        }
-                    }
-                }
+				if t.Item == "" {
+					// match at group level
+					found = true
+				} else {
+					for _, it := range s.Items {
+						if strings.EqualFold(it.Name, t.Item) {
+							found = true
+							break
+						}
+					}
+				}
 
-                if found {
-                    // If desired didn't contain this group, add a synthetic empty
-                    // group so provider.Reconcile will compute removals for items
-                    // present in state but not desired.
-                    existsInDesired := false
-                    for _, g := range resourceGroups {
-                        if strings.EqualFold(g.Kind, s.Kind) && strings.EqualFold(g.Name, s.Group) {
-                            existsInDesired = true
-                            break
-                        }
-                    }
-                    if !existsInDesired {
-                        resourceGroups = append(resourceGroups, resource.ResourceGroup{
-                            Kind: s.Kind,
-                            Name: s.Group,
-                            Items: []resource.ResourceItem{},
-                        })
-                    }
-                    break
-                }
-            }
+				if found {
+					// If desired didn't contain this group, add a synthetic empty
+					// group so provider.Reconcile will compute removals for items
+					// present in state but not desired.
+					existsInDesired := false
+					for _, g := range resourceGroups {
+						if strings.EqualFold(g.Kind, s.Kind) && strings.EqualFold(g.Name, s.Group) {
+							existsInDesired = true
+							break
+						}
+					}
+					if !existsInDesired {
+						resourceGroups = append(resourceGroups, resource.ResourceGroup{
+							Kind:  s.Kind,
+							Name:  s.Group,
+							Items: []resource.ResourceItem{},
+						})
+					}
+					break
+				}
+			}
 
-            if !found {
-                unmatched = append(unmatched, raw)
-            }
-        }
-    }
+			if !found {
+				unmatched = append(unmatched, raw)
+			}
+		}
+	}
 
 	// Group resources by provider
 	groupsByProvider := e.groupResourcesByProvider(resourceGroups)
 
 	// Generate plans for each provider
 	providerPlans := make(map[string]provider.GroupPlan)
-    result := &PlanResult{
-        CurrentState:  currentState,
-        ProviderPlans: providerPlans,
-    }
+	result := &PlanResult{
+		CurrentState:  currentState,
+		ProviderPlans: providerPlans,
+	}
 
-    if len(unmatched) > 0 {
-        result.UnmatchedTargets = unmatched
-    }
+	if len(unmatched) > 0 {
+		result.UnmatchedTargets = unmatched
+	}
 
-    for providerName, prov := range e.Providers {
-        providerGroups := groupsByProvider[providerName]
-        if len(providerGroups) == 0 {
-            continue
-        }
+	for providerName, prov := range e.Providers {
+		providerGroups := groupsByProvider[providerName]
+		if len(providerGroups) == 0 {
+			continue
+		}
 
 		// Filter state for this provider
 		providerState := e.filterStateForProvider(currentState.Resources, providerName)
 
-        // Reconcile
-        plan := prov.Reconcile(providerGroups, providerState)
+		// Reconcile
+		plan := prov.Reconcile(providerGroups, providerState)
 
-        // If targets provided, further filter plan items to item-level targets
-        if len(targetMatches) > 0 {
-            plan = filterPlanByTargets(plan, targetMatches)
-        }
-        providerPlans[providerName] = plan
+		// If targets provided, further filter plan items to item-level targets
+		if len(targetMatches) > 0 {
+			plan = filterPlanByTargets(plan, targetMatches)
+		}
+		providerPlans[providerName] = plan
 
 		// Update counts - sum individual items within each plan group
 		for _, add := range plan.Additions {
@@ -261,182 +261,182 @@ func (e *Engine) loadResources() ([]resource.Resource, error) {
 
 // resourcesToGroups converts Resources to ResourceGroups
 func (e *Engine) resourcesToGroups(resources []resource.Resource) []resource.ResourceGroup {
-    var groups []resource.ResourceGroup
-    for _, res := range resources {
-        groups = append(groups, res.ToGroup())
-    }
-    return groups
+	var groups []resource.ResourceGroup
+	for _, res := range resources {
+		groups = append(groups, res.ToGroup())
+	}
+	return groups
 }
 
 // filterResourceGroupsByTargets filters resource groups and their items according to targets.
 func filterResourceGroupsByTargets(groups []resource.ResourceGroup, targets []TargetMatch) []resource.ResourceGroup {
-    var out []resource.ResourceGroup
-    for _, g := range groups {
-        matched := false
-        // Check kind/group/item match for group-level and item-level targeting
-        for _, t := range targets {
-            // Manually check kind/group first (case-insensitive) so we can
-            // handle item-specific targets which require passing the item name
-            // into Matches. Using Matches with an empty item would fail when
-            // the target specified an item.
-            if t.Kind != "" && !strings.EqualFold(t.Kind, g.Kind) {
-                continue
-            }
-            if t.Group != "" && !strings.EqualFold(t.Group, g.Name) {
-                continue
-            }
+	var out []resource.ResourceGroup
+	for _, g := range groups {
+		matched := false
+		// Check kind/group/item match for group-level and item-level targeting
+		for _, t := range targets {
+			// Manually check kind/group first (case-insensitive) so we can
+			// handle item-specific targets which require passing the item name
+			// into Matches. Using Matches with an empty item would fail when
+			// the target specified an item.
+			if t.Kind != "" && !strings.EqualFold(t.Kind, g.Kind) {
+				continue
+			}
+			if t.Group != "" && !strings.EqualFold(t.Group, g.Name) {
+				continue
+			}
 
-            if t.Item == "" {
-                // target is kind or kind/group -> keep full group
-                matched = true
-                break
-            }
+			if t.Item == "" {
+				// target is kind or kind/group -> keep full group
+				matched = true
+				break
+			}
 
-            // target specifies an item; check if the item exists in group
-            for _, it := range g.Items {
-                if t.Matches(g.Kind, g.Name, it.Name) {
-                    matched = true
-                    break
-                }
-            }
-            if matched {
-                break
-            }
-        }
-        if matched {
-            out = append(out, g)
-        }
-    }
-    return out
+			// target specifies an item; check if the item exists in group
+			for _, it := range g.Items {
+				if t.Matches(g.Kind, g.Name, it.Name) {
+					matched = true
+					break
+				}
+			}
+			if matched {
+				break
+			}
+		}
+		if matched {
+			out = append(out, g)
+		}
+	}
+	return out
 }
 
 // matchesKind returns true if the target kind matches the resource kind.
 // Only the full/display kind (e.g. "HomebrewPackages") is accepted.
 // Matching is case-insensitive.
 func matchesKind(targetKind, resourceKind string) bool {
-    return strings.EqualFold(targetKind, resourceKind)
+	return strings.EqualFold(targetKind, resourceKind)
 }
 
 // (removed kindToFullKind) Full/display kinds are used directly in resources.
 
 // filterPlanByTargets trims a provider.GroupPlan to include only items that match targets.
 func filterPlanByTargets(plan provider.GroupPlan, targets []TargetMatch) provider.GroupPlan {
-    // Helper to check if a kind/group/item is targeted
-    isTargeted := func(kind, group, item string) bool {
-        for _, t := range targets {
-            // match kind (normalize aliases)
-            if t.Kind != "" {
-                if !strings.EqualFold(t.Kind, kind) {
-                    continue
-                }
-            }
-            if t.Group != "" && t.Group != group {
-                continue
-            }
-            if t.Item != "" && t.Item != item {
-                continue
-            }
-            return true
-        }
-        return false
-    }
+	// Helper to check if a kind/group/item is targeted
+	isTargeted := func(kind, group, item string) bool {
+		for _, t := range targets {
+			// match kind (normalize aliases)
+			if t.Kind != "" {
+				if !strings.EqualFold(t.Kind, kind) {
+					continue
+				}
+			}
+			if t.Group != "" && t.Group != group {
+				continue
+			}
+			if t.Item != "" && t.Item != item {
+				continue
+			}
+			return true
+		}
+		return false
+	}
 
-    var out provider.GroupPlan
+	var out provider.GroupPlan
 
-    // Filter additions
-    for _, a := range plan.Additions {
-        var items []resource.ResourceItem
-        for _, it := range a.Items {
-            if isTargeted(a.Kind, a.Group, it.Name) {
-                items = append(items, it)
-            }
-        }
-        if len(items) > 0 {
-            out.Additions = append(out.Additions, provider.GroupAddition{Kind: a.Kind, Group: a.Group, Items: items})
-        }
-    }
+	// Filter additions
+	for _, a := range plan.Additions {
+		var items []resource.ResourceItem
+		for _, it := range a.Items {
+			if isTargeted(a.Kind, a.Group, it.Name) {
+				items = append(items, it)
+			}
+		}
+		if len(items) > 0 {
+			out.Additions = append(out.Additions, provider.GroupAddition{Kind: a.Kind, Group: a.Group, Items: items})
+		}
+	}
 
-    // Filter modifications
-    for _, m := range plan.Modifications {
-        var changes []provider.ItemChange
-        for _, c := range m.Changes {
-            if isTargeted(m.Kind, m.Group, c.ItemName) {
-                changes = append(changes, c)
-            }
-        }
-        if len(changes) > 0 {
-            out.Modifications = append(out.Modifications, provider.GroupModification{Kind: m.Kind, Group: m.Group, Changes: changes})
-        }
-    }
+	// Filter modifications
+	for _, m := range plan.Modifications {
+		var changes []provider.ItemChange
+		for _, c := range m.Changes {
+			if isTargeted(m.Kind, m.Group, c.ItemName) {
+				changes = append(changes, c)
+			}
+		}
+		if len(changes) > 0 {
+			out.Modifications = append(out.Modifications, provider.GroupModification{Kind: m.Kind, Group: m.Group, Changes: changes})
+		}
+	}
 
-    // Filter removals
-    for _, r := range plan.Removals {
-        var items []resource.ResourceItem
-        for _, it := range r.Items {
-            if isTargeted(r.Kind, r.Group, it.Name) {
-                items = append(items, it)
-            }
-        }
-        if len(items) > 0 {
-            out.Removals = append(out.Removals, provider.GroupRemoval{Kind: r.Kind, Group: r.Group, Items: items})
-        }
-    }
+	// Filter removals
+	for _, r := range plan.Removals {
+		var items []resource.ResourceItem
+		for _, it := range r.Items {
+			if isTargeted(r.Kind, r.Group, it.Name) {
+				items = append(items, it)
+			}
+		}
+		if len(items) > 0 {
+			out.Removals = append(out.Removals, provider.GroupRemoval{Kind: r.Kind, Group: r.Group, Items: items})
+		}
+	}
 
-    // Filter cleanup
-    for _, c := range plan.Cleanup {
-        var items []resource.ResourceItem
-        for _, it := range c.Items {
-            if isTargeted(c.Kind, c.Group, it.Name) {
-                items = append(items, it)
-            }
-        }
-        if len(items) > 0 {
-            out.Cleanup = append(out.Cleanup, provider.GroupCleanup{Kind: c.Kind, Group: c.Group, Items: items, Reason: c.Reason})
-        }
-    }
+	// Filter cleanup
+	for _, c := range plan.Cleanup {
+		var items []resource.ResourceItem
+		for _, it := range c.Items {
+			if isTargeted(c.Kind, c.Group, it.Name) {
+				items = append(items, it)
+			}
+		}
+		if len(items) > 0 {
+			out.Cleanup = append(out.Cleanup, provider.GroupCleanup{Kind: c.Kind, Group: c.Group, Items: items, Reason: c.Reason})
+		}
+	}
 
-    // Filter drifted
-    for _, d := range plan.Drifted {
-        if isTargeted(d.Kind, d.Group, d.Item) {
-            out.Drifted = append(out.Drifted, d)
-        }
-    }
+	// Filter drifted
+	for _, d := range plan.Drifted {
+		if isTargeted(d.Kind, d.Group, d.Item) {
+			out.Drifted = append(out.Drifted, d)
+		}
+	}
 
-    // InSync: include only if targeted (use items match)
-    for _, s := range plan.InSync {
-        var items []resource.ItemState
-        for _, it := range s.Items {
-            if isTargeted(s.Kind, s.Group, it.Name) {
-                items = append(items, it)
-            }
-        }
-        if len(items) > 0 {
-            out.InSync = append(out.InSync, provider.GroupState{Kind: s.Kind, Group: s.Group, Items: items, Version: s.Version})
-        }
-    }
+	// InSync: include only if targeted (use items match)
+	for _, s := range plan.InSync {
+		var items []resource.ItemState
+		for _, it := range s.Items {
+			if isTargeted(s.Kind, s.Group, it.Name) {
+				items = append(items, it)
+			}
+		}
+		if len(items) > 0 {
+			out.InSync = append(out.InSync, provider.GroupState{Kind: s.Kind, Group: s.Group, Items: items, Version: s.Version})
+		}
+	}
 
-    // Warnings are retained if they refer to targeted groups/items
-    for _, w := range plan.Warnings {
-        if w.GroupID == "" && w.ItemID == "" {
-            continue
-        }
-        // Basic check: if groupID present, split and check
-        if w.GroupID != "" {
-            parts := strings.SplitN(w.GroupID, "/", 2)
-            if len(parts) >= 1 {
-                gkind := parts[0]
-                ggroup := ""
-                if len(parts) == 2 {
-                    ggroup = parts[1]
-                }
-                if isTargeted(gkind, ggroup, w.ItemID) {
-                    out.Warnings = append(out.Warnings, w)
-                }
-            }
-        }
-    }
+	// Warnings are retained if they refer to targeted groups/items
+	for _, w := range plan.Warnings {
+		if w.GroupID == "" && w.ItemID == "" {
+			continue
+		}
+		// Basic check: if groupID present, split and check
+		if w.GroupID != "" {
+			parts := strings.SplitN(w.GroupID, "/", 2)
+			if len(parts) >= 1 {
+				gkind := parts[0]
+				ggroup := ""
+				if len(parts) == 2 {
+					ggroup = parts[1]
+				}
+				if isTargeted(gkind, ggroup, w.ItemID) {
+					out.Warnings = append(out.Warnings, w)
+				}
+			}
+		}
+	}
 
-    return out
+	return out
 }
 
 // groupResourcesByProvider groups resource groups by their provider type.
@@ -572,7 +572,7 @@ func (e *Engine) ApplyWithProgress(ctx context.Context, result *PlanResult, opts
 	)
 
 	m := applyProgressModel{
-		progress:   prog,
+		progress:  prog,
 		current:   0,
 		total:     totalOps,
 		completed: []resourceResult{},
@@ -623,7 +623,7 @@ func (e *Engine) ApplyWithProgress(ctx context.Context, result *PlanResult, opts
 					Kind:  item.kind,
 					Group: item.group,
 					Changes: []provider.ItemChange{{
-						ItemName:  item.item,
+						ItemName: item.item,
 						OldState: resource.ItemState{Version: item.oldVersion},
 						NewState: resource.ItemState{Version: item.version},
 					}},
@@ -634,36 +634,36 @@ func (e *Engine) ApplyWithProgress(ctx context.Context, result *PlanResult, opts
 					Group: item.group,
 					Items: []resource.ResourceItem{{Name: item.item}},
 				}}
-		case "restore":
-			plan.Drifted = []provider.ItemDrift{{
-				Kind:          item.kind,
-				Group:         item.group,
-				Item:          item.item,
-				ExpectedState: resource.ItemState{Version: item.version},
-			}}
-		case "cleanup":
-			// Cleanup is state-only, already handled in processCleanup
-			// This is a no-op here, just mark as success
-			completed := i + 1
-			res := resourceResult{
-				resource: resourceID,
-				action:   item.action,
-				success:  true,
-				err:      nil,
+			case "restore":
+				plan.Drifted = []provider.ItemDrift{{
+					Kind:          item.kind,
+					Group:         item.group,
+					Item:          item.item,
+					ExpectedState: resource.ItemState{Version: item.version},
+				}}
+			case "cleanup":
+				// Cleanup is state-only, already handled in processCleanup
+				// This is a no-op here, just mark as success
+				completed := i + 1
+				res := resourceResult{
+					resource: resourceID,
+					action:   item.action,
+					success:  true,
+					err:      nil,
+				}
+				results = append(results, res)
+				p.Send(applyProgressMsg{
+					resource:  resourceID,
+					action:    action,
+					completed: results,
+					current:   completed,
+					total:     totalOps,
+					percent:   float64(completed) / float64(totalOps),
+				})
+				continue
 			}
-			results = append(results, res)
-			p.Send(applyProgressMsg{
-				resource:  resourceID,
-				action:    action,
-				completed: results,
-				current:   completed,
-				total:     totalOps,
-				percent:   float64(completed) / float64(totalOps),
-			})
-			continue
-		}
 
-		err = prov.Apply(ctx, plan)
+			err = prov.Apply(ctx, plan)
 
 			completed := i + 1
 			res := resourceResult{
@@ -824,12 +824,12 @@ func (e *Engine) collectWorkItems(result *PlanResult) []workItem {
 			for _, change := range mod.Changes {
 				items = append(items, workItem{
 					provider:   providerName,
-					kind:      mod.Kind,
-					group:     mod.Group,
-					item:      change.ItemName,
+					kind:       mod.Kind,
+					group:      mod.Group,
+					item:       change.ItemName,
 					oldVersion: change.OldState.Version,
-					version:   change.NewState.Version,
-					action:    "update",
+					version:    change.NewState.Version,
+					action:     "update",
 				})
 			}
 		}
@@ -858,12 +858,12 @@ func (e *Engine) collectWorkItems(result *PlanResult) []workItem {
 		for _, drift := range plan.Drifted {
 			items = append(items, workItem{
 				provider:   providerName,
-				kind:      drift.Kind,
-				group:     drift.Group,
-				item:      drift.Item,
-				version:   drift.ExpectedState.Version,
+				kind:       drift.Kind,
+				group:      drift.Group,
+				item:       drift.Item,
+				version:    drift.ExpectedState.Version,
 				oldVersion: drift.ActualState.Version,
-				action:    "restore",
+				action:     "restore",
 			})
 		}
 	}

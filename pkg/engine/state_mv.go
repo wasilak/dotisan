@@ -16,13 +16,13 @@ type StateMvOptions struct {
 
 // StateMvResult contains the result of a state move operation.
 type StateMvResult struct {
-	SrcKind   string
-	SrcGroup  string
-	SrcItem   string
-	DstKind   string
-	DstGroup  string
-	DstItem   string
-	Success   bool
+	SrcKind  string
+	SrcGroup string
+	SrcItem  string
+	DstKind  string
+	DstGroup string
+	DstItem  string
+	Success  bool
 }
 
 // parseStateMvRef parses a state mv reference (Kind/Group/Item or Kind/Group).
@@ -115,6 +115,27 @@ func (e *Engine) StateMv(ctx context.Context, opts StateMvOptions) (*StateMvResu
 	if !dstGroupExists {
 		return nil, fmt.Errorf("destination group %s/%s does not exist in desired configuration\n\nAvailable groups in %s:\n  %s",
 			dstKind, dstGroup, dstKind, strings.Join(availableGroups, "\n  "))
+	}
+
+	// Validate destination group actually contains the item in desired config
+	dstGroupHasItem := false
+	var availableItemsInDst []string
+	for _, res := range resources {
+		if res.GetKind() == dstKind && res.GetMetadata().Name == dstGroup {
+			group := res.ToGroup()
+			for _, item := range group.Items {
+				availableItemsInDst = append(availableItemsInDst, item.Name)
+				if item.Name == dstItem {
+					dstGroupHasItem = true
+					break
+				}
+			}
+			break
+		}
+	}
+	if !dstGroupHasItem {
+		return nil, fmt.Errorf("destination group %s/%s does not contain item %q in desired configuration\n\nAvailable items in %s/%s:\n  %s",
+			dstKind, dstGroup, dstItem, dstKind, dstGroup, strings.Join(availableItemsInDst, "\n  "))
 	}
 
 	// Validate destination doesn't already have the item

@@ -174,7 +174,7 @@ func (p *FileProvider) compareGroupItems(
 	for _, desiredItem := range group.Items {
 		name := desiredItem.Name
 		dest, _ := desiredItem.Extra["destination"].(string)
-		
+
 		stateItem, inState := stateItems[name]
 		destExists := false
 		if dest != "" {
@@ -261,7 +261,7 @@ func (p *FileProvider) applyGroupAddition(ctx context.Context, addition provider
 	for _, item := range addition.Items {
 		dest, _ := item.Extra["destination"].(string)
 		source, _ := item.Extra["source"].(string)
-		
+
 		if dest == "" {
 			continue
 		}
@@ -295,7 +295,7 @@ func (p *FileProvider) applyGroupRemoval(ctx context.Context, removal provider.G
 		if dest == "" {
 			dest = item.Name
 		}
-		
+
 		if err := os.RemoveAll(dest); err != nil {
 			return fmt.Errorf("failed to remove %s: %w", dest, err)
 		}
