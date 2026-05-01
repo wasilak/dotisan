@@ -41,20 +41,27 @@ var stateCmd = &cobra.Command{
 
 // stateImportCmd imports an existing resource into state
 var stateImportCmd = &cobra.Command{
-	Use:          "import KIND/GROUP ITEM",
+	Use:          "import KIND/GROUP[ITEM] [ACTUAL_VALUE]",
 	SilenceUsage: true,
 	Short:        "Import existing resource into state",
 	Long: `import discovers an existing resource on your system and adds it to
 the state file without making any changes to the system.
 
+ACTUAL_VALUE is optional. When omitted, the item name from the ID is used.
+It is only needed when the logical state name differs from the actual resource
+on the system (e.g. a managed file whose path differs from its state name).
+
 Examples:
-  dotisan state import BrewPackages/core-tools ripgrep
-  dotisan state import ManagedFile/zshrc ~/.zshrc`,
-	Args: cobra.ExactArgs(2),
+  dotisan state import BrewPackages/homebrew-packages[ripgrep]
+  dotisan state import BrewPackages/homebrew-packages/fd[fd]
+  dotisan state import ManagedFile/dotfiles[zshrc] ~/.zshrc`,
+	Args: cobra.RangeArgs(1, 2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		id := args[0]
-		actualValue := args[1]
-		return runStateImport(cmd.Context(), id, actualValue)
+		actual := ""
+		if len(args) == 2 {
+			actual = args[1]
+		}
+		return runStateImport(cmd.Context(), args[0], actual)
 	},
 }
 
@@ -76,21 +83,40 @@ func kindToProvider(kind string) string {
 	}
 }
 
-// parseID parses a resource ID to extract kind and group
-// ID format: Kind/group
-// Examples: ManagedFile/zshrc, BrewPackages/core-tools
-func parseID(id string) (kind, group string, err error) {
-	parts := strings.SplitN(id, "/", 2)
-	if len(parts) != 2 {
-		return "", "", fmt.Errorf("invalid ID format: %s (expected Kind/group)", id)
+// parseID parses a resource ID in the form Kind/Group[Item] or Kind/Group.
+// The bracket notation avoids ambiguity when Group itself contains slashes.
+// Examples: BrewPackages/homebrew-packages/fd[fd], ManagedFile/dotfiles[zshrc]
+func parseID(id string) (kind, group, item string, err error) {
+	firstSlash := strings.IndexByte(id, '/')
+	if firstSlash < 0 {
+		return "", "", "", fmt.Errorf("invalid ID format: %s (expected Kind/group[item])", id)
 	}
-	return parts[0], parts[1], nil
+	kind = id[:firstSlash]
+	rest := id[firstSlash+1:]
+
+	if bracketIdx := strings.IndexByte(rest, '['); bracketIdx >= 0 {
+		if !strings.HasSuffix(rest, "]") {
+			return "", "", "", fmt.Errorf("invalid ID format: %s (unclosed '[')", id)
+		}
+		group = rest[:bracketIdx]
+		item = rest[bracketIdx+1 : len(rest)-1]
+	} else {
+		group = rest
+	}
+	return kind, group, item, nil
 }
 
-func runStateImport(ctx context.Context, id, actualValue string) error {
-	kind, group, err := parseID(id)
+func runStateImport(ctx context.Context, id, actual string) error {
+	kind, group, item, err := parseID(id)
 	if err != nil {
 		return err
+	}
+	if item == "" {
+		return fmt.Errorf("invalid ID format: %s (item name required, e.g. Kind/group[item])", id)
+	}
+	actualValue := actual
+	if actualValue == "" {
+		actualValue = item
 	}
 
 	// Ensure providers are registered
@@ -153,7 +179,7 @@ func runStateImport(ctx context.Context, id, actualValue string) error {
 		return fmt.Errorf("failed to save state: %w", err)
 	}
 
-	fmt.Printf("%s Successfully imported %s/%s: %s\n", style.IconSuccess, kind, group, actualValue)
+	fmt.Printf("%s Successfully imported %s/%s[%s]\n", style.IconSuccess, kind, group, item)
 	return nil
 }
 
@@ -230,11 +256,15 @@ func runStateMv(ctx context.Context, source, destination string) error {
 
 // stateRemoveCmd removes a resource from state
 var stateRemoveCmd = &cobra.Command{
-	Use:          "remove KIND/GROUP",
+	Use:          "remove KIND/GROUP or KIND/GROUP[ITEM]",
 	SilenceUsage: true,
-	Short:        "Remove resource group from state",
-	Long: `remove deletes the resource group entry from the state file without
-affecting the actual system.`,
+	Short:        "Remove resource group or item from state",
+	Long: `remove deletes a resource group or a single item from the state file
+without affecting the actual system.
+
+Examples:
+  dotisan state remove BrewPackages/homebrew-packages
+  dotisan state remove BrewPackages/homebrew-packages/fd[fd]`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		id := args[0]
@@ -249,16 +279,9 @@ func init() {
 }
 
 func runStateRemoveByID(ctx context.Context, id string) error {
-	parts := strings.Split(id, "/")
-	if len(parts) < 2 {
-		return fmt.Errorf("invalid ID format: %s (expected Kind/group or Kind/group/item)", id)
-	}
-
-	kind := parts[0]
-	group := parts[1]
-	item := ""
-	if len(parts) >= 3 {
-		item = parts[2]
+	kind, group, item, err := parseID(id)
+	if err != nil {
+		return err
 	}
 
 	if !stateRemoveForce {
@@ -449,17 +472,7 @@ func displayStateTable(currentState *state.State) error {
 			if status == "" {
 				status = "sync"
 			}
-			idParts := []string{}
-			if kind != "" {
-				idParts = append(idParts, kind)
-			}
-			if group != "" {
-				idParts = append(idParts, group)
-			}
-			if it.Name != "" {
-				idParts = append(idParts, it.Name)
-			}
-			id := strings.Join(idParts, "/")
+			id := fmt.Sprintf("%s/%s[%s]", kind, group, it.Name)
 			rows = append(rows, ui.ResourceRow{
 				Status: status,
 				ID:     id,

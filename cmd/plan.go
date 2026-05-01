@@ -174,17 +174,14 @@ func runPlan(ctx context.Context) error {
 		// Convert flatItems (local typed PlanItem) to []ui.ResourceRow explicitly
 		rows := make([]ui.ResourceRow, 0, len(flatItems))
 		for _, it := range flatItems {
-			parts := []string{}
-			if it.Kind != "" {
-				parts = append(parts, it.Kind)
+			var id string
+			if it.Kind != "" && it.Region != "" && it.Name != "" {
+				id = fmt.Sprintf("%s/%s[%s]", it.Kind, it.Region, it.Name)
+			} else if it.Kind != "" && it.Region != "" {
+				id = fmt.Sprintf("%s/%s", it.Kind, it.Region)
+			} else {
+				id = it.Name
 			}
-			if it.Region != "" {
-				parts = append(parts, it.Region)
-			}
-			if it.Name != "" {
-				parts = append(parts, it.Name)
-			}
-			id := strings.Join(parts, "/")
 			info := it.Explanation
 			if info == "" {
 				info = it.Details

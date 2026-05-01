@@ -25,20 +25,26 @@ type StateMvResult struct {
 	Success  bool
 }
 
-// parseStateMvRef parses a state mv reference (Kind/Group/Item or Kind/Group).
-// If item is not provided, it returns empty string for item.
+// parseStateMvRef parses a state mv reference in the form Kind/Group[Item] or Kind/Group.
+// The bracket notation avoids ambiguity when Group itself contains slashes.
 func parseStateMvRef(ref string) (kind, group, item string, err error) {
-	parts := strings.Split(ref, "/")
-	switch len(parts) {
-	case 2:
-		// Kind/Group format - item will be determined from source
-		return parts[0], parts[1], "", nil
-	case 3:
-		// Kind/Group/Item format
-		return parts[0], parts[1], parts[2], nil
-	default:
-		return "", "", "", fmt.Errorf("invalid reference format: %s (expected Kind/Group or Kind/Group/Item)", ref)
+	firstSlash := strings.IndexByte(ref, '/')
+	if firstSlash < 0 {
+		return "", "", "", fmt.Errorf("invalid reference format: %s (expected Kind/Group or Kind/Group[Item])", ref)
 	}
+	kind = ref[:firstSlash]
+	rest := ref[firstSlash+1:]
+
+	if bracketIdx := strings.IndexByte(rest, '['); bracketIdx >= 0 {
+		if !strings.HasSuffix(rest, "]") {
+			return "", "", "", fmt.Errorf("invalid reference format: %s (unclosed '[')", ref)
+		}
+		group = rest[:bracketIdx]
+		item = rest[bracketIdx+1 : len(rest)-1]
+	} else {
+		group = rest
+	}
+	return kind, group, item, nil
 }
 
 // StateMv moves an item from one resource group to another in state only.

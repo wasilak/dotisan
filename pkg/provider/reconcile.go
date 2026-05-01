@@ -120,7 +120,7 @@ func BaseReconcile(
 					GroupID:    fmt.Sprintf("%s/%s", group.Kind, group.Name),
 					Severity:   "warning",
 					Message:    fmt.Sprintf("Items already installed but not tracked: %s", strings.Join(itemNames, ", ")),
-					Suggestion: fmt.Sprintf("dotisan state import %s/%s <item>", group.Kind, group.Name),
+					Suggestion: fmt.Sprintf("dotisan state import %s/%s[<item>]", group.Kind, group.Name),
 				})
 			}
 		} else {
