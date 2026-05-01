@@ -56,6 +56,18 @@ func (b *LocalBackend) Load(ctx context.Context) (*State, error) {
 		state.Resources = []provider.ResourceState{}
 	}
 
+	// Normalize item statuses: older state files or providers may not set
+	// ItemState.Status. Ensure downstream code can rely on a non-empty
+	// status (treat missing as "present"). This avoids surprises in UI
+	// rendering and plan/apply logic.
+	for ri := range state.Resources {
+		for ii := range state.Resources[ri].Items {
+			if state.Resources[ri].Items[ii].Status == "" {
+				state.Resources[ri].Items[ii].Status = "present"
+			}
+		}
+	}
+
 	return &state, nil
 }
 
@@ -65,6 +77,16 @@ func (b *LocalBackend) Save(ctx context.Context, s *State) error {
 	dir := filepath.Dir(b.path)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return fmt.Errorf("failed to create state directory: %w", err)
+	}
+
+	// Normalize missing item statuses before persisting so future loads
+	// and other callers can rely on Status being present.
+	for ri := range s.Resources {
+		for ii := range s.Resources[ri].Items {
+			if s.Resources[ri].Items[ii].Status == "" {
+				s.Resources[ri].Items[ii].Status = "present"
+			}
+		}
 	}
 
 	// Marshal to JSON with indentation for readability

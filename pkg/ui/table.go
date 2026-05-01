@@ -192,7 +192,12 @@ func max(a, b int) int {
 
 // StateIcon returns emoji + style for given action (add, remove, update, drift, sync)
 func StateIcon(state string) (string, *lipgloss.Style) {
-	switch state {
+	// Normalize case and trim spaces to be tolerant of provider/state variations
+	s := strings.TrimSpace(strings.ToLower(state))
+	if s == "" {
+		return EmojiSync, &StateSync
+	}
+	switch s {
 	case "add":
 		return EmojiAdd, &StateAdd
 	case "remove":
@@ -201,14 +206,15 @@ func StateIcon(state string) (string, *lipgloss.Style) {
 		return EmojiUpdate, &StateUpdate
 	case "drift":
 		return EmojiDrift, &StateDrift
-	case "sync", "in_sync":
+	case "sync", "in_sync", "in-sync", "insync", "present":
 		return EmojiSync, &StateSync
 	case "warn":
 		return EmojiWarn, &WarnStyle
 	case "info":
 		return EmojiInfo, &InfoStyle
 	default:
-		return "?", nil
+		// Unknown state values are treated as synced/present for the state list
+		return EmojiSync, &StateSync
 	}
 }
 

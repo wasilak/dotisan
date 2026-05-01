@@ -10,7 +10,7 @@ var (
 	EmojiRemove = "-"
 	EmojiUpdate = "~"
 	EmojiDrift  = "!"
-	EmojiSync   = "+"
+	EmojiSync   = "✓"
 	EmojiWarn   = "⚠️"
 	EmojiInfo   = "🛈"
 )
@@ -56,7 +56,8 @@ var (
 	StateRemove = lipgloss.NewStyle().Foreground(ColorRemove).Bold(true)
 	StateUpdate = lipgloss.NewStyle().Foreground(ColorUpdate).Bold(true)
 	StateDrift  = lipgloss.NewStyle().Foreground(ColorDrift).Bold(true)
-	StateSync   = lipgloss.NewStyle().Foreground(ColorMuted).Bold(true)
+	// Use green for synced/present resources so they appear as success.
+	StateSync = lipgloss.NewStyle().Foreground(ColorAdd).Bold(true)
 
 	InfoStyle = lipgloss.NewStyle().Foreground(ColorMuted)
 	WarnStyle = lipgloss.NewStyle().Foreground(ColorWarning)

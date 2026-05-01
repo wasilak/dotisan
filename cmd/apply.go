@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"charm.land/lipgloss/v2"
+	_ "charm.land/lipgloss/v2"
 	"golang.org/x/term"
 
 	"github.com/wasilak/dotisan/pkg/diff"
@@ -165,23 +165,38 @@ func runApply() error {
 			}
 		}
 
-		humanPlan := struct{ Items []PlanItem }{Items: flatItems}
+		// Convert flatItems to []ui.ResourceRow explicitly
+		rows := make([]ui.ResourceRow, 0, len(flatItems))
+		for _, it := range flatItems {
+			parts := []string{}
+			if it.Kind != "" {
+				parts = append(parts, it.Kind)
+			}
+			if it.Region != "" {
+				parts = append(parts, it.Region)
+			}
+			if it.Name != "" {
+				parts = append(parts, it.Name)
+			}
+			id := strings.Join(parts, "/")
+			info := it.Explanation
+			if info == "" {
+				info = it.Details
+			}
+			rows = append(rows, ui.ResourceRow{
+				Status: it.Action,
+				ID:     id,
+				Kind:   it.Kind,
+				Group:  it.Region,
+				Name:   it.Name,
+				Info:   info,
+			})
+		}
 		width, _, err := term.GetSize(int(os.Stdout.Fd()))
 		if err != nil {
 			width = 120
 		}
-		// Columns: Status, ID, Kind, Group, Name, Info
-		table := ui.NewTable([]ui.Column{
-			{Title: "Status", Width: 3, Align: lipgloss.Center},
-			{Title: "ID", Flex: true},
-			{Title: "Kind", Width: 20},
-			{Title: "Group", Width: 20},
-			{Title: "Name", Width: 20},
-			{Title: "Info", Flex: true},
-		}, true)
-		rows := ui.PlanToRows(&humanPlan)
-		table.SetRows(rows)
-		fmt.Println(table.RenderPlain(width))
+		fmt.Println(ui.RenderResourceTable(width, rows, true))
 
 		fmt.Println()
 		fmt.Printf("Plan: %s to add, %s to destroy\n",

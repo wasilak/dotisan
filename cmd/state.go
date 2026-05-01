@@ -426,18 +426,38 @@ func displayStateTable(currentState *state.State) error {
 	if err != nil {
 		width = 120
 	}
-	// Columns: Status, ID, Kind, Group, Name, Info
-	table := ui.NewTable([]ui.Column{
-		{Title: "Status", Width: 3},
-		{Title: "ID", Flex: true},
-		{Title: "Kind", Width: 16},
-		{Title: "Group", Width: 12},
-		{Title: "Name", Width: 20},
-		{Title: "Info", Flex: true},
-	}, false)
-	rows := ui.StateToRows(currentState)
-	table.SetRows(rows)
-	fmt.Println(table.RenderPlain(width))
+	// Convert currentState (typed) to []ui.ResourceRow explicitly to avoid reflection
+	rows := make([]ui.ResourceRow, 0)
+	for _, res := range currentState.Resources {
+		kind := res.Kind
+		group := res.Group
+		for _, it := range res.Items {
+			status := it.Status
+			if status == "" {
+				status = "sync"
+			}
+			idParts := []string{}
+			if kind != "" {
+				idParts = append(idParts, kind)
+			}
+			if group != "" {
+				idParts = append(idParts, group)
+			}
+			if it.Name != "" {
+				idParts = append(idParts, it.Name)
+			}
+			id := strings.Join(idParts, "/")
+			rows = append(rows, ui.ResourceRow{
+				Status: status,
+				ID:     id,
+				Kind:   kind,
+				Group:  group,
+				Name:   it.Name,
+				Info:   it.Version,
+			})
+		}
+	}
+	fmt.Println(ui.RenderResourceTable(width, rows, true))
 
 	totalItems := 0
 	for _, res := range currentState.Resources {

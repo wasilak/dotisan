@@ -194,6 +194,7 @@ func (p *FileProvider) compareGroupItems(
 					NewState: resource.ItemState{
 						Name:     name,
 						Checksum: currentHash,
+						Status:   "present",
 					},
 					Diff: "content changed",
 				})

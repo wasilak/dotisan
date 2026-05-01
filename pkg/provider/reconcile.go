@@ -43,7 +43,7 @@ func CompareGroupItems(
 				modifications = append(modifications, ItemChange{
 					ItemName: name,
 					OldState: stateItem,
-					NewState: resource.ItemState{Name: name, Version: desiredItem.Version},
+					NewState: resource.ItemState{Name: name, Version: desiredItem.Version, Status: "present"},
 					Diff:     fmt.Sprintf("version: %s -> %s", stateItem.Version, desiredItem.Version),
 				})
 			} else {

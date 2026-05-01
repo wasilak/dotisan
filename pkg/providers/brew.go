@@ -355,6 +355,7 @@ func (p *BrewProvider) compareGroupItems(
 					NewState: resource.ItemState{
 						Name:    lookupName,
 						Version: desiredItem.Version,
+						Status:  "present",
 					},
 					Diff: fmt.Sprintf("version: %s -> %s", compareVersion, desiredItem.Version),
 				})
