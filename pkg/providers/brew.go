@@ -53,19 +53,14 @@ func (p *BrewProvider) Reconcile(
 	processedItems := make(map[string]bool) // key: "group/item"
 
 	// Index state by group name for quick lookup
-	stateIndex := make(map[string]provider.ResourceState)
-	for _, s := range state {
-		if s.Kind == "BrewPackages" {
-			stateIndex[s.Group] = s
-		}
-	}
+	stateIndex := provider.IndexStateByGroup(state, resource.KindBrewPackages)
 
 	// Get currently installed packages
 	installed, err := p.getInstalledPackages()
 	if err != nil {
 		// Can't get installed state, mark all as additions
 		for _, group := range desired {
-			if group.Kind == "BrewPackages" {
+			if group.Kind == resource.KindBrewPackages {
 				plan.Additions = append(plan.Additions, provider.GroupAddition{
 					Kind:  group.Kind,
 					Group: group.Name,
@@ -78,7 +73,7 @@ func (p *BrewProvider) Reconcile(
 
 	// Process each desired group
 	for _, group := range desired {
-		if group.Kind != "BrewPackages" {
+		if group.Kind != resource.KindBrewPackages {
 			continue
 		}
 
@@ -161,7 +156,6 @@ func (p *BrewProvider) Reconcile(
 					Group: group.Name,
 					Items: filteredRemovals,
 				})
-				// DEBUG: log removals added for this group
 				for _, it := range filteredRemovals {
 					slog.Debug("plan.removal.append", "group", group.Name, "item", it.Name)
 				}
@@ -205,7 +199,7 @@ func (p *BrewProvider) Reconcile(
 	// Check for removals (groups in state but not in desired)
 	desiredGroups := make(map[string]bool)
 	for _, group := range desired {
-		if group.Kind == "BrewPackages" {
+		if group.Kind == resource.KindBrewPackages {
 			desiredGroups[group.Name] = true
 		}
 	}
@@ -256,7 +250,7 @@ func (p *BrewProvider) Reconcile(
 
 			if len(removalItems) > 0 {
 				plan.Removals = append(plan.Removals, provider.GroupRemoval{
-					Kind:  "BrewPackages",
+					Kind:  resource.KindBrewPackages,
 					Group: groupName,
 					Items: removalItems,
 				})
@@ -267,7 +261,7 @@ func (p *BrewProvider) Reconcile(
 
 			if len(cleanupItems) > 0 {
 				plan.Cleanup = append(plan.Cleanup, provider.GroupCleanup{
-					Kind:   "BrewPackages",
+					Kind:   resource.KindBrewPackages,
 					Group:  groupName,
 					Items:  cleanupItems,
 					Reason: "not_in_config_and_not_installed",
@@ -293,8 +287,6 @@ func (p *BrewProvider) compareGroupItems(
 		stateItems[item.Name] = item
 	}
 
-	// DEBUG: dump state items and installed keys for this group
-	// Combine into single debug call
 	stateKeys := make([]string, 0, len(stateItems))
 	for k := range stateItems {
 		stateKeys = append(stateKeys, k)
@@ -344,7 +336,6 @@ func (p *BrewProvider) compareGroupItems(
 			}
 		}
 
-		// DEBUG: show evaluation for this desired item
 		slog.Debug("evaluate.desired_item", "desired", name, "lookup", lookupName, "is_installed", isInstalled, "in_state", inState, "installed_version", installedVersion)
 
 		if !isInstalled {
@@ -388,7 +379,6 @@ func (p *BrewProvider) compareGroupItems(
 		desiredItems[name] = true
 	}
 
-	// DEBUG: print desired items for this group
 	desiredKeys := make([]string, 0, len(desiredItems))
 	for k := range desiredItems {
 		desiredKeys = append(desiredKeys, k)
@@ -606,7 +596,7 @@ func (p *BrewProvider) ImportItem(ctx context.Context, group string, item string
 	}
 
 	return provider.ResourceState{
-		Kind:      "BrewPackages",
+		Kind:      resource.KindBrewPackages,
 		Group:     group,
 		Namespace: "default",
 		Items: []resource.ItemState{

@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"os"
 	"strings"
@@ -48,7 +50,10 @@ func init() {
 		lvlFlag, _ := cmd.Flags().GetString("log-level")
 
 		// Load config to read configured log_level (if present)
-		cfg, _ := config.LoadConfigFromDefaultPath()
+		cfg, cfgErr := config.LoadConfigFromDefaultPath()
+		if cfgErr != nil && !errors.Is(cfgErr, fs.ErrNotExist) {
+			slog.Warn("failed to load config", "err", cfgErr)
+		}
 
 		chosen := "info"
 		if strings.TrimSpace(lvlFlag) != "" {

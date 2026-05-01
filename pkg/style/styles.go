@@ -2,7 +2,6 @@ package style
 
 import (
 	lipgloss "charm.land/lipgloss/v2"
-	"fmt"
 )
 
 // Color constants (ANSI 256-color palette)
@@ -146,27 +145,4 @@ type tableStyles struct {
 	Cell   lipgloss.Style
 }
 
-// ConfirmBox builds a standardized confirmation box with a title, optional hint,
-// and labeled choices. It centralizes UI for Y/N prompts so they look consistent.
-func ConfirmBox(title, hint, yesText, noText string) string {
-	// Build main body
-	body := ""
-	if title != "" {
-		body += Bold.Render(title) + "\n\n"
-	}
-	if hint != "" {
-		body += Dim.Render(hint) + "\n\n"
-	}
-
-	// Choices stacked vertically to avoid wrapping/layout surprises
-	// e.g. [Y] Yes, do X
-	//      [N] No, keep it
-	if yesText != "" {
-		body += fmt.Sprintf("%s %s\n", Info.Render("[Y]"), Dim.Render(yesText))
-	}
-	if noText != "" {
-		body += fmt.Sprintf("%s %s", Info.Render("[N]"), Dim.Render(noText))
-	}
-
-	return InfoBox.Render(body)
-}
+// (legacy ConfirmBox removed - use huh/v2 for all confirmation prompts)

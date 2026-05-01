@@ -28,17 +28,17 @@ func UnmarshalYAML(data []byte) (Resource, error) {
 	// Create the appropriate resource type based on kind
 	var resource Resource
 	switch typeInfo.Kind {
-	case "BrewPackages":
+	case KindBrewPackages:
 		resource = &BrewPackages{}
-	case "NpmPackages":
+	case KindNpmPackages:
 		resource = &NpmPackages{}
-	case "GoPackages":
+	case KindGoPackages:
 		resource = &GoPackages{}
-	case "CargoPackages":
+	case KindCargoPackages:
 		resource = &CargoPackages{}
-	case "ManagedFile":
+	case KindManagedFile:
 		resource = &ManagedFile{}
-	case "ManagedDirectory":
+	case KindManagedDirectory:
 		resource = &ManagedDirectory{}
 	default:
 		return nil, fmt.Errorf("unknown resource kind: %s", typeInfo.Kind)
@@ -52,26 +52,14 @@ func UnmarshalYAML(data []byte) (Resource, error) {
 	return resource, nil
 }
 
-// ResourceKind represents all valid resource kinds.
-type ResourceKind string
-
-const (
-	KindBrewPackages     ResourceKind = "BrewPackages"
-	KindNpmPackages      ResourceKind = "NpmPackages"
-	KindGoPackages       ResourceKind = "GoPackages"
-	KindCargoPackages    ResourceKind = "CargoPackages"
-	KindManagedFile      ResourceKind = "ManagedFile"
-	KindManagedDirectory ResourceKind = "ManagedDirectory"
-)
-
 // ValidResourceKinds returns all valid resource kind strings.
 func ValidResourceKinds() []string {
 	return []string{
-		"BrewPackages",
-		"NpmPackages",
-		"GoPackages",
-		"CargoPackages",
-		"ManagedFile",
-		"ManagedDirectory",
+		KindBrewPackages,
+		KindNpmPackages,
+		KindGoPackages,
+		KindCargoPackages,
+		KindManagedFile,
+		KindManagedDirectory,
 	}
 }

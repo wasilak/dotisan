@@ -47,6 +47,7 @@ func runDoctor() error {
 
 	// 1. Providers Section
 	fmt.Println(style.Header.Render("Providers"))
+	ensureProvidersRegistered()
 	availableProviders := provider.CheckAvailable()
 	for name, info := range availableProviders {
 		if info.Available {
@@ -156,16 +157,23 @@ func runDoctor() error {
 
 	// 4. Validate Resources (if requested)
 	if doctorValidateFlag {
-		fmt.Println("Validating resource files...")
-		validationErrors := validateResources(configDir, valuesPath)
-		if len(validationErrors) > 0 {
-			hasErrors = true
-			for _, err := range validationErrors {
-				fmt.Printf("  %s %s\n", style.IconError, err)
-				issues = append(issues, err)
+		err := style.WithSpinner("Validating resource files", func(stop style.StopFunc) error {
+			validationErrors := validateResources(configDir, valuesPath)
+			if len(validationErrors) > 0 {
+				hasErrors = true
+				for _, err := range validationErrors {
+					fmt.Printf("  %s %s\n", style.IconError, err)
+					issues = append(issues, err)
+				}
+				stop(fmt.Sprintf("%d errors", len(validationErrors)))
+			} else {
+				fmt.Printf("  %s All resource files valid\n", style.IconSuccess)
+				stop("all valid")
 			}
-		} else {
-			fmt.Printf("  %s All resource files valid\n", style.IconSuccess)
+			return nil
+		})
+		if err != nil {
+			fmt.Printf("  %s Resource validation failed: %v\n", style.IconError, err)
 		}
 		fmt.Println()
 	}

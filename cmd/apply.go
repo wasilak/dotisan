@@ -1,9 +1,13 @@
 package cmd
 
 import (
+	"charm.land/huh/v2"
 	"context"
 	"fmt"
 	"os"
+	"strings"
+
+	"golang.org/x/term"
 
 	"github.com/wasilak/dotisan/pkg/diff"
 	"github.com/wasilak/dotisan/pkg/engine"
@@ -101,7 +105,16 @@ func runApply() error {
 	// Execute apply based on mode
 	if confirmFlag {
 		// Non-interactive mode
-		if err := eng.Apply(ctx, result, opts); err != nil {
+		err := style.WithSpinner("Applying changes", func(stop style.StopFunc) error {
+			applyErr := eng.Apply(ctx, result, opts)
+			if applyErr != nil {
+				stop("failed")
+			} else {
+				stop("done")
+			}
+			return applyErr
+		})
+		if err != nil {
 			return fmt.Errorf("apply failed: %w", err)
 		}
 		fmt.Println(style.IconSuccess + " Changes applied successfully.")
@@ -116,37 +129,50 @@ func runApply() error {
 			changeSummary = fmt.Sprintf("Apply %d changes?", totalChanges)
 		}
 
-		// Use centralized confirmation box
-		box := style.ConfirmBox(changeSummary, "", "Yes, apply changes", "No, cancel")
-
-		fmt.Println()
-		fmt.Print(box)
-		// Ensure the cursor is on the next line before printing the input prompt
-		fmt.Println()
-		fmt.Print(": ")
-
-		// Read a single keypress without echoing
-		key, err := style.ReadSingleKey()
-		if err != nil {
-			return fmt.Errorf("failed to read response: %w", err)
+		// Fallback to basic prompt if not a TTY
+		isTTY := term.IsTerminal(int(os.Stdout.Fd()))
+		var confirm bool
+		if isTTY {
+			err := huh.NewConfirm().
+				Title(changeSummary).
+				Affirmative("Yes, apply changes").
+				Negative("No, cancel").
+				Value(&confirm).
+				Run()
+			if err != nil {
+				return fmt.Errorf("confirmation prompt error: %w", err)
+			}
+		} else {
+			fmt.Printf("%s [y/N]: ", changeSummary)
+			var resp string
+			_, err := fmt.Fscanln(os.Stdin, &resp)
+			if err != nil && err.Error() != "unexpected newline" {
+				return fmt.Errorf("failed to read confirmation: %w", err)
+			}
+			resp = strings.TrimSpace(strings.ToLower(resp))
+			confirm = (resp == "y" || resp == "yes")
 		}
-
-		// Accept 'y' as yes, anything else as no
-		if key != "y" {
+		if !confirm {
 			fmt.Println()
 			fmt.Println(style.Info.Render("→ Apply cancelled."))
 			return nil
 		}
-
 		opts.Confirm = true
-
-		// Apply with progress
-		if err := eng.ApplyWithProgress(ctx, result, opts); err != nil {
+		// Apply
+		err := style.WithSpinner("Applying changes", func(stop style.StopFunc) error {
+			applyErr := eng.Apply(ctx, result, opts)
+			if applyErr != nil {
+				stop("failed")
+			} else {
+				stop("done")
+			}
+			return applyErr
+		})
+		if err != nil {
 			return fmt.Errorf("apply failed: %w", err)
 		}
 		fmt.Println(style.IconSuccess + " Changes applied successfully.")
 	}
-
 	return nil
 }
 

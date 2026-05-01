@@ -1,0 +1,261 @@
+// Package engine: Plan logic extracted from engine.go
+package engine
+
+import (
+	"context"
+	"fmt"
+	"strings"
+	"github.com/wasilak/dotisan/pkg/provider"
+	"github.com/wasilak/dotisan/pkg/resource"
+	"github.com/wasilak/dotisan/pkg/state"
+)
+
+// PlanResult contains the result of a plan operation.
+type PlanResult struct {
+	CurrentState       *state.State
+	ProviderPlans      map[string]provider.GroupPlan
+	TotalAdditions     int
+	TotalModifications int
+	TotalRemovals      int
+	TotalCleanup       int
+	TotalInSync        int
+	TotalDrifted       int
+	HasChanges         bool
+	// UnmatchedTargets are targets provided by the user that didn't match any resource
+	UnmatchedTargets []string
+}
+
+// Plan loads state, parses resources, and generates plans from all providers.
+// It accepts PlanOptions which can be used to target specific resources.
+func (e *Engine) Plan(ctx context.Context, opts PlanOptions) (*PlanResult, error) {
+	// Load current state
+	currentState, err := e.StateBackend.Load(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load state: %w", err)
+	}
+
+	// Parse all resources from dotfiles
+	resources, err := e.loadResources()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load resources: %w", err)
+	}
+
+	// Convert resources to groups
+	resourceGroups := e.resourcesToGroups(resources)
+
+	// If targets provided, parse them. We'll not filter out resourceGroups here
+	// (desired) because targets may refer to state-only groups. Instead we will
+	// augment resourceGroups with synthetic groups based on state when needed
+	// and detect unmatched targets against both desired resources and state.
+	var targetMatches []TargetMatch
+	var unmatched []string
+	if len(opts.Targets) > 0 {
+		targetMatches = ParseTargets(opts.Targets)
+
+		// For each parsed target, check if it matches any desired group/item.
+		// If it doesn't but exists in state, add a synthetic empty desired group
+		// so providers will produce plans for removals, and mark as matched.
+		for i, raw := range opts.Targets {
+			t := targetMatches[i]
+			found := false
+
+			// Check desired groups
+			for _, g := range resourceGroups {
+				if t.Matches(g.Kind, g.Name, "") {
+					if t.Item == "" {
+						found = true
+						break
+					}
+					for _, it := range g.Items {
+						if strings.EqualFold(it.Name, t.Item) {
+							found = true
+							break
+						}
+					}
+					if found {
+						break
+					}
+				}
+			}
+
+			if found {
+				continue
+			}
+
+			// Check state resources
+			for _, s := range currentState.Resources {
+				if t.Kind != "" && !strings.EqualFold(t.Kind, s.Kind) {
+					continue
+				}
+				if t.Group != "" && !strings.EqualFold(t.Group, s.Group) {
+					continue
+				}
+
+				if t.Item == "" {
+					// match at group level
+					found = true
+				} else {
+					for _, it := range s.Items {
+						if strings.EqualFold(it.Name, t.Item) {
+							found = true
+							break
+						}
+					}
+				}
+
+				if found {
+					// If desired didn't contain this group, add a synthetic empty
+					// group so provider.Reconcile will compute removals for items
+					// present in state but not desired.
+					existsInDesired := false
+					for _, g := range resourceGroups {
+						if strings.EqualFold(g.Kind, s.Kind) && strings.EqualFold(g.Name, s.Group) {
+							existsInDesired = true
+							break
+						}
+					}
+					if !existsInDesired {
+						resourceGroups = append(resourceGroups, resource.ResourceGroup{
+							Kind:  s.Kind,
+							Name:  s.Group,
+							Items: []resource.ResourceItem{},
+						})
+					}
+					break
+				}
+			}
+
+			if !found {
+				unmatched = append(unmatched, raw)
+			}
+		}
+	}
+
+	// Group resources by provider
+	groupsByProvider := e.groupResourcesByProvider(resourceGroups)
+
+	// Generate plans for each provider
+	providerPlans := make(map[string]provider.GroupPlan)
+	result := &PlanResult{
+		CurrentState:  currentState,
+		ProviderPlans: providerPlans,
+	}
+
+	if len(unmatched) > 0 {
+		result.UnmatchedTargets = unmatched
+	}
+
+	for providerName, prov := range e.Providers {
+		providerGroups := groupsByProvider[providerName]
+		if len(providerGroups) == 0 {
+			continue
+		}
+
+		// Filter state for this provider
+		providerState := e.filterStateForProvider(currentState.Resources, providerName)
+
+		// Reconcile
+		plan := prov.Reconcile(providerGroups, providerState)
+
+		// If targets provided, further filter plan items to item-level targets
+		if len(targetMatches) > 0 {
+			plan = filterPlanByTargets(plan, targetMatches)
+		}
+		providerPlans[providerName] = plan
+
+		// Update counts - sum individual items within each plan group
+		for _, add := range plan.Additions {
+			result.TotalAdditions += len(add.Items)
+		}
+		for _, mod := range plan.Modifications {
+			result.TotalModifications += len(mod.Changes)
+		}
+		for _, rem := range plan.Removals {
+			result.TotalRemovals += len(rem.Items)
+		}
+		for _, cleanup := range plan.Cleanup {
+			result.TotalCleanup += len(cleanup.Items)
+		}
+		for _, sync := range plan.InSync {
+			result.TotalInSync += len(sync.Items)
+		}
+		for _ = range plan.Drifted {
+			result.TotalDrifted++
+		}
+	}
+
+	result.HasChanges = result.TotalAdditions > 0 || result.TotalModifications > 0 ||
+		result.TotalRemovals > 0 || result.TotalCleanup > 0 || result.TotalDrifted > 0
+
+	return result, nil
+}
+
+// loadResources parses all resource files from the dotfiles directory.
+func (e *Engine) loadResources() ([]resource.Resource, error) {
+	loader := resource.NewLoader(e.Config.DotfilesRoot, e.TemplateContext)
+	return loader.LoadResources()
+}
+
+// resourcesToGroups converts Resources to ResourceGroups
+func (e *Engine) resourcesToGroups(resources []resource.Resource) []resource.ResourceGroup {
+	var groups []resource.ResourceGroup
+	for _, res := range resources {
+		groups = append(groups, res.ToGroup())
+	}
+	return groups
+}
+
+// groupResourcesByProvider groups resource groups by their provider type.
+func (e *Engine) groupResourcesByProvider(groups []resource.ResourceGroup) map[string][]resource.ResourceGroup {
+	grouped := make(map[string][]resource.ResourceGroup)
+
+	for _, group := range groups {
+		var providerName string
+		switch group.Kind {
+		case resource.KindManagedFile, resource.KindManagedDirectory:
+			providerName = providerFile
+		case resource.KindBrewPackages:
+			providerName = providerHomebrew
+		case resource.KindNpmPackages:
+			providerName = providerNpm
+		case resource.KindGoPackages:
+			providerName = providerGo
+		case resource.KindCargoPackages:
+			providerName = providerCargo
+		default:
+			continue
+		}
+
+		grouped[providerName] = append(grouped[providerName], group)
+	}
+
+	return grouped
+}
+
+// filterStateForProvider filters state entries for a specific provider.
+func (e *Engine) filterStateForProvider(stateResources []provider.ResourceState, providerName string) []provider.ResourceState {
+	var filtered []provider.ResourceState
+
+	providerKinds := make(map[string]bool)
+	switch providerName {
+	case providerFile:
+		providerKinds[resource.KindManagedFile] = true
+		providerKinds[resource.KindManagedDirectory] = true
+	case providerHomebrew:
+		providerKinds[resource.KindBrewPackages] = true
+	case providerNpm:
+		providerKinds[resource.KindNpmPackages] = true
+	case providerGo:
+		providerKinds[resource.KindGoPackages] = true
+	case providerCargo:
+		providerKinds[resource.KindCargoPackages] = true
+	}
+
+	for _, s := range stateResources {
+		if providerKinds[s.Kind] {
+			filtered = append(filtered, s)
+		}
+	}
+
+	return filtered
+}

@@ -4083,5 +4083,703 @@
         "chezmoi-to-dotisan-migration"
       ]
     }
+  },
+  "refactor-polish": {
+    "tasks": [
+      {
+        "id": "1",
+        "title": "Remove Debug Artifacts",
+        "description": "Remove all DEBUG comment blocks and associated print/log statements from provider and resource files.",
+        "details": "Remove all DEBUG comment blocks and their associated print/log statements from pkg/providers/brew.go, pkg/resource/brew.go, and pkg/resource/loader.go. Surgical removal only - do NOT refactor surrounding code. If any debug output is genuinely useful for troubleshooting, convert to slog.Debug(...) calls with appropriate fields.",
+        "testStrategy": "Run 'go build ./...' and 'go test ./...'. Use grep for 'DEBUG' in .go files to confirm zero results.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Identify DEBUG Patterns in Target Files",
+            "description": "Analyze and catalog all DEBUG comment blocks, print statements, and log calls in the specified Go files",
+            "dependencies": [],
+            "details": "Examine pkg/providers/brew.go, pkg/resource/brew.go, and pkg/resource/loader.go to identify all DEBUG-related patterns including comment blocks, fmt.Print, log.Printf, and any other debug output statements that need removal or conversion",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-01T08:07:21.133Z"
+          },
+          {
+            "id": 2,
+            "title": "Remove DEBUG Comment Blocks from Provider Files",
+            "description": "Surgically remove all DEBUG comment blocks from provider files without refactoring surrounding code",
+            "dependencies": [
+              1
+            ],
+            "details": "Process pkg/providers/brew.go specifically to remove all DEBUG comment blocks and their associated debug output statements, ensuring no surrounding code is modified or refactored during this surgical removal operation",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-01T08:08:18.170Z"
+          },
+          {
+            "id": 3,
+            "title": "Remove DEBUG Print/Log Statements from Resource Files",
+            "description": "Eliminate all DEBUG print and log statements from resource files while maintaining code structure",
+            "dependencies": [
+              1
+            ],
+            "details": "Process pkg/resource/brew.go and pkg/resource/loader.go to remove all DEBUG print/log statements and associated debug output, converting genuinely useful debug output to slog.Debug(...) calls with appropriate fields as specified in requirements",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-01T08:08:19.915Z"
+          },
+          {
+            "id": 4,
+            "title": "Verify DEBUG Artifact Removal in Provider Files",
+            "description": "Confirm complete removal of DEBUG artifacts from provider files and validate code integrity",
+            "dependencies": [
+              2
+            ],
+            "details": "Run grep 'DEBUG' on pkg/providers/brew.go to ensure no DEBUG patterns remain, verify go build ./... and go test ./... commands pass successfully, and confirm no debug output remains in the provider files",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-01T08:08:21.666Z"
+          },
+          {
+            "id": 5,
+            "title": "Verify DEBUG Artifact Removal in Resource Files",
+            "description": "Confirm complete removal of DEBUG artifacts from resource files and validate code integrity",
+            "dependencies": [
+              3
+            ],
+            "details": "Run grep 'DEBUG' on pkg/resource/brew.go and pkg/resource/loader.go to ensure no DEBUG patterns remain, verify go build ./... and go test ./... commands pass successfully, and confirm no debug output remains in the resource files",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-01T08:08:23.474Z"
+          }
+        ],
+        "complexity": 3,
+        "recommendedSubtasks": 0,
+        "expansionPrompt": "Break down the debug artifact removal into specific file processing steps, identify all DEBUG patterns to remove, and plan the verification process for each file.",
+        "updatedAt": "2026-05-01T08:08:23.474Z"
+      },
+      {
+        "id": "2",
+        "title": "Define Constants: Eliminate Hardcoded Strings",
+        "description": "Extract hardcoded strings into constants to improve maintainability and reduce duplication.",
+        "details": "Create pkg/resource/constants.go and pkg/engine/constants.go files with appropriate constants. Replace all hardcoded occurrences in pkg/engine/engine.go, pkg/engine/apply.go, cmd/state.go, pkg/providers/*.go, and pkg/resource/unmarshal.go with constants. Use codebase-memory-mcp to find all call sites.",
+        "testStrategy": "Run 'go build ./...' and 'go test ./...'. Use grep to verify no raw strings like 'BrewPackages', 'NpmPackages' remain in non-constant code.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Identify and Catalog Hardcoded Strings",
+            "description": "Systematically identify all hardcoded strings across the specified files using codebase-memory-mcp to locate all call sites and create a comprehensive catalog of strings to be extracted.",
+            "dependencies": [],
+            "details": "Utilize codebase-memory-mcp tool to scan pkg/engine/engine.go, pkg/engine/apply.go, cmd/state.go, pkg/providers/*.go, and pkg/resource/unmarshal.go for hardcoded strings. Document each occurrence with file location, string value, and context. Create a detailed inventory of strings to be converted to constants.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-01T08:12:28.103Z"
+          },
+          {
+            "id": 2,
+            "title": "Design Constant Structure and Create Files",
+            "description": "Design appropriate constant structures for pkg/resource/constants.go and pkg/engine/constants.go files based on identified strings and implement the constant definitions.",
+            "dependencies": [
+              1
+            ],
+            "details": "Analyze the cataloged strings to determine logical groupings and create pkg/resource/constants.go and pkg/engine/constants.go files with appropriate constant definitions. Ensure proper naming conventions and organization. Implement the constant structures that will be used to replace hardcoded strings throughout the codebase.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-01T08:12:29.907Z"
+          },
+          {
+            "id": 3,
+            "title": "Replace Hardcoded Strings with Constants",
+            "description": "Replace all hardcoded string occurrences with appropriate constants and verify functionality remains intact through comprehensive testing.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Replace all hardcoded strings identified in task 1 with constants defined in task 2 across all specified files. Ensure that all references are properly updated and verify that no raw strings like 'BrewPackages', 'NpmPackages' remain in non-constant code. Run 'go build ./...' and 'go test ./...' to confirm functionality remains intact and test with grep to verify no raw strings remain.",
+            "status": "done",
+            "testStrategy": "Run 'go build ./...' and 'go test ./...'. Use grep to verify no raw strings like 'BrewPackages', 'NpmPackages' remain in non-constant code.",
+            "parentId": "undefined",
+            "updatedAt": "2026-05-01T08:12:31.715Z"
+          }
+        ],
+        "complexity": 4,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Create a plan to identify all hardcoded strings, design the constant structure for each package, and implement a systematic approach to replace all occurrences while maintaining test compatibility.",
+        "updatedAt": "2026-05-01T08:12:31.715Z"
+      },
+      {
+        "id": "3",
+        "title": "Fix Error Handling",
+        "description": "Improve error handling by eliminating silent error swallowing and adding proper logging.",
+        "details": "Update pkg/providers/go.go, pkg/providers/npm.go, pkg/providers/cargo.go to use slog.Warn for getInstalledPackages() errors and return errors instead of empty maps. Fix cmd/root.go to handle config load errors explicitly. Add nil checks in cmd/state.go and capture CheckAvailable() errors in cmd/doctor.go. Use slog consistently throughout.",
+        "testStrategy": "Run 'go build ./...' and 'go test ./...'. Verify that 'dotisan doctor' with missing provider shows error instead of silent skip.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Update Provider Error Handling",
+            "description": "Modify pkg/providers/go.go, pkg/providers/npm.go, and pkg/providers/cargo.go to use slog.Warn for getInstalledPackages() errors and return errors instead of empty maps",
+            "dependencies": [],
+            "details": "Replace silent error swallowing with proper error propagation in getInstalledPackages() functions across all three provider files. Implement slog.Warn logging for error cases and ensure errors are returned rather than empty maps to prevent silent failures.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-01T08:16:14.479Z"
+          },
+          {
+            "id": 2,
+            "title": "Fix Root Command Configuration Handling",
+            "description": "Update cmd/root.go to explicitly handle config load errors instead of silent failure",
+            "dependencies": [],
+            "details": "Modify cmd/root.go to explicitly check for and handle configuration loading errors, ensuring that missing or invalid config files result in clear error messages rather than silent operation. Implement proper error propagation up the call stack.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-01T08:16:16.391Z"
+          },
+          {
+            "id": 3,
+            "title": "Add Nil Checks and Error Capture",
+            "description": "Implement nil checks in cmd/state.go and capture CheckAvailable() errors in cmd/doctor.go",
+            "dependencies": [],
+            "details": "Add comprehensive nil checks in cmd/state.go to prevent panics when accessing potentially nil objects. Modify cmd/doctor.go to properly capture and handle errors from CheckAvailable() calls to ensure error propagation throughout the doctor command flow.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-01T08:16:18.183Z"
+          },
+          {
+            "id": 4,
+            "title": "Implement Consistent slog Logging Strategy",
+            "description": "Ensure consistent slog usage throughout all modified files and establish proper logging patterns",
+            "dependencies": [],
+            "details": "Establish and implement consistent slog logging patterns across all modified files, ensuring appropriate log levels are used for different error conditions. Create standardized logging approaches for error reporting and ensure all error cases are properly logged with sufficient context for debugging.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-01T08:16:19.968Z"
+          }
+        ],
+        "complexity": 5,
+        "recommendedSubtasks": 4,
+        "expansionPrompt": "Outline the error handling improvements for each affected file, define the specific error patterns to address, plan the slog implementation strategy, and design test cases to verify error propagation.",
+        "updatedAt": "2026-05-01T08:16:19.968Z"
+      },
+      {
+        "id": "4",
+        "title": "Extract Provider Base Reconciliation Pattern",
+        "description": "Extract shared reconciliation logic into a base provider file to eliminate code duplication.",
+        "details": "Create pkg/provider/reconcile.go with IndexStateByGroup, CompareGroupItems, and BaseReconcile functions. Update pkg/providers/npm.go, pkg/providers/cargo.go, pkg/providers/go.go, and pkg/providers/brew.go to implement only provider-specific parts. Ensure all existing tests pass and no behavioral changes occur.",
+        "testStrategy": "Run 'go build ./...' and 'go test ./...'. Verify that 'dotisan plan' produces identical output before/after.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design Base Reconciliation Functions Interface",
+            "description": "Design and define the interface contracts for the base reconciliation functions including IndexStateByGroup, CompareGroupItems, and BaseReconcile",
+            "dependencies": [],
+            "details": "Create detailed specifications for the base reconciliation functions that will be shared across all providers. Define input/output parameters, error handling patterns, and ensure the interface is flexible enough to accommodate provider-specific requirements while maintaining common functionality.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-01T08:18:12.940Z"
+          },
+          {
+            "id": 2,
+            "title": "Create Base Provider File Structure",
+            "description": "Create the pkg/provider/reconcile.go file with the base reconciliation functions implementation",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement the IndexStateByGroup, CompareGroupItems, and BaseReconcile functions in pkg/provider/reconcile.go. Ensure these functions properly handle the shared reconciliation logic and provide proper error handling and logging using slog.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-01T08:18:43.549Z"
+          },
+          {
+            "id": 3,
+            "title": "Update Provider Implementations",
+            "description": "Modify pkg/providers/npm.go, pkg/providers/cargo.go, pkg/providers/go.go, and pkg/providers/brew.go to use base reconciliation functions",
+            "dependencies": [
+              2
+            ],
+            "details": "Refactor each provider file to remove duplicated reconciliation logic and instead call the base reconciliation functions. Ensure each provider only implements provider-specific parts while leveraging the shared base functionality. Update imports and function signatures appropriately.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-01T08:20:27.634Z"
+          },
+          {
+            "id": 4,
+            "title": "Verify Behavioral Consistency",
+            "description": "Run comprehensive tests to ensure no behavioral changes occur after extraction",
+            "dependencies": [
+              3
+            ],
+            "details": "Execute 'go build ./...' and 'go test ./...' to verify all tests pass. Run 'dotisan plan' and compare output before/after the refactoring to ensure identical behavior. Validate that all existing functionality remains intact and no regressions were introduced.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-01T08:20:29.411Z"
+          },
+          {
+            "id": 5,
+            "title": "Validate Code Quality and Documentation",
+            "description": "Ensure code quality standards and documentation are maintained throughout the refactoring process",
+            "dependencies": [
+              4
+            ],
+            "details": "Review all code changes for adherence to existing code style guidelines, ensure proper documentation of new functions, verify that all error handling patterns are consistent, and confirm that the refactored code maintains the same performance characteristics as the original implementation.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-01T08:20:31.191Z"
+          }
+        ],
+        "complexity": 7,
+        "recommendedSubtasks": 5,
+        "expansionPrompt": "Design the base reconciliation functions, create the base provider file structure, implement the extraction process for each provider, define the interface contracts, and plan comprehensive testing to ensure no behavioral changes.",
+        "updatedAt": "2026-05-01T08:20:31.191Z"
+      },
+      {
+        "id": "5",
+        "title": "Decompose engine.go",
+        "description": "Split the monolithic engine.go into focused, single-responsibility files.",
+        "details": "Create pkg/engine/plan.go, pkg/engine/cleanup.go, and pkg/engine/progress.go files. Move Plan() logic, cleanup detection, and bubbletea TUI code respectively. Keep pkg/engine/engine.go as thin coordinator with Engine struct, NewEngine(), and public method routing only. Reconcile ApplyWithProgress() and Apply() implementations.",
+        "testStrategy": "Run 'go build ./...' and 'go test ./...'. Verify that 'dotisan plan' and 'dotisan apply --confirm' work identically.",
+        "priority": "high",
+        "dependencies": [
+          "4"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create pkg/engine/plan.go with Plan() logic",
+            "description": "Extract and implement the Plan() method logic into a new dedicated file",
+            "dependencies": [
+              5
+            ],
+            "details": "Move all Plan() related logic from engine.go to pkg/engine/plan.go, ensuring all dependencies and imports are properly handled. Maintain the same method signature and behavior.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Create pkg/engine/cleanup.go with cleanup detection",
+            "description": "Implement cleanup detection logic in a separate file",
+            "dependencies": [
+              5
+            ],
+            "details": "Extract cleanup detection and related functions from engine.go into pkg/engine/cleanup.go. Ensure all cleanup-related methods and logic are properly moved and tested.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Create pkg/engine/progress.go with bubbletea TUI code",
+            "description": "Move bubbletea TUI implementation to dedicated progress file",
+            "dependencies": [
+              5
+            ],
+            "details": "Extract all bubbletea TUI related code including View(), Update(), and related progress tracking logic from engine.go to pkg/engine/progress.go. Maintain the same interface and functionality.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 4,
+            "title": "Refactor engine.go to act as thin coordinator",
+            "description": "Transform engine.go into a coordinator with minimal logic",
+            "dependencies": [
+              5
+            ],
+            "details": "Keep only Engine struct definition, NewEngine() constructor, and public method routing in engine.go. Remove all internal logic and ensure proper imports to the new files.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 5,
+            "title": "Reconcile ApplyWithProgress() and Apply() implementations",
+            "description": "Ensure both Apply methods work consistently with new structure",
+            "dependencies": [
+              5
+            ],
+            "details": "Verify that Apply() and ApplyWithProgress() methods work identically after decomposition. Ensure both methods properly route to the new implementation files and maintain same behavior.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 6,
+            "title": "Implement comprehensive tests for new structure",
+            "description": "Create tests to validate the decomposed engine structure",
+            "dependencies": [
+              5
+            ],
+            "details": "Write comprehensive tests for all new files including plan.go, cleanup.go, and progress.go. Ensure that go build ./... and go test ./... commands pass and that dotisan plan and dotisan apply --confirm work identically.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 8,
+        "recommendedSubtasks": 6,
+        "expansionPrompt": "Plan the decomposition of engine.go into focused files, define the responsibilities of each new file, implement the routing logic, ensure all method signatures remain consistent, and design comprehensive tests for the new structure.",
+        "updatedAt": "2026-05-01T09:19:53.756Z"
+      },
+      {
+        "id": "6",
+        "title": "Add huh for Confirmation Prompts",
+        "description": "Replace custom terminal reader with Charm's huh library for confirmation prompts.",
+        "details": "Add github.com/charmbracelet/huh as dependency. Create pkg/style/confirm.go with Confirm function using huh.NewConfirm(). Replace all call sites in cmd/apply.go and cmd/state.go to use new function. Remove ReadSingleKey() and old ConfirmBox helper if no longer used. Handle Ctrl+C gracefully as 'no'.",
+        "testStrategy": "Run 'go build ./...' and 'go test ./...'. Verify that 'dotisan apply' shows huh confirm prompt and Ctrl+C cancels cleanly.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "in-progress",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Integrate Charm's huh Library Dependency",
+            "description": "Add github.com/charmbracelet/huh as a project dependency and verify integration",
+            "dependencies": [],
+            "details": "Update go.mod and go.sum files to include the huh library dependency. Verify that the library can be imported and used in the project. Run 'go mod tidy' to ensure proper dependency resolution.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Implement Confirm Function with huh Library",
+            "description": "Create pkg/style/confirm.go with Confirm function using huh.NewConfirm()",
+            "dependencies": [
+              1
+            ],
+            "details": "Create a new file pkg/style/confirm.go that implements a Confirm function using Charm's huh library. The function should handle confirmation prompts with proper styling and user interaction. Ensure Ctrl+C is handled gracefully by returning 'no' as specified.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-01T09:42:42.614Z"
+          },
+          {
+            "id": 3,
+            "title": "Update Call Sites in Apply and State Commands",
+            "description": "Replace all call sites in cmd/apply.go and cmd/state.go to use new Confirm function",
+            "dependencies": [
+              2
+            ],
+            "details": "Identify all instances where the old confirmation logic was used in cmd/apply.go and cmd/state.go. Replace these call sites with the new Confirm function from pkg/style/confirm.go. Ensure all existing functionality is preserved and that the new prompts work correctly.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 4,
+            "title": "Clean Up Old Confirmation Code and Implement Ctrl+C Handling",
+            "description": "Remove ReadSingleKey() and old ConfirmBox helper, implement proper Ctrl+C handling",
+            "dependencies": [
+              3
+            ],
+            "details": "Remove the ReadSingleKey() function and old ConfirmBox helper if no longer used. Implement proper Ctrl+C handling in the new confirmation function to gracefully cancel and return 'no' as specified. Verify that the cleanup doesn't break any existing functionality and that all tests pass.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 5,
+        "recommendedSubtasks": 4,
+        "expansionPrompt": "Research the huh library integration, create the confirm function implementation, update all call sites, implement proper Ctrl+C handling, and design test scenarios to verify the new confirmation behavior.",
+        "updatedAt": "2026-05-01T09:42:42.614Z"
+      },
+      {
+        "id": "7",
+        "title": "Add Bubbles Spinner for Long-Running Operations",
+        "description": "Add spinner indicators for long-running operations like doctor and init commands.",
+        "details": "Create pkg/style/spinner.go with RunWithSpinner helper function. Wrap provider checks in cmd/doctor.go with spinner. Add spinner during template copy/directory creation steps in cmd/init.go. Use spinner.MiniDot or spinner.Dot with lipgloss styling matching app theme. Do NOT show spinner when --output json or stdout is not a TTY.",
+        "testStrategy": "Run 'go build ./...' and 'go test ./...'. Verify that 'dotisan doctor' shows animated spinner per provider and 'dotisan init' shows spinner during setup.",
+        "priority": "medium",
+        "dependencies": [
+          "6"
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design Spinner Implementation and Identify Long-Running Operations",
+            "description": "Create the spinner implementation structure and identify all long-running operations that need to be wrapped with spinner indicators",
+            "dependencies": [],
+            "details": "Design the pkg/style/spinner.go file with RunWithSpinner helper function, identify all operations in doctor and init commands that take significant time, determine which steps should show spinner animation, and establish the styling approach using lipgloss matching app theme",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Implement RunWithSpinner Helper Function",
+            "description": "Create the core RunWithSpinner function with TTY detection and JSON output handling logic",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement pkg/style/spinner.go with RunWithSpinner function that uses spinner.MiniDot or spinner.Dot, handles TTY detection to determine when to show spinner, and skips spinner display when --output json flag is set or stdout is not a TTY, ensuring proper styling with lipgloss",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Wrap Provider Checks in Doctor Command with Spinner",
+            "description": "Integrate spinner functionality around provider check operations in cmd/doctor.go",
+            "dependencies": [
+              2
+            ],
+            "details": "Modify cmd/doctor.go to wrap each provider check operation with the RunWithSpinner helper function, ensuring that each provider check shows animated spinner during execution, and maintain existing error handling behavior",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 4,
+            "title": "Add Spinner to Init Command Operations",
+            "description": "Implement spinner indicators during template copy and directory creation steps in cmd/init.go",
+            "dependencies": [
+              2
+            ],
+            "details": "Update cmd/init.go to wrap template copy and directory creation operations with RunWithSpinner helper, ensuring spinner shows during setup steps, and verify that all existing functionality remains intact while adding visual feedback for long-running operations",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 6,
+        "recommendedSubtasks": 4,
+        "expansionPrompt": "Design the spinner implementation, identify all long-running operations to wrap, implement the RunWithSpinner helper, handle TTY detection logic, and create test scenarios for spinner behavior in different contexts."
+      },
+      {
+        "id": "8",
+        "title": "Centralize Key Bindings",
+        "description": "Centralize key bindings for consistent handling across interactive elements.",
+        "details": "Create pkg/style/keys.go defining shared key bindings with key.NewBinding for Quit, Confirm, and Cancel. Replace inline 'case \"ctrl+c\":' handling in progress model Update() with key.Matches(msg, style.DefaultKeys.Quit). Ensure consistent key handling if more interactive elements are added.",
+        "testStrategy": "Run 'go build ./...' and 'go test ./...'. Verify that Ctrl+C during apply still cancels and no behavioral regression.",
+        "priority": "medium",
+        "dependencies": [
+          "6"
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design Key Binding Structure",
+            "description": "Create the architectural design for centralized key bindings including defining the structure and organization of key bindings in the new pkg/style/keys.go file",
+            "dependencies": [],
+            "details": "Design the key binding structure by creating pkg/style/keys.go that defines shared key bindings with key.NewBinding for Quit, Confirm, and Cancel. Plan the organization and naming conventions for key bindings to ensure consistency across all interactive elements.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Implement Shared Key Bindings",
+            "description": "Implement the centralized key binding system by creating the pkg/style/keys.go file with proper key binding definitions and replacing inline key handling",
+            "dependencies": [
+              1
+            ],
+            "details": "Create pkg/style/keys.go defining shared key bindings with key.NewBinding for Quit, Confirm, and Cancel. Replace inline 'case \"ctrl+c\":' handling in progress model Update() with key.Matches(msg, style.DefaultKeys.Quit). Ensure consistent key handling for all interactive elements.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Verify Key Binding Functionality",
+            "description": "Test that all interactive elements continue to work correctly after implementing centralized key bindings and verify no behavioral regressions",
+            "dependencies": [
+              2
+            ],
+            "details": "Run 'go build ./...' and 'go test ./...' to verify that Ctrl+C during apply still cancels and no behavioral regression occurs. Ensure all interactive elements continue to work correctly with the new centralized key binding system.",
+            "status": "pending",
+            "testStrategy": "Run 'go build ./...' and 'go test ./...'. Verify that Ctrl+C during apply still cancels and no behavioral regression.",
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 4,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Design the key binding structure, implement the shared key bindings, replace inline key handling with centralized logic, and verify all interactive elements continue to work correctly."
+      },
+      {
+        "id": "9",
+        "title": "Enhance Apply Progress Display",
+        "description": "Improve the apply progress display with task names, elapsed time, and visual separation.",
+        "details": "Enhance View() in pkg/engine/progress.go to show large styled header, progress bar with gradient, current task label, elapsed time counter, rolling log of last 5 completed items with ✓/✗ icons, and footer summary with success/error counts. Use time.Since(startTime) and lipgloss styling.",
+        "testStrategy": "Run 'go build ./...' and 'go test ./...'. Verify that 'dotisan apply' with real changes shows enhanced progress and completion shows summary box with counts.",
+        "priority": "medium",
+        "dependencies": [
+          "5",
+          "6",
+          "8"
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design Enhanced Progress Display Components",
+            "description": "Create detailed design specifications for all UI components including header, progress bar, elapsed time counter, rolling log, and summary box",
+            "dependencies": [
+              5,
+              6,
+              8
+            ],
+            "details": "Define styling guidelines for lipgloss styling, determine layout structure, specify visual hierarchy, and create component interaction flow for the enhanced progress display",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Implement Progress Display Header and Progress Bar",
+            "description": "Create the large styled header with gradient progress bar and current task label in pkg/engine/progress.go",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement View() function in pkg/engine/progress.go to render styled header using lipgloss, add gradient progress bar visualization, and display current task name with proper styling",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Develop Elapsed Time Counter and Rolling Log",
+            "description": "Add elapsed time tracking and rolling log of last 5 completed items with ✓/✗ icons to the progress display",
+            "dependencies": [
+              2
+            ],
+            "details": "Integrate time.Since(startTime) for elapsed time calculation, implement rolling log functionality showing last 5 completed tasks with appropriate icons, and ensure proper formatting of task completion indicators",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 4,
+            "title": "Create Footer Summary Box with Counts",
+            "description": "Implement the footer summary box that displays success and error counts for completed operations",
+            "dependencies": [
+              3
+            ],
+            "details": "Design and implement summary box functionality in View() that shows success/error counts, ensure proper styling with lipgloss, and integrate with existing progress tracking logic",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 5,
+            "title": "Test and Validate Enhanced Progress Display",
+            "description": "Verify the enhanced progress display works correctly with real apply operations and produces expected visual output",
+            "dependencies": [
+              4
+            ],
+            "details": "Run 'go build ./...' and 'go test ./...' to ensure compilation and testing pass, verify 'dotisan apply' shows enhanced progress display with proper counts, and validate visual output meets design specifications",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 6,
+        "recommendedSubtasks": 5,
+        "expansionPrompt": "Design the enhanced progress display components, implement the header, progress bar, elapsed time counter, rolling log, and summary box, create styling guidelines, and develop test scenarios for visual output verification."
+      },
+      {
+        "id": "10",
+        "title": "Plan Output Enhancement",
+        "description": "Improve visual presentation of plan output with styled sections and color-coded changes.",
+        "details": "Enhance pkg/diff/plan.go and pkg/diff/tree.go with styled section dividers, colored summary boxes, different icons for drift items, and improved tree format with bold provider names and change counts. Add NoPendingChanges() styled message for when plan shows 0 changes. Ensure JSON output paths remain clean.",
+        "testStrategy": "Run 'go build ./...' and 'go test ./...'. Verify that 'dotisan plan' shows enhanced plain output and 'dotisan plan -o tree' shows enhanced tree with identical clean JSON output.",
+        "priority": "medium",
+        "dependencies": [
+          "5"
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Styled Section Dividers and Summary Boxes",
+            "description": "Enhance pkg/diff/plan.go with styled section dividers and color-coded summary boxes for changes",
+            "dependencies": [
+              10
+            ],
+            "details": "Modify pkg/diff/plan.go to add visual section dividers using lipgloss styling and implement colored summary boxes that differentiate between different types of changes (additions, modifications, deletions). Ensure consistent styling across all output formats.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Create Improved Tree Format with Bold Provider Names",
+            "description": "Update pkg/diff/tree.go to implement enhanced tree format with bold provider names and change counts",
+            "dependencies": [
+              10
+            ],
+            "details": "Refactor pkg/diff/tree.go to display provider names in bold font and include change counts next to each provider. Implement improved tree structure that maintains visual hierarchy while adding the requested formatting elements.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Add NoPendingChanges() Styled Message and Drift Item Icons",
+            "description": "Implement styled message for zero changes and different icons for drift items",
+            "dependencies": [
+              10
+            ],
+            "details": "Add a NoPendingChanges() function that displays a styled message when there are zero changes. Implement different icons for drift items to visually distinguish them from regular changes. Ensure these elements work consistently across all output modes.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 4,
+            "title": "Ensure JSON Output Paths Remain Clean and Unaffected",
+            "description": "Verify that JSON output paths remain clean and unaffected by visual formatting changes",
+            "dependencies": [
+              10
+            ],
+            "details": "Validate that all JSON output paths remain clean and unaffected by the visual formatting changes. Test that 'dotisan plan' and 'dotisan plan -o tree' produce identical clean JSON output regardless of the enhanced plain output formatting.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 5,
+        "recommendedSubtasks": 4,
+        "expansionPrompt": "Design the enhanced plan output formatting, implement styled section dividers and colored summary boxes, create improved tree format with bold provider names, and ensure JSON output paths remain clean and unaffected."
+      }
+    ],
+    "metadata": {
+      "version": "1.0.0",
+      "lastModified": "2026-05-01T09:42:42.616Z",
+      "taskCount": 10,
+      "completedCount": 5,
+      "tags": [
+        "refactor-polish"
+      ]
+    }
   }
 }

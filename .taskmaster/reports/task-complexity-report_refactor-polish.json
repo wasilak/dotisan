@@ -1,0 +1,93 @@
+{
+	"meta": {
+		"generatedAt": "2026-05-01T07:56:11.632Z",
+		"tasksAnalyzed": 10,
+		"totalTasks": 10,
+		"analysisCount": 10,
+		"thresholdScore": 5,
+		"projectName": "Task Master",
+		"usedResearch": true
+	},
+	"complexityAnalysis": [
+		{
+			"taskId": 1,
+			"taskTitle": "Remove Debug Artifacts",
+			"complexityScore": 3,
+			"recommendedSubtasks": 0,
+			"expansionPrompt": "Break down the debug artifact removal into specific file processing steps, identify all DEBUG patterns to remove, and plan the verification process for each file.",
+			"reasoning": "This is a straightforward surgical removal task that requires minimal logic changes. It's primarily a code cleanup operation with well-defined scope. The task involves specific file targets and clear removal criteria, making it low complexity with no major technical challenges."
+		},
+		{
+			"taskId": 2,
+			"taskTitle": "Define Constants: Eliminate Hardcoded Strings",
+			"complexityScore": 4,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Create a plan to identify all hardcoded strings, design the constant structure for each package, and implement a systematic approach to replace all occurrences while maintaining test compatibility.",
+			"reasoning": "This task requires identifying all hardcoded strings across multiple files, creating appropriate constant structures, and replacing occurrences systematically. The complexity is moderate due to the need for careful analysis of codebase patterns and ensuring all references are updated without breaking functionality."
+		},
+		{
+			"taskId": 3,
+			"taskTitle": "Fix Error Handling",
+			"complexityScore": 5,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Outline the error handling improvements for each affected file, define the specific error patterns to address, plan the slog implementation strategy, and design test cases to verify error propagation.",
+			"reasoning": "This task involves multiple files and requires careful error handling improvements. It requires understanding existing error patterns, implementing proper logging with slog, and ensuring error propagation works correctly across different components. The complexity increases due to multiple interdependencies and the need for comprehensive testing."
+		},
+		{
+			"taskId": 4,
+			"taskTitle": "Extract Provider Base Reconciliation Pattern",
+			"complexityScore": 7,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Design the base reconciliation functions, create the base provider file structure, implement the extraction process for each provider, define the interface contracts, and plan comprehensive testing to ensure no behavioral changes.",
+			"reasoning": "This is a significant refactoring task involving creating a new base pattern and updating multiple provider implementations. The complexity stems from ensuring all existing functionality is preserved while extracting shared logic. Requires careful interface design and thorough testing to maintain behavioral consistency."
+		},
+		{
+			"taskId": 5,
+			"taskTitle": "Decompose engine.go",
+			"complexityScore": 8,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Plan the decomposition of engine.go into focused files, define the responsibilities of each new file, implement the routing logic, ensure all method signatures remain consistent, and design comprehensive tests for the new structure.",
+			"reasoning": "This is a high-complexity task requiring significant architectural refactoring. It involves splitting a monolithic file into multiple focused components, maintaining interface compatibility, and ensuring all existing functionality works identically. The complexity is high due to the scope of changes and the need to maintain behavioral consistency."
+		},
+		{
+			"taskId": 6,
+			"taskTitle": "Add huh for Confirmation Prompts",
+			"complexityScore": 5,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Research the huh library integration, create the confirm function implementation, update all call sites, implement proper Ctrl+C handling, and design test scenarios to verify the new confirmation behavior.",
+			"reasoning": "This task involves library integration and UI enhancement. The complexity comes from integrating a new dependency, updating multiple call sites, and ensuring proper handling of user interactions. Requires careful attention to error handling and user experience considerations."
+		},
+		{
+			"taskId": 7,
+			"taskTitle": "Add Bubbles Spinner for Long-Running Operations",
+			"complexityScore": 6,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Design the spinner implementation, identify all long-running operations to wrap, implement the RunWithSpinner helper, handle TTY detection logic, and create test scenarios for spinner behavior in different contexts.",
+			"reasoning": "This task requires implementing visual feedback for long-running operations. The complexity involves creating a reusable spinner helper, determining appropriate operations to decorate, handling TTY detection, and ensuring consistent styling. Testing requires verifying spinner behavior in various scenarios."
+		},
+		{
+			"taskId": 8,
+			"taskTitle": "Centralize Key Bindings",
+			"complexityScore": 4,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Design the key binding structure, implement the shared key bindings, replace inline key handling with centralized logic, and verify all interactive elements continue to work correctly.",
+			"reasoning": "This is a moderate complexity task focused on improving key handling consistency. It involves creating a centralized key binding system and replacing scattered inline handling. The complexity is moderate as it's primarily about organizing existing functionality rather than adding new features."
+		},
+		{
+			"taskId": 9,
+			"taskTitle": "Enhance Apply Progress Display",
+			"complexityScore": 6,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Design the enhanced progress display components, implement the header, progress bar, elapsed time counter, rolling log, and summary box, create styling guidelines, and develop test scenarios for visual output verification.",
+			"reasoning": "This task involves significant UI/UX improvements with multiple visual elements. The complexity comes from implementing various display components with proper styling, ensuring they work correctly in different contexts, and maintaining visual consistency. Requires careful attention to user experience and display formatting."
+		},
+		{
+			"taskId": 10,
+			"taskTitle": "Plan Output Enhancement",
+			"complexityScore": 5,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Design the enhanced plan output formatting, implement styled section dividers and colored summary boxes, create improved tree format with bold provider names, and ensure JSON output paths remain clean and unaffected.",
+			"reasoning": "This is a moderate complexity enhancement focused on improving output presentation. The complexity involves implementing various visual formatting elements while maintaining compatibility with existing JSON output. Requires attention to styling consistency and ensuring no breaking changes to output formats."
+		}
+	]
+}

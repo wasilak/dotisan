@@ -89,8 +89,6 @@ func (l *Loader) loadResourceFile(path string) (Resource, error) {
 		return nil, fmt.Errorf("failed to render template: %w", err)
 	}
 
-	// DEBUG: print rendered resource for troubleshooting missing items
-	// Use slog so output is gated by configured log level
 	slog.Debug("rendered resource",
 		"path", path,
 		"content", rendered,

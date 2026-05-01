@@ -3,9 +3,15 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
+	"log/slog"
 	"os"
 	"strings"
+
+	"charm.land/huh/v2"
+	"golang.org/x/term"
 
 	"github.com/wasilak/dotisan/pkg/config"
 	"github.com/wasilak/dotisan/pkg/diff"
@@ -118,7 +124,10 @@ func runStateImport(id, actualValue string) error {
 	resourceState.Group = group
 
 	// Load current state
-	cfg, _ := config.LoadConfigFromDefaultPath()
+	cfg, cfgErr := config.LoadConfigFromDefaultPath()
+	if cfgErr != nil && !errors.Is(cfgErr, fs.ErrNotExist) {
+		slog.Warn("failed to load config", "err", cfgErr)
+	}
 	statePath := os.ExpandEnv("$HOME/.config/dotisan/state.json")
 	if cfg != nil && cfg.State.Path != "" {
 		statePath = os.ExpandEnv(cfg.State.Path)
@@ -250,36 +259,47 @@ func runStateRemoveByID(id string) error {
 		item = parts[2]
 	}
 
-	if !stateRemoveForce {
-		var promptText string
+if !stateRemoveForce {
+		title := ""
 		if item == "" {
-			promptText = fmt.Sprintf("Remove %s/%s from state?\n", kind, group)
+			title = fmt.Sprintf("Remove %s/%s from state?", kind, group)
 		} else {
-			promptText = fmt.Sprintf("Remove %s/%s/%s from state?\n", kind, group, item)
+			title = fmt.Sprintf("Remove %s/%s/%s from state?", kind, group, item)
 		}
-
-		// Use centralized confirmation box helper
 		hint := "(actual resource will not be modified)"
-		prompt := style.ConfirmBox(promptText, hint, "Yes, remove from state", "No, keep it")
-		fmt.Print(prompt)
 
-		// Ensure the cursor is on the next line before reading keypress
-		fmt.Println()
-		// Read a single keypress without echoing
-		key, err := style.ReadSingleKey()
-		if err != nil {
-			return fmt.Errorf("failed to read response: %w", err)
+		// Robust confirmation: TTY vs fallback
+		isTTY := term.IsTerminal(int(os.Stdout.Fd()))
+		var confirm bool
+		if isTTY {
+			err := huh.NewConfirm().
+				Title(title).Affirmative("Yes, remove from state").Negative("No, cancel").Value(&confirm).Run()
+			if err != nil {
+				return fmt.Errorf("confirmation prompt error: %w", err)
+			}
+		} else {
+			fmt.Printf("%s %s [y/N]: ", title, hint)
+			var resp string
+			_, err := fmt.Fscanln(os.Stdin, &resp)
+			if err != nil && err.Error() != "unexpected newline" {
+				return fmt.Errorf("failed to read confirmation: %w", err)
+			}
+			resp = strings.TrimSpace(strings.ToLower(resp))
+			confirm = (resp == "y" || resp == "yes")
 		}
-
-		// Accept 'y' or 'Y' as yes; anything else is no
-		if key != "y" {
-			fmt.Printf("%s Cancelled.\n", style.Warning.Render("→"))
+		if !confirm {
+			fmt.Println()
+			fmt.Println(style.Info.Render("→ Remove cancelled."))
 			return nil
 		}
 	}
 
+
 	ctx := context.Background()
-	cfg, _ := config.LoadConfigFromDefaultPath()
+	cfg, cfgErr := config.LoadConfigFromDefaultPath()
+	if cfgErr != nil && !errors.Is(cfgErr, fs.ErrNotExist) {
+		slog.Warn("failed to load config", "err", cfgErr)
+	}
 	statePath := os.ExpandEnv("$HOME/.config/dotisan/state.json")
 	if cfg != nil && cfg.State.Path != "" {
 		statePath = os.ExpandEnv(cfg.State.Path)
@@ -334,7 +354,10 @@ var stateOutputFlag string
 
 func runStateList() error {
 	ctx := context.Background()
-	cfg, _ := config.LoadConfigFromDefaultPath()
+	cfg, cfgErr := config.LoadConfigFromDefaultPath()
+	if cfgErr != nil && !errors.Is(cfgErr, fs.ErrNotExist) {
+		slog.Warn("failed to load config", "err", cfgErr)
+	}
 	statePath := os.ExpandEnv("$HOME/.config/dotisan/state.json")
 	if cfg != nil && cfg.State.Path != "" {
 		statePath = os.ExpandEnv(cfg.State.Path)

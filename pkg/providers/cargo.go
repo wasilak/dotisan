@@ -3,6 +3,7 @@ package providers
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/wasilak/dotisan/pkg/cmdutil"
@@ -36,185 +37,7 @@ func (p *CargoProvider) Reconcile(
 	desired []resource.ResourceGroup,
 	state []provider.ResourceState,
 ) provider.GroupPlan {
-	plan := provider.GroupPlan{}
-
-	stateIndex := make(map[string]provider.ResourceState)
-	for _, s := range state {
-		if s.Kind == "CargoPackages" {
-			stateIndex[s.Group] = s
-		}
-	}
-
-	installed := p.getInstalledPackages()
-
-	for _, group := range desired {
-		if group.Kind != "CargoPackages" {
-			continue
-		}
-
-		stateGroup, exists := stateIndex[group.Name]
-
-		if !exists {
-			// New group - check which items are already installed vs need installation
-			var toInstall, toImport []resource.ResourceItem
-
-			for _, item := range group.Items {
-				if _, isInstalled := installed[item.Name]; isInstalled {
-					// Already installed - needs to be imported
-					toImport = append(toImport, item)
-				} else {
-					// Not installed - needs installation
-					toInstall = append(toInstall, item)
-				}
-			}
-
-			// Add items that need installation
-			if len(toInstall) > 0 {
-				plan.Additions = append(plan.Additions, provider.GroupAddition{
-					Kind:  group.Kind,
-					Group: group.Name,
-					Items: toInstall,
-				})
-			}
-
-			// Add items that are already installed (for import)
-			if len(toImport) > 0 {
-				plan.Additions = append(plan.Additions, provider.GroupAddition{
-					Kind:  group.Kind,
-					Group: group.Name,
-					Items: toImport,
-				})
-
-				// Add warning about import
-				itemNames := make([]string, 0, len(toImport))
-				for _, item := range toImport {
-					itemNames = append(itemNames, item.Name)
-				}
-				plan.Warnings = append(plan.Warnings, provider.PlanWarning{
-					GroupID:    fmt.Sprintf("%s/%s", group.Kind, group.Name),
-					Severity:   "warning",
-					Message:    fmt.Sprintf("Items already installed but not tracked: %s", strings.Join(itemNames, ", ")),
-					Suggestion: fmt.Sprintf("dotisan state import %s/%s <item>", group.Kind, group.Name),
-				})
-			}
-		} else {
-			additions, removals, modifications, inSync := p.compareGroupItems(
-				group, stateGroup, installed,
-			)
-
-			if len(additions) > 0 {
-				plan.Additions = append(plan.Additions, provider.GroupAddition{
-					Kind:  group.Kind,
-					Group: group.Name,
-					Items: additions,
-				})
-			}
-
-			if len(removals) > 0 {
-				plan.Removals = append(plan.Removals, provider.GroupRemoval{
-					Kind:  group.Kind,
-					Group: group.Name,
-					Items: removals,
-				})
-			}
-
-			if len(modifications) > 0 {
-				plan.Modifications = append(plan.Modifications, provider.GroupModification{
-					Kind:    group.Kind,
-					Group:   group.Name,
-					Changes: modifications,
-				})
-			}
-
-			if len(inSync) > 0 && len(additions) == 0 && len(removals) == 0 && len(modifications) == 0 {
-				plan.InSync = append(plan.InSync, provider.GroupState{
-					Kind:  group.Kind,
-					Group: group.Name,
-					Items: inSync,
-				})
-			}
-		}
-	}
-
-	desiredGroups := make(map[string]bool)
-	for _, group := range desired {
-		if group.Kind == "CargoPackages" {
-			desiredGroups[group.Name] = true
-		}
-	}
-
-	for groupName, stateGroup := range stateIndex {
-		if !desiredGroups[groupName] {
-			items := make([]resource.ResourceItem, 0, len(stateGroup.Items))
-			for _, item := range stateGroup.Items {
-				items = append(items, resource.ResourceItem{
-					Name:    item.Name,
-					Version: item.Version,
-				})
-			}
-			plan.Removals = append(plan.Removals, provider.GroupRemoval{
-				Kind:  "CargoPackages",
-				Group: groupName,
-				Items: items,
-			})
-		}
-	}
-
-	return plan
-}
-
-func (p *CargoProvider) compareGroupItems(
-	group resource.ResourceGroup,
-	stateGroup provider.ResourceState,
-	installed map[string]string,
-) (additions, removals []resource.ResourceItem, modifications []provider.ItemChange, inSync []resource.ItemState) {
-	stateItems := make(map[string]resource.ItemState)
-	for _, item := range stateGroup.Items {
-		stateItems[item.Name] = item
-	}
-
-	for _, desiredItem := range group.Items {
-		name := desiredItem.Name
-		_, inState := stateItems[name]
-		_, isInstalled := installed[name]
-
-		if !isInstalled {
-			additions = append(additions, desiredItem)
-		} else if inState {
-			stateItem := stateItems[name]
-			if stateItem.Version != desiredItem.Version && desiredItem.Version != "" {
-				modifications = append(modifications, provider.ItemChange{
-					ItemName: name,
-					OldState: stateItem,
-					NewState: resource.ItemState{
-						Name:    name,
-						Version: desiredItem.Version,
-					},
-					Diff: fmt.Sprintf("version: %s -> %s", stateItem.Version, desiredItem.Version),
-				})
-			} else {
-				inSync = append(inSync, stateItem)
-			}
-		} else {
-			additions = append(additions, desiredItem)
-		}
-	}
-
-	desiredItems := make(map[string]bool)
-	for _, item := range group.Items {
-		desiredItems[item.Name] = true
-	}
-
-	for name, stateItem := range stateItems {
-		if !desiredItems[name] {
-			removals = append(removals, resource.ResourceItem{
-				Name:    name,
-				Version: stateItem.Version,
-			})
-		}
-	}
-
-	return
+	return provider.BaseReconcile(resource.KindCargoPackages, desired, state, p.getInstalledPackages(), nil)
 }
 
 func (p *CargoProvider) getInstalledPackages() map[string]string {
@@ -222,6 +45,7 @@ func (p *CargoProvider) getInstalledPackages() map[string]string {
 	// List installed crates
 	stdout, _, err := cmdutil.RunSimple(ctx, "cargo", "install", "--list")
 	if err != nil {
+		slog.Warn("cargo getInstalledPackages failed", "err", err)
 		return make(map[string]string)
 	}
 
@@ -319,7 +143,7 @@ func (p *CargoProvider) ImportItem(ctx context.Context, group string, item strin
 	}
 
 	return provider.ResourceState{
-		Kind:      "CargoPackages",
+		Kind:      resource.KindCargoPackages,
 		Group:     group,
 		Namespace: "default",
 		Items: []resource.ItemState{

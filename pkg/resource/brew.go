@@ -47,7 +47,6 @@ func (r BrewPackages) Validate() error {
 func (r BrewPackages) ToGroup() ResourceGroup {
 	items := make([]ResourceItem, 0)
 
-	// DEBUG: dump spec counts and names for troubleshooting
 	slog.Debug("BrewPackages.ToGroup",
 		"group", r.Metadata.Name,
 		"formulae", len(r.Spec.Formulae),
