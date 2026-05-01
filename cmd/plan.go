@@ -93,7 +93,8 @@ func runPlan() error {
 		fmt.Println(style.Header.Render("Plan Summary"))
 		fmt.Println()
 
-		DisplayPlanList(result.ProviderPlans, false)
+		// Only display changes (skipEmpty=true ensures ✓ in-sync not shown)
+			DisplayPlanList(result.ProviderPlans, true)
 
 		fmt.Println()
 		planParts := []string{
@@ -189,21 +190,7 @@ func DisplayPlanList(plans map[string]provider.GroupPlan, skipEmpty bool) {
 			})
 		}
 
-		// Only include InSync if not skipping empty (plan shows all resources)
-		if !skipEmpty {
-			for _, sync := range plan.InSync {
-				if groups[sync.Group] == nil {
-					groups[sync.Group] = make(map[string][]resource.ResourceItem)
-				}
-				// Convert []resource.ItemState to []resource.ResourceItem
-				for _, item := range sync.Items {
-					groups[sync.Group]["sync"] = append(groups[sync.Group]["sync"], resource.ResourceItem{
-						Name:    item.Name,
-						Version: item.Version,
-					})
-				}
-			}
-		}
+		// In plan output, do NOT include InSync items — only changes matter; see Terraform-like behavior.
 
 		// Build nested list for each group
 		var groupListArgs []any
