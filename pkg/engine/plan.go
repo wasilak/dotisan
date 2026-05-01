@@ -4,10 +4,10 @@ package engine
 import (
 	"context"
 	"fmt"
-	"strings"
 	"github.com/wasilak/dotisan/pkg/provider"
 	"github.com/wasilak/dotisan/pkg/resource"
 	"github.com/wasilak/dotisan/pkg/state"
+	"strings"
 )
 
 // PlanResult contains the result of a plan operation.

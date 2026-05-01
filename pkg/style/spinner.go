@@ -4,24 +4,24 @@
 // for CLI workflows using Bubble Tea/Bubbles.
 //
 // Usage:
-//   err := spinner.WithSpinner("Applying resources", func(spinner StopFunc) error {
-//     ... // long-running code
-//     return nil
-//   })
+//
+//	err := spinner.WithSpinner("Applying resources", func(spinner StopFunc) error {
+//	  ... // long-running code
+//	  return nil
+//	})
 //
 // For non-TTY, falls back to simple log.
-//
 package style
 
 import (
 	"os"
 	"time"
 
-	tea "charm.land/bubbletea/v2"
 	"charm.land/bubbles/v2/spinner"
+	tea "charm.land/bubbletea/v2"
 	lipgloss "charm.land/lipgloss/v2"
-	"golang.org/x/term"
 	"fmt"
+	"golang.org/x/term"
 )
 
 // StopFunc signals spinner to finish.
@@ -53,12 +53,12 @@ func WithSpinner(msg string, fn func(stop StopFunc) error) error {
 	p := tea.NewProgram(model)
 
 	// run long-running fn in background
-go func() {
-	resultErr = fn(func(stopMsg string) {
-		doneMsg = stopMsg
+	go func() {
+		resultErr = fn(func(stopMsg string) {
+			doneMsg = stopMsg
+			close(completed)
+		})
 		close(completed)
-	})
-	close(completed)
 	}()
 
 	// spinner loop

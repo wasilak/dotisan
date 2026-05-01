@@ -44,6 +44,9 @@ func init() {
 	// Add persistent flag for log level which overrides config
 	rootCmd.PersistentFlags().String("log-level", "", "Log level (debug, info, warn, error)")
 
+	// Register plan command (restored)
+	rootCmd.AddCommand(planCmd)
+
 	// PersistentPreRun: initialize global slog logger using precedence: flag > config > default(info)
 	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
 		// Determine log level from flag

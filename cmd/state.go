@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"charm.land/huh/v2"
+	"github.com/wasilak/dotisan/pkg/ui"
 	"golang.org/x/term"
 
 	"github.com/wasilak/dotisan/pkg/config"
@@ -22,8 +23,6 @@ import (
 	"github.com/wasilak/dotisan/pkg/state"
 	"github.com/wasilak/dotisan/pkg/style"
 
-	lipgloss "charm.land/lipgloss/v2"
-	"charm.land/lipgloss/v2/table"
 	"github.com/spf13/cobra"
 )
 
@@ -259,7 +258,7 @@ func runStateRemoveByID(id string) error {
 		item = parts[2]
 	}
 
-if !stateRemoveForce {
+	if !stateRemoveForce {
 		title := ""
 		if item == "" {
 			title = fmt.Sprintf("Remove %s/%s from state?", kind, group)
@@ -293,7 +292,6 @@ if !stateRemoveForce {
 			return nil
 		}
 	}
-
 
 	ctx := context.Background()
 	cfg, cfgErr := config.LoadConfigFromDefaultPath()
@@ -420,31 +418,24 @@ func displayStateJSON(currentState *state.State) error {
 }
 
 func displayStateTable(currentState *state.State) error {
-	headerStyle := lipgloss.NewStyle().Bold(true).Align(lipgloss.Center)
-	cellStyle := lipgloss.NewStyle().Padding(0, 1)
-
-	t := table.New()
-	t.Border(lipgloss.NormalBorder())
-	t.BorderStyle(lipgloss.NewStyle().Foreground(lipgloss.Color(style.Blue)))
-	t.StyleFunc(func(row, col int) lipgloss.Style {
-		if row == table.HeaderRow {
-			return headerStyle
-		}
-		return cellStyle
-	})
-	t.Headers("KIND", "GROUP", "NAME", "STATUS", "ID")
-
-	for _, res := range currentState.Resources {
-		for _, item := range res.Items {
-			// Full item ID format: Kind/Group/Item (used for state commands)
-			id := fmt.Sprintf("%s/%s/%s", res.Kind, res.Group, item.Name)
-			t.Row(res.Kind, res.Group, item.Name, item.Status, id)
-		}
-	}
-
 	fmt.Println(style.Header.Render("Managed Resources"))
 	fmt.Println()
-	fmt.Println(t.Render())
+
+	// Use the unified Bubbletea Table for state
+	width, _, err := term.GetSize(int(os.Stdout.Fd()))
+	if err != nil {
+		width = 120
+	}
+	table := ui.NewTable([]ui.Column{
+		{Title: "", Width: 2},
+		{Title: "Name", Flex: true},
+		{Title: "Type", Width: 16},
+		{Title: "Region", Width: 12},
+		{Title: "Info", Flex: true},
+	}, false)
+	rows := ui.StateToRows(currentState)
+	table.SetRows(rows)
+	fmt.Println(table.RenderPlain(width))
 
 	totalItems := 0
 	for _, res := range currentState.Resources {

@@ -13,6 +13,7 @@ import (
 	"github.com/wasilak/dotisan/pkg/engine"
 	"github.com/wasilak/dotisan/pkg/output"
 	"github.com/wasilak/dotisan/pkg/style"
+	"github.com/wasilak/dotisan/pkg/ui"
 
 	"github.com/spf13/cobra"
 )
@@ -89,7 +90,95 @@ func runApply() error {
 		fmt.Println(style.Header.Render("Plan Summary"))
 		fmt.Println()
 
-		DisplayPlanList(result.ProviderPlans, true)
+		// Display with Bubbletea Table (Apply Output):
+		type PlanItem struct {
+			Action      string
+			Name        string
+			Type        string
+			Region      string
+			Explanation string
+			Details     string
+		}
+
+		type Plan struct{ Items []PlanItem }
+
+		var flatItems []PlanItem
+		for _, groupPlan := range result.ProviderPlans {
+			for _, add := range groupPlan.Additions {
+				for _, item := range add.Items {
+					flatItems = append(flatItems, PlanItem{
+						Action:      "add",
+						Name:        item.Name,
+						Type:        add.Kind,
+						Region:      add.Group,
+						Details:     item.Version,
+						Explanation: "",
+					})
+				}
+			}
+			for _, rem := range groupPlan.Removals {
+				for _, item := range rem.Items {
+					flatItems = append(flatItems, PlanItem{
+						Action:      "remove",
+						Name:        item.Name,
+						Type:        rem.Kind,
+						Region:      rem.Group,
+						Details:     item.Version,
+						Explanation: "",
+					})
+				}
+			}
+			for _, cl := range groupPlan.Cleanup {
+				for _, item := range cl.Items {
+					flatItems = append(flatItems, PlanItem{
+						Action:      "cleanup",
+						Name:        item.Name,
+						Type:        cl.Kind,
+						Region:      cl.Group,
+						Details:     item.Version,
+						Explanation: "will be removed from state",
+					})
+				}
+			}
+			for _, mod := range groupPlan.Modifications {
+				for _, ch := range mod.Changes {
+					flatItems = append(flatItems, PlanItem{
+						Action:      "update",
+						Name:        ch.ItemName,
+						Type:        mod.Kind,
+						Region:      mod.Group,
+						Details:     ch.NewState.Version,
+						Explanation: "",
+					})
+				}
+			}
+			for _, drift := range groupPlan.Drifted {
+				flatItems = append(flatItems, PlanItem{
+					Action:      "drift",
+					Name:        drift.Item,
+					Type:        "",
+					Region:      "",
+					Details:     "",
+					Explanation: "actual vs expected drift",
+				})
+			}
+		}
+
+		humanPlan := struct{ Items []PlanItem }{Items: flatItems}
+		width, _, err := term.GetSize(int(os.Stdout.Fd()))
+		if err != nil {
+			width = 120
+		}
+		// Columns: state, id/name, type, info
+		table := ui.NewTable([]ui.Column{
+			{Title: "Status", Width: 6},
+			{Title: "ID", Flex: true},
+			{Title: "Type", Width: 20},
+			{Title: "Info", Flex: true},
+		}, true)
+		rows := ui.PlanToRows(&humanPlan)
+		table.SetRows(rows)
+		fmt.Println(table.RenderPlain(width))
 
 		fmt.Println()
 		fmt.Printf("Plan: %s to add, %s to destroy\n",

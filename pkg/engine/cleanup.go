@@ -4,7 +4,6 @@ package engine
 import (
 	"context"
 	"fmt"
-
 )
 
 // processCleanup removes cleanup items from state (state-only operation, always succeeds)
