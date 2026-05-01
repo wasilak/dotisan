@@ -1,11 +1,9 @@
 package cmd
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/wasilak/dotisan/pkg/diff"
 	"github.com/wasilak/dotisan/pkg/engine"
@@ -118,24 +116,23 @@ func runApply() error {
 			changeSummary = fmt.Sprintf("Apply %d changes?", totalChanges)
 		}
 
-		box := style.InfoBox.Render(
-			style.Bold.Render(changeSummary) + "\n\n" +
-				fmt.Sprintf("%s %s\n", style.Info.Render("[Y]"), style.Dim.Render("Yes, apply changes")) +
-				fmt.Sprintf("%s %s", style.Info.Render("[N]"), style.Dim.Render("No, cancel")),
-		)
+		// Use centralized confirmation box
+		box := style.ConfirmBox(changeSummary, "", "Yes, apply changes", "No, cancel")
 
 		fmt.Println()
 		fmt.Print(box)
-		fmt.Print("\n: ")
+		// Ensure the cursor is on the next line before printing the input prompt
+		fmt.Println()
+		fmt.Print(": ")
 
-		reader := bufio.NewReader(os.Stdin)
-		response, err := reader.ReadString('\n')
+		// Read a single keypress without echoing
+		key, err := style.ReadSingleKey()
 		if err != nil {
 			return fmt.Errorf("failed to read response: %w", err)
 		}
 
-		response = strings.TrimSpace(strings.ToLower(response))
-		if !strings.HasPrefix(response, "y") {
+		// Accept 'y' as yes, anything else as no
+		if key != "y" {
 			fmt.Println()
 			fmt.Println(style.Info.Render("→ Apply cancelled."))
 			return nil

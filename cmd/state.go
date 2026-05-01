@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -259,21 +258,21 @@ func runStateRemoveByID(id string) error {
 			promptText = fmt.Sprintf("Remove %s/%s/%s from state?\n", kind, group, item)
 		}
 
-		prompt := style.InfoBox.Render(
-			promptText +
-				style.Dim.Render("  (actual resource will not be modified)\n\n") +
-				fmt.Sprintf("%s %s, remove from state\n", style.Info.Render("[Y]"), style.Dim.Render("Yes")) +
-				fmt.Sprintf("%s %s, keep it\n", style.Info.Render("[N]"), style.Dim.Render("No")),
-		)
+		// Use centralized confirmation box helper
+		hint := "(actual resource will not be modified)"
+		prompt := style.ConfirmBox(promptText, hint, "Yes, remove from state", "No, keep it")
 		fmt.Print(prompt)
 
-		reader := bufio.NewReader(os.Stdin)
-		response, err := reader.ReadString('\n')
+		// Ensure the cursor is on the next line before reading keypress
+		fmt.Println()
+		// Read a single keypress without echoing
+		key, err := style.ReadSingleKey()
 		if err != nil {
 			return fmt.Errorf("failed to read response: %w", err)
 		}
-		response = strings.TrimSpace(strings.ToLower(response))
-		if response != "y" && response != "yes" {
+
+		// Accept 'y' or 'Y' as yes; anything else is no
+		if key != "y" {
 			fmt.Printf("%s Cancelled.\n", style.Warning.Render("→"))
 			return nil
 		}
