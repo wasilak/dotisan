@@ -7,6 +7,13 @@ import (
 	"unicode/utf8"
 )
 
+// Exported alignment helpers so callers don't need to import lipgloss.
+var (
+	Center = lipgloss.Center
+	Right  = lipgloss.Right
+	Left   = lipgloss.Left
+)
+
 // Column defines table columns
 // Flex allocates any leftover width proportionally
 // Fixed uses given Width (if >0)
@@ -106,9 +113,10 @@ func (t *Table) RenderPlain(width int) string {
 		b.WriteString("\n")
 	}
 
-	// Wrap entire result with TableStyle so it has a border and background
-	boxed := TableStyle.Render(b.String())
-	return boxed
+	// Return plain table text without adding an extra boxed surface. Keeping
+	// output simple avoids styling fights with surrounding components and
+	// makes the table easy to style externally.
+	return b.String()
 }
 func renderCell(text string, width int, align lipgloss.Position, s *lipgloss.Style) string {
 	// Truncate by rune count to avoid slicing in middle of UTF-8.

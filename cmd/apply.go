@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"charm.land/lipgloss/v2"
 	"golang.org/x/term"
 
 	"github.com/wasilak/dotisan/pkg/diff"
@@ -94,7 +95,7 @@ func runApply() error {
 		type PlanItem struct {
 			Action      string
 			Name        string
-			Type        string
+			Kind        string
 			Region      string
 			Explanation string
 			Details     string
@@ -109,7 +110,7 @@ func runApply() error {
 					flatItems = append(flatItems, PlanItem{
 						Action:      "add",
 						Name:        item.Name,
-						Type:        add.Kind,
+						Kind:        add.Kind,
 						Region:      add.Group,
 						Details:     item.Version,
 						Explanation: "",
@@ -121,7 +122,7 @@ func runApply() error {
 					flatItems = append(flatItems, PlanItem{
 						Action:      "remove",
 						Name:        item.Name,
-						Type:        rem.Kind,
+						Kind:        rem.Kind,
 						Region:      rem.Group,
 						Details:     item.Version,
 						Explanation: "",
@@ -133,7 +134,7 @@ func runApply() error {
 					flatItems = append(flatItems, PlanItem{
 						Action:      "cleanup",
 						Name:        item.Name,
-						Type:        cl.Kind,
+						Kind:        cl.Kind,
 						Region:      cl.Group,
 						Details:     item.Version,
 						Explanation: "will be removed from state",
@@ -145,7 +146,7 @@ func runApply() error {
 					flatItems = append(flatItems, PlanItem{
 						Action:      "update",
 						Name:        ch.ItemName,
-						Type:        mod.Kind,
+						Kind:        mod.Kind,
 						Region:      mod.Group,
 						Details:     ch.NewState.Version,
 						Explanation: "",
@@ -156,7 +157,7 @@ func runApply() error {
 				flatItems = append(flatItems, PlanItem{
 					Action:      "drift",
 					Name:        drift.Item,
-					Type:        "",
+					Kind:        "",
 					Region:      "",
 					Details:     "",
 					Explanation: "actual vs expected drift",
@@ -169,11 +170,13 @@ func runApply() error {
 		if err != nil {
 			width = 120
 		}
-		// Columns: state, id/name, type, info
+		// Columns: Status, ID, Kind, Group, Name, Info
 		table := ui.NewTable([]ui.Column{
-			{Title: "Status", Width: 6},
+			{Title: "Status", Width: 3, Align: lipgloss.Center},
 			{Title: "ID", Flex: true},
-			{Title: "Type", Width: 20},
+			{Title: "Kind", Width: 20},
+			{Title: "Group", Width: 20},
+			{Title: "Name", Width: 20},
 			{Title: "Info", Flex: true},
 		}, true)
 		rows := ui.PlanToRows(&humanPlan)

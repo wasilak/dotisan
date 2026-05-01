@@ -603,7 +603,7 @@ func Render(s string) string
 
 ---
 
-## Appendix A: Resource Type Icons
+## Appendix A: Resource Kind Icons
 
 ```go
 const (

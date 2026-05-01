@@ -1100,7 +1100,7 @@ After successful migration:
 
 ## Appendix A: File Mapping Table
 
-| Source (Chezmoi) | Destination (Dotisan) | Resource Type |
+| Source (Chezmoi) | Destination (Dotisan) | Resource Kind |
 |------------------|----------------------|---------------|
 | `.chezmoidata/packages.yaml` | `values.yaml` (merged) | Data |
 | `.chezmoidata/mcp_servers.yaml` | `values.yaml` (merged) | Data |

@@ -3,6 +3,7 @@ package ui
 
 import (
 	"reflect"
+	"strings"
 )
 
 // PlanToRows converts a plan (with Items field) to table rows. Skips InSync for human output.
@@ -11,10 +12,11 @@ func PlanToRows(plan interface{}) []Row {
 	rows := []Row{}
 
 	// Try direct assertion (for legacy code/tests)
+	// Prefer newer field name "Kind" but accept legacy "Type" in older call sites.
 	type planItem struct {
 		Action      string
 		Name        string
-		Type        string
+		Kind        string
 		Region      string
 		Explanation string
 		Details     string
@@ -27,11 +29,24 @@ func PlanToRows(plan interface{}) []Row {
 			if info == "" {
 				info = it.Details
 			}
+			// Build composite ID: Kind[/Region]/Name
+			parts := []string{}
+			if it.Kind != "" {
+				parts = append(parts, it.Kind)
+			}
+			if it.Region != "" {
+				parts = append(parts, it.Region)
+			}
+			if it.Name != "" {
+				parts = append(parts, it.Name)
+			}
+			id := strings.Join(parts, "/")
 			row := Row{
 				Cell{Text: icon, Style: iconStyle},
-				Cell{Text: it.Name},
-				Cell{Text: it.Type},
+				Cell{Text: id},
+				Cell{Text: it.Kind},
 				Cell{Text: it.Region},
+				Cell{Text: it.Name},
 				Cell{Text: info, Style: &InfoStyle},
 			}
 			rows = append(rows, row)
@@ -53,17 +68,33 @@ func PlanToRows(plan interface{}) []Row {
 		// Extract by field name
 		icon, iconStyle := StateIcon(fieldString(it, "Action"))
 		name := fieldString(it, "Name")
-		typ := fieldString(it, "Type")
+		// Use canonical field name "Kind"
+		typ := fieldString(it, "Kind")
 		_ = fieldString(it, "Region") // legacy field; ignore for current table layout
 		info := fieldString(it, "Explanation")
 		if info == "" {
 			info = fieldString(it, "Details")
 		}
-		// Emit columns: state, id/name, type, info
+		// Emit columns: state, composite id (type/region/name), kind, group, name, info
+		parts := []string{}
+		if typ != "" {
+			parts = append(parts, typ)
+		}
+		// region may be empty
+		region := fieldString(it, "Region")
+		if region != "" {
+			parts = append(parts, region)
+		}
+		if name != "" {
+			parts = append(parts, name)
+		}
+		id := strings.Join(parts, "/")
 		row := Row{
 			Cell{Text: icon, Style: iconStyle},
-			Cell{Text: name},
+			Cell{Text: id},
 			Cell{Text: typ},
+			Cell{Text: region},
+			Cell{Text: name},
 			Cell{Text: info, Style: &InfoStyle},
 		}
 		rows = append(rows, row)
@@ -91,28 +122,55 @@ func fieldString(v reflect.Value, field string) string {
 // StateToRows converts a state (with Items) to table rows (shows everything)
 func StateToRows(state interface{}) []Row {
 	rows := []Row{}
-	stateContainer, ok := state.(struct {
-		Items []struct {
-			Status string
-			Name   string
-			Type   string
-			Region string
-			Info   string
-		}
-	})
-	if !ok {
-		return rows // Can't convert
+	v := reflect.ValueOf(state)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
 	}
-	for _, it := range stateContainer.Items {
-		icon, iconStyle := StateIcon(it.Status)
-		row := Row{
-			Cell{Text: icon, Style: iconStyle},
-			Cell{Text: it.Name},
-			Cell{Text: it.Type},
-			Cell{Text: it.Region},
-			Cell{Text: it.Info, Style: &InfoStyle},
+	resourcesField := v.FieldByName("Resources")
+	if !resourcesField.IsValid() || resourcesField.Kind() != reflect.Slice {
+		return rows
+	}
+	for i := 0; i < resourcesField.Len(); i++ {
+		res := resourcesField.Index(i)
+		kind := fieldString(res, "Kind")
+		group := fieldString(res, "Group")
+		itemsField := res.FieldByName("Items")
+		if !itemsField.IsValid() || itemsField.Kind() != reflect.Slice {
+			continue
 		}
-		rows = append(rows, row)
+		for j := 0; j < itemsField.Len(); j++ {
+			it := itemsField.Index(j)
+			status := fieldString(it, "Status")
+			if status == "" {
+				status = "managed"
+			}
+			icon, iconStyle := StateIcon(status)
+			name := fieldString(it, "Name")
+			info := fieldString(it, "Version")
+
+			// Build composite ID: Kind/Group/Name
+			parts := []string{}
+			if kind != "" {
+				parts = append(parts, kind)
+			}
+			if group != "" {
+				parts = append(parts, group)
+			}
+			if name != "" {
+				parts = append(parts, name)
+			}
+			id := strings.Join(parts, "/")
+
+			row := Row{
+				Cell{Text: icon, Style: iconStyle},
+				Cell{Text: id},
+				Cell{Text: kind},
+				Cell{Text: group},
+				Cell{Text: name},
+				Cell{Text: info, Style: &InfoStyle},
+			}
+			rows = append(rows, row)
+		}
 	}
 	return rows
 }

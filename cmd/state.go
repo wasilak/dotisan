@@ -426,11 +426,13 @@ func displayStateTable(currentState *state.State) error {
 	if err != nil {
 		width = 120
 	}
+	// Columns: Status, ID, Kind, Group, Name, Info
 	table := ui.NewTable([]ui.Column{
-		{Title: "", Width: 2},
-		{Title: "Name", Flex: true},
-		{Title: "Type", Width: 16},
-		{Title: "Region", Width: 12},
+		{Title: "Status", Width: 3},
+		{Title: "ID", Flex: true},
+		{Title: "Kind", Width: 16},
+		{Title: "Group", Width: 12},
+		{Title: "Name", Width: 20},
 		{Title: "Info", Flex: true},
 	}, false)
 	rows := ui.StateToRows(currentState)

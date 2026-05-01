@@ -45,7 +45,7 @@ dotisan/
 - Provider structs: `<Resource>Provider` (e.g., `BrewProvider`, `FileProvider`)
 - Interface methods: `Name()`, `Available()`, `Reconcile()`, `Apply()`, `Import()`
 
-### Resource Types
+### Resource Kinds
 - Resource kinds: PascalCase (`BrewPackages`, `ManagedFile`, `ManagedDirectory`)
 - Spec types: `<Kind>Spec` (e.g., `BrewPackagesSpec`)
 
