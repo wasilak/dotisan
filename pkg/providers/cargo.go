@@ -33,15 +33,18 @@ func (p *CargoProvider) Available() (bool, string) {
 }
 
 // Reconcile compares the desired resource groups with the current system state.
-func (p *CargoProvider) Reconcile(
+func (p *CargoProvider) Reconcile(ctx context.Context,
 	desired []resource.ResourceGroup,
 	state []provider.ResourceState,
 ) provider.GroupPlan {
-	return provider.BaseReconcile(resource.KindCargoPackages, desired, state, p.getInstalledPackages(), nil)
+	return provider.BaseReconcile(resource.KindCargoPackages, desired, state, p.getInstalledPackages(ctx), nil)
 }
 
-func (p *CargoProvider) getInstalledPackages() map[string]string {
-	ctx := context.Background()
+func (p *CargoProvider) getInstalledPackages(ctx context.Context) map[string]string {
+	if ctx == nil {
+		slog.Warn("cargo getInstalledPackages called with nil context; returning empty set")
+		return make(map[string]string)
+	}
 	// List installed crates
 	stdout, _, err := cmdutil.RunSimple(ctx, "cargo", "install", "--list")
 	if err != nil {
@@ -137,7 +140,7 @@ func (p *CargoProvider) Import(ctx context.Context, group string) (provider.Reso
 // ImportItem imports a specific cargo crate
 func (p *CargoProvider) ImportItem(ctx context.Context, group string, item string) (provider.ResourceState, error) {
 	// Check if crate is installed
-	installed := p.getInstalledPackages()
+	installed := p.getInstalledPackages(ctx)
 	if _, isInstalled := installed[item]; !isInstalled {
 		return provider.ResourceState{}, fmt.Errorf("crate %s is not installed", item)
 	}

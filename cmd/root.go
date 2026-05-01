@@ -1,12 +1,15 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/fs"
 	"log/slog"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/wasilak/dotisan/pkg/config"
 
@@ -31,9 +34,22 @@ managed resources explicitly and handles removals as first-class operations.`,
 	},
 }
 
+// rootCtx is a process-global context that is cancelled on SIGINT/SIGTERM.
+// It is initialized in Execute and used by subcommands to derive cancellable
+// contexts for long-running operations.
+var rootCtx context.Context
+
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
+	// Create a root context that is cancelled on SIGINT/SIGTERM and set it on
+	// the root command so subcommands can derive from it.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	rootCtx = ctx
+	rootCmd.SetContext(rootCtx)
+	// No global app context anymore; callers should pass context explicitly.
+
 	err := rootCmd.Execute()
 	if err != nil {
 		os.Exit(1)

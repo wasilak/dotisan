@@ -35,21 +35,27 @@ var applyCmd = &cobra.Command{
 Without --confirm: shows plan and asks for interactive confirmation
 With --confirm: executes all changes immediately without prompting`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runApply()
+		return runApply(cmd.Context())
 	},
 }
 
-func runApply() error {
+func runApply(ctx context.Context) error {
+	if ctx == nil {
+		return fmt.Errorf("internal: context is nil")
+	}
 	// Create engine
 	eng, err := engine.NewEngine()
 	if err != nil {
 		return fmt.Errorf("failed to initialize: %w", err)
 	}
 
-	// Run plan first
-	ctx := context.Background()
-	result, err := eng.Plan(ctx, engine.PlanOptions{Targets: applyTargetFlags})
-	if err != nil {
+	// Run plan first (show spinner while planning)
+	var result *engine.PlanResult
+	var planErr error
+	if err = style.RunWithSpinner(ctx, "Planning...", func(ctx context.Context) error {
+		result, planErr = eng.Plan(ctx, engine.PlanOptions{Targets: applyTargetFlags})
+		return planErr
+	}); err != nil {
 		return fmt.Errorf("plan failed: %w", err)
 	}
 
@@ -212,14 +218,8 @@ func runApply() error {
 	// Execute apply based on mode
 	if confirmFlag {
 		// Non-interactive mode
-		err := style.WithSpinner("Applying changes", func(stop style.StopFunc) error {
-			applyErr := eng.Apply(ctx, result, opts)
-			if applyErr != nil {
-				stop("failed")
-			} else {
-				stop("done")
-			}
-			return applyErr
+		err := style.RunWithSpinner(ctx, "Applying changes", func(ctx context.Context) error {
+			return eng.Apply(ctx, result, opts)
 		})
 		if err != nil {
 			return fmt.Errorf("apply failed: %w", err)
@@ -266,14 +266,8 @@ func runApply() error {
 		}
 		opts.Confirm = true
 		// Apply
-		err := style.WithSpinner("Applying changes", func(stop style.StopFunc) error {
-			applyErr := eng.Apply(ctx, result, opts)
-			if applyErr != nil {
-				stop("failed")
-			} else {
-				stop("done")
-			}
-			return applyErr
+		err := style.RunWithSpinner(ctx, "Applying changes", func(ctx context.Context) error {
+			return eng.Apply(ctx, result, opts)
 		})
 		if err != nil {
 			return fmt.Errorf("apply failed: %w", err)

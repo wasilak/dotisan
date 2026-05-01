@@ -54,7 +54,7 @@ Examples:
 	RunE: func(cmd *cobra.Command, args []string) error {
 		id := args[0]
 		actualValue := args[1]
-		return runStateImport(id, actualValue)
+		return runStateImport(cmd.Context(), id, actualValue)
 	},
 }
 
@@ -87,7 +87,7 @@ func parseID(id string) (kind, group string, err error) {
 	return parts[0], parts[1], nil
 }
 
-func runStateImport(id, actualValue string) error {
+func runStateImport(ctx context.Context, id, actualValue string) error {
 	kind, group, err := parseID(id)
 	if err != nil {
 		return err
@@ -111,8 +111,9 @@ func runStateImport(id, actualValue string) error {
 		return fmt.Errorf("provider %s is not available: %s", kind, msg)
 	}
 
-	// Import the resource item
-	ctx := context.Background()
+	if ctx == nil {
+		return fmt.Errorf("internal: context is nil")
+	}
 	resourceState, err := p.ImportItem(ctx, group, actualValue)
 	if err != nil {
 		return fmt.Errorf("import failed: %w", err)
@@ -193,12 +194,14 @@ Examples:
   dotisan state mv BrewPackages/core-tools/ripgrep BrewPackages/homebrew-packages/`,
 	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runStateMv(args[0], args[1])
+		return runStateMv(cmd.Context(), args[0], args[1])
 	},
 }
 
-func runStateMv(source, destination string) error {
-	ctx := context.Background()
+func runStateMv(ctx context.Context, source, destination string) error {
+	if ctx == nil {
+		return fmt.Errorf("internal: context is nil")
+	}
 
 	// Create engine
 	eng, err := engine.NewEngine()
@@ -235,7 +238,7 @@ affecting the actual system.`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		id := args[0]
-		return runStateRemoveByID(id)
+		return runStateRemoveByID(cmd.Context(), id)
 	},
 }
 
@@ -245,7 +248,7 @@ func init() {
 	stateRemoveCmd.Flags().BoolVarP(&stateRemoveForce, "force", "f", false, "Skip confirmation prompt")
 }
 
-func runStateRemoveByID(id string) error {
+func runStateRemoveByID(ctx context.Context, id string) error {
 	parts := strings.Split(id, "/")
 	if len(parts) < 2 {
 		return fmt.Errorf("invalid ID format: %s (expected Kind/group or Kind/group/item)", id)
@@ -293,7 +296,6 @@ func runStateRemoveByID(id string) error {
 		}
 	}
 
-	ctx := context.Background()
 	cfg, cfgErr := config.LoadConfigFromDefaultPath()
 	if cfgErr != nil && !errors.Is(cfgErr, fs.ErrNotExist) {
 		slog.Warn("failed to load config", "err", cfgErr)
@@ -303,6 +305,9 @@ func runStateRemoveByID(id string) error {
 		statePath = os.ExpandEnv(cfg.State.Path)
 	}
 	backend := state.NewLocalBackend(statePath)
+	if ctx == nil {
+		return fmt.Errorf("internal: context is nil")
+	}
 	currentState, err := backend.Load(ctx)
 	if err != nil {
 		return fmt.Errorf("cannot load state: %w", err)
@@ -344,14 +349,16 @@ var stateListCmd = &cobra.Command{
 	Long: `list displays all resources currently tracked in the state file
 along with their status.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runStateList()
+		return runStateList(cmd.Context())
 	},
 }
 
 var stateOutputFlag string
 
-func runStateList() error {
-	ctx := context.Background()
+func runStateList(ctx context.Context) error {
+	if ctx == nil {
+		return fmt.Errorf("internal: context is nil")
+	}
 	cfg, cfgErr := config.LoadConfigFromDefaultPath()
 	if cfgErr != nil && !errors.Is(cfgErr, fs.ErrNotExist) {
 		slog.Warn("failed to load config", "err", cfgErr)
@@ -361,7 +368,13 @@ func runStateList() error {
 		statePath = os.ExpandEnv(cfg.State.Path)
 	}
 	backend := state.NewLocalBackend(statePath)
-	currentState, err := backend.Load(ctx)
+	var currentState *state.State
+	var loadErr error
+	// Use provided context so signal cancellation propagates to spinner and backend.Load
+	err := style.RunWithSpinner(ctx, "Loading state...", func(ctx context.Context) error {
+		currentState, loadErr = backend.Load(ctx)
+		return loadErr
+	})
 	if err != nil {
 		if os.IsNotExist(err) {
 			fmt.Println("No state file found. Run 'dotisan apply' first.")

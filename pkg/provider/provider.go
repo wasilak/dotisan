@@ -152,7 +152,10 @@ type Provider interface {
 	// Reconcile compares the desired resource groups with the current system state
 	// and returns a plan of changes needed to reach the desired state.
 	// The state parameter contains the previously saved state for these resources.
-	Reconcile(desired []resource.ResourceGroup, state []ResourceState) GroupPlan
+	// Reconcile now accepts a context so providers can perform cancellable
+	// operations (running external commands, I/O) and observe cancellation from
+	// the caller.
+	Reconcile(ctx context.Context, desired []resource.ResourceGroup, state []ResourceState) GroupPlan
 
 	// Apply executes the given plan, making actual changes to the system.
 	// Returns an error if any operation fails.

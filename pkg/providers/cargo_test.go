@@ -41,7 +41,7 @@ func TestCargoProvider_Reconcile_Empty(t *testing.T) {
 
 	desired := []resource.ResourceGroup{}
 	state := []provider.ResourceState{}
-	plan := p.Reconcile(desired, state)
+	plan := p.Reconcile(context.Background(), desired, state)
 
 	if len(plan.Additions) != 0 {
 		t.Errorf("len(Additions) = %d, want 0", len(plan.Additions))
@@ -62,7 +62,7 @@ func TestCargoProvider_Reconcile_Additions(t *testing.T) {
 		},
 	}
 	state := []provider.ResourceState{}
-	plan := p.Reconcile(desired, state)
+	plan := p.Reconcile(context.Background(), desired, state)
 
 	t.Logf("Plan Additions: %d, Modifications: %d, Removals: %d, InSync: %d",
 		len(plan.Additions), len(plan.Modifications), len(plan.Removals), len(plan.InSync))

@@ -22,7 +22,7 @@ func (m *mockProvider) Available() (bool, string) {
 	return m.available, m.message
 }
 
-func (m *mockProvider) Reconcile(desired []resource.ResourceGroup, state []ResourceState) GroupPlan {
+func (m *mockProvider) Reconcile(ctx context.Context, desired []resource.ResourceGroup, state []ResourceState) GroupPlan {
 	return GroupPlan{}
 }
 

@@ -154,8 +154,8 @@ func (e *Engine) Plan(ctx context.Context, opts PlanOptions) (*PlanResult, error
 		// Filter state for this provider
 		providerState := e.filterStateForProvider(currentState.Resources, providerName)
 
-		// Reconcile
-		plan := prov.Reconcile(providerGroups, providerState)
+		// Reconcile (pass ctx so providers can perform cancellable operations)
+		plan := prov.Reconcile(ctx, providerGroups, providerState)
 
 		// If targets provided, further filter plan items to item-level targets
 		if len(targetMatches) > 0 {

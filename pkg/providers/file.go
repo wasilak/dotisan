@@ -40,7 +40,7 @@ func (p *FileProvider) Available() (bool, string) {
 }
 
 // Reconcile compares the desired resource groups with the current system state.
-func (p *FileProvider) Reconcile(
+func (p *FileProvider) Reconcile(ctx context.Context,
 	desired []resource.ResourceGroup,
 	state []provider.ResourceState,
 ) provider.GroupPlan {

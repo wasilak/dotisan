@@ -34,11 +34,14 @@ Output formats:
   tree:            3-level tree view (Kind / Group / Items)
   json:            machine-readable JSON output`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runPlan()
+		return runPlan(cmd.Context())
 	},
 }
 
-func runPlan() error {
+func runPlan(ctx context.Context) error {
+	if ctx == nil {
+		return fmt.Errorf("internal: context is nil")
+	}
 	// Create engine
 	eng, err := engine.NewEngine()
 	if err != nil {
@@ -55,10 +58,13 @@ func runPlan() error {
 		}
 	}
 
-	// Run plan
-	ctx := context.Background()
-	result, err := eng.Plan(ctx, engine.PlanOptions{Targets: planTargetFlags})
-	if err != nil {
+	// Run plan (show spinner while planning)
+	var result *engine.PlanResult
+	var planErr error
+	if err = style.RunWithSpinner(ctx, "Planning...", func(ctx context.Context) error {
+		result, planErr = eng.Plan(ctx, engine.PlanOptions{Targets: planTargetFlags})
+		return planErr
+	}); err != nil {
 		return fmt.Errorf("plan failed: %w", err)
 	}
 

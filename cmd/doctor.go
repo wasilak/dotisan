@@ -28,11 +28,14 @@ config file validity, and template rendering. Reports issues and suggests fixes.
 
 Use --validate to also validate all resource YAML files for schema errors.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runDoctor()
+		return runDoctor(cmd.Context())
 	},
 }
 
-func runDoctor() error {
+func runDoctor(ctx context.Context) error {
+	if ctx == nil {
+		return fmt.Errorf("internal: context is nil")
+	}
 	hasErrors := false
 	issues := []string{}
 	warnings := []string{}
@@ -70,7 +73,6 @@ func runDoctor() error {
 		// Try to load state to check connectivity
 		statePath := dotisanDir + "/state.json"
 		backend := state.NewLocalBackend(statePath)
-		ctx := context.Background()
 		_, err := backend.Load(ctx)
 		if err != nil {
 			// Error is acceptable if state file doesn't exist yet
@@ -157,19 +159,21 @@ func runDoctor() error {
 
 	// 4. Validate Resources (if requested)
 	if doctorValidateFlag {
-		err := style.WithSpinner("Validating resource files", func(stop style.StopFunc) error {
-			validationErrors := validateResources(configDir, valuesPath)
+		// Use provided context so cancellation from signals propagates here
+		err := style.RunWithSpinner(ctx, "Validating resource files", func(ctx context.Context) error {
+			validationErrors, err := validateResources(ctx, configDir, valuesPath)
+			if err != nil {
+				return err
+			}
 			if len(validationErrors) > 0 {
 				hasErrors = true
 				for _, err := range validationErrors {
 					fmt.Printf("  %s %s\n", style.IconError, err)
 					issues = append(issues, err)
 				}
-				stop(fmt.Sprintf("%d errors", len(validationErrors)))
-			} else {
-				fmt.Printf("  %s All resource files valid\n", style.IconSuccess)
-				stop("all valid")
+				return nil
 			}
+			fmt.Printf("  %s All resource files valid\n", style.IconSuccess)
 			return nil
 		})
 		if err != nil {
@@ -206,7 +210,7 @@ func runDoctor() error {
 
 // validateResources scans all YAML files in the resources directory and validates them.
 // It returns a list of validation errors with file paths.
-func validateResources(configDir, valuesPath string) []string {
+func validateResources(ctx context.Context, configDir, valuesPath string) ([]string, error) {
 	var errors []string
 
 	// Load values for templating
@@ -220,14 +224,14 @@ func validateResources(configDir, valuesPath string) []string {
 		}
 	}
 	hostname, _ := os.Hostname()
-	ctx := &config.TemplateContext{
+	tctx := &config.TemplateContext{
 		Env:    envVars,
 		OS:     config.OSInfo{Hostname: hostname},
 		Values: values,
 	}
 
 	// Create loader
-	loader := resource.NewLoader(configDir, ctx)
+	loader := resource.NewLoader(configDir, tctx)
 	_ = loader // Not used directly, but we walk manually below
 
 	// Walk the directory manually to validate each file
@@ -235,7 +239,7 @@ func validateResources(configDir, valuesPath string) []string {
 	_, err := os.Stat(resourcesDir)
 	if os.IsNotExist(err) {
 		// No resources directory yet - that's OK
-		return errors
+		return errors, nil
 	}
 
 	err = filepath.Walk(resourcesDir, func(path string, info os.FileInfo, err error) error {
@@ -252,6 +256,13 @@ func validateResources(configDir, valuesPath string) []string {
 		ext := strings.ToLower(filepath.Ext(path))
 		if ext != ".yaml" && ext != ".yml" {
 			return nil
+		}
+
+		// Allow cancellation between files
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
 		}
 
 		// Read file
@@ -281,7 +292,7 @@ func validateResources(configDir, valuesPath string) []string {
 		errors = append(errors, fmt.Sprintf("failed to walk resources directory: %v", err))
 	}
 
-	return errors
+	return errors, nil
 }
 
 func init() {

@@ -40,7 +40,7 @@ func (p *GoProvider) Available() (bool, string) {
 }
 
 // Reconcile compares the desired resource groups with the current system state.
-func (p *GoProvider) Reconcile(
+func (p *GoProvider) Reconcile(ctx context.Context,
 	desired []resource.ResourceGroup,
 	state []provider.ResourceState,
 ) provider.GroupPlan {
@@ -50,20 +50,21 @@ func (p *GoProvider) Reconcile(
 		parts := strings.Split(name, "/")
 		return parts[len(parts)-1]
 	}
-	return provider.BaseReconcile(resource.KindGoPackages, desired, state, p.getInstalledPackages(), normalizeName)
+	// getInstalledPackages now accepts ctx
+	return provider.BaseReconcile(resource.KindGoPackages, desired, state, p.getInstalledPackages(ctx), normalizeName)
 }
 
 // getInstalledPackages retrieves currently installed Go packages
-func (p *GoProvider) getInstalledPackages() map[string]string {
+func (p *GoProvider) getInstalledPackages(ctx context.Context) map[string]string {
+	if ctx == nil {
+		slog.Warn("go getInstalledPackages called with nil context; returning empty set")
+		return make(map[string]string)
+	}
 	installed := make(map[string]string)
-
 	goBin := p.goBin
 	if goBin == "" {
 		goBin = "go"
 	}
-
-	// Get GOBIN or GOPATH/bin
-	ctx := context.Background()
 	stdout, _, err := cmdutil.RunSimple(ctx, goBin, "env", "GOBIN")
 	if err != nil {
 		slog.Warn("go getInstalledPackages: failed to get GOBIN", "err", err)

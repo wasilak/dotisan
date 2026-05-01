@@ -48,7 +48,7 @@ func TestBrewProvider_Reconcile_Empty(t *testing.T) {
 	// Reconcile with no desired resources
 	desired := []resource.ResourceGroup{}
 	state := []provider.ResourceState{}
-	plan := p.Reconcile(desired, state)
+	plan := p.Reconcile(context.Background(), desired, state)
 
 	if len(plan.Additions) != 0 {
 		t.Errorf("len(Additions) = %d, want 0", len(plan.Additions))
@@ -70,7 +70,7 @@ func TestBrewProvider_Reconcile_Additions(t *testing.T) {
 		},
 	}
 	state := []provider.ResourceState{}
-	plan := p.Reconcile(desired, state)
+	plan := p.Reconcile(context.Background(), desired, state)
 
 	// Note: result depends on whether brew is installed
 	// Just verify Reconcile runs without error

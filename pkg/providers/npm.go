@@ -33,15 +33,18 @@ func (p *NpmProvider) Available() (bool, string) {
 }
 
 // Reconcile compares the desired resource groups with the current system state.
-func (p *NpmProvider) Reconcile(
+func (p *NpmProvider) Reconcile(ctx context.Context,
 	desired []resource.ResourceGroup,
 	state []provider.ResourceState,
 ) provider.GroupPlan {
-	return provider.BaseReconcile(resource.KindNpmPackages, desired, state, p.getInstalledPackages(), nil)
+	return provider.BaseReconcile(resource.KindNpmPackages, desired, state, p.getInstalledPackages(ctx), nil)
 }
 
-func (p *NpmProvider) getInstalledPackages() map[string]string {
-	ctx := context.Background()
+func (p *NpmProvider) getInstalledPackages(ctx context.Context) map[string]string {
+	if ctx == nil {
+		slog.Warn("npm getInstalledPackages called with nil context; returning empty set")
+		return make(map[string]string)
+	}
 	stdout, _, err := cmdutil.RunSimple(ctx, "npm", "list", "-g", "--depth=0", "--json")
 	if err != nil {
 		slog.Warn("npm getInstalledPackages failed", "err", err)

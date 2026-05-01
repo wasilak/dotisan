@@ -43,7 +43,7 @@ func (p *BrewProvider) Available() (bool, string) {
 }
 
 // Reconcile compares the desired resource groups with the current system state.
-func (p *BrewProvider) Reconcile(
+func (p *BrewProvider) Reconcile(ctx context.Context,
 	desired []resource.ResourceGroup,
 	state []provider.ResourceState,
 ) provider.GroupPlan {
@@ -56,7 +56,7 @@ func (p *BrewProvider) Reconcile(
 	stateIndex := provider.IndexStateByGroup(state, resource.KindBrewPackages)
 
 	// Get currently installed packages
-	installed, err := p.getInstalledPackages()
+	installed, err := p.getInstalledPackages(ctx)
 	if err != nil {
 		// Can't get installed state, mark all as additions
 		for _, group := range desired {
@@ -422,8 +422,11 @@ func (p *BrewProvider) compareGroupItems(
 }
 
 // getInstalledPackages retrieves currently installed Homebrew packages
-func (p *BrewProvider) getInstalledPackages() (map[string]string, error) {
-	ctx := context.Background()
+func (p *BrewProvider) getInstalledPackages(ctx context.Context) (map[string]string, error) {
+	if ctx == nil {
+		slog.Warn("brew getInstalledPackages called with nil context; returning empty set")
+		return make(map[string]string), nil
+	}
 	packages := make(map[string]string)
 
 	// Get formulae
