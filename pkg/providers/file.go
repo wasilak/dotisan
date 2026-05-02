@@ -209,10 +209,11 @@ func (p *FileProvider) Reconcile(ctx context.Context,
 // resolveSource returns the full path for a source value. Absolute paths are
 // used as-is; relative paths are joined with the dotfiles root.
 func (p *FileProvider) resolveSource(source string) string {
-	if filepath.IsAbs(source) {
-		return source
-	}
-	return p.resolveSource(source)
+    if filepath.IsAbs(source) {
+        return source
+    }
+    // Relative source paths are resolved against the dotfiles root
+    return filepath.Join(p.dotfilesRoot, source)
 }
 
 // filterExistingItems returns items that don't exist at destination
@@ -245,39 +246,71 @@ func (p *FileProvider) compareGroupItems(
 		name := desiredItem.Name
 		dest, _ := desiredItem.Extra["destination"].(string)
 
-		stateItem, inState := stateItems[name]
-		destExists := false
-		if dest != "" {
-			_, err := os.Stat(dest)
-			destExists = !os.IsNotExist(err)
-		}
+        stateItem, inState := stateItems[name]
 
-		if !destExists {
-			additions = append(additions, desiredItem)
-		} else if inState {
-			// Check if content changed
-			currentHash := p.hashFile(dest)
-			if currentHash != stateItem.Checksum {
-				modifications = append(modifications, provider.ItemChange{
-					ItemName: name,
-					OldState: stateItem,
-					// Propagate Extra (destination/source) from desired item so
-					// later reconciliation can locate file paths for diffs.
-					NewState: resource.ItemState{
-						Name:     name,
-						Checksum: currentHash,
-						Status:   "present",
-						Extra:    desiredItem.Extra,
-					},
-					Diff: "content changed",
-				})
-			} else {
-				inSync = append(inSync, stateItem)
-			}
-		} else {
-			// File exists but not tracked
-			additions = append(additions, desiredItem)
-		}
+        destExists := false
+        if dest != "" {
+            _, err := os.Stat(dest)
+            destExists = !os.IsNotExist(err)
+        }
+
+        // Compute desired content checksum (from inline or source)
+        desiredHash := ""
+        if inline, ok := desiredItem.Extra["inline"].(string); ok && inline != "" {
+            h := sha256.Sum256([]byte(inline))
+            desiredHash = hex.EncodeToString(h[:])
+        } else if source, ok := desiredItem.Extra["source"].(string); ok && source != "" && source != "(inline)" {
+            sourcePath := p.resolveSource(source)
+            desiredHash = p.hashFile(sourcePath)
+        }
+
+        if !destExists {
+            additions = append(additions, desiredItem)
+            continue
+        }
+
+        // Destination exists; compute current hash
+        currentHash := p.hashFile(dest)
+
+        if inState {
+            if desiredHash != "" {
+                if desiredHash != currentHash {
+                    modifications = append(modifications, provider.ItemChange{
+                        ItemName: name,
+                        OldState: stateItem,
+                        NewState: resource.ItemState{
+                            Name:     name,
+                            Checksum: desiredHash,
+                            Status:   "present",
+                            Extra:    desiredItem.Extra,
+                        },
+                        Diff: "content changed",
+                    })
+                } else {
+                    inSync = append(inSync, stateItem)
+                }
+            } else {
+                // Fallback: compare current vs saved state
+                if currentHash != stateItem.Checksum {
+                    modifications = append(modifications, provider.ItemChange{
+                        ItemName: name,
+                        OldState: stateItem,
+                        NewState: resource.ItemState{
+                            Name:     name,
+                            Checksum: currentHash,
+                            Status:   "present",
+                            Extra:    desiredItem.Extra,
+                        },
+                        Diff: "content changed",
+                    })
+                } else {
+                    inSync = append(inSync, stateItem)
+                }
+            }
+        } else {
+            // File exists but not tracked
+            additions = append(additions, desiredItem)
+        }
 	}
 
 	desiredItems := make(map[string]bool)
