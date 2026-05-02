@@ -27,12 +27,30 @@ func NewLoader(dotfilesPath string, ctx *config.TemplateContext) *Loader {
 // LoadResources recursively scans the dotfiles directory for YAML resource files
 // and loads them into Resource objects.
 func (l *Loader) LoadResources() ([]Resource, error) {
-	var resources []Resource
+    var resources []Resource
 
-	err := filepath.Walk(l.dotfilesPath, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
+    // Prefer scanning the 'resources' subdirectory inside the dotfilesPath to
+    // avoid picking up generated YAMLs at the dotfiles root. For backwards
+    // compatibility (tests and users who put YAML directly in dotfilesPath),
+    // fall back to scanning dotfilesPath when a 'resources' subdir does not
+    // exist or when dotfilesPath itself is already a 'resources' folder.
+    resourcesRoot := filepath.Join(l.dotfilesPath, "resources")
+    walkPath := resourcesRoot
+
+    // If caller passed a path that is itself a 'resources' directory, walk it.
+    if filepath.Base(l.dotfilesPath) == "resources" {
+        walkPath = l.dotfilesPath
+    } else if _, err := os.Stat(resourcesRoot); os.IsNotExist(err) {
+        // No resources subdir — fall back to scanning the dotfilesPath root
+        walkPath = l.dotfilesPath
+    } else if err != nil {
+        return nil, fmt.Errorf("failed to access resources directory: %w", err)
+    }
+
+    err := filepath.Walk(walkPath, func(path string, info os.FileInfo, err error) error {
+        if err != nil {
+            return err
+        }
 
 		// Skip directories
 		if info.IsDir() {
@@ -68,11 +86,11 @@ func (l *Loader) LoadResources() ([]Resource, error) {
 		return nil
 	})
 
-	if err != nil {
-		return nil, fmt.Errorf("failed to walk dotfiles directory: %w", err)
-	}
+    if err != nil {
+        return nil, fmt.Errorf("failed to walk resources directory: %w", err)
+    }
 
-	return resources, nil
+    return resources, nil
 }
 
 // loadResourceFile loads a single YAML resource file.
