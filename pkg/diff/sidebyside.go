@@ -82,16 +82,21 @@ func (r *SideBySideRenderer) Render(oldContent, newContent, action string) strin
 	divLine := pterm.NewStyle(pterm.FgGray).Sprint(strings.Repeat("─", colWidth))
 	b.WriteString(divLine + divSep + divLine + "\n")
 
-	for _, row := range rows {
-		switch row.kind {
-		case rowHunkBreak:
-			msg := padRight(fmt.Sprintf("  ···  %d unchanged lines  ···", row.skipCount), colWidth)
-			styled := pterm.NewStyle(pterm.FgGray).Sprint(msg)
-			b.WriteString(styled + sep + styled + "\n")
-		default:
-			left := applyDiffStyle(padRight(row.leftText, colWidth), row.leftType)
-			right := applyDiffStyle(padRight(row.rightText, colWidth), row.rightType)
-			b.WriteString(left + sep + right + "\n")
+	if len(rows) == 0 {
+		note := padRight("  (no textual differences — state checksum may be stale)", colWidth*2+1)
+		b.WriteString(pterm.NewStyle(pterm.FgGray).Sprint(note) + "\n")
+	} else {
+		for _, row := range rows {
+			switch row.kind {
+			case rowHunkBreak:
+				msg := padRight(fmt.Sprintf("  ···  %d unchanged lines  ···", row.skipCount), colWidth)
+				styled := pterm.NewStyle(pterm.FgGray).Sprint(msg)
+				b.WriteString(styled + sep + styled + "\n")
+			default:
+				left := applyDiffStyle(padRight(row.leftText, colWidth), row.leftType)
+				right := applyDiffStyle(padRight(row.rightText, colWidth), row.rightType)
+				b.WriteString(left + sep + right + "\n")
+			}
 		}
 	}
 
