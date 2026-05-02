@@ -38,8 +38,17 @@ func (e *Engine) SetContext(lines int) {
 // GenerateUnifiedDiff creates a unified diff between two strings.
 // Returns the diff in standard unified diff format.
 func (e *Engine) GenerateUnifiedDiff(oldName, newName, oldContent, newContent string) (string, error) {
-	oldLines := strings.Split(oldContent, "\n")
-	newLines := strings.Split(newContent, "\n")
+	// Ensure inputs end with a single newline so unified diff context and
+	// hunk boundaries are rendered predictably. If content doesn't end
+	// with a newline, the diff library can produce inline \n sequences
+	// in the output which are harder to read.
+	oldContent = ensureTrailingNewline(oldContent)
+	newContent = ensureTrailingNewline(newContent)
+
+	// difflib.SplitLines keeps the trailing newline on each element,
+	// which is what WriteUnifiedDiff expects to produce proper line breaks.
+	oldLines := difflib.SplitLines(oldContent)
+	newLines := difflib.SplitLines(newContent)
 
 	diff := difflib.UnifiedDiff{
 		A:        oldLines,
@@ -55,6 +64,19 @@ func (e *Engine) GenerateUnifiedDiff(oldName, newName, oldContent, newContent st
 	}
 
 	return buf.String(), nil
+}
+
+// ensureTrailingNewline returns s with exactly one trailing newline.
+// If s is empty it returns an empty string (no newline) to avoid
+// creating artificial diffs for empty files.
+func ensureTrailingNewline(s string) string {
+	if s == "" {
+		return s
+	}
+	// Strip any carriage returns for normalization
+	s = strings.ReplaceAll(s, "\r\n", "\n")
+	s = strings.TrimRight(s, "\n")
+	return s + "\n"
 }
 
 // GenerateDiff creates a simple line-by-line diff from unified diff output.

@@ -13,7 +13,7 @@ import (
 )
 
 // DisplayPlanResult handles displaying a PlanResult in plain, tree, or JSON modes.
-func DisplayPlanResult(result *engine.PlanResult, outputFormat output.Format) error {
+func DisplayPlanResult(result *engine.PlanResult, outputFormat output.Format, showDiff bool) error {
 	switch outputFormat {
 	case output.FormatJSON:
 		output := map[string]interface{}{
@@ -157,6 +157,69 @@ func DisplayPlanResult(result *engine.PlanResult, outputFormat output.Format) er
 			fmt.Fprintf(os.Stderr, "resource table error: %v\n", err)
 		}
 		fmt.Println()
+
+		// --- Unified Diffs ---
+		if showDiff {
+			for providerName, plan := range result.ProviderPlans {
+				// MODIFICATIONS
+				for _, mod := range plan.Modifications {
+					for _, ch := range mod.Changes {
+						if ch.OldContent != "" || ch.NewContent != "" {
+							id := ch.ItemName
+							label := "[update] " + id
+							oldName, newName := "before", "after"
+							if mod.Kind != "" && mod.Group != "" {
+								oldName = mod.Kind + "/" + mod.Group + "/" + ch.ItemName
+								newName = oldName
+							}
+							// Normalize newlines before diff generation so the
+							// unified diff has consistent, readable hunks.
+							oldC := ensureTrailingNewline(ch.OldContent)
+							newC := ensureTrailingNewline(ch.NewContent)
+							diffText, _ := diff.NewEngine().GenerateUnifiedDiff(oldName, newName, oldC, newC)
+							// Truncate very large diffs to keep output readable in the plan
+							dt := truncateUnifiedDiff(diffText, 3)
+							colored, _ := diff.HighlightUnifiedDiff(dt, "github-dark")
+							fmt.Printf("\n\033[1m%s (%s)\033[0m\n%s\n", label, providerName, colored)
+						} else if ch.Diff != "" {
+							// For package diffs: just render Diff field
+							fmt.Printf("\n\033[1m[update] %s (%s)\033[0m\n%s\n", ch.ItemName, providerName, ch.Diff)
+						}
+					}
+				}
+				// ADDITIONS
+				for _, add := range plan.Additions {
+					for _, item := range add.Items {
+						if add.Contents != nil && add.Contents[item.Name] != "" {
+							id := item.Name
+							label := "[add] " + id
+							fileName := add.Kind + "/" + add.Group + "/" + id
+							content := ensureTrailingNewline(add.Contents[item.Name])
+							diffText, _ := diff.NewEngine().GenerateUnifiedDiff("/dev/null", fileName, "", content)
+							dt := truncateUnifiedDiff(diffText, 3)
+							colored, _ := diff.HighlightUnifiedDiff(dt, "github-dark")
+							fmt.Printf("\n\033[1m%s (%s)\033[0m\n%s\n", label, providerName, colored)
+						}
+					}
+				}
+				// REMOVALS
+				for _, rem := range plan.Removals {
+					for _, item := range rem.Items {
+						if rem.Contents != nil && rem.Contents[item.Name] != "" {
+							id := item.Name
+							label := "[remove] " + id
+							fileName := rem.Kind + "/" + rem.Group + "/" + id
+							content := ensureTrailingNewline(rem.Contents[item.Name])
+							diffText, _ := diff.NewEngine().GenerateUnifiedDiff(fileName, "/dev/null", content, "")
+							dt := truncateUnifiedDiff(diffText, 3)
+							colored, _ := diff.HighlightUnifiedDiff(dt, "github-dark")
+							fmt.Printf("\n\033[1m%s (%s)\033[0m\n%s\n", label, providerName, colored)
+						}
+					}
+				}
+			}
+		}
+
 		planParts := []string{
 			fmt.Sprintf("%s to add", style.Success.Render(fmt.Sprintf("%d", result.TotalAdditions))),
 			fmt.Sprintf("%s to change", style.Info.Render(fmt.Sprintf("%d", result.TotalModifications))),
@@ -169,4 +232,59 @@ func DisplayPlanResult(result *engine.PlanResult, outputFormat output.Format) er
 		fmt.Printf("Plan: %s\n", strings.Join(planParts, ", "))
 		return nil
 	}
+}
+
+// truncateUnifiedDiff keeps the diff headers and the first `maxHunks` hunks
+// to avoid flooding the plan output when files are large. It returns the
+// possibly-truncated diff string; if truncation occurs a footer note is
+// appended to explain the truncation.
+func truncateUnifiedDiff(diffText string, maxHunks int) string {
+	if maxHunks <= 0 {
+		return diffText
+	}
+	// Line-based safe hunk counting. Keep the file headers (starting with
+	// --- and +++) and the first `maxHunks` hunk sections which start with
+	// "@@". This preserves the @@ markers exactly as they appear.
+	lines := strings.Split(diffText, "\n")
+	if maxHunks <= 0 {
+		return diffText
+	}
+	var b strings.Builder
+	hunkCount := 0
+	inHunk := false
+	for i, ln := range lines {
+		// Always append header lines until we hit first @@
+		if strings.HasPrefix(ln, "@@ ") || strings.HasPrefix(ln, "@@-") || strings.HasPrefix(ln, "@@") {
+			// Starting a new hunk
+			hunkCount++
+			if hunkCount > maxHunks {
+				// We've included enough hunks; append truncation note and stop
+				b.WriteString("\n\n--- Diff truncated (showing first ")
+				b.WriteString(fmt.Sprintf("%d hunks). Use --diff to view full diff.", maxHunks))
+				break
+			}
+			inHunk = true
+		}
+		b.WriteString(ln)
+		// Don't re-add a trailing newline for the last line to avoid
+		// introducing extra blank lines.
+		if i < len(lines)-1 {
+			b.WriteString("\n")
+		}
+		if inHunk && strings.HasPrefix(ln, "@@") {
+			// continue capturing until next hunk or end
+		}
+	}
+	return b.String()
+}
+
+// ensureTrailingNewline mirrors the behavior in pkg/diff to guarantee
+// the UI uses normalized content when generating diffs.
+func ensureTrailingNewline(s string) string {
+	if s == "" {
+		return s
+	}
+	s = strings.ReplaceAll(s, "\r\n", "\n")
+	s = strings.TrimRight(s, "\n")
+	return s + "\n"
 }

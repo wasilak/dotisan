@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/wasilak/dotisan/pkg/planctx"
 	"github.com/wasilak/dotisan/pkg/provider"
 	"github.com/wasilak/dotisan/pkg/resource"
 )
@@ -45,7 +46,13 @@ func (p *FileProvider) Reconcile(ctx context.Context,
 	state []provider.ResourceState,
 ) provider.GroupPlan {
 	plan := provider.GroupPlan{}
-
+	// Diff flag via context
+	showDiff := false
+	if v := ctx.Value(planctx.PlanShowDiffKey); v != nil {
+		if b, ok := v.(bool); ok {
+			showDiff = b
+		}
+	}
 	// Index state by kind and group
 	stateIndex := make(map[string]map[string]provider.ResourceState)
 	for _, s := range state {
@@ -142,6 +149,60 @@ func (p *FileProvider) Reconcile(ctx context.Context,
 		}
 	}
 
+	if showDiff {
+		for ai := range plan.Additions {
+			for _, item := range plan.Additions[ai].Items {
+				dest, _ := item.Extra["destination"].(string)
+				source, _ := item.Extra["source"].(string)
+				var content []byte
+				if dest != "" {
+					content, _ = os.ReadFile(dest)
+				} else if source != "" && source != "(inline)" {
+					content, _ = os.ReadFile(filepath.Join(p.dotfilesRoot, source))
+				}
+				if len(content) > 0 {
+					if plan.Additions[ai].Contents == nil {
+						plan.Additions[ai].Contents = make(map[string]string)
+					}
+					plan.Additions[ai].Contents[item.Name] = string(content)
+				}
+			}
+		}
+		for ri := range plan.Removals {
+			for _, item := range plan.Removals[ri].Items {
+				dest, _ := item.Extra["destination"].(string)
+				if dest == "" {
+					dest = item.Name
+				}
+				content, _ := os.ReadFile(dest)
+				if len(content) > 0 {
+					if plan.Removals[ri].Contents == nil {
+						plan.Removals[ri].Contents = make(map[string]string)
+					}
+					plan.Removals[ri].Contents[item.Name] = string(content)
+				}
+			}
+		}
+		for mi := range plan.Modifications {
+			for ci, change := range plan.Modifications[mi].Changes {
+				dest, _ := change.NewState.Extra["destination"].(string)
+				source, _ := change.NewState.Extra["source"].(string)
+				// If inline content was provided in resource, it may be in Extra["inline"].
+				inline, _ := change.NewState.Extra["inline"].(string)
+				oldContent, newContent := []byte{}, []byte{}
+				if dest != "" {
+					oldContent, _ = os.ReadFile(dest)
+				}
+				if source != "" && source != "(inline)" {
+					newContent, _ = os.ReadFile(filepath.Join(p.dotfilesRoot, source))
+				} else if inline != "" {
+					newContent = []byte(inline)
+				}
+				plan.Modifications[mi].Changes[ci].OldContent = string(oldContent)
+				plan.Modifications[mi].Changes[ci].NewContent = string(newContent)
+			}
+		}
+	}
 	return plan
 }
 
@@ -191,10 +252,13 @@ func (p *FileProvider) compareGroupItems(
 				modifications = append(modifications, provider.ItemChange{
 					ItemName: name,
 					OldState: stateItem,
+					// Propagate Extra (destination/source) from desired item so
+					// later reconciliation can locate file paths for diffs.
 					NewState: resource.ItemState{
 						Name:     name,
 						Checksum: currentHash,
 						Status:   "present",
+						Extra:    desiredItem.Extra,
 					},
 					Diff: "content changed",
 				})

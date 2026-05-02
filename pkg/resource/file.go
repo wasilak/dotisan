@@ -113,14 +113,18 @@ func (r ManagedFile) ToGroup() ResourceGroup {
 		}
 
 		source := f.SourceFile
+		inline := ""
 		if source == "" {
+			// Mark source as inline and preserve inline content
 			source = "(inline)"
+			inline = f.Source
 		}
 
 		items = append(items, ResourceItem{
 			Name: itemName,
 			Extra: map[string]interface{}{
 				"source":      source,
+				"inline":      inline,
 				"template":    f.Template,
 				"mode":        f.Mode,
 				"destination": f.Destination,

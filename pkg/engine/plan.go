@@ -4,6 +4,7 @@ package engine
 import (
 	"context"
 	"fmt"
+	"github.com/wasilak/dotisan/pkg/planctx"
 	"github.com/wasilak/dotisan/pkg/provider"
 	"github.com/wasilak/dotisan/pkg/resource"
 	"github.com/wasilak/dotisan/pkg/state"
@@ -27,6 +28,8 @@ type PlanResult struct {
 
 // Plan loads state, parses resources, and generates plans from all providers.
 // It accepts PlanOptions which can be used to target specific resources.
+// Note: Plan show-diff context key lives in pkg/planctx to avoid
+// import cycles between engine and providers.
 func (e *Engine) Plan(ctx context.Context, opts PlanOptions) (*PlanResult, error) {
 	// Load current state
 	currentState, err := e.StateBackend.Load(ctx)
@@ -154,8 +157,16 @@ func (e *Engine) Plan(ctx context.Context, opts PlanOptions) (*PlanResult, error
 		// Filter state for this provider
 		providerState := e.filterStateForProvider(currentState.Resources, providerName)
 
+		// Inject ShowDiff flag into context
+		ctxWithDiff := ctx
+		if opts.ShowDiff {
+			ctxWithDiff = context.WithValue(ctx, planctx.PlanShowDiffKey, true)
+		} else {
+			ctxWithDiff = context.WithValue(ctx, planctx.PlanShowDiffKey, false)
+		}
+
 		// Reconcile (pass ctx so providers can perform cancellable operations)
-		plan := prov.Reconcile(ctx, providerGroups, providerState)
+		plan := prov.Reconcile(ctxWithDiff, providerGroups, providerState)
 
 		// If targets provided, further filter plan items to item-level targets
 		if len(targetMatches) > 0 {

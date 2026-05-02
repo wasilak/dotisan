@@ -17,6 +17,7 @@ type PlanApplyOptions struct {
 	Confirm      bool
 	OutputFormat string
 	Targets      []string
+	ShowDiff     bool // If true, print contextual (syntax) diffs in output
 }
 
 func runPlanApply(ctx context.Context, opts PlanApplyOptions) error {
@@ -32,7 +33,7 @@ func runPlanApply(ctx context.Context, opts PlanApplyOptions) error {
 	var result *engine.PlanResult
 	var planErr error
 	if err = style.RunWithSpinner(ctx, "Planning...", func(ctx context.Context) error {
-		result, planErr = eng.Plan(ctx, engine.PlanOptions{Targets: opts.Targets})
+		result, planErr = eng.Plan(ctx, engine.PlanOptions{Targets: opts.Targets, ShowDiff: opts.ShowDiff})
 		return planErr
 	}); err != nil {
 		return fmt.Errorf("plan failed: %w", err)
@@ -66,11 +67,11 @@ func runPlanApply(ctx context.Context, opts PlanApplyOptions) error {
 	}
 
 	// Plan display
-	if err := ui.DisplayPlanResult(result, output.Format(opts.OutputFormat)); err != nil {
+	if err := ui.DisplayPlanResult(result, output.Format(opts.OutputFormat), opts.ShowDiff); err != nil {
 		return fmt.Errorf("plan output failed: %w", err)
 	}
 
-if !opts.IsApply {
+	if !opts.IsApply {
 		return nil
 	}
 
@@ -119,7 +120,11 @@ if !opts.IsApply {
 		appOpts.OnItemStart = func(kind, group, item string) { progress.StartItem(kind, group, item) }
 		appOpts.OnItemComplete = func(kind, group, item string, err error) { progress.CompleteItem(err) }
 	}
-	defer func() { if progress != nil { progress.Stop() } }()
+	defer func() {
+		if progress != nil {
+			progress.Stop()
+		}
+	}()
 
 	if err := eng.Apply(ctx, result, appOpts); err != nil {
 		return fmt.Errorf("apply failed: %w", err)

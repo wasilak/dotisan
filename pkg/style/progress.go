@@ -14,7 +14,6 @@ type ApplyProgress struct {
 	item        string
 }
 
-
 // NewApplyProgress creates a progressbar + spinner for apply steps.
 func NewApplyProgress(total int) *ApplyProgress {
 	multi := &pterm.DefaultMultiPrinter

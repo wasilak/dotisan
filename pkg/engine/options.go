@@ -6,7 +6,8 @@ import (
 
 // PlanOptions contains options for the Plan operation.
 type PlanOptions struct {
-	Targets []string
+	Targets  []string
+	ShowDiff bool // Show file/package diffs (unified, syntax-highlighted)
 }
 
 // TargetMatch represents a parsed target expression.
@@ -55,7 +56,6 @@ func ParseTargets(targets []string) []TargetMatch {
 	}
 	return out
 }
-
 
 // Matches returns true if the given kind/group/item matches this target.
 func (t TargetMatch) Matches(kind, group, item string) bool {

@@ -4,6 +4,7 @@ go 1.26.2
 
 require (
 	github.com/Masterminds/sprig/v3 v3.3.0
+	github.com/alecthomas/chroma/v2 v2.24.1
 	github.com/go-playground/validator/v10 v10.30.2
 	github.com/martinohmann/go-difflib v1.1.0
 	github.com/minio/minio-go/v7 v7.0.100
@@ -22,6 +23,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.3.0 // indirect
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/containerd/console v1.0.5 // indirect
+	github.com/dlclark/regexp2 v1.12.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/fatih/color v1.7.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.13 // indirect

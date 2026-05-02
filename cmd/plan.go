@@ -2,12 +2,13 @@ package cmd
 
 import (
 	"context"
-	"github.com/wasilak/dotisan/pkg/output"
 	"github.com/spf13/cobra"
+	"github.com/wasilak/dotisan/pkg/output"
 )
 
 var planOutputFlag string
 var planTargetFlags []string
+var planDiffFlag bool
 
 // planCmd represents the plan command
 var planCmd = &cobra.Command{
@@ -29,6 +30,7 @@ Output formats:
 func init() {
 	planCmd.Flags().StringVarP(&planOutputFlag, "output", "o", "", "Output format (plain, tree, json)")
 	planCmd.Flags().StringArrayVarP(&planTargetFlags, "target", "t", nil, "Target specific resources (format: Kind, Kind/Group, or Kind/Group[Item])")
+	planCmd.Flags().BoolVarP(&planDiffFlag, "diff", "d", false, "Show contextual diffs for file/package changes (unified view)")
 }
 
 func runPlan(ctx context.Context) error {
@@ -38,6 +40,6 @@ func runPlan(ctx context.Context) error {
 		Confirm:      false,
 		OutputFormat: string(outputFormat),
 		Targets:      planTargetFlags,
+		ShowDiff:     planDiffFlag,
 	})
 }
-

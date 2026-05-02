@@ -46,9 +46,10 @@ type GroupPlan struct {
 
 // GroupAddition represents items to add within a resource group
 type GroupAddition struct {
-	Kind  string
-	Group string
-	Items []resource.ResourceItem
+	Kind     string
+	Group    string
+	Items    []resource.ResourceItem
+	Contents map[string]string // item name → content (for additions, when diff enabled)
 }
 
 // GroupModification represents changes within an existing group
@@ -60,17 +61,20 @@ type GroupModification struct {
 
 // ItemChange represents a change to a specific item
 type ItemChange struct {
-	ItemName string
-	OldState resource.ItemState
-	NewState resource.ItemState
-	Diff     string
+	ItemName   string
+	OldState   resource.ItemState
+	NewState   resource.ItemState
+	Diff       string
+	OldContent string // for files, pre-change content if diff enabled
+	NewContent string // for files, post-change (desired) content if diff enabled
 }
 
 // GroupRemoval represents items to remove from a group
 type GroupRemoval struct {
-	Kind  string
-	Group string
-	Items []resource.ResourceItem
+	Kind     string
+	Group    string
+	Items    []resource.ResourceItem
+	Contents map[string]string // item name → removed content (for removals, when diff enabled)
 }
 
 // GroupCleanup represents items that exist in state but not in config or system.
