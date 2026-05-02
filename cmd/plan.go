@@ -36,6 +36,10 @@ Output formats:
 	},
 }
 
+func init() {
+	planCmd.Flags().StringVarP(&planOutputFlag, "output", "o", "", "Output format (plain, tree, json)")
+}
+
 func runPlan(ctx context.Context) error {
 	if ctx == nil {
 		return fmt.Errorf("internal: context is nil")
