@@ -169,36 +169,96 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 		stateToSave = state.NewState()
 	}
 
-	for providerName, plan := range result.ProviderPlans {
-		if !providerSucceeded[providerName] {
-			continue
-		}
+    for providerName, plan := range result.ProviderPlans {
+        if !providerSucceeded[providerName] {
+            continue
+        }
 
-		for _, inSync := range plan.InSync {
-			stateToSave.SetResourceGroup(provider.ResourceState{
-				Kind:      inSync.Kind,
-				Group:     inSync.Group,
-				Items:     inSync.Items,
-				Namespace: "default",
-			})
-		}
-		for _, addition := range plan.Additions {
-			items := make([]resource.ItemState, 0, len(addition.Items))
-			for _, item := range addition.Items {
-				items = append(items, resource.ItemState{
-					Name:    item.Name,
-					Version: item.Version,
-					Status:  "present",
-				})
-			}
-			stateToSave.SetResourceGroup(provider.ResourceState{
-				Kind:      addition.Kind,
-				Group:     addition.Group,
-				Items:     items,
-				Namespace: "default",
-			})
-		}
-	}
+        prov, ok := e.Providers[providerName]
+        if !ok {
+            // Provider missing; skip
+            continue
+        }
+
+        // InSync: preserve exactly as provided
+        for _, inSync := range plan.InSync {
+            stateToSave.SetResourceGroup(provider.ResourceState{
+                Kind:      inSync.Kind,
+                Group:     inSync.Group,
+                Items:     inSync.Items,
+                Namespace: "default",
+            })
+        }
+
+        // Additions: add new items with computed checksum (if available)
+        for _, addition := range plan.Additions {
+            items := make([]resource.ItemState, 0, len(addition.Items))
+            for _, item := range addition.Items {
+                checksum := ""
+                if imported, ierr := prov.ImportItem(ctx, addition.Group, item.Name); ierr == nil && len(imported.Items) > 0 {
+                    checksum = imported.Items[0].Checksum
+                }
+                items = append(items, resource.ItemState{
+                    Name:     item.Name,
+                    Version:  item.Version,
+                    Status:   "present",
+                    Checksum: checksum,
+                })
+            }
+            stateToSave.SetResourceGroup(provider.ResourceState{
+                Kind:      addition.Kind,
+                Group:     addition.Group,
+                Items:     items,
+                Namespace: "default",
+            })
+        }
+
+        // Modifications: update checksum/status in-place if group/item exists, otherwise add it
+        for _, modification := range plan.Modifications {
+            for _, change := range modification.Changes {
+                checksum := ""
+                if imported, ierr := prov.ImportItem(ctx, modification.Group, change.ItemName); ierr == nil && len(imported.Items) > 0 {
+                    checksum = imported.Items[0].Checksum
+                }
+
+                updated := false
+                for gi := range stateToSave.Resources {
+                    r := &stateToSave.Resources[gi]
+                    if r.Kind != modification.Kind || r.Group != modification.Group {
+                        continue
+                    }
+                    for ii := range r.Items {
+                        if r.Items[ii].Name == change.ItemName {
+                            r.Items[ii].Checksum = checksum
+                            r.Items[ii].Status = "present"
+                            updated = true
+                            break
+                        }
+                    }
+                    // group matched & processed; break outer loop
+                    break
+                }
+
+                if !updated {
+                    stateToSave.SetResourceGroup(provider.ResourceState{
+                        Kind:      modification.Kind,
+                        Group:     modification.Group,
+                        Namespace: "default",
+                        Items: []resource.ItemState{
+                            {Name: change.ItemName, Version: "", Checksum: checksum, Status: "present"},
+                        },
+                    })
+                }
+            }
+        }
+
+        // Removals: remove items from state
+        for _, removal := range plan.Removals {
+            for _, it := range removal.Items {
+                stateToSave.RemoveResourceItem(removal.Kind, removal.Group, it.Name)
+            }
+        }
+    }
 
 	if err := e.StateBackend.Save(ctx, stateToSave); err != nil {
 		return fmt.Errorf("failed to save state: %w", err)
