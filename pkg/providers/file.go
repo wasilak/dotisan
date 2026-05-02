@@ -347,14 +347,13 @@ func (p *FileProvider) applyGroupAddition(ctx context.Context, addition provider
 		}
 
 		if source != "" && source != "(inline)" {
-			// Copy from source
 			sourcePath := p.resolveSource(source)
 			if err := p.copyFile(sourcePath, dest); err != nil {
 				return fmt.Errorf("failed to copy %s to %s: %w", sourcePath, dest, err)
 			}
 		} else {
-			// Create empty file or handle inline content
-			if err := os.WriteFile(dest, []byte{}, 0644); err != nil {
+			inline, _ := item.Extra["inline"].(string)
+			if err := os.WriteFile(dest, []byte(inline), 0644); err != nil {
 				return fmt.Errorf("failed to create %s: %w", dest, err)
 			}
 		}

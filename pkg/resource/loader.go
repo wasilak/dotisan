@@ -105,28 +105,75 @@ func (l *Loader) loadResourceFile(path string) (Resource, error) {
 		return nil, fmt.Errorf("validation failed: %w", err)
 	}
 
-	// Resolve relative sourceFile paths relative to the resource file's directory.
-	resolveSourceFilePaths(resource, filepath.Dir(path))
+	// Resolve relative sourceFile paths and render templates where requested.
+	if err := l.resolveSourceFiles(resource, filepath.Dir(path)); err != nil {
+		return nil, err
+	}
 
 	return resource, nil
 }
 
-// resolveSourceFilePaths makes relative sourceFile paths absolute by joining
-// them with the directory of the resource file that declared them.
-// Absolute paths and inline sources are left unchanged.
-func resolveSourceFilePaths(res Resource, dir string) {
+// resolveSourceFiles handles sourceFile fields on ManagedFile resources:
+//   - Relative paths are made absolute relative to the resource file's directory.
+//   - When template: true the file content is rendered through the template engine
+//     and stored as inline Source, so downstream code sees pre-rendered content.
+func (l *Loader) resolveSourceFiles(res Resource, dir string) error {
 	mf, ok := res.(*ManagedFile)
 	if !ok {
-		return
+		return nil
 	}
-	if mf.Spec.SourceFile != "" && !filepath.IsAbs(mf.Spec.SourceFile) {
+
+	rendered, err := l.renderSourceFile(mf.Spec.SourceFile, mf.Spec.Template, dir)
+	if err != nil {
+		return err
+	}
+	if rendered != nil {
+		mf.Spec.Source = *rendered
+		mf.Spec.SourceFile = ""
+	} else if mf.Spec.SourceFile != "" && !filepath.IsAbs(mf.Spec.SourceFile) {
 		mf.Spec.SourceFile = filepath.Join(dir, mf.Spec.SourceFile)
 	}
+
 	for i, f := range mf.Spec.Files {
-		if f.SourceFile != "" && !filepath.IsAbs(f.SourceFile) {
+		rendered, err := l.renderSourceFile(f.SourceFile, f.Template, dir)
+		if err != nil {
+			return err
+		}
+		if rendered != nil {
+			mf.Spec.Files[i].Source = *rendered
+			mf.Spec.Files[i].SourceFile = ""
+		} else if f.SourceFile != "" && !filepath.IsAbs(f.SourceFile) {
 			mf.Spec.Files[i].SourceFile = filepath.Join(dir, f.SourceFile)
 		}
 	}
+
+	return nil
+}
+
+// renderSourceFile reads and optionally renders a sourceFile as a template.
+// Returns nil when sourceFile is empty or template is false (no rendering needed).
+// Returns a pointer to the rendered string when template rendering was performed.
+func (l *Loader) renderSourceFile(sourceFile string, isTemplate bool, dir string) (*string, error) {
+	if sourceFile == "" || !isTemplate {
+		return nil, nil
+	}
+
+	path := sourceFile
+	if !filepath.IsAbs(path) {
+		path = filepath.Join(dir, path)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read source file %s: %w", path, err)
+	}
+
+	result, err := l.engine.RenderTemplate(path, string(data))
+	if err != nil {
+		return nil, fmt.Errorf("failed to render template %s: %w", path, err)
+	}
+
+	return &result, nil
 }
 
 // isYAMLFile checks if a path has a YAML extension.
