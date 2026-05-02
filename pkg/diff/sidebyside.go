@@ -3,6 +3,7 @@ package diff
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/mattn/go-runewidth"
@@ -10,8 +11,6 @@ import (
 )
 
 var ansiStripRe = regexp.MustCompile(`\x1b\[[0-9;]*m`)
-
-const defaultContextLines = 3
 
 type rowKind int
 
@@ -30,13 +29,11 @@ type sideBySideRow struct {
 }
 
 // SideBySideRenderer renders two file versions as a side-by-side terminal diff.
-type SideBySideRenderer struct {
-	contextLines int
-}
+type SideBySideRenderer struct{}
 
-// NewSideBySideRenderer creates a renderer with default 3 context lines.
+// NewSideBySideRenderer creates a new renderer.
 func NewSideBySideRenderer() *SideBySideRenderer {
-	return &SideBySideRenderer{contextLines: defaultContextLines}
+	return &SideBySideRenderer{}
 }
 
 // Render returns a formatted side-by-side diff string.
@@ -67,9 +64,8 @@ func (r *SideBySideRenderer) Render(oldContent, newContent, action string) strin
 			})
 		}
 	default: // "update"
-		changes := NewEngine().GenerateDiff(oldContent, newContent)
-		rows = pairChanges(changes)
-		rows = r.applyContextWindow(rows)
+		diffText, _ := NewEngine().GenerateUnifiedDiff("before", "after", oldContent, newContent)
+		rows = parseUnifiedDiff(diffText)
 	}
 
 	sep := pterm.NewStyle(pterm.FgGray).Sprint("│")
@@ -102,100 +98,101 @@ func (r *SideBySideRenderer) Render(oldContent, newContent, action string) strin
 	return b.String()
 }
 
-// pairChanges converts a flat []LineChange into side-by-side rows, pairing
-// consecutive delete blocks with following add blocks.
-func pairChanges(changes []LineChange) []sideBySideRow {
+// parseUnifiedDiff converts unified diff text into side-by-side rows.
+// Uses the properly LCS-computed diff from GenerateUnifiedDiff so that
+// unchanged lines are correctly identified even when changes appear early.
+// Gaps between hunks (omitted context) become rowHunkBreak rows.
+func parseUnifiedDiff(diffText string) []sideBySideRow {
 	var rows []sideBySideRow
-	i := 0
-	for i < len(changes) {
-		c := changes[i]
-		if c.Type == LineUnchanged {
-			rows = append(rows, sideBySideRow{
-				leftText: c.Content, rightText: c.Content,
-				leftType: LineUnchanged, rightType: LineUnchanged,
-			})
-			i++
-			continue
-		}
+	var deletes, adds []string
 
-		// Collect a contiguous run of deletions then additions.
-		var deletes, adds []string
-		for i < len(changes) && changes[i].Type == LineDeleted {
-			deletes = append(deletes, changes[i].Content)
-			i++
-		}
-		for i < len(changes) && changes[i].Type == LineAdded {
-			adds = append(adds, changes[i].Content)
-			i++
-		}
+	// Track old-file line position to compute gap sizes between hunks.
+	prevHunkOldEnd := 0
+	firstHunk := true
 
-		max := len(deletes)
-		if len(adds) > max {
-			max = len(adds)
+	flush := func() {
+		if len(deletes) == 0 && len(adds) == 0 {
+			return
 		}
-		for k := 0; k < max; k++ {
-			var lt, rt string
-			var lType, rType ChangeType
+		n := len(deletes)
+		if len(adds) > n {
+			n = len(adds)
+		}
+		for k := 0; k < n; k++ {
+			row := sideBySideRow{}
 			if k < len(deletes) {
-				lt = deletes[k]
-				lType = LineDeleted
+				row.leftText = deletes[k]
+				row.leftType = LineDeleted
 			} else {
-				lType = LineUnchanged
+				row.leftType = LineUnchanged
 			}
 			if k < len(adds) {
-				rt = adds[k]
-				rType = LineAdded
+				row.rightText = adds[k]
+				row.rightType = LineAdded
 			} else {
-				rType = LineUnchanged
+				row.rightType = LineUnchanged
 			}
+			rows = append(rows, row)
+		}
+		deletes = nil
+		adds = nil
+	}
+
+	for _, line := range strings.Split(diffText, "\n") {
+		if strings.HasPrefix(line, "---") || strings.HasPrefix(line, "+++") {
+			continue
+		}
+		if strings.HasPrefix(line, "@@") {
+			flush()
+			oldStart, oldCount := parseHunkHeader(line)
+			if !firstHunk {
+				skip := oldStart - prevHunkOldEnd
+				if skip > 0 {
+					rows = append(rows, sideBySideRow{kind: rowHunkBreak, skipCount: skip})
+				}
+			}
+			firstHunk = false
+			prevHunkOldEnd = oldStart + oldCount
+			continue
+		}
+		if len(line) == 0 || line[0] == '\\' { // "\ No newline at end of file"
+			continue
+		}
+		switch line[0] {
+		case '-':
+			deletes = append(deletes, line[1:])
+		case '+':
+			adds = append(adds, line[1:])
+		case ' ':
+			flush()
+			content := line[1:]
 			rows = append(rows, sideBySideRow{
-				leftText: lt, rightText: rt,
-				leftType: lType, rightType: rType,
+				leftText: content, rightText: content,
+				leftType: LineUnchanged, rightType: LineUnchanged,
 			})
 		}
 	}
+	flush()
 	return rows
 }
 
-// applyContextWindow collapses large unchanged regions into hunk-break rows.
-func (r *SideBySideRenderer) applyContextWindow(rows []sideBySideRow) []sideBySideRow {
-	if len(rows) == 0 {
-		return rows
+// parseHunkHeader extracts the old-file start line and count from a unified
+// diff hunk header of the form "@@ -start[,count] +start[,count] @@".
+func parseHunkHeader(line string) (oldStart, oldCount int) {
+	// Find the "-" section between "@@ " and the next space.
+	rest := strings.TrimPrefix(line, "@@ -")
+	if rest == line {
+		return 0, 0
 	}
-
-	// Mark rows within contextLines of a changed row.
-	near := make([]bool, len(rows))
-	for i, row := range rows {
-		if row.leftType != LineUnchanged || row.rightType != LineUnchanged {
-			lo := i - r.contextLines
-			if lo < 0 {
-				lo = 0
-			}
-			hi := i + r.contextLines
-			if hi >= len(rows) {
-				hi = len(rows) - 1
-			}
-			for j := lo; j <= hi; j++ {
-				near[j] = true
-			}
-		}
+	part := strings.SplitN(rest, " ", 2)[0] // e.g. "10,5" or "10"
+	nums := strings.SplitN(part, ",", 2)
+	oldStart, _ = strconv.Atoi(nums[0])
+	if len(nums) == 2 {
+		oldCount, _ = strconv.Atoi(nums[1])
+	} else {
+		oldCount = 1
 	}
-
-	var out []sideBySideRow
-	skipCount := 0
-	for i, row := range rows {
-		if near[i] {
-			if skipCount > 0 {
-				out = append(out, sideBySideRow{kind: rowHunkBreak, skipCount: skipCount})
-				skipCount = 0
-			}
-			out = append(out, row)
-		} else {
-			skipCount++
-		}
-	}
-	// Trailing skipped lines are silently dropped (unchanged tail after last change).
-	return out
+	return
 }
 
 // splitRawLines splits content on newlines, dropping a single trailing empty element.
