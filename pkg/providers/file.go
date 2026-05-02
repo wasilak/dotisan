@@ -437,29 +437,9 @@ func (p *FileProvider) copyFile(src, dst string) error {
 	return os.WriteFile(dst, data, 0644)
 }
 
-// Import discovers an existing file
+// Import is intentionally not implemented for FileProvider. ImportItem support
+// was removed: provider-level import/export functionality is deprecated and
+// handled outside providers.
 func (p *FileProvider) Import(ctx context.Context, group string) (provider.ResourceState, error) {
-	return provider.ResourceState{}, fmt.Errorf("use ImportItem to import specific files")
-}
-
-// ImportItem imports a specific file
-func (p *FileProvider) ImportItem(ctx context.Context, group string, item string) (provider.ResourceState, error) {
-	// Check if file exists
-	if _, err := os.Stat(item); os.IsNotExist(err) {
-		return provider.ResourceState{}, fmt.Errorf("file %s does not exist", item)
-	}
-
-	hash := p.hashFile(item)
-	return provider.ResourceState{
-		Kind:      "ManagedFile",
-		Group:     group,
-		Namespace: "default",
-		Items: []resource.ItemState{
-			{
-				Name:     item,
-				Checksum: hash,
-				Status:   "present",
-			},
-		},
-	}, nil
+    return provider.ResourceState{}, fmt.Errorf("import not supported for provider file")
 }

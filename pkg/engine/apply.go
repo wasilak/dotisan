@@ -1,14 +1,18 @@
 package engine
 
 import (
-	"context"
-	"fmt"
-	"strings"
+    "context"
+    "fmt"
+    "strings"
+    "crypto/sha256"
+    "encoding/hex"
+    "io"
+    "os"
 
-	"github.com/wasilak/dotisan/pkg/provider"
-	"github.com/wasilak/dotisan/pkg/resource"
-	"github.com/wasilak/dotisan/pkg/state"
-	"github.com/wasilak/dotisan/pkg/style"
+    "github.com/wasilak/dotisan/pkg/provider"
+    "github.com/wasilak/dotisan/pkg/resource"
+    "github.com/wasilak/dotisan/pkg/state"
+    "github.com/wasilak/dotisan/pkg/style"
 )
 
 // Apply executes the planned changes.
@@ -174,7 +178,7 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
             continue
         }
 
-        prov, ok := e.Providers[providerName]
+        _, ok := e.Providers[providerName]
         if !ok {
             // Provider missing; skip
             continue
@@ -195,8 +199,15 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
             items := make([]resource.ItemState, 0, len(addition.Items))
             for _, item := range addition.Items {
                 checksum := ""
-                if imported, ierr := prov.ImportItem(ctx, addition.Group, item.Name); ierr == nil && len(imported.Items) > 0 {
-                    checksum = imported.Items[0].Checksum
+                // Compute checksum when destination path is known.
+                // Reading files here is best-effort: if the destination is
+                // not present (e.g., apply will create it later) keep checksum
+                // empty.
+                if dest, ok := item.Extra["destination"].(string); ok && dest != "" {
+                    if data, err := readFileMaybe(dest); err == nil {
+                        h := sha256.Sum256(data)
+                        checksum = hex.EncodeToString(h[:])
+                    }
                 }
                 items = append(items, resource.ItemState{
                     Name:     item.Name,
@@ -217,8 +228,11 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
         for _, modification := range plan.Modifications {
             for _, change := range modification.Changes {
                 checksum := ""
-                if imported, ierr := prov.ImportItem(ctx, modification.Group, change.ItemName); ierr == nil && len(imported.Items) > 0 {
-                    checksum = imported.Items[0].Checksum
+                if dest, ok := change.NewState.Extra["destination"].(string); ok && dest != "" {
+                    if data, err := readFileMaybe(dest); err == nil {
+                        h := sha256.Sum256(data)
+                        checksum = hex.EncodeToString(h[:])
+                    }
                 }
 
                 updated := false
@@ -303,4 +317,15 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 
 	fmt.Printf("%s Apply complete! All resources synchronized\n", style.IconSuccess)
 	return nil
+}
+
+// readFileMaybe attempts to read a file and returns its bytes or an error.
+// It wraps os.Open + io.ReadAll to make testing and error handling clearer.
+func readFileMaybe(path string) ([]byte, error) {
+    f, err := os.Open(path)
+    if err != nil {
+        return nil, err
+    }
+    defer f.Close()
+    return io.ReadAll(f)
 }

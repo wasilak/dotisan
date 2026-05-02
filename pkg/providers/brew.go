@@ -569,46 +569,7 @@ func (p *BrewProvider) applyGroupModification(ctx context.Context, modification 
 	return nil
 }
 
-// Import discovers an existing package group
+// Import is not supported for BrewProvider (provider-level import removed).
 func (p *BrewProvider) Import(ctx context.Context, group string) (provider.ResourceState, error) {
-	// For BrewProvider, Import doesn't make sense for entire groups
-	// Use ImportItem instead
-	return provider.ResourceState{}, fmt.Errorf("use ImportItem to import specific packages")
-}
-
-// ImportItem imports a specific package
-func (p *BrewProvider) ImportItem(ctx context.Context, group string, item string) (provider.ResourceState, error) {
-	// Check if package is installed
-	stdout, _, err := cmdutil.RunSimple(ctx, "brew", "list", "--versions", item)
-	if err != nil {
-		// Try cask
-		stdout, _, err = cmdutil.RunSimple(ctx, "brew", "list", "--cask", "--versions", item)
-		if err != nil {
-			return provider.ResourceState{}, fmt.Errorf("package %s is not installed", item)
-		}
-	}
-
-	// Parse version
-	version := ""
-	lines := strings.Split(stdout, "\n")
-	for _, line := range lines {
-		parts := strings.Fields(line)
-		if len(parts) >= 2 {
-			version = parts[1]
-			break
-		}
-	}
-
-	return provider.ResourceState{
-		Kind:      resource.KindBrewPackages,
-		Group:     group,
-		Namespace: "default",
-		Items: []resource.ItemState{
-			{
-				Name:    item,
-				Version: version,
-				Status:  "present",
-			},
-		},
-	}, nil
+    return provider.ResourceState{}, fmt.Errorf("import not supported for provider homebrew")
 }

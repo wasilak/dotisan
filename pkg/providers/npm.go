@@ -129,32 +129,7 @@ func (p *NpmProvider) applyGroupModification(ctx context.Context, modification p
 	})
 }
 
-// Import is not supported for npm (use ImportItem)
+// Import not supported for npm provider
 func (p *NpmProvider) Import(ctx context.Context, group string) (provider.ResourceState, error) {
-	return provider.ResourceState{}, fmt.Errorf("use ImportItem to import specific npm packages")
-}
-
-// ImportItem imports a specific npm package
-func (p *NpmProvider) ImportItem(ctx context.Context, group string, item string) (provider.ResourceState, error) {
-	// Check if package is installed
-	stdout, _, err := cmdutil.RunSimple(ctx, "npm", "list", "-g", "--depth=0", item)
-	if err != nil {
-		return provider.ResourceState{}, fmt.Errorf("package %s is not installed globally", item)
-	}
-
-	if !strings.Contains(stdout, item) {
-		return provider.ResourceState{}, fmt.Errorf("package %s is not installed globally", item)
-	}
-
-	return provider.ResourceState{
-		Kind:      resource.KindNpmPackages,
-		Group:     group,
-		Namespace: "default",
-		Items: []resource.ItemState{
-			{
-				Name:   item,
-				Status: "present",
-			},
-		},
-	}, nil
+    return provider.ResourceState{}, fmt.Errorf("import not supported for provider npm")
 }

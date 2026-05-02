@@ -8,7 +8,9 @@
       "Bash(task-master next *)",
       "Bash(echo \"exit: $?\")",
       "Bash(go get *)",
-      "Bash(go mod *)"
+      "Bash(go mod *)",
+      "Bash(go run *)",
+      "Bash(gofmt -w pkg/diff/diff.go)"
     ]
   }
 }

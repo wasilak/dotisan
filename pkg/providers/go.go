@@ -201,51 +201,7 @@ func (p *GoProvider) applyGroupModification(ctx context.Context, modification pr
 	})
 }
 
-// Import is not supported for Go packages (use ImportItem)
+// Import not supported for GoProvider
 func (p *GoProvider) Import(ctx context.Context, group string) (provider.ResourceState, error) {
-	return provider.ResourceState{}, fmt.Errorf("use ImportItem to import specific Go packages")
-}
-
-// ImportItem imports a specific Go package
-func (p *GoProvider) ImportItem(ctx context.Context, group string, item string) (provider.ResourceState, error) {
-	goBin := p.goBin
-	if goBin == "" {
-		goBin = "go"
-	}
-
-	// Check if binary exists in GOBIN
-	stdout, _, err := cmdutil.RunSimple(ctx, goBin, "env", "GOBIN")
-	if err != nil {
-		return provider.ResourceState{}, err
-	}
-
-	goBinPath := strings.TrimSpace(stdout)
-	if goBinPath == "" {
-		stdout, _, err = cmdutil.RunSimple(ctx, goBin, "env", "GOPATH")
-		if err != nil {
-			return provider.ResourceState{}, err
-		}
-		goBinPath = filepath.Join(strings.TrimSpace(stdout), "bin")
-	}
-
-	// Extract binary name
-	parts := strings.Split(item, "/")
-	binaryName := parts[len(parts)-1]
-
-	binaryPath := filepath.Join(goBinPath, binaryName)
-	if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
-		return provider.ResourceState{}, fmt.Errorf("binary %s not found in GOBIN", binaryName)
-	}
-
-	return provider.ResourceState{
-		Kind:      resource.KindGoPackages,
-		Group:     group,
-		Namespace: "default",
-		Items: []resource.ItemState{
-			{
-				Name:   item,
-				Status: "present",
-			},
-		},
-	}, nil
+    return provider.ResourceState{}, fmt.Errorf("import not supported for provider go")
 }

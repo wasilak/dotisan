@@ -18,10 +18,7 @@ var applyCmd = &cobra.Command{
 	Use:          "apply",
 	SilenceUsage: true,
 	Short:        "Apply changes",
-	Long: `apply runs plan first, displays the output, then executes changes.
-
-Without --confirm: shows plan and asks for interactive confirmation
-With --confirm: executes all changes immediately without prompting`,
+    Long: "Run plan and optionally apply changes to synchronize resources with the desired state.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runApply(cmd.Context())
 	},

@@ -23,10 +23,7 @@ var doctorCmd = &cobra.Command{
 	Use:          "doctor",
 	SilenceUsage: true,
 	Short:        "Check system prerequisites",
-	Long: `doctor checks each provider's Available() status, state backend connectivity,
-config file validity, and template rendering. Reports issues and suggests fixes.
-
-Use --validate to also validate all resource YAML files for schema errors.`,
+    Long: "Check system prerequisites, provider availability, and configuration validity.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runDoctor(cmd.Context())
 	},

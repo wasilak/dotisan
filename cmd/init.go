@@ -17,23 +17,7 @@ var initCmd = &cobra.Command{
 	Use:          "init",
 	SilenceUsage: true,
 	Short:        "Initialize dotisan configuration",
-	Long: `init creates the default dotisan configuration directory and files:
-
-  ~/.config/dotisan/              - Configuration directory
-  ~/.config/dotisan/config.yaml   - Tool configuration
-  ~/.config/dotisan/values.yaml   - Personal variables
-  ~/.config/dotisan/resources/    - Resource definitions (YAML files)
-
-This is a one-time setup command for new users.
-
-Recommended structure:
-  ~/.config/dotisan/
-  ├── config.yaml
-  ├── values.yaml
-  └── resources/
-      ├── shell.yaml
-      ├── packages.yaml
-      └── git.yaml`,
+    Long: "Create default configuration and example files under ~/.config/dotisan/ (config.yaml, values.yaml, resources/)",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runInit()
 	},

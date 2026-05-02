@@ -15,13 +15,7 @@ var planCmd = &cobra.Command{
 	Use:          "plan",
 	SilenceUsage: true,
 	Short:        "Show what would change",
-	Long: `plan loads the current state, renders all config objects, and calls Reconcile()
-  on each provider to show a structured diff of what would change.
-
-Output formats:
-  plain (default): table view with symbols and colors
-  tree:            3-level tree view (Kind / Group / Items)
-  json:            machine-readable JSON output`,
+    Long: "Compute and display the changes that would be made without applying them. Supports plain, tree, and json outputs.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runPlan(cmd.Context())
 	},
