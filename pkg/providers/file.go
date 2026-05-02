@@ -152,13 +152,13 @@ func (p *FileProvider) Reconcile(ctx context.Context,
 	if showDiff {
 		for ai := range plan.Additions {
 			for _, item := range plan.Additions[ai].Items {
-				dest, _ := item.Extra["destination"].(string)
 				source, _ := item.Extra["source"].(string)
+				inline, _ := item.Extra["inline"].(string)
 				var content []byte
-				if dest != "" {
-					content, _ = os.ReadFile(dest)
-				} else if source != "" && source != "(inline)" {
+				if source != "" && source != "(inline)" {
 					content, _ = os.ReadFile(filepath.Join(p.dotfilesRoot, source))
+				} else if inline != "" {
+					content = []byte(inline)
 				}
 				if len(content) > 0 {
 					if plan.Additions[ai].Contents == nil {
