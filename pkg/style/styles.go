@@ -1,22 +1,25 @@
 package style
 
 import (
-	lipgloss "charm.land/lipgloss/v2"
+	"github.com/pterm/pterm"
 )
 
-// Color constants (ANSI 256-color palette)
+// Color constants
+// Use pterm named colors for primary accents (green, red, yellow, blue) for clarity.
+// Custom palette indices used for non-standard tints and row alternates, preserving prior visual fidelity.
 const (
-	Green  = "114"
-	Red    = "174"
-	Yellow = "222"
-	Orange = "216"
-	Gray   = "245"
-	Blue   = "110"
+	Green  = pterm.FgGreen  // Standard green
+	Red    = pterm.FgRed    // Standard red
+	Yellow = pterm.FgYellow // Standard yellow
+	Blue   = pterm.FgBlue   // Standard blue
+
+	Orange = pterm.Color(216) // Orange: not in named set, preserved index
+	Gray   = pterm.Color(245) // Gray: lighter gray for dim style
 
 	// Row colors (lighter for better visibility on dark bg)
-	RowGreen  = "77"
-	RowRed    = "204"
-	RowYellow = "180"
+	RowGreen  = pterm.Color(77)  // Custom tint, not a named pterm color
+	RowRed    = pterm.Color(204) // Custom tint
+	RowYellow = pterm.Color(180) // Custom tint
 )
 
 // Icon constants
@@ -30,16 +33,36 @@ const (
 	IconTrash  = "🗑️"
 )
 
+// Style wraps pterm.Style and provides a Render() method (formerly lipgloss-compatible, now pterm-native).
+// All callers of the style package use .Render() — this wrapper preserves that API.
+type Style struct {
+	style *pterm.Style
+}
+
+// NewStyle creates a new Style from pterm colors.
+// Accepts pterm.Color values like pterm.FgGreen, pterm.Bold, Green, etc.
+func NewStyle(colors ...pterm.Color) Style {
+	return Style{style: pterm.NewStyle(colors...)}
+}
+
+// Render formats text with the style (was compatible with lipgloss .Render(); now pterm-native).
+func (s Style) Render(text string) string {
+	if s.style == nil {
+		return text
+	}
+	return s.style.Sprint(text)
+}
+
 // Base text styles
 var (
-	Success    = lipgloss.NewStyle().Foreground(lipgloss.Color(Green))
-	Error      = lipgloss.NewStyle().Foreground(lipgloss.Color(Red))
-	Warning    = lipgloss.NewStyle().Foreground(lipgloss.Color(Orange))
-	Info       = lipgloss.NewStyle().Foreground(lipgloss.Color(Yellow))
-	Dim        = lipgloss.NewStyle().Foreground(lipgloss.Color(Gray))
-	RowSuccess = lipgloss.NewStyle().Foreground(lipgloss.Color(RowGreen))
-	RowError   = lipgloss.NewStyle().Foreground(lipgloss.Color(RowRed))
-	RowWarning = lipgloss.NewStyle().Foreground(lipgloss.Color(RowYellow))
+	Success    = NewStyle(Green)
+	Error      = NewStyle(Red)
+	Warning    = NewStyle(Orange)
+	Info       = NewStyle(Yellow)
+	Dim        = NewStyle(Gray)
+	RowSuccess = NewStyle(RowGreen)
+	RowError   = NewStyle(RowRed)
+	RowWarning = NewStyle(RowYellow)
 )
 
 // Prerendered icons
@@ -62,87 +85,52 @@ var (
 
 // Header styles
 var (
-	Header = lipgloss.NewStyle().Bold(true)
-	Bold   = lipgloss.NewStyle().Bold(true)
+	Header = NewStyle(pterm.Bold)
+	Bold   = NewStyle(pterm.Bold)
 )
 
-// Box styles with borders
+// Box styles — simplified to text styles (pterm replaces prior lipgloss border/box API)
 var (
-	SuccessBox = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color(Green)).
-			Padding(1, 2)
-
-	ErrorBox = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color(Red)).
-			Padding(1, 2)
-
-	WarningBox = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color(Orange)).
-			Padding(1, 2)
-
-	InfoBox = lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color(Yellow)).
-		Padding(1, 2)
+	SuccessBox = NewStyle(pterm.FgGreen)
+	ErrorBox   = NewStyle(pterm.FgRed)
+	WarningBox = NewStyle(pterm.FgYellow)
+	InfoBox    = NewStyle(pterm.FgYellow)
 )
 
 // Table styles with width constraints
 var (
-	TableHeader = lipgloss.NewStyle().
-			Bold(true).
-			Underline(true)
-
-	TableRow  = lipgloss.NewStyle()
-	TableCell = lipgloss.NewStyle()
-
-	TableBorder = lipgloss.RoundedBorder()
-	TableStyles = tableStyles{
-		Header: lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color(Blue)).
-			Border(TableBorder).
-			BorderTop(false).
-			BorderBottom(false).
-			Padding(0, 1),
-		Row: lipgloss.NewStyle().
-			Border(TableBorder).
-			BorderTop(false).
-			BorderBottom(false).
-			Padding(0, 1),
-		RowAlt: lipgloss.NewStyle().
-			Border(TableBorder).
-			BorderTop(false).
-			BorderBottom(false).
-			Padding(0, 1),
-		Cell: lipgloss.NewStyle().
-			Padding(0, 1).
-			Width(30),
-	}
+	TableHeader = NewStyle(pterm.Bold) // pterm has no underline support
+	TableRow    = NewStyle()
+	TableCell   = NewStyle()
 )
+
+// TableBorder is kept for source compatibility but is a no-op (pterm has no border styles)
+var TableBorder = ""
+
+// tableStyles defines the styling for table components.
+// Uses Style type so callers can use .Render().
+type tableStyles struct {
+	Header Style
+	Row    Style
+	RowAlt Style
+	Cell   Style
+}
+
+// TableStyles is the default table styling
+var TableStyles = tableStyles{
+	Header: NewStyle(pterm.Bold, Blue),
+	Row:    NewStyle(),
+	RowAlt: NewStyle(),
+	Cell:   NewStyle(),
+}
 
 // Plan-specific styles with icons
 var (
-	PlanIconSuccess = lipgloss.NewStyle().Foreground(lipgloss.Color(Green))
-	PlanIconError   = lipgloss.NewStyle().Foreground(lipgloss.Color(Red))
-	PlanIconWarn    = lipgloss.NewStyle().Foreground(lipgloss.Color(Orange))
-	PlanIconInfo    = lipgloss.NewStyle().Foreground(lipgloss.Color(Yellow))
+	PlanIconSuccess = NewStyle(Green)
+	PlanIconError   = NewStyle(Red)
+	PlanIconWarn    = NewStyle(Orange)
+	PlanIconInfo    = NewStyle(Yellow)
 
-	PlanSection = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color(Blue)).
-			MarginBottom(1)
-
-	PlanSummary = lipgloss.NewStyle().Bold(true)
+	PlanSection = NewStyle(pterm.Bold, Blue)
+	PlanSummary = NewStyle(pterm.Bold)
 )
-
-type tableStyles struct {
-	Header lipgloss.Style
-	Row    lipgloss.Style
-	RowAlt lipgloss.Style
-	Cell   lipgloss.Style
-}
-
-// (legacy ConfirmBox removed - use huh/v2 for all confirmation prompts)

@@ -3,7 +3,12 @@
     "allow": [
       "Bash(task-master list *)",
       "Bash(task-master show *)",
-      "Bash(task-master set-status *)"
+      "Bash(task-master set-status *)",
+      "mcp__fetch__fetch",
+      "Bash(task-master next *)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(go get *)",
+      "Bash(go mod *)"
     ]
   }
 }

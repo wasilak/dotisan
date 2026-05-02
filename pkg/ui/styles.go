@@ -1,7 +1,7 @@
-// Package ui provides shared UI components and styling for dotisan CLI (Bubbletea, Lipgloss charm theme)
+// Package ui provides shared UI components and styling for dotisan CLI (pterm-based)
 package ui
 
-import "charm.land/lipgloss/v2"
+import "github.com/pterm/pterm"
 
 // Emoji/state icon definitions. Keep simple ASCII for state markers to match
 // historical UI (+, -, ~). Keep info/warn emoji.
@@ -15,74 +15,48 @@ var (
 	EmojiInfo   = "🛈"
 )
 
-// Charm dark theme colors (hex)
+// pterm color definitions (formerly matched against Lipgloss palette)
 var (
-	ColorBg      = lipgloss.Color("#0b1220")
-	ColorSurface = lipgloss.Color("#0f1724")
-	ColorPrimary = lipgloss.Color("#7aa2f7") // sky blue
-	ColorText    = lipgloss.Color("#e6eef6")
-	ColorMuted   = lipgloss.Color("#94a3b8")
-	ColorBorder  = lipgloss.Color("#1f2a44")
-	ColorAdd     = lipgloss.Color("#7ee787") // mint green
-	ColorRemove  = lipgloss.Color("#ff6b6b") // coral
-	ColorUpdate  = lipgloss.Color("#ffd27f") // amber
-	ColorDrift   = lipgloss.Color("#c77dff") // violet
-	ColorInfo    = lipgloss.Color("#66b0ff")
-	ColorWarning = lipgloss.Color("#ffb86b")
+	// No direct background usage; pterm table/tree use their own defaults.
+	ColorBg      = pterm.BgBlack
+	ColorSurface = pterm.BgDarkGray  // fallback for subtle backgrounds
+	ColorPrimary = pterm.FgLightBlue // sky blue
+	ColorText    = pterm.FgWhite
+	ColorMuted   = pterm.FgGray
+	ColorBorder  = pterm.FgDarkGray
+	ColorAdd     = pterm.FgLightGreen   // mint green
+	ColorRemove  = pterm.FgLightRed     // coral
+	ColorUpdate  = pterm.FgLightYellow  // amber
+	ColorDrift   = pterm.FgLightMagenta // violet
+	ColorInfo    = pterm.FgLightCyan
+	ColorWarning = pterm.FgLightYellow
 )
 
-// Lipgloss styles for table rendering and icons
+// pterm styles for table rendering and icons
 var (
-	// Header and row styles share the surface background so the table blends
-	// with the rest of the app. Avoid extra padding which caused column
-	// misalignment with the Table rendering logic.
-	// Use the global app background so the table blends into the page.
-	// HeaderStyle: only set foreground (no background) so the header text sits
-	// directly on the app background. Removing background avoids boxed cells.
-	HeaderStyle = lipgloss.NewStyle().
-			Foreground(ColorPrimary).
-			Bold(true)
+	// Header: Bold, primary text color
+	HeaderStyle = &pterm.Style{ColorPrimary, pterm.Bold}
 
-	// RowStyle: only foreground, no background. This gives transparent rows
-	// that match the application background and avoids the visible box art.
-	RowStyle = lipgloss.NewStyle().
-			Foreground(ColorText)
+	// Row: Normal, white/gray text
+	RowStyle = &pterm.Style{ColorText}
 
-	// No zebra backgrounds; keep styles empty so rows render transparently.
-	ZebraEven = lipgloss.NewStyle()
-	ZebraOdd  = lipgloss.NewStyle()
+	// Zebra/odd-even: empty for now (pterm supports row-level color if needed)
+	ZebraEven = &pterm.Style{}
+	ZebraOdd  = &pterm.Style{}
 
-	StateAdd    = lipgloss.NewStyle().Foreground(ColorAdd).Bold(true)
-	StateRemove = lipgloss.NewStyle().Foreground(ColorRemove).Bold(true)
-	StateUpdate = lipgloss.NewStyle().Foreground(ColorUpdate).Bold(true)
-	StateDrift  = lipgloss.NewStyle().Foreground(ColorDrift).Bold(true)
-	// Use green for synced/present resources so they appear as success.
-	StateSync = lipgloss.NewStyle().Foreground(ColorAdd).Bold(true)
+	StateAdd    = &pterm.Style{ColorAdd, pterm.Bold}
+	StateRemove = &pterm.Style{ColorRemove, pterm.Bold}
+	StateUpdate = &pterm.Style{ColorUpdate, pterm.Bold}
+	StateDrift  = &pterm.Style{ColorDrift, pterm.Bold}
+	StateSync   = &pterm.Style{ColorAdd, pterm.Bold}
 
-	InfoStyle = lipgloss.NewStyle().Foreground(ColorMuted)
-	WarnStyle = lipgloss.NewStyle().Foreground(ColorWarning)
+	InfoStyle = &pterm.Style{ColorMuted}
+	WarnStyle = &pterm.Style{ColorWarning}
 )
 
-// TableStyle is the outer box style used to render the entire table. It
-// provides a uniform surface background and border like the Bubbletea example
-// while individual rows remain transparent (no per-row background).
-var TableStyle = lipgloss.NewStyle().
-	Background(ColorSurface).
-	Border(lipgloss.NormalBorder()).
-	BorderForeground(ColorBorder).
-	Padding(0, 1)
+// TableStyle removed; use pterm.DefaultTable for table borders, padding, backgrounds, etc. (all pterm-native now)
+// See /pkg/ui/table.go for structural changes to table rendering.
 
-// 256-color fallback mapping (for basic terminals)
-// This is available but not yet used; could be picked up dynamically if necessary.
-var (
-	FgFallback = map[string]lipgloss.Style{
-		"add":     lipgloss.NewStyle().Foreground(lipgloss.Color("42")),  // 7ee787 mint green ~ term green
-		"remove":  lipgloss.NewStyle().Foreground(lipgloss.Color("203")), // ff6b6b coral ~ term red
-		"update":  lipgloss.NewStyle().Foreground(lipgloss.Color("222")), // ffd27f amber ~ yellow
-		"drift":   lipgloss.NewStyle().Foreground(lipgloss.Color("135")), // c77dff violet ~ magenta
-		"sync":    lipgloss.NewStyle().Foreground(lipgloss.Color("244")), // muted grey
-		"primary": lipgloss.NewStyle().Foreground(lipgloss.Color("75")),  // sky blue
-		"info":    lipgloss.NewStyle().Foreground(lipgloss.Color("33")),  // info blue
-		"warning": lipgloss.NewStyle().Foreground(lipgloss.Color("215")), // warning amber
-	}
-)
+// Fallback: pterm handles 256-color/truecolor automatically, so the old mapping is now obsolete.
+// If a specific fallback is needed for ultra-basic terminals, define here:
+// var FgFallback = map[string]*pterm.Style{...}

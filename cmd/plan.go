@@ -7,13 +7,11 @@ import (
 	"os"
 	"strings"
 
-	_ "charm.land/lipgloss/v2"
 	"github.com/wasilak/dotisan/pkg/diff"
 	"github.com/wasilak/dotisan/pkg/engine"
 	"github.com/wasilak/dotisan/pkg/output"
 	"github.com/wasilak/dotisan/pkg/style"
 	"github.com/wasilak/dotisan/pkg/ui"
-	"golang.org/x/term"
 
 	"github.com/spf13/cobra"
 )
@@ -48,7 +46,7 @@ func runPlan(ctx context.Context) error {
 		return fmt.Errorf("failed to initialize: %w", err)
 	}
 
-	// Determine output format
+	// Determine output format (render table as pterm resource table)
 	outputFormat := output.Format(planOutputFlag)
 	if outputFormat == "" {
 		if eng.Config.UI.Output != "" {
@@ -84,7 +82,9 @@ func runPlan(ctx context.Context) error {
 		for providerName, plan := range result.ProviderPlans {
 			if len(plan.Additions) > 0 || len(plan.Removals) > 0 || len(plan.Modifications) > 0 {
 				fmt.Printf("\n%s:\n", providerName)
-				fmt.Println(treeFormatter.FormatGroupPlanAsTree(diff.GroupPlanInfo{Plan: plan}))
+				if err := treeFormatter.FormatGroupPlanAsTree(diff.GroupPlanInfo{Plan: plan}); err != nil {
+					fmt.Fprintf(os.Stderr, "tree render error: %v\n", err)
+				}
 			}
 		}
 	default:
@@ -97,7 +97,7 @@ func runPlan(ctx context.Context) error {
 		fmt.Println(style.Header.Render("Plan Summary"))
 		fmt.Println()
 
-		// Display using Bubbletea Table with new theme (shared UI)
+		// Display with resource table
 		type PlanItem struct {
 			Action      string
 			Name        string
@@ -197,11 +197,10 @@ func runPlan(ctx context.Context) error {
 		}
 
 		// Render table
-		width, _, err := term.GetSize(int(os.Stdout.Fd()))
-		if err != nil {
-			width = 120
+
+		if err := ui.RenderResourceTable(rows, true); err != nil {
+			fmt.Fprintf(os.Stderr, "resource table error: %v\n", err)
 		}
-		fmt.Println(ui.RenderResourceTable(width, rows, true))
 
 		fmt.Println()
 		planParts := []string{

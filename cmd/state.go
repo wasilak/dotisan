@@ -10,9 +10,8 @@ import (
 	"os"
 	"strings"
 
-	"charm.land/huh/v2"
+	"github.com/pterm/pterm"
 	"github.com/wasilak/dotisan/pkg/ui"
-	"golang.org/x/term"
 
 	"github.com/wasilak/dotisan/pkg/config"
 	"github.com/wasilak/dotisan/pkg/diff"
@@ -291,26 +290,9 @@ func runStateRemoveByID(ctx context.Context, id string) error {
 		} else {
 			title = fmt.Sprintf("Remove %s/%s/%s from state?", kind, group, item)
 		}
-		hint := "(actual resource will not be modified)"
-
-		// Robust confirmation: TTY vs fallback
-		isTTY := term.IsTerminal(int(os.Stdout.Fd()))
-		var confirm bool
-		if isTTY {
-			err := huh.NewConfirm().
-				Title(title).Affirmative("Yes, remove from state").Negative("No, cancel").Value(&confirm).Run()
-			if err != nil {
-				return fmt.Errorf("confirmation prompt error: %w", err)
-			}
-		} else {
-			fmt.Printf("%s %s [y/N]: ", title, hint)
-			var resp string
-			_, err := fmt.Fscanln(os.Stdin, &resp)
-			if err != nil && err.Error() != "unexpected newline" {
-				return fmt.Errorf("failed to read confirmation: %w", err)
-			}
-			resp = strings.TrimSpace(strings.ToLower(resp))
-			confirm = (resp == "y" || resp == "yes")
+		confirm, err := pterm.DefaultInteractiveConfirm.Show(title)
+		if err != nil {
+			return fmt.Errorf("confirmation prompt error: %w", err)
 		}
 		if !confirm {
 			fmt.Println()
@@ -411,7 +393,7 @@ func runStateList(ctx context.Context) error {
 		return nil
 	}
 
-	// Determine output format
+	// Determine output format (render table as pterm resource table)
 	outputFormat := output.Format(stateOutputFlag)
 	if outputFormat == "" {
 		outputFormat = output.FormatPlain
@@ -443,7 +425,9 @@ func displayStateTree(currentState *state.State) error {
 	}
 
 	treeFormatter := diff.NewTreeFormatter()
-	fmt.Println(treeFormatter.FormatStateAsTree(resources))
+	if err := treeFormatter.FormatStateAsTree(resources); err != nil {
+		fmt.Fprintf(os.Stderr, "tree render error: %v\n", err)
+	}
 	return nil
 }
 
@@ -457,11 +441,8 @@ func displayStateTable(currentState *state.State) error {
 	fmt.Println(style.Header.Render("Managed Resources"))
 	fmt.Println()
 
-	// Use the unified Bubbletea Table for state
-	width, _, err := term.GetSize(int(os.Stdout.Fd()))
-	if err != nil {
-		width = 120
-	}
+	// Display with resource table for state
+
 	// Convert currentState (typed) to []ui.ResourceRow explicitly to avoid reflection
 	rows := make([]ui.ResourceRow, 0)
 	for _, res := range currentState.Resources {
@@ -483,7 +464,9 @@ func displayStateTable(currentState *state.State) error {
 			})
 		}
 	}
-	fmt.Println(ui.RenderResourceTable(width, rows, true))
+	if err := ui.RenderResourceTable(rows, true); err != nil {
+		fmt.Fprintf(os.Stderr, "resource table error: %v\n", err)
+	}
 
 	totalItems := 0
 	for _, res := range currentState.Resources {

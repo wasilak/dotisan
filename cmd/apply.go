@@ -1,14 +1,11 @@
 package cmd
 
 import (
-	"charm.land/huh/v2"
 	"context"
 	"fmt"
 	"os"
-	"strings"
 
-	_ "charm.land/lipgloss/v2"
-	"golang.org/x/term"
+	"github.com/pterm/pterm"
 
 	"github.com/wasilak/dotisan/pkg/diff"
 	"github.com/wasilak/dotisan/pkg/engine"
@@ -72,7 +69,7 @@ func runApply(ctx context.Context) error {
 		return nil
 	}
 
-	// Determine output format
+	// Determine output format (render table as pterm resource table)
 	outputFormat := output.Format(applyOutputFlag)
 	if outputFormat == "" {
 		if eng.Config.UI.Output != "" {
@@ -89,7 +86,9 @@ func runApply(ctx context.Context) error {
 		for providerName, plan := range result.ProviderPlans {
 			if len(plan.Additions) > 0 || len(plan.Removals) > 0 || len(plan.Modifications) > 0 {
 				fmt.Printf("\n%s:\n", providerName)
-				fmt.Println(treeFormatter.FormatGroupPlanAsTree(diff.GroupPlanInfo{Plan: plan}))
+				if err := treeFormatter.FormatGroupPlanAsTree(diff.GroupPlanInfo{Plan: plan}); err != nil {
+					fmt.Fprintf(os.Stderr, "tree render error: %v\n", err)
+				}
 			}
 		}
 	default:
@@ -97,7 +96,7 @@ func runApply(ctx context.Context) error {
 		fmt.Println(style.Header.Render("Plan Summary"))
 		fmt.Println()
 
-		// Display with Bubbletea Table (Apply Output):
+		// Display with resource table
 		type PlanItem struct {
 			Action      string
 			Name        string
@@ -195,11 +194,10 @@ func runApply(ctx context.Context) error {
 				Info:   info,
 			})
 		}
-		width, _, err := term.GetSize(int(os.Stdout.Fd()))
-		if err != nil {
-			width = 120
+
+		if err := ui.RenderResourceTable(rows, true); err != nil {
+			fmt.Fprintf(os.Stderr, "resource table error: %v\n", err)
 		}
-		fmt.Println(ui.RenderResourceTable(width, rows, true))
 
 		fmt.Println()
 		fmt.Printf("Plan: %s to add, %s to destroy\n",
@@ -233,28 +231,9 @@ func runApply(ctx context.Context) error {
 			changeSummary = fmt.Sprintf("Apply %d changes?", totalChanges)
 		}
 
-		// Fallback to basic prompt if not a TTY
-		isTTY := term.IsTerminal(int(os.Stdout.Fd()))
-		var confirm bool
-		if isTTY {
-			err := huh.NewConfirm().
-				Title(changeSummary).
-				Affirmative("Yes, apply changes").
-				Negative("No, cancel").
-				Value(&confirm).
-				Run()
-			if err != nil {
-				return fmt.Errorf("confirmation prompt error: %w", err)
-			}
-		} else {
-			fmt.Printf("%s [y/N]: ", changeSummary)
-			var resp string
-			_, err := fmt.Fscanln(os.Stdin, &resp)
-			if err != nil && err.Error() != "unexpected newline" {
-				return fmt.Errorf("failed to read confirmation: %w", err)
-			}
-			resp = strings.TrimSpace(strings.ToLower(resp))
-			confirm = (resp == "y" || resp == "yes")
+		confirm, err := pterm.DefaultInteractiveConfirm.Show(changeSummary)
+		if err != nil {
+			return fmt.Errorf("confirmation prompt error: %w", err)
 		}
 		if !confirm {
 			fmt.Println()
@@ -263,7 +242,7 @@ func runApply(ctx context.Context) error {
 		}
 		opts.Confirm = true
 		// Apply
-		err := style.RunWithSpinner(ctx, "Applying changes", func(ctx context.Context) error {
+		err = style.RunWithSpinner(ctx, "Applying changes", func(ctx context.Context) error {
 			return eng.Apply(ctx, result, opts)
 		})
 		if err != nil {

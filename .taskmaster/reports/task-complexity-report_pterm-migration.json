@@ -1,0 +1,93 @@
+{
+	"meta": {
+		"generatedAt": "2026-05-01T20:08:36.482Z",
+		"tasksAnalyzed": 10,
+		"totalTasks": 10,
+		"analysisCount": 10,
+		"thresholdScore": 5,
+		"projectName": "Task Master",
+		"usedResearch": true
+	},
+	"complexityAnalysis": [
+		{
+			"taskId": 1,
+			"taskTitle": "Add pterm and remove unused charm dependencies",
+			"complexityScore": 3,
+			"recommendedSubtasks": 0,
+			"expansionPrompt": "Break down the go.mod updates into specific steps: 1) Add pterm dependency, 2) Remove bubbletea, bubbles, and huh dependencies, 3) Run go mod tidy, 4) Clean up blank imports, 5) Verify build and test success",
+			"reasoning": "This is a straightforward dependency management task involving standard Go module operations. It requires minimal code changes and follows well-established patterns for updating Go dependencies. The complexity is low because it's primarily about updating module files and running standard commands."
+		},
+		{
+			"taskId": 2,
+			"taskTitle": "Replace custom spinner with pterm.DefaultSpinner",
+			"complexityScore": 4,
+			"recommendedSubtasks": 2,
+			"expansionPrompt": "Create subtasks for: 1) Implementing pterm.DefaultSpinner.Start() and Success()/Fail() calls, 2) Preserving the public API RunWithSpinner(ctx, msg, fn) with same signature, 3) Removing manual TTY detection, 4) Testing spinner functionality across different contexts",
+			"reasoning": "This task involves replacing one implementation with another while maintaining API compatibility. The complexity is moderate because it requires understanding the existing spinner implementation, mapping it to pterm's API, and ensuring no breaking changes to the public interface."
+		},
+		{
+			"taskId": 3,
+			"taskTitle": "Replace huh confirm in cmd/apply.go",
+			"complexityScore": 3,
+			"recommendedSubtasks": 2,
+			"expansionPrompt": "Create subtasks for: 1) Locating the huh.NewConfirm() block in cmd/apply.go, 2) Replacing with pterm.DefaultInteractiveConfirm.Show(title), 3) Removing manual TTY detection, 4) Cleaning up imports and blank imports, 5) Testing confirm functionality with Ctrl+C handling",
+			"reasoning": "This is a targeted replacement task that involves finding a specific code pattern and replacing it with pterm's equivalent. The complexity is low to moderate because it's a straightforward replacement with clear implementation steps and well-defined testing requirements."
+		},
+		{
+			"taskId": 4,
+			"taskTitle": "Replace huh confirm in cmd/state.go",
+			"complexityScore": 3,
+			"recommendedSubtasks": 2,
+			"expansionPrompt": "Create subtasks for: 1) Locating the huh.NewConfirm() in runStateRemoveByID() function, 2) Replacing with pterm.DefaultInteractiveConfirm.Show(), 3) Removing 'charm.land/huh/v2' import, 4) Testing confirm prompt appearance and cancellation handling",
+			"reasoning": "Similar to task 3, this is a targeted replacement task with clear implementation steps. The complexity is low because it follows the same pattern as task 3 but in a different file with a simpler function structure."
+		},
+		{
+			"taskId": 5,
+			"taskTitle": "Replace pkg/style/styles.go with pterm styles",
+			"complexityScore": 5,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Create subtasks for: 1) Mapping each lipgloss style to pterm equivalent, 2) Maintaining same exported variable names, 3) Testing all exported styles in various CLI contexts, 4) Verifying color and styling consistency, 5) Documenting style mappings",
+			"reasoning": "This task requires comprehensive style mapping and maintaining API compatibility. The complexity is moderate-high because it involves translating multiple styling definitions while preserving the same public interface and ensuring consistent visual output across the application."
+		},
+		{
+			"taskId": 6,
+			"taskTitle": "Replace pkg/ui/styles.go with pterm styles",
+			"complexityScore": 4,
+			"recommendedSubtasks": 2,
+			"expansionPrompt": "Create subtasks for: 1) Replacing lipgloss color constants with pterm equivalents, 2) Mapping StateAdd, StateRemove, etc. to *pterm.Style values, 3) Maintaining same exported names, 4) Testing UI styling in table and resource display, 5) Verifying style consistency",
+			"reasoning": "This task involves replacing styling definitions in a UI module. The complexity is moderate because it requires understanding the existing UI styling patterns and mapping them to pterm equivalents while maintaining compatibility with existing code that uses these styles."
+		},
+		{
+			"taskId": 7,
+			"taskTitle": "Replace pkg/ui/table.go with pterm.DefaultTable adapter",
+			"complexityScore": 5,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Create subtasks for: 1) Modifying table implementation to use pterm.DefaultTable.WithData(), 2) Removing custom types and methods, 3) Maintaining public surface NewTable() and RenderPlain() methods, 4) Testing table rendering in different contexts, 5) Verifying column auto-sizing functionality",
+			"reasoning": "This is a significant refactoring task that replaces a custom table implementation with a third-party library. The complexity is moderate-high because it involves removing custom types and methods while maintaining the same public API and ensuring all existing functionality works correctly with pterm."
+		},
+		{
+			"taskId": 8,
+			"taskTitle": "Replace pkg/ui/resources.go table building with pterm.TableData",
+			"complexityScore": 4,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Create subtasks for: 1) Building pterm.TableData with header row, 2) Pre-coloring status icon cells, 3) Using pterm.DefaultTable.WithHasHeader().WithData(data).Srender(), 4) Maintaining same public method signature, 5) Testing table rendering with colored status icons, 6) Verifying header functionality",
+			"reasoning": "This task involves updating table building logic to use pterm's data structures. The complexity is moderate because it requires understanding the current table building process, mapping it to pterm's approach, and ensuring all existing functionality works correctly with the new implementation."
+		},
+		{
+			"taskId": 9,
+			"taskTitle": "Replace pkg/diff/style.go with pterm styles",
+			"complexityScore": 4,
+			"recommendedSubtasks": 2,
+			"expansionPrompt": "Create subtasks for: 1) Replacing lipgloss.Style fields with pterm style equivalents, 2) Maintaining same DefaultStyles() function return shape, 3) Testing diff line coloring with pterm styles, 4) Verifying all diff outputs render correctly, 5) Ensuring compatibility with tree.go and diff/*.go",
+			"reasoning": "This task requires replacing styling definitions in a diff module while maintaining API compatibility. The complexity is moderate because it involves mapping styling definitions and ensuring all diff-related functionality continues to work correctly with the new styling approach."
+		},
+		{
+			"taskId": 10,
+			"taskTitle": "Replace pkg/diff/tree.go with pterm.DefaultTree",
+			"complexityScore": 6,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Create subtasks for: 1) Replacing lipgloss/tree implementation with pterm.DefaultTree, 2) Mapping tree structure to pterm.NewTreeNode(...).AddChildren(...), 3) Maintaining same public method signatures, 4) Testing tree rendering in plan and state commands, 5) Verifying all tree outputs work as expected, 6) Ensuring proper tree formatting and display",
+			"reasoning": "This is a complex refactoring task involving replacing a tree implementation with a third-party library. The complexity is high because it requires understanding the existing tree structure, mapping it to pterm's tree API, maintaining public method signatures, and ensuring all tree-related functionality works correctly across different contexts."
+		}
+	]
+}

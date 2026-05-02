@@ -93,7 +93,7 @@ func TestChangeType_String(t *testing.T) {
 func TestDefaultStyles(t *testing.T) {
 	styles := DefaultStyles()
 
-	// Check that styles can render (this verifies they're valid lipgloss styles)
+	// Check that styles can render (was used to verify lipgloss styles, now verifies pterm styles)
 	_ = styles.Addition.Render("test")
 	_ = styles.Deletion.Render("test")
 	_ = styles.Modification.Render("test")

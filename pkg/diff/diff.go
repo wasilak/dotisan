@@ -3,7 +3,7 @@
 // This package integrates multiple diff libraries:
 //   - github.com/martinohmann/go-difflib: Line-level unified diffs
 //   - github.com/sergi/go-diff: Character-level intra-line diffs
-//   - github.com/charmbracelet/lipgloss: Colored terminal output
+//   - Previously used github.com/charmbracelet/lipgloss: colored terminal output, now migrated to pterm
 //
 // The DiffEngine provides a unified interface for generating and formatting
 // diffs suitable for the plan command output.

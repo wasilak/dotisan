@@ -1,31 +1,28 @@
 package diff
 
 import (
-	"strings"
-
-	lipgloss "charm.land/lipgloss/v2"
-	"charm.land/lipgloss/v2/tree"
+	"github.com/pterm/pterm"
 	"github.com/wasilak/dotisan/pkg/provider"
 	"github.com/wasilak/dotisan/pkg/style"
 )
 
 // TreeFormatter renders resources as a 3-level tree: Kind / ResourceName / Items
 type TreeFormatter struct {
-	enumeratorStyle lipgloss.Style
-	kindStyle       lipgloss.Style
-	nameStyle       lipgloss.Style
-	itemStyle       lipgloss.Style
-	actionStyle     lipgloss.Style
+	enumeratorStyle style.Style
+	kindStyle       style.Style
+	nameStyle       style.Style
+	itemStyle       style.Style
+	actionStyle     style.Style
 }
 
 // NewTreeFormatter creates a new TreeFormatter with default colors
 func NewTreeFormatter() *TreeFormatter {
 	return &TreeFormatter{
-		enumeratorStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("63")),
-		kindStyle:       lipgloss.NewStyle().Foreground(lipgloss.Color("77")).Bold(true),
-		nameStyle:       lipgloss.NewStyle().Foreground(lipgloss.Color("222")),
-		itemStyle:       lipgloss.NewStyle().Foreground(lipgloss.Color("212")),
-		actionStyle:     lipgloss.NewStyle().Foreground(lipgloss.Color("245")),
+		enumeratorStyle: style.NewStyle(63),
+		kindStyle:       style.NewStyle(pterm.FgGreen, pterm.Bold),
+		nameStyle:       style.NewStyle(pterm.FgYellow),
+		itemStyle:       style.NewStyle(pterm.FgMagenta),
+		actionStyle:     style.NewStyle(pterm.FgGray),
 	}
 }
 
@@ -34,30 +31,32 @@ type GroupPlanInfo struct {
 	Plan provider.GroupPlan
 }
 
-// FormatGroupPlanAsTree renders the entire plan as a 3-level tree
-func (f *TreeFormatter) FormatGroupPlanAsTree(info GroupPlanInfo) string {
-	var sections []string
+// FormatGroupPlanAsTree renders the entire plan as a 3-level tree using pterm.DefaultTree
+func (f *TreeFormatter) FormatGroupPlanAsTree(info GroupPlanInfo) error {
+	root := pterm.TreeNode{
+		Text: "Managed Resources",
+	}
 
 	if len(info.Plan.Removals) > 0 {
-		sections = append(sections, f.formatRemovals(info.Plan.Removals))
+		root.Children = append(root.Children, f.formatRemovals(info.Plan.Removals))
 	}
 	if len(info.Plan.Additions) > 0 {
-		sections = append(sections, f.formatAdditions(info.Plan.Additions))
+		root.Children = append(root.Children, f.formatAdditions(info.Plan.Additions))
 	}
 	if len(info.Plan.Modifications) > 0 {
-		sections = append(sections, f.formatModifications(info.Plan.Modifications))
+		root.Children = append(root.Children, f.formatModifications(info.Plan.Modifications))
 	}
 	if len(info.Plan.Drifted) > 0 {
-		sections = append(sections, f.formatDrifted(info.Plan.Drifted))
+		root.Children = append(root.Children, f.formatDrifted(info.Plan.Drifted))
 	}
 
-	return strings.Join(sections, "\n\n")
+	return pterm.DefaultTree.WithRoot(root).Render()
 }
 
-func (f *TreeFormatter) formatAdditions(additions []provider.GroupAddition) string {
-	root := tree.Root(style.Success.Render("Resources to be created")).
-		Enumerator(tree.RoundedEnumerator).
-		EnumeratorStyle(f.enumeratorStyle)
+func (f *TreeFormatter) formatAdditions(additions []provider.GroupAddition) pterm.TreeNode {
+	node := pterm.TreeNode{
+		Text: style.Success.Render("Resources to be created"),
+	}
 
 	// Group by Kind
 	byKind := make(map[string][]provider.GroupAddition)
@@ -66,35 +65,33 @@ func (f *TreeFormatter) formatAdditions(additions []provider.GroupAddition) stri
 	}
 
 	for kind, groups := range byKind {
-		kindNode := tree.New().
-			Root(f.kindStyle.Render(kind)).
-			Enumerator(tree.RoundedEnumerator).
-			EnumeratorStyle(f.enumeratorStyle)
+		kindNode := pterm.TreeNode{
+			Text: f.kindStyle.Render(kind),
+		}
 
 		for _, group := range groups {
-			groupNode := tree.New().
-				Root(f.nameStyle.Render(group.Group)).
-				Enumerator(tree.RoundedEnumerator).
-				EnumeratorStyle(f.enumeratorStyle)
+			groupNode := pterm.TreeNode{
+				Text: f.nameStyle.Render(group.Group),
+			}
 
 			for _, item := range group.Items {
 				itemText := f.itemStyle.Render(item.Name) + " " + f.actionStyle.Render("will be created")
-				groupNode.Child(itemText)
+				groupNode.Children = append(groupNode.Children, pterm.TreeNode{Text: itemText})
 			}
 
-			kindNode.Child(groupNode)
+			kindNode.Children = append(kindNode.Children, groupNode)
 		}
 
-		root.Child(kindNode)
+		node.Children = append(node.Children, kindNode)
 	}
 
-	return root.String()
+	return node
 }
 
-func (f *TreeFormatter) formatRemovals(removals []provider.GroupRemoval) string {
-	root := tree.Root(style.Error.Render("Resources to be removed")).
-		Enumerator(tree.RoundedEnumerator).
-		EnumeratorStyle(f.enumeratorStyle)
+func (f *TreeFormatter) formatRemovals(removals []provider.GroupRemoval) pterm.TreeNode {
+	node := pterm.TreeNode{
+		Text: style.Error.Render("Resources to be removed"),
+	}
 
 	byKind := make(map[string][]provider.GroupRemoval)
 	for _, removal := range removals {
@@ -102,35 +99,33 @@ func (f *TreeFormatter) formatRemovals(removals []provider.GroupRemoval) string 
 	}
 
 	for kind, groups := range byKind {
-		kindNode := tree.New().
-			Root(f.kindStyle.Render(kind)).
-			Enumerator(tree.RoundedEnumerator).
-			EnumeratorStyle(f.enumeratorStyle)
+		kindNode := pterm.TreeNode{
+			Text: f.kindStyle.Render(kind),
+		}
 
 		for _, group := range groups {
-			groupNode := tree.New().
-				Root(f.nameStyle.Render(group.Group)).
-				Enumerator(tree.RoundedEnumerator).
-				EnumeratorStyle(f.enumeratorStyle)
+			groupNode := pterm.TreeNode{
+				Text: f.nameStyle.Render(group.Group),
+			}
 
 			for _, item := range group.Items {
 				itemText := f.itemStyle.Render(item.Name) + " " + f.actionStyle.Render("will be destroyed")
-				groupNode.Child(itemText)
+				groupNode.Children = append(groupNode.Children, pterm.TreeNode{Text: itemText})
 			}
 
-			kindNode.Child(groupNode)
+			kindNode.Children = append(kindNode.Children, groupNode)
 		}
 
-		root.Child(kindNode)
+		node.Children = append(node.Children, kindNode)
 	}
 
-	return root.String()
+	return node
 }
 
-func (f *TreeFormatter) formatModifications(modifications []provider.GroupModification) string {
-	root := tree.Root(style.Warning.Render("Resources to be modified")).
-		Enumerator(tree.RoundedEnumerator).
-		EnumeratorStyle(f.enumeratorStyle)
+func (f *TreeFormatter) formatModifications(modifications []provider.GroupModification) pterm.TreeNode {
+	node := pterm.TreeNode{
+		Text: style.Warning.Render("Resources to be modified"),
+	}
 
 	byKind := make(map[string][]provider.GroupModification)
 	for _, mod := range modifications {
@@ -138,35 +133,33 @@ func (f *TreeFormatter) formatModifications(modifications []provider.GroupModifi
 	}
 
 	for kind, groups := range byKind {
-		kindNode := tree.New().
-			Root(f.kindStyle.Render(kind)).
-			Enumerator(tree.RoundedEnumerator).
-			EnumeratorStyle(f.enumeratorStyle)
+		kindNode := pterm.TreeNode{
+			Text: f.kindStyle.Render(kind),
+		}
 
 		for _, group := range groups {
-			groupNode := tree.New().
-				Root(f.nameStyle.Render(group.Group)).
-				Enumerator(tree.RoundedEnumerator).
-				EnumeratorStyle(f.enumeratorStyle)
+			groupNode := pterm.TreeNode{
+				Text: f.nameStyle.Render(group.Group),
+			}
 
 			for _, change := range group.Changes {
 				itemText := f.itemStyle.Render(change.ItemName) + " " + f.actionStyle.Render("will be updated")
-				groupNode.Child(itemText)
+				groupNode.Children = append(groupNode.Children, pterm.TreeNode{Text: itemText})
 			}
 
-			kindNode.Child(groupNode)
+			kindNode.Children = append(kindNode.Children, groupNode)
 		}
 
-		root.Child(kindNode)
+		node.Children = append(node.Children, kindNode)
 	}
 
-	return root.String()
+	return node
 }
 
-func (f *TreeFormatter) formatDrifted(drifted []provider.ItemDrift) string {
-	root := tree.Root(style.Warning.Render("Drifted resources (will be restored)")).
-		Enumerator(tree.RoundedEnumerator).
-		EnumeratorStyle(f.enumeratorStyle)
+func (f *TreeFormatter) formatDrifted(drifted []provider.ItemDrift) pterm.TreeNode {
+	node := pterm.TreeNode{
+		Text: style.Warning.Render("Drifted resources (will be restored)"),
+	}
 
 	byKind := make(map[string][]provider.ItemDrift)
 	for _, drift := range drifted {
@@ -174,21 +167,20 @@ func (f *TreeFormatter) formatDrifted(drifted []provider.ItemDrift) string {
 	}
 
 	for kind, items := range byKind {
-		kindNode := tree.New().
-			Root(f.kindStyle.Render(kind)).
-			Enumerator(tree.RoundedEnumerator).
-			EnumeratorStyle(f.enumeratorStyle)
+		kindNode := pterm.TreeNode{
+			Text: f.kindStyle.Render(kind),
+		}
 
 		for _, drift := range items {
 			itemText := f.nameStyle.Render(drift.Group) + "/" + f.itemStyle.Render(drift.Item)
 			itemText += " " + f.actionStyle.Render("will be restored")
-			kindNode.Child(itemText)
+			kindNode.Children = append(kindNode.Children, pterm.TreeNode{Text: itemText})
 		}
 
-		root.Child(kindNode)
+		node.Children = append(node.Children, kindNode)
 	}
 
-	return root.String()
+	return node
 }
 
 // StateResource represents a resource in state for tree rendering
@@ -199,11 +191,11 @@ type StateResource struct {
 	Status string
 }
 
-// FormatStateAsTree renders state list as a 3-level tree
-func (f *TreeFormatter) FormatStateAsTree(resources []StateResource) string {
-	root := tree.Root(style.Header.Render("Managed Resources")).
-		Enumerator(tree.RoundedEnumerator).
-		EnumeratorStyle(f.enumeratorStyle)
+// FormatStateAsTree renders state list as a 3-level tree using pterm.DefaultTree
+func (f *TreeFormatter) FormatStateAsTree(resources []StateResource) error {
+	root := pterm.TreeNode{
+		Text: style.Header.Render("Managed Resources"),
+	}
 
 	// Group by Kind
 	byKind := make(map[string][]StateResource)
@@ -212,27 +204,25 @@ func (f *TreeFormatter) FormatStateAsTree(resources []StateResource) string {
 	}
 
 	for kind, groups := range byKind {
-		kindNode := tree.New().
-			Root(f.kindStyle.Render(kind)).
-			Enumerator(tree.RoundedEnumerator).
-			EnumeratorStyle(f.enumeratorStyle)
+		kindNode := pterm.TreeNode{
+			Text: f.kindStyle.Render(kind),
+		}
 
 		for _, group := range groups {
-			groupNode := tree.New().
-				Root(f.nameStyle.Render(group.Group)).
-				Enumerator(tree.RoundedEnumerator).
-				EnumeratorStyle(f.enumeratorStyle)
+			groupNode := pterm.TreeNode{
+				Text: f.nameStyle.Render(group.Group),
+			}
 
 			for _, item := range group.Items {
 				itemText := f.itemStyle.Render(item) + " " + f.actionStyle.Render(group.Status)
-				groupNode.Child(itemText)
+				groupNode.Children = append(groupNode.Children, pterm.TreeNode{Text: itemText})
 			}
 
-			kindNode.Child(groupNode)
+			kindNode.Children = append(kindNode.Children, groupNode)
 		}
 
-		root.Child(kindNode)
+		root.Children = append(root.Children, kindNode)
 	}
 
-	return root.String()
+	return pterm.DefaultTree.WithRoot(root).Render()
 }

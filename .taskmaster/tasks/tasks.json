@@ -4781,5 +4781,528 @@
         "refactor-polish"
       ]
     }
+  },
+  "pterm-migration": {
+    "tasks": [
+      {
+        "id": "1",
+        "title": "Add pterm and remove unused charm dependencies",
+        "description": "Update go.mod to add pterm and remove bubbletea, bubbles, and huh dependencies",
+        "details": "Run 'go get github.com/pterm/pterm' and 'go get -u' then remove charm.land/bubbletea/v2, charm.land/bubbles/v2, charm.land/huh/v2 from go.mod. Run 'go mod tidy'. Verify that blank imports in cmd/plan.go and cmd/apply.go are cleaned up if no longer needed.",
+        "testStrategy": "Verify go build ./... and go test ./... pass. Check that charm.land dependencies are removed from go.mod and that no compilation errors occur.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Add pterm dependency to go.mod",
+            "description": "Execute go get command to add pterm dependency to the project's go.mod file",
+            "dependencies": [],
+            "details": "Run 'go get github.com/pterm/pterm' to add the pterm library as a dependency. This command will update go.mod and go.sum files with the new dependency information.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-01T20:38:55.020Z"
+          },
+          {
+            "id": 2,
+            "title": "Remove unused charm dependencies from go.mod",
+            "description": "Remove bubbletea, bubbles, and huh dependencies from go.mod file",
+            "dependencies": [
+              1
+            ],
+            "details": "Manually edit go.mod to remove the lines referencing 'charm.land/bubbletea/v2', 'charm.land/bubbles/v2', and 'charm.land/huh/v2' dependencies. Ensure all related imports are also removed from the codebase.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-01T20:43:23.461Z"
+          },
+          {
+            "id": 3,
+            "title": "Run go mod tidy to clean up dependencies",
+            "description": "Execute go mod tidy to clean up and organize the module dependencies",
+            "dependencies": [
+              2
+            ],
+            "details": "Run 'go mod tidy' command to clean up the go.mod and go.sum files, removing any unused dependencies and ensuring all required dependencies are properly resolved.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-01T20:43:25.193Z"
+          },
+          {
+            "id": 4,
+            "title": "Clean up blank imports in command files",
+            "description": "Remove unused blank imports from cmd/plan.go and cmd/apply.go files",
+            "dependencies": [
+              3
+            ],
+            "details": "Review cmd/plan.go and cmd/apply.go files to identify and remove any blank imports that were previously needed for the removed charm dependencies. Verify that no compilation errors occur after cleanup.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-01T20:43:26.929Z"
+          },
+          {
+            "id": 5,
+            "title": "Verify build and test success",
+            "description": "Run build and test commands to ensure project compiles correctly after dependency changes",
+            "dependencies": [
+              4
+            ],
+            "details": "Execute 'go build ./...' and 'go test ./...' commands to verify that the project builds successfully and all tests pass after the dependency modifications. Confirm that no compilation errors or test failures occur.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-01T20:43:28.669Z"
+          }
+        ],
+        "complexity": 3,
+        "recommendedSubtasks": 0,
+        "expansionPrompt": "Break down the go.mod updates into specific steps: 1) Add pterm dependency, 2) Remove bubbletea, bubbles, and huh dependencies, 3) Run go mod tidy, 4) Clean up blank imports, 5) Verify build and test success",
+        "updatedAt": "2026-05-01T20:43:28.669Z"
+      },
+      {
+        "id": "2",
+        "title": "Replace custom spinner with pterm.DefaultSpinner",
+        "description": "Replace custom ASCII spinner implementation with pterm.DefaultSpinner",
+        "details": "Modify pkg/style/spinner.go to use pterm.DefaultSpinner.Start() and pterm.DefaultSpinner.Success()/Fail() methods. Preserve the public API RunWithSpinner(ctx, msg, fn) with same signature. Remove manual TTY detection as pterm handles it internally.",
+        "testStrategy": "Verify that dotisan plan, apply, state remove, and doctor commands show animated spinner. Test that spinner succeeds/fails correctly and handles cancellation properly.",
+        "priority": "high",
+        "dependencies": [
+          "1"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement pterm.DefaultSpinner in spinner.go",
+            "description": "Replace custom ASCII spinner implementation with pterm.DefaultSpinner.Start() and Success()/Fail() methods",
+            "dependencies": [],
+            "details": "Modify pkg/style/spinner.go to use pterm.DefaultSpinner.Start() and pterm.DefaultSpinner.Success()/Fail() methods. Implement the core spinner functionality using pterm's built-in spinner instead of manual ASCII animation. Ensure proper error handling and cleanup of spinner resources.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-01T20:47:00.112Z"
+          },
+          {
+            "id": 2,
+            "title": "Preserve and test public API compatibility",
+            "description": "Maintain the public RunWithSpinner(ctx, msg, fn) API signature and ensure full functionality",
+            "dependencies": [],
+            "details": "Keep the existing public API RunWithSpinner(ctx, msg, fn) with identical signature and behavior. Implement proper context handling, message display, and function execution flow. Test that all existing command integrations continue to work with the new spinner implementation.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-01T20:47:01.862Z"
+          }
+        ],
+        "complexity": 4,
+        "recommendedSubtasks": 2,
+        "expansionPrompt": "Create subtasks for: 1) Implementing pterm.DefaultSpinner.Start() and Success()/Fail() calls, 2) Preserving the public API RunWithSpinner(ctx, msg, fn) with same signature, 3) Removing manual TTY detection, 4) Testing spinner functionality across different contexts",
+        "updatedAt": "2026-05-01T20:47:01.862Z"
+      },
+      {
+        "id": "3",
+        "title": "Replace huh confirm in cmd/apply.go",
+        "description": "Replace huh.NewConfirm with pterm.DefaultInteractiveConfirm in apply command",
+        "details": "Find the huh.NewConfirm() block in cmd/apply.go around line 240. Replace with pterm.DefaultInteractiveConfirm.Show(title) and remove the manual TTY detection branch. Remove 'charm.land/huh/v2' import and blank import if no longer needed.",
+        "testStrategy": "Run dotisan apply and verify that pterm confirm prompt appears correctly with Y/n functionality. Test that Ctrl+C cancels properly.",
+        "priority": "high",
+        "dependencies": [
+          "1"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Locate and Replace huh.NewConfirm with pterm.DefaultInteractiveConfirm",
+            "description": "Find the huh.NewConfirm() block in cmd/apply.go around line 240 and replace it with pterm.DefaultInteractiveConfirm.Show(title)",
+            "dependencies": [],
+            "details": "Navigate to cmd/apply.go file and locate the specific line around 240 containing huh.NewConfirm(). Replace the entire block with pterm.DefaultInteractiveConfirm.Show(title) call. Ensure the title parameter is properly passed to maintain functionality. Remove the manual TTY detection branch that was previously handling terminal detection.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-01T20:51:09.476Z"
+          },
+          {
+            "id": 2,
+            "title": "Clean Up Imports and Test Confirm Functionality",
+            "description": "Remove unused imports and verify Ctrl+C handling for the new confirm prompt",
+            "dependencies": [],
+            "details": "Remove the 'charm.land/huh/v2' import statement and any blank imports that are no longer needed after the replacement. Verify that the confirm functionality works correctly with Y/n options. Test that Ctrl+C properly cancels the confirm prompt and doesn't cause unexpected behavior. Ensure the application still builds and runs correctly with the new pterm implementation.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-01T20:51:11.219Z"
+          }
+        ],
+        "complexity": 3,
+        "recommendedSubtasks": 2,
+        "expansionPrompt": "Create subtasks for: 1) Locating the huh.NewConfirm() block in cmd/apply.go, 2) Replacing with pterm.DefaultInteractiveConfirm.Show(title), 3) Removing manual TTY detection, 4) Cleaning up imports and blank imports, 5) Testing confirm functionality with Ctrl+C handling",
+        "updatedAt": "2026-05-01T20:51:11.219Z"
+      },
+      {
+        "id": "4",
+        "title": "Replace huh confirm in cmd/state.go",
+        "description": "Replace huh.NewConfirm with pterm.DefaultInteractiveConfirm in state command",
+        "details": "Find the huh.NewConfirm() in runStateRemoveByID() function in cmd/state.go. Replace with pterm.DefaultInteractiveConfirm.Show() and remove 'charm.land/huh/v2' import.",
+        "testStrategy": "Run dotisan state remove and verify that pterm confirm prompt appears correctly. Test that Ctrl+C cancels properly.",
+        "priority": "high",
+        "dependencies": [
+          "1"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Locate and Replace huh.NewConfirm with pterm.DefaultInteractiveConfirm",
+            "description": "Find the huh.NewConfirm() call within the runStateRemoveByID() function in cmd/state.go and replace it with pterm.DefaultInteractiveConfirm.Show()",
+            "dependencies": [],
+            "details": "Scan cmd/state.go file for runStateRemoveByID() function and locate the specific huh.NewConfirm() call. Replace the entire call with pterm.DefaultInteractiveConfirm.Show() method and ensure proper error handling is maintained",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-01T20:51:14.643Z"
+          },
+          {
+            "id": 2,
+            "title": "Remove huh/v2 import and verify confirm prompt functionality",
+            "description": "Remove the 'charm.land/huh/v2' import from cmd/state.go and test that the pterm confirm prompt works correctly",
+            "dependencies": [],
+            "details": "After replacing the confirm logic, remove the 'charm.land/huh/v2' import statement from the imports section of cmd/state.go. Then test that the confirm prompt appears correctly when running dotisan state remove and verify that Ctrl+C cancellation works properly",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-01T20:51:16.377Z"
+          }
+        ],
+        "complexity": 3,
+        "recommendedSubtasks": 2,
+        "expansionPrompt": "Create subtasks for: 1) Locating the huh.NewConfirm() in runStateRemoveByID() function, 2) Replacing with pterm.DefaultInteractiveConfirm.Show(), 3) Removing 'charm.land/huh/v2' import, 4) Testing confirm prompt appearance and cancellation handling",
+        "updatedAt": "2026-05-01T20:51:16.377Z"
+      },
+      {
+        "id": "5",
+        "title": "Replace pkg/style/styles.go with pterm styles",
+        "description": "Replace lipgloss style definitions with pterm equivalents in styles.go",
+        "details": "Map each lipgloss style to pterm equivalent in pkg/style/styles.go. Convert: lipgloss.NewStyle().Foreground(color).Bold(true) → pterm.NewStyle(pterm.FgGreen, pterm.Bold). Keep same exported variable names (Success, Error, Warning, etc.) that are called from cmd/ and pkg/engine/.",
+        "testStrategy": "Verify that all existing CLI outputs still render with correct colors and styling. Test that all exported styles work correctly in various contexts.",
+        "priority": "medium",
+        "dependencies": [
+          "1"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Map lipgloss styles to pterm equivalents in styles.go",
+            "description": "Convert all lipgloss style definitions to their pterm equivalents while maintaining the same exported variable names",
+            "dependencies": [
+              5
+            ],
+            "details": "Replace each lipgloss.NewStyle().Foreground(color).Bold(true) with pterm.NewStyle(pterm.FgGreen, pterm.Bold) pattern. Ensure all exported variables like Success, Error, Warning, etc. retain their original names and functionality. Map all color constants and style properties to their pterm equivalents.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T06:32:14.767Z"
+          },
+          {
+            "id": 2,
+            "title": "Maintain exported variable names and API compatibility",
+            "description": "Ensure all exported style variables maintain the same names and signatures used by cmd/ and pkg/engine/ packages",
+            "dependencies": [
+              1
+            ],
+            "details": "Verify that all exported variables (Success, Error, Warning, etc.) keep the same names and types as before. Confirm that existing calls from cmd/ and pkg/engine/ packages continue to work without modification. Test that the public API surface remains unchanged.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T06:32:14.775Z"
+          },
+          {
+            "id": 3,
+            "title": "Test style consistency across CLI contexts",
+            "description": "Verify that all exported styles render correctly in various CLI command contexts",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Run comprehensive tests on all CLI commands that use the styles to ensure consistent color and formatting. Test dotisan plan, apply, state remove, and doctor commands. Verify that all exported styles work correctly in various contexts and that visual output remains consistent with previous lipgloss implementation.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T06:32:14.781Z"
+          }
+        ],
+        "complexity": 5,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Create subtasks for: 1) Mapping each lipgloss style to pterm equivalent, 2) Maintaining same exported variable names, 3) Testing all exported styles in various CLI contexts, 4) Verifying color and styling consistency, 5) Documenting style mappings",
+        "updatedAt": "2026-05-02T06:32:14.781Z"
+      },
+      {
+        "id": "6",
+        "title": "Replace pkg/ui/styles.go with pterm styles",
+        "description": "Replace lipgloss style objects with pterm equivalents in ui/styles.go",
+        "details": "Replace lipgloss color constants and style objects with pterm equivalents in pkg/ui/styles.go. Map StateAdd, StateRemove, etc. to *pterm.Style values using pterm.NewStyle(pterm.FgColor). Keep same exported names used in resources.go and table.go.",
+        "testStrategy": "Verify that UI styling in table and resource display works correctly with pterm styles.",
+        "priority": "medium",
+        "dependencies": [
+          "5"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Replace lipgloss color constants with pterm equivalents",
+            "description": "Replace all lipgloss color constants in ui/styles.go with their pterm equivalents while maintaining the same exported names",
+            "dependencies": [
+              6
+            ],
+            "details": "Identify all lipgloss color constants used in pkg/ui/styles.go and replace them with pterm color equivalents. Ensure that the exported names remain unchanged to maintain compatibility with resources.go and table.go. Update the file to use pterm.FgColor and pterm.BgColor constants instead of lipgloss.Color constants.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T06:49:46.009Z"
+          },
+          {
+            "id": 2,
+            "title": "Map StateAdd, StateRemove, etc. to *pterm.Style values",
+            "description": "Replace lipgloss style objects with pterm style objects for StateAdd, StateRemove, and other state constants",
+            "dependencies": [
+              6
+            ],
+            "details": "Replace existing lipgloss style objects (StateAdd, StateRemove, etc.) with pterm style equivalents using pterm.NewStyle(pterm.FgColor) calls. Ensure that all state constants map to *pterm.Style values while preserving the same exported names. Update the styles.go file to use pterm's style composition methods for consistent styling across the UI.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T06:49:46.013Z"
+          }
+        ],
+        "complexity": 4,
+        "recommendedSubtasks": 2,
+        "expansionPrompt": "Create subtasks for: 1) Replacing lipgloss color constants with pterm equivalents, 2) Mapping StateAdd, StateRemove, etc. to *pterm.Style values, 3) Maintaining same exported names, 4) Testing UI styling in table and resource display, 5) Verifying style consistency",
+        "updatedAt": "2026-05-02T06:49:46.013Z"
+      },
+      {
+        "id": "7",
+        "title": "Replace pkg/ui/table.go with pterm.DefaultTable adapter",
+        "description": "Replace custom table renderer with pterm.DefaultTable wrapper",
+        "details": "Modify pkg/ui/table.go to use pterm.DefaultTable.WithData() instead of custom implementation. Remove Column, Cell, Row, Table types and RenderPlain(width) method. Keep only NewTable() and RenderPlain() public surface used by resources.go.",
+        "testStrategy": "Verify that table rendering in state list and plan commands works correctly with pterm tables. Test that column auto-sizing works properly.",
+        "priority": "medium",
+        "dependencies": [
+          "6"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Modify table implementation to use pterm.DefaultTable.WithData()",
+            "description": "Replace custom table rendering logic in pkg/ui/table.go with pterm.DefaultTable.WithData() method while maintaining existing public API",
+            "dependencies": [
+              7
+            ],
+            "details": "Update the table implementation to leverage pterm.DefaultTable.WithData() instead of custom rendering logic. Ensure all existing functionality is preserved while transitioning to the new library implementation.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T06:49:46.017Z"
+          },
+          {
+            "id": 2,
+            "title": "Remove custom table types and methods",
+            "description": "Remove Column, Cell, Row, Table types and RenderPlain(width) method from pkg/ui/table.go while keeping NewTable() and RenderPlain() public methods",
+            "dependencies": [
+              7
+            ],
+            "details": "Delete all custom type definitions (Column, Cell, Row, Table) and the RenderPlain(width) method from table.go. Preserve only the NewTable() and RenderPlain() public methods that are used by resources.go.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T06:49:46.021Z"
+          },
+          {
+            "id": 3,
+            "title": "Verify table rendering and column auto-sizing functionality",
+            "description": "Test that table rendering works correctly in state list and plan commands with pterm tables and verify column auto-sizing works properly",
+            "dependencies": [
+              7
+            ],
+            "details": "Execute comprehensive tests to ensure table rendering works correctly in various contexts like state list and plan commands. Verify that column auto-sizing functionality operates as expected with pterm tables.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T06:49:46.025Z"
+          }
+        ],
+        "complexity": 5,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Create subtasks for: 1) Modifying table implementation to use pterm.DefaultTable.WithData(), 2) Removing custom types and methods, 3) Maintaining public surface NewTable() and RenderPlain() methods, 4) Testing table rendering in different contexts, 5) Verifying column auto-sizing functionality",
+        "updatedAt": "2026-05-02T06:49:46.025Z"
+      },
+      {
+        "id": "8",
+        "title": "Replace pkg/ui/resources.go table building with pterm.TableData",
+        "description": "Update resource table building to use pterm.TableData",
+        "details": "Modify pkg/ui/resources.go to build pterm.TableData where first row is header. Pre-color status icon cells with pterm.FgGreen.Sprint() etc. Call pterm.DefaultTable.WithHasHeader().WithData(data).Srender() and return the string. Keep same signature RenderResourceTable(width int, rows []ResourceRow, showHeader bool) string.",
+        "testStrategy": "Run dotisan state list and verify that table renders correctly with colored status icons. Test that header shows properly when showHeader=true.",
+        "priority": "medium",
+        "dependencies": [
+          "7"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Build pterm.TableData with header row in resources.go",
+            "description": "Modify pkg/ui/resources.go to construct pterm.TableData where the first row contains headers and subsequent rows contain resource data",
+            "dependencies": [],
+            "details": "Update the table building logic in pkg/ui/resources.go to create pterm.TableData structures with proper header handling. The first row should be treated as headers, and all subsequent rows should contain actual resource data. Maintain the existing method signature RenderResourceTable(width int, rows []ResourceRow, showHeader bool) string.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T06:49:46.028Z"
+          },
+          {
+            "id": 2,
+            "title": "Pre-color status icon cells with pterm styles",
+            "description": "Apply pterm.FgGreen.Sprint() and similar styling to status icon cells in the resource table",
+            "dependencies": [],
+            "details": "Implement pre-coloring of status icon cells using pterm styling functions like pterm.FgGreen.Sprint(), pterm.FgRed.Sprint(), etc. Ensure that the color coding matches the existing visual indicators for resource states. Apply these styles to the appropriate cells in the table data before rendering.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T06:49:46.032Z"
+          },
+          {
+            "id": 3,
+            "title": "Integrate pterm.DefaultTable with header functionality",
+            "description": "Use pterm.DefaultTable.WithHasHeader().WithData(data).Srender() to render the table and return the formatted string",
+            "dependencies": [],
+            "details": "Replace the existing table rendering logic with pterm.DefaultTable.WithHasHeader().WithData(data).Srender() method call. Ensure the table data is properly structured with headers in the first row and that the final rendered string is returned from the RenderResourceTable method. Maintain the same method signature and behavior.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T06:49:46.036Z"
+          }
+        ],
+        "complexity": 4,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Create subtasks for: 1) Building pterm.TableData with header row, 2) Pre-coloring status icon cells, 3) Using pterm.DefaultTable.WithHasHeader().WithData(data).Srender(), 4) Maintaining same public method signature, 5) Testing table rendering with colored status icons, 6) Verifying header functionality",
+        "updatedAt": "2026-05-02T06:49:46.036Z"
+      },
+      {
+        "id": "9",
+        "title": "Replace pkg/diff/style.go with pterm styles",
+        "description": "Replace lipgloss styles with pterm equivalents in diff styling",
+        "details": "Replace Styles struct fields (lipgloss.Style) with pterm style equivalents in pkg/diff/style.go. Keep same DefaultStyles() function return shape used by tree.go and diff/*.go for diff line coloring.",
+        "testStrategy": "Verify that diff line coloring works correctly with pterm styles. Test that all diff outputs render with proper styling.",
+        "priority": "medium",
+        "dependencies": [
+          "5"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Replace lipgloss.Style fields with pterm style equivalents in pkg/diff/style.go",
+            "description": "Replace all lipgloss.Style fields in the Styles struct with their pterm equivalents while maintaining the same struct layout and functionality",
+            "dependencies": [
+              9
+            ],
+            "details": "Identify all Style fields in the Styles struct within pkg/diff/style.go and replace them with appropriate pterm style equivalents. Ensure that the replacement maintains the same field names and structure to preserve API compatibility with dependent modules.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T06:49:46.039Z"
+          },
+          {
+            "id": 2,
+            "title": "Maintain DefaultStyles() function return shape with pterm styles",
+            "description": "Ensure the DefaultStyles() function returns the same shape and structure as before while using pterm styling instead of lipgloss",
+            "dependencies": [
+              9
+            ],
+            "details": "Modify the DefaultStyles() function to return pterm style objects instead of lipgloss styles while keeping the exact same return type and structure. Verify that tree.go and diff/*.go modules continue to work correctly with the new pterm-based styling implementation.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T06:49:46.042Z"
+          }
+        ],
+        "complexity": 4,
+        "recommendedSubtasks": 2,
+        "expansionPrompt": "Create subtasks for: 1) Replacing lipgloss.Style fields with pterm style equivalents, 2) Maintaining same DefaultStyles() function return shape, 3) Testing diff line coloring with pterm styles, 4) Verifying all diff outputs render correctly, 5) Ensuring compatibility with tree.go and diff/*.go",
+        "updatedAt": "2026-05-02T06:49:46.042Z"
+      },
+      {
+        "id": "10",
+        "title": "Replace pkg/diff/tree.go with pterm.DefaultTree",
+        "description": "Replace lipgloss tree implementation with pterm.DefaultTree",
+        "details": "Replace current lipgloss/tree implementation in pkg/diff/tree.go with pterm.DefaultTree.WithRoot(pterm.NewTreeNode(...).AddChildren(...)). Keep same public method signatures FormatGroupPlanAsTree(info GroupPlanInfo) string and FormatStateAsTree(resources []StateResource) string.",
+        "testStrategy": "Run dotisan plan -o tree and verify that tree renders correctly with pterm tree formatting. Test that all tree outputs work as expected.",
+        "priority": "medium",
+        "dependencies": [
+          "5",
+          "9"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Replace lipgloss tree implementation with pterm.DefaultTree",
+            "description": "Replace the existing lipgloss tree implementation in pkg/diff/tree.go with pterm.DefaultTree.WithRoot(pterm.NewTreeNode(...).AddChildren(...))",
+            "dependencies": [
+              10
+            ],
+            "details": "Modify pkg/diff/tree.go to use pterm.DefaultTree instead of lipgloss tree implementation. Implement the tree structure mapping using pterm.NewTreeNode and AddChildren methods. Ensure the replacement maintains the same functionality as the original implementation.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T06:49:46.046Z"
+          },
+          {
+            "id": 2,
+            "title": "Map tree structure to pterm.NewTreeNode with AddChildren",
+            "description": "Map existing tree structure data to pterm.NewTreeNode(...).AddChildren(...) API calls",
+            "dependencies": [
+              1
+            ],
+            "details": "Analyze the existing tree data structures and mapping logic in tree.go. Convert the data flow from the old lipgloss implementation to pterm's TreeNode and AddChildren API. Ensure all tree nodes and their relationships are properly maintained during the conversion.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Verify tree rendering and formatting functionality",
+            "description": "Test that tree outputs work correctly with pterm formatting and maintain same public method signatures",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Run dotisan plan -o tree command and verify that tree renders correctly with pterm tree formatting. Test that all tree outputs work as expected and verify that the public method signatures FormatGroupPlanAsTree(info GroupPlanInfo) string and FormatStateAsTree(resources []StateResource) string remain unchanged and functional.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 6,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Create subtasks for: 1) Replacing lipgloss/tree implementation with pterm.DefaultTree, 2) Mapping tree structure to pterm.NewTreeNode(...).AddChildren(...), 3) Maintaining same public method signatures, 4) Testing tree rendering in plan and state commands, 5) Verifying all tree outputs work as expected, 6) Ensuring proper tree formatting and display",
+        "updatedAt": "2026-05-02T06:49:46.061Z"
+      }
+    ],
+    "metadata": {
+      "version": "1.0.0",
+      "lastModified": "2026-05-02T06:49:46.061Z",
+      "taskCount": 10,
+      "completedCount": 10,
+      "tags": [
+        "pterm-migration"
+      ]
+    }
   }
 }

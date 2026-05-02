@@ -121,7 +121,7 @@ Kind-based dynamic dispatch in `pkg/resource/unmarshal.go`.
 
 **Confirmation prompt:** Currently custom `ReadSingleKey()` using `golang.org/x/term` in `pkg/style/confirm.go`. Planned replacement with `huh.NewConfirm()`.
 
-**Style system:** All colors and styles defined in `pkg/style/styles.go`. Palette: green(114), red(174), yellow(222), orange(216), gray(245), blue(110). Lipgloss v2 `tree` and `table` components used in `pkg/diff/tree.go` and `cmd/state.go`.
+**Style system:** All CLI colors and styles are now defined in `pkg/style/styles.go`, using the [pterm](https://github.com/pterm/pterm) library. The primary palette now uses named pterm color constants: `pterm.FgGreen` (success), `pterm.FgRed` (error), `pterm.FgYellow` (warning/info), and `pterm.FgBlue` (highlight). Custom palette indices are retained only for nonstandard tints: orange (216), gray (245), and alternate row styles. All former Lipgloss v2 tree/table renderers are fully replaced with direct pterm output for consistency and maintainability.
 
 ---
 

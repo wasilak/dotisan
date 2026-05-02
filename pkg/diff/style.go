@@ -3,51 +3,39 @@ package diff
 import (
 	"strings"
 
-	lipgloss "charm.land/lipgloss/v2"
+	"github.com/pterm/pterm"
 	"github.com/sergi/go-diff/diffmatchpatch"
 	"github.com/wasilak/dotisan/pkg/style"
 )
 
-// Styles holds lipgloss styles for diff output.
+// Styles holds styles for diff output.
+// Uses style.Style (pterm-based) for compatibility with the rest of the codebase.
 type Styles struct {
 	// Addition style for new lines
-	Addition lipgloss.Style
+	Addition style.Style
 
 	// Deletion style for removed lines
-	Deletion lipgloss.Style
+	Deletion style.Style
 
 	// Modification style for changed lines
-	Modification lipgloss.Style
+	Modification style.Style
 
 	// Unchanged style for context lines
-	Unchanged lipgloss.Style
+	Unchanged style.Style
 
 	// Header style for diff headers
-	Header lipgloss.Style
+	Header style.Style
 }
 
 // DefaultStyles returns the default color scheme for diffs.
 // Uses color constants from pkg/style for consistency.
 func DefaultStyles() Styles {
 	return Styles{
-		Addition: lipgloss.NewStyle().
-			Foreground(lipgloss.Color(style.Green)).
-			Background(lipgloss.Color("22")),
-
-		Deletion: lipgloss.NewStyle().
-			Foreground(lipgloss.Color(style.Red)).
-			Background(lipgloss.Color("52")),
-
-		Modification: lipgloss.NewStyle().
-			Foreground(lipgloss.Color(style.Yellow)).
-			Background(lipgloss.Color("58")),
-
-		Unchanged: lipgloss.NewStyle().
-			Foreground(lipgloss.Color(style.Gray)),
-
-		Header: lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("255")),
+		Addition:     style.NewStyle(pterm.FgGreen, pterm.BgBlack),
+		Deletion:     style.NewStyle(pterm.FgRed, pterm.BgBlack),
+		Modification: style.NewStyle(pterm.FgYellow, pterm.BgBlack),
+		Unchanged:    style.NewStyle(pterm.FgGray),
+		Header:       style.NewStyle(pterm.Bold, pterm.FgWhite),
 	}
 }
 
