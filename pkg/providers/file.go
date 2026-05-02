@@ -156,7 +156,7 @@ func (p *FileProvider) Reconcile(ctx context.Context,
 				inline, _ := item.Extra["inline"].(string)
 				var content []byte
 				if source != "" && source != "(inline)" {
-					content, _ = os.ReadFile(filepath.Join(p.dotfilesRoot, source))
+					content, _ = os.ReadFile(p.resolveSource(source))
 				} else if inline != "" {
 					content = []byte(inline)
 				}
@@ -194,7 +194,7 @@ func (p *FileProvider) Reconcile(ctx context.Context,
 					oldContent, _ = os.ReadFile(dest)
 				}
 				if source != "" && source != "(inline)" {
-					newContent, _ = os.ReadFile(filepath.Join(p.dotfilesRoot, source))
+					newContent, _ = os.ReadFile(p.resolveSource(source))
 				} else if inline != "" {
 					newContent = []byte(inline)
 				}
@@ -204,6 +204,15 @@ func (p *FileProvider) Reconcile(ctx context.Context,
 		}
 	}
 	return plan
+}
+
+// resolveSource returns the full path for a source value. Absolute paths are
+// used as-is; relative paths are joined with the dotfiles root.
+func (p *FileProvider) resolveSource(source string) string {
+	if filepath.IsAbs(source) {
+		return source
+	}
+	return p.resolveSource(source)
 }
 
 // filterExistingItems returns items that don't exist at destination
@@ -339,7 +348,7 @@ func (p *FileProvider) applyGroupAddition(ctx context.Context, addition provider
 
 		if source != "" && source != "(inline)" {
 			// Copy from source
-			sourcePath := filepath.Join(p.dotfilesRoot, source)
+			sourcePath := p.resolveSource(source)
 			if err := p.copyFile(sourcePath, dest); err != nil {
 				return fmt.Errorf("failed to copy %s to %s: %w", sourcePath, dest, err)
 			}

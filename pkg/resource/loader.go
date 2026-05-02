@@ -105,7 +105,28 @@ func (l *Loader) loadResourceFile(path string) (Resource, error) {
 		return nil, fmt.Errorf("validation failed: %w", err)
 	}
 
+	// Resolve relative sourceFile paths relative to the resource file's directory.
+	resolveSourceFilePaths(resource, filepath.Dir(path))
+
 	return resource, nil
+}
+
+// resolveSourceFilePaths makes relative sourceFile paths absolute by joining
+// them with the directory of the resource file that declared them.
+// Absolute paths and inline sources are left unchanged.
+func resolveSourceFilePaths(res Resource, dir string) {
+	mf, ok := res.(*ManagedFile)
+	if !ok {
+		return
+	}
+	if mf.Spec.SourceFile != "" && !filepath.IsAbs(mf.Spec.SourceFile) {
+		mf.Spec.SourceFile = filepath.Join(dir, mf.Spec.SourceFile)
+	}
+	for i, f := range mf.Spec.Files {
+		if f.SourceFile != "" && !filepath.IsAbs(f.SourceFile) {
+			mf.Spec.Files[i].SourceFile = filepath.Join(dir, f.SourceFile)
+		}
+	}
 }
 
 // isYAMLFile checks if a path has a YAML extension.
