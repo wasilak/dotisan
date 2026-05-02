@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/pterm/pterm"
 	"github.com/wasilak/dotisan/pkg/diff"
 	"github.com/wasilak/dotisan/pkg/engine"
 	"github.com/wasilak/dotisan/pkg/output"
@@ -165,25 +166,20 @@ func DisplayPlanResult(result *engine.PlanResult, outputFormat output.Format, sh
 				for _, mod := range plan.Modifications {
 					for _, ch := range mod.Changes {
 						if ch.OldContent != "" || ch.NewContent != "" {
-							id := ch.ItemName
-							label := "[update] " + id
-							oldName, newName := "before", "after"
+							filePath := ch.ItemName
 							if mod.Kind != "" && mod.Group != "" {
-								oldName = mod.Kind + "/" + mod.Group + "/" + ch.ItemName
-								newName = oldName
+								filePath = mod.Kind + "/" + mod.Group + "/" + ch.ItemName
 							}
-							// Normalize newlines before diff generation so the
-							// unified diff has consistent, readable hunks.
 							oldC := ensureTrailingNewline(ch.OldContent)
 							newC := ensureTrailingNewline(ch.NewContent)
-							diffText, _ := diff.NewEngine().GenerateUnifiedDiff(oldName, newName, oldC, newC)
-							// Truncate very large diffs to keep output readable in the plan
+							diffText, _ := diff.NewEngine().GenerateUnifiedDiff(filePath, filePath, oldC, newC)
 							dt := truncateUnifiedDiff(diffText, 3)
 							colored, _ := diff.HighlightUnifiedDiff(dt, "github-dark")
-							fmt.Printf("\n\033[1m%s (%s)\033[0m\n%s\n", label, providerName, colored)
+							printDiffHeader("update", filePath, providerName)
+							fmt.Print(colored)
 						} else if ch.Diff != "" {
-							// For package diffs: just render Diff field
-							fmt.Printf("\n\033[1m[update] %s (%s)\033[0m\n%s\n", ch.ItemName, providerName, ch.Diff)
+							printDiffHeader("update", ch.ItemName, providerName)
+							fmt.Print(ch.Diff)
 						}
 					}
 				}
@@ -191,14 +187,13 @@ func DisplayPlanResult(result *engine.PlanResult, outputFormat output.Format, sh
 				for _, add := range plan.Additions {
 					for _, item := range add.Items {
 						if add.Contents != nil && add.Contents[item.Name] != "" {
-							id := item.Name
-							label := "[add] " + id
-							fileName := add.Kind + "/" + add.Group + "/" + id
+							filePath := add.Kind + "/" + add.Group + "/" + item.Name
 							content := ensureTrailingNewline(add.Contents[item.Name])
-							diffText, _ := diff.NewEngine().GenerateUnifiedDiff("/dev/null", fileName, "", content)
+							diffText, _ := diff.NewEngine().GenerateUnifiedDiff("/dev/null", filePath, "", content)
 							dt := truncateUnifiedDiff(diffText, 3)
 							colored, _ := diff.HighlightUnifiedDiff(dt, "github-dark")
-							fmt.Printf("\n\033[1m%s (%s)\033[0m\n%s\n", label, providerName, colored)
+							printDiffHeader("add", filePath, providerName)
+							fmt.Print(colored)
 						}
 					}
 				}
@@ -206,18 +201,18 @@ func DisplayPlanResult(result *engine.PlanResult, outputFormat output.Format, sh
 				for _, rem := range plan.Removals {
 					for _, item := range rem.Items {
 						if rem.Contents != nil && rem.Contents[item.Name] != "" {
-							id := item.Name
-							label := "[remove] " + id
-							fileName := rem.Kind + "/" + rem.Group + "/" + id
+							filePath := rem.Kind + "/" + rem.Group + "/" + item.Name
 							content := ensureTrailingNewline(rem.Contents[item.Name])
-							diffText, _ := diff.NewEngine().GenerateUnifiedDiff(fileName, "/dev/null", content, "")
+							diffText, _ := diff.NewEngine().GenerateUnifiedDiff(filePath, "/dev/null", content, "")
 							dt := truncateUnifiedDiff(diffText, 3)
 							colored, _ := diff.HighlightUnifiedDiff(dt, "github-dark")
-							fmt.Printf("\n\033[1m%s (%s)\033[0m\n%s\n", label, providerName, colored)
+							printDiffHeader("remove", filePath, providerName)
+							fmt.Print(colored)
 						}
 					}
 				}
 			}
+			fmt.Println()
 		}
 
 		planParts := []string{
@@ -232,6 +227,34 @@ func DisplayPlanResult(result *engine.PlanResult, outputFormat output.Format, sh
 		fmt.Printf("Plan: %s\n", strings.Join(planParts, ", "))
 		return nil
 	}
+}
+
+// printDiffHeader renders a visual divider and a colour-coded action label
+// with the file path before each diff block.
+func printDiffHeader(action, filePath, providerName string) {
+	width := pterm.GetTerminalWidth()
+	if width < 20 {
+		width = 72
+	}
+	rule := pterm.NewStyle(pterm.FgGray).Sprint(strings.Repeat("─", width))
+
+	var badge string
+	switch action {
+	case "add":
+		badge = pterm.NewStyle(pterm.FgGreen, pterm.Bold).Sprint("+ add   ")
+	case "remove":
+		badge = pterm.NewStyle(pterm.FgRed, pterm.Bold).Sprint("- remove")
+	default:
+		badge = pterm.NewStyle(pterm.FgYellow, pterm.Bold).Sprint("~ update")
+	}
+
+	path := pterm.NewStyle(pterm.Bold).Sprint(filePath)
+	prov := pterm.NewStyle(pterm.FgGray).Sprint("(" + providerName + ")")
+
+	fmt.Println()
+	fmt.Println(rule)
+	fmt.Printf("  %s  %s  %s\n", badge, path, prov)
+	fmt.Println(rule)
 }
 
 // truncateUnifiedDiff keeps the diff headers and the first `maxHunks` hunks
