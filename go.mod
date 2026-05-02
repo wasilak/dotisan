@@ -7,6 +7,7 @@ require (
 	github.com/alecthomas/chroma/v2 v2.24.1
 	github.com/go-playground/validator/v10 v10.30.2
 	github.com/martinohmann/go-difflib v1.1.0
+	github.com/mattn/go-runewidth v0.0.23
 	github.com/minio/minio-go/v7 v7.0.100
 	github.com/pterm/pterm v0.12.83
 	github.com/sergi/go-diff v1.4.0
@@ -41,7 +42,6 @@ require (
 	github.com/lithammer/fuzzysearch v1.1.8 // indirect
 	github.com/mattn/go-colorable v0.1.1 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/mattn/go-runewidth v0.0.23 // indirect
 	github.com/minio/crc64nvme v1.1.1 // indirect
 	github.com/minio/md5-simd v1.1.2 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
