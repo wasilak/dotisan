@@ -69,10 +69,10 @@ func filterPlanByTargets(plan provider.GroupPlan, targets []TargetMatch) provide
 					continue
 				}
 			}
-			if t.Group != "" && t.Group != group {
+			if t.Group != "" && !strings.EqualFold(t.Group, group) {
 				continue
 			}
-			if t.Item != "" && t.Item != item {
+			if t.Item != "" && !strings.EqualFold(t.Item, item) {
 				continue
 			}
 			return true

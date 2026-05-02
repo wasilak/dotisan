@@ -96,36 +96,67 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 			continue
 		}
 
-		// Create a plan without Cleanup items for the provider (Cleanup = state-only, already handled)
-		planForProvider := provider.GroupPlan{
-			Additions:     plan.Additions,
-			Modifications: plan.Modifications,
-			Removals:      plan.Removals,
-			InSync:        plan.InSync,
-			Drifted:       plan.Drifted,
-			Warnings:      plan.Warnings,
-		}
-
-		if err := prov.Apply(ctx, planForProvider); err != nil {
-			for _, a := range plan.Additions {
-				for _, it := range a.Items {
+		// --- Refactored: run apply per resource for progress bar support ---
+		var theseSucceeded = true
+		// Add
+		for _, a := range plan.Additions {
+			for _, it := range a.Items {
+				if opts.OnItemStart != nil {
+					opts.OnItemStart(a.Kind, a.Group, it.Name)
+				}
+				singlePlan := provider.GroupPlan{
+					Additions: []provider.GroupAddition{{Kind: a.Kind, Group: a.Group, Items: []resource.ResourceItem{it}}},
+				}
+				err := prov.Apply(ctx, singlePlan)
+				if opts.OnItemComplete != nil {
+					opts.OnItemComplete(a.Kind, a.Group, it.Name, err)
+				}
+				if err != nil {
 					failures = append(failures, failureEntry{Resource: fmt.Sprintf("%s/%s/%s", a.Kind, a.Group, it.Name), Err: fmt.Errorf("failed to add: %w", err)})
+					theseSucceeded = false
 				}
 			}
-			for _, m := range plan.Modifications {
-				for _, c := range m.Changes {
-					failures = append(failures, failureEntry{Resource: fmt.Sprintf("%s/%s/%s", m.Kind, m.Group, c.ItemName), Err: fmt.Errorf("failed to modify: %w", err)})
-				}
-			}
-			for _, r := range plan.Removals {
-				for _, it := range r.Items {
-					failures = append(failures, failureEntry{Resource: fmt.Sprintf("%s/%s/%s", r.Kind, r.Group, it.Name), Err: fmt.Errorf("failed to remove: %w", err)})
-				}
-			}
-			providerSucceeded[providerName] = false
-		} else {
-			providerSucceeded[providerName] = true
 		}
+		// Modify
+		for _, m := range plan.Modifications {
+			for _, c := range m.Changes {
+				if opts.OnItemStart != nil {
+					opts.OnItemStart(m.Kind, m.Group, c.ItemName)
+				}
+				// To apply a single modification: pass just this change
+				singlePlan := provider.GroupPlan{
+					Modifications: []provider.GroupModification{{Kind: m.Kind, Group: m.Group, Changes: []provider.ItemChange{c}}},
+				}
+				err := prov.Apply(ctx, singlePlan)
+				if opts.OnItemComplete != nil {
+					opts.OnItemComplete(m.Kind, m.Group, c.ItemName, err)
+				}
+				if err != nil {
+					failures = append(failures, failureEntry{Resource: fmt.Sprintf("%s/%s/%s", m.Kind, m.Group, c.ItemName), Err: fmt.Errorf("failed to modify: %w", err)})
+					theseSucceeded = false
+				}
+			}
+		}
+		// Remove
+		for _, r := range plan.Removals {
+			for _, it := range r.Items {
+				if opts.OnItemStart != nil {
+					opts.OnItemStart(r.Kind, r.Group, it.Name)
+				}
+				singlePlan := provider.GroupPlan{
+					Removals: []provider.GroupRemoval{{Kind: r.Kind, Group: r.Group, Items: []resource.ResourceItem{it}}},
+				}
+				err := prov.Apply(ctx, singlePlan)
+				if opts.OnItemComplete != nil {
+					opts.OnItemComplete(r.Kind, r.Group, it.Name, err)
+				}
+				if err != nil {
+					failures = append(failures, failureEntry{Resource: fmt.Sprintf("%s/%s/%s", r.Kind, r.Group, it.Name), Err: fmt.Errorf("failed to remove: %w", err)})
+					theseSucceeded = false
+				}
+			}
+		}
+		providerSucceeded[providerName] = theseSucceeded
 	}
 
 	// STEP 3: Update state with successful provider operations

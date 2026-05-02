@@ -17,29 +17,45 @@ type TargetMatch struct {
 }
 
 // ParseTargets converts raw target strings into TargetMatch structs.
-// Expected target forms: Kind, Kind/Group, Kind/Group/Item
+// Supports target forms: Kind, Kind/Group, Kind/Group[Item]
 func ParseTargets(targets []string) []TargetMatch {
 	var out []TargetMatch
 	for _, t := range targets {
-		// Normalize separators: accept backslashes by converting them to '/'
 		t = strings.ReplaceAll(t, "\\", "/")
 		t = strings.TrimSpace(t)
-		// Split into at most 3 parts so the item may contain '/' characters
-		parts := strings.SplitN(t, "/", 3)
+
 		tm := TargetMatch{}
-		if len(parts) >= 1 {
-			tm.Kind = parts[0]
-		}
-		if len(parts) >= 2 {
-			tm.Group = parts[1]
-		}
-		if len(parts) == 3 {
-			tm.Item = parts[2]
+		// Handle bracketed item notation: Kind/Group[Item]
+		bracketStart := strings.LastIndex(t, "[")
+		bracketEnd := strings.LastIndex(t, "]")
+		if bracketStart != -1 && bracketEnd != -1 && bracketEnd == len(t)-1 && bracketStart < bracketEnd {
+			prefix := t[:bracketStart]
+			tm.Item = t[bracketStart+1 : bracketEnd]
+			parts := strings.SplitN(prefix, "/", 2)
+			if len(parts) >= 1 {
+				tm.Kind = parts[0]
+			}
+			if len(parts) == 2 {
+				tm.Group = parts[1]
+			}
+		} else {
+			// No brackets - support legacy Kind/Group/Item or shorter
+			parts := strings.SplitN(t, "/", 3)
+			if len(parts) >= 1 {
+				tm.Kind = parts[0]
+			}
+			if len(parts) >= 2 {
+				tm.Group = parts[1]
+			}
+			if len(parts) == 3 {
+				tm.Item = parts[2]
+			}
 		}
 		out = append(out, tm)
 	}
 	return out
 }
+
 
 // Matches returns true if the given kind/group/item matches this target.
 func (t TargetMatch) Matches(kind, group, item string) bool {
