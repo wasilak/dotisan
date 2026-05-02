@@ -8,6 +8,7 @@ package config
 import (
 	"bytes"
 	"fmt"
+	"log/slog"
 	"os"
 	"text/template"
 
@@ -50,7 +51,7 @@ func (e *TemplateEngine) RenderTemplate(name, content string) (string, error) {
 func (e *TemplateEngine) LoadAndRenderValues(valuesPath string) error {
 	// Check if file exists
 	if _, err := os.Stat(valuesPath); os.IsNotExist(err) {
-		// No values.yaml, keep empty Values map
+		slog.Warn("values.yaml not found — .Values will be empty in templates", "path", valuesPath)
 		return nil
 	}
 
