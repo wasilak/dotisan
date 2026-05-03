@@ -116,20 +116,39 @@ $ dotisan apply --confirm
 
 #### Homebrew Packages
 
-Create `~/.config/dotisan/resources/brew.yaml`:
+We now provide dedicated resource kinds for Homebrew. If you're migrating from the
+legacy `BrewPackages` resource, split formulae, casks and taps into the new kinds.
+
+Example migration (YAML):
 
 ```yaml
----
-apiVersion: dotisan.io/v1
-kind: BrewPackages
+# ~/.config/dotisan/resources/homebrew-formulae.yaml
+apiVersion: github.com/wasilak/dotisan/v1
+kind: HomeBrewPackages
 metadata:
   name: core-tools
 spec:
-  packages:
+  formulae:
     - name: ripgrep
     - name: fzf
-    - name: fd
-    - name: bat
+
+# ~/.config/dotisan/resources/homebrew-casks.yaml
+apiVersion: github.com/wasilak/dotisan/v1
+kind: HomeBrewCasks
+metadata:
+  name: apps
+spec:
+  casks:
+    - name: raycast
+
+# ~/.config/dotisan/resources/homebrew-taps.yaml
+apiVersion: github.com/wasilak/dotisan/v1
+kind: HomeBrewTaps
+metadata:
+  name: taps
+spec:
+  taps:
+    - name: homebrew/cask-fonts
 ```
 
 #### NPM Global Packages
@@ -148,18 +167,7 @@ spec:
 
 #### Entire Directory
 
-```yaml
----
-apiVersion: dotisan.io/v1
-kind: ManagedDirectory
-metadata:
-  name: config-dir
-spec:
-  source: ~/.config/dotisan/config/
-  destination: ~/.config/
-  recursive: true
-  clean: true  # Remove files at destination not in source
-```
+Note: The previous `ManagedDirectory` resource kind has been removed. Use `ManagedFile` generator-based manifests or list-based `files:` entries to manage multiple files or directory-like workflows. Consult the migration guide in .taskmaster/docs/generators-prd.md for examples.
 
 ---
 
@@ -168,8 +176,11 @@ spec:
 | Kind | Description | Provider |
 |------|-------------|----------|
 | `ManagedFile` | Single file with templating support | Built-in |
-| `ManagedDirectory` | Recursive directory sync | Built-in |
-| `BrewPackages` | Homebrew formulae and casks | `brew` |
+| `HomeBrewPackages` | Homebrew formulae (preferred) | `brew` |
+| `HomeBrewCasks` | Homebrew casks (preferred) | `brew` |
+| `HomeBrewTaps` | Homebrew taps (preferred) | `brew` |
+| `HomeBrewCasks` | Homebrew casks (preferred) | `brew` |
+| `HomeBrewTaps` | Homebrew taps (preferred) | `brew` |
 | `NpmPackages` | Global npm packages | `npm` |
 | `GoPackages` | Go CLI tools (`go install`) | `go` |
 | `CargoPackages` | Rust CLI tools (`cargo install`) | `cargo` |
@@ -265,23 +276,34 @@ A complete macOS development environment:
 # ~/.config/dotisan/resources/macos.yaml
 ---
 apiVersion: dotisan.io/v1
-kind: BrewPackages
+kind: HomeBrewPackages
 metadata:
   name: dev-tools
 spec:
-  packages:
+  formulae:
     - name: git
     - name: gh
     - name: lazygit
     - name: neovim
     - name: starship
+---
+apiVersion: dotisan.io/v1
+kind: HomeBrewCasks
+metadata:
+  name: dev-casks
+spec:
   casks:
     - name: raycast
     - name: warp
     - name: rectangle
+---
+apiVersion: dotisan.io/v1
+kind: HomeBrewTaps
+metadata:
+  name: taps
+spec:
   taps:
     - name: homebrew/cask-fonts
-
 ---
 apiVersion: dotisan.io/v1
 kind: ManagedFile
@@ -300,7 +322,6 @@ spec:
   destination: ~/.gitconfig
   mode: "0644"
   template: true
-
 ---
 apiVersion: dotisan.io/v1
 kind: NpmPackages

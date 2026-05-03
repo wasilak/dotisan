@@ -33,12 +33,12 @@ func TestNewState(t *testing.T) {
 func TestState_GetResourceGroup(t *testing.T) {
 	s := NewState()
 	s.Resources = []provider.ResourceState{
-		{Kind: "BrewPackages", Group: "core-tools", Items: []resource.ItemState{{Name: "ripgrep"}}},
-		{Kind: "BrewPackages", Group: "dev-tools", Items: []resource.ItemState{{Name: "jq"}}},
+		{Kind: resource.KindHomeBrewPackages, Group: "core-tools", Items: []resource.ItemState{{Name: "ripgrep"}}},
+		{Kind: resource.KindHomeBrewPackages, Group: "dev-tools", Items: []resource.ItemState{{Name: "jq"}}},
 	}
 
 	// Get existing resource
-	r, found := s.GetResourceGroup("BrewPackages", "core-tools")
+	r, found := s.GetResourceGroup(resource.KindHomeBrewPackages, "core-tools")
 	if !found {
 		t.Error("GetResourceGroup() should find existing resource")
 	}
@@ -47,7 +47,7 @@ func TestState_GetResourceGroup(t *testing.T) {
 	}
 
 	// Get non-existent resource
-	_, found = s.GetResourceGroup("BrewPackages", "nonexistent")
+	_, found = s.GetResourceGroup(resource.KindHomeBrewPackages, "nonexistent")
 	if found {
 		t.Error("GetResourceGroup() should not find non-existent resource")
 	}
@@ -57,7 +57,7 @@ func TestState_SetResourceGroup_New(t *testing.T) {
 	s := NewState()
 
 	s.SetResourceGroup(provider.ResourceState{
-		Kind:      "BrewPackages",
+		Kind:      resource.KindHomeBrewPackages,
 		Group:     "core-tools",
 		Items:     []resource.ItemState{{Name: "ripgrep"}},
 		Namespace: "default",
@@ -75,14 +75,14 @@ func TestState_SetResourceGroup_New(t *testing.T) {
 func TestState_SetResourceGroup_Update(t *testing.T) {
 	s := NewState()
 	s.SetResourceGroup(provider.ResourceState{
-		Kind:      "BrewPackages",
+		Kind:      resource.KindHomeBrewPackages,
 		Group:     "core-tools",
 		Items:     []resource.ItemState{{Name: "ripgrep"}},
 		Namespace: "default",
 	})
 
 	s.SetResourceGroup(provider.ResourceState{
-		Kind:      "BrewPackages",
+		Kind:      resource.KindHomeBrewPackages,
 		Group:     "core-tools",
 		Items:     []resource.ItemState{{Name: "ripgrep"}, {Name: "jq"}},
 		Namespace: "default",
@@ -101,19 +101,19 @@ func TestState_SetResourceGroup_Update(t *testing.T) {
 func TestState_RemoveResourceGroup(t *testing.T) {
 	s := NewState()
 	s.SetResourceGroup(provider.ResourceState{
-		Kind:      "BrewPackages",
+		Kind:      resource.KindHomeBrewPackages,
 		Group:     "core-tools",
 		Items:     []resource.ItemState{{Name: "ripgrep"}},
 		Namespace: "default",
 	})
 	s.SetResourceGroup(provider.ResourceState{
-		Kind:      "BrewPackages",
+		Kind:      resource.KindHomeBrewPackages,
 		Group:     "dev-tools",
 		Items:     []resource.ItemState{{Name: "jq"}},
 		Namespace: "default",
 	})
 
-	removed := s.RemoveResourceGroup("BrewPackages", "core-tools")
+	removed := s.RemoveResourceGroup(resource.KindHomeBrewPackages, "core-tools")
 	if !removed {
 		t.Error("RemoveResourceGroup() should return true for existing resource")
 	}
@@ -123,7 +123,7 @@ func TestState_RemoveResourceGroup(t *testing.T) {
 	}
 
 	// Remove non-existent
-	removed = s.RemoveResourceGroup("BrewPackages", "nonexistent")
+	removed = s.RemoveResourceGroup(resource.KindHomeBrewPackages, "nonexistent")
 	if removed {
 		t.Error("RemoveResourceGroup() should return false for non-existent resource")
 	}
@@ -138,7 +138,7 @@ func TestLocalBackend_SaveAndLoad(t *testing.T) {
 	// Create and save state
 	state := NewState()
 	state.SetResourceGroup(provider.ResourceState{
-		Kind:      "BrewPackages",
+		Kind:      resource.KindHomeBrewPackages,
 		Group:     "core-tools",
 		Namespace: "default",
 		Items: []resource.ItemState{
@@ -238,7 +238,7 @@ func TestState_MoveItem(t *testing.T) {
 
 	// Set up initial state with two groups
 	s.SetResourceGroup(provider.ResourceState{
-		Kind:      "BrewPackages",
+		Kind:      resource.KindHomeBrewPackages,
 		Group:     "core-tools",
 		Namespace: "default",
 		Items: []resource.ItemState{
@@ -247,7 +247,7 @@ func TestState_MoveItem(t *testing.T) {
 		},
 	})
 	s.SetResourceGroup(provider.ResourceState{
-		Kind:      "BrewPackages",
+		Kind:      resource.KindHomeBrewPackages,
 		Group:     "homebrew-packages",
 		Namespace: "default",
 		Items: []resource.ItemState{
@@ -256,7 +256,7 @@ func TestState_MoveItem(t *testing.T) {
 	})
 
 	// Move podman from core-tools to homebrew-packages
-	moved, ok := s.MoveItem("BrewPackages", "core-tools", "podman", "BrewPackages", "homebrew-packages", "podman")
+	moved, ok := s.MoveItem(resource.KindHomeBrewPackages, "core-tools", "podman", resource.KindHomeBrewPackages, "homebrew-packages", "podman")
 	if !ok {
 		t.Fatal("MoveItem() should return true for valid move")
 	}
@@ -265,7 +265,7 @@ func TestState_MoveItem(t *testing.T) {
 	}
 
 	// Verify podman was removed from source group
-	srcGroup, exists := s.GetResourceGroup("BrewPackages", "core-tools")
+	srcGroup, exists := s.GetResourceGroup(resource.KindHomeBrewPackages, "core-tools")
 	if !exists {
 		t.Fatal("Source group should still exist")
 	}
@@ -279,7 +279,7 @@ func TestState_MoveItem(t *testing.T) {
 	}
 
 	// Verify podman was added to destination group
-	dstGroup, exists := s.GetResourceGroup("BrewPackages", "homebrew-packages")
+	dstGroup, exists := s.GetResourceGroup(resource.KindHomeBrewPackages, "homebrew-packages")
 	if !exists {
 		t.Fatal("Destination group should exist")
 	}
@@ -300,7 +300,7 @@ func TestState_MoveItem_ToNewGroup(t *testing.T) {
 
 	// Set up initial state with one group
 	s.SetResourceGroup(provider.ResourceState{
-		Kind:      "BrewPackages",
+		Kind:      resource.KindHomeBrewPackages,
 		Group:     "core-tools",
 		Namespace: "default",
 		Items: []resource.ItemState{
@@ -309,19 +309,19 @@ func TestState_MoveItem_ToNewGroup(t *testing.T) {
 	})
 
 	// Move podman to a new group that doesn't exist yet
-	_, ok := s.MoveItem("BrewPackages", "core-tools", "podman", "BrewPackages", "new-group", "podman")
+	_, ok := s.MoveItem(resource.KindHomeBrewPackages, "core-tools", "podman", resource.KindHomeBrewPackages, "new-group", "podman")
 	if !ok {
 		t.Fatal("MoveItem() should return true for valid move to new group")
 	}
 
 	// Verify source group was removed (empty after move)
-	_, exists := s.GetResourceGroup("BrewPackages", "core-tools")
+	_, exists := s.GetResourceGroup(resource.KindHomeBrewPackages, "core-tools")
 	if exists {
 		t.Error("core-tools group should be removed since it's now empty")
 	}
 
 	// Verify destination group was created
-	dstGroup, exists := s.GetResourceGroup("BrewPackages", "new-group")
+	dstGroup, exists := s.GetResourceGroup(resource.KindHomeBrewPackages, "new-group")
 	if !exists {
 		t.Fatal("new-group should exist")
 	}
@@ -335,7 +335,7 @@ func TestState_MoveItem_NotFound(t *testing.T) {
 
 	// Set up initial state
 	s.SetResourceGroup(provider.ResourceState{
-		Kind:      "BrewPackages",
+		Kind:      resource.KindHomeBrewPackages,
 		Group:     "core-tools",
 		Namespace: "default",
 		Items: []resource.ItemState{
@@ -344,13 +344,13 @@ func TestState_MoveItem_NotFound(t *testing.T) {
 	})
 
 	// Try to move non-existent item
-	_, ok := s.MoveItem("BrewPackages", "core-tools", "nonexistent", "BrewPackages", "other-group", "nonexistent")
+	_, ok := s.MoveItem(resource.KindHomeBrewPackages, "core-tools", "nonexistent", resource.KindHomeBrewPackages, "other-group", "nonexistent")
 	if ok {
 		t.Error("MoveItem() should return false for non-existent item")
 	}
 
 	// Try to move from non-existent group
-	_, ok = s.MoveItem("BrewPackages", "nonexistent", "ripgrep", "BrewPackages", "other-group", "ripgrep")
+	_, ok = s.MoveItem(resource.KindHomeBrewPackages, "nonexistent", "ripgrep", resource.KindHomeBrewPackages, "other-group", "ripgrep")
 	if ok {
 		t.Error("MoveItem() should return false for non-existent group")
 	}

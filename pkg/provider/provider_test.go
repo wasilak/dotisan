@@ -31,8 +31,9 @@ func (m *mockProvider) Apply(ctx context.Context, plan GroupPlan) error {
 }
 
 func (m *mockProvider) Import(ctx context.Context, group string) (ResourceState, error) {
-    return ResourceState{Kind: "test", Group: group}, nil
+	return ResourceState{Kind: "test", Group: group}, nil
 }
+
 // Note: provider-level ImportItem removed; Import should return a group state.
 
 func TestRegisterAndGet(t *testing.T) {

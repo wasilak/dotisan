@@ -64,7 +64,7 @@ func TestBrewProvider_Reconcile_Additions(t *testing.T) {
 	// Reconcile with desired resources
 	desired := []resource.ResourceGroup{
 		{
-			Kind:  "BrewPackages",
+			Kind:  resource.KindHomeBrewPackages,
 			Name:  "core-tools",
 			Items: []resource.ResourceItem{{Name: "ripgrep"}},
 		},
@@ -76,6 +76,26 @@ func TestBrewProvider_Reconcile_Additions(t *testing.T) {
 	// Just verify Reconcile runs without error
 	t.Logf("Plan Additions: %d, Modifications: %d, Removals: %d, InSync: %d",
 		len(plan.Additions), len(plan.Modifications), len(plan.Removals), len(plan.InSync))
+}
+
+func TestBrewProvider_Reconcile_Taps(t *testing.T) {
+	p := NewBrewProvider()
+
+	desired := []resource.ResourceGroup{
+		{
+			Kind: resource.KindHomeBrewTaps,
+			Name: "my-taps",
+			// RawSpec used by provider.Reconcile for taps when Items is empty
+			RawSpec: resource.HomeBrewTapsSpec{Taps: []resource.Tap{{Name: "homebrew/cask-fonts"}}},
+		},
+	}
+	state := []provider.ResourceState{}
+	plan := p.Reconcile(context.Background(), desired, state)
+
+	// Expect an addition for the tap group
+	if len(plan.Additions) == 0 {
+		t.Errorf("expected at least one addition for taps, got 0")
+	}
 }
 
 func TestBrewProvider_Apply(t *testing.T) {
@@ -101,21 +121,21 @@ func TestBrewProvider_Import(t *testing.T) {
 		return
 	}
 
-	if state.Kind != "BrewPackages" {
-		t.Errorf("Import() Kind = %q, want BrewPackages", state.Kind)
+	if state.Kind != resource.KindHomeBrewPackages {
+		t.Errorf("Import() Kind = %q, want %s", state.Kind, resource.KindHomeBrewPackages)
 	}
 }
 
 func TestBrewProvider_ImportItem(t *testing.T) {
-    p := NewBrewProvider()
+	p := NewBrewProvider()
 
-    // ImportItem should handle non-empty args
-    // provider ImportItem removed; call Import and validate group-level result
-    state, err := p.Import(context.Background(), "core-tools")
-    if err != nil {
-        t.Logf("ImportItem() error (may be expected): %v", err)
-        return
-    }
+	// ImportItem should handle non-empty args
+	// provider ImportItem removed; call Import and validate group-level result
+	state, err := p.Import(context.Background(), "core-tools")
+	if err != nil {
+		t.Logf("ImportItem() error (may be expected): %v", err)
+		return
+	}
 
 	if state.Group != "core-tools" {
 		t.Errorf("ImportItem() Group = %q, want core-tools", state.Group)

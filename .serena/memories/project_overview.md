@@ -56,7 +56,7 @@ Two backends:
 - First task: Project Setup and CLI Framework Integration (Task #1)
 
 ## Resource Kinds Supported
-- `BrewPackages` — Homebrew formulae, casks, taps
+- `HomeBrewPackages` — Homebrew formulae, casks, taps
 - `NpmPackages` — Global npm packages
 - `GoPackages` — Go modules/tools
 - `CargoPackages` — Rust crates

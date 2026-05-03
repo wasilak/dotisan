@@ -127,7 +127,7 @@ type PlanWarning struct {
 // ResourceState represents the state of a resource group as tracked by dotisan.
 // Uses 3-level hierarchy: Kind -> Group -> Items
 type ResourceState struct {
-	// Kind is the resource type (e.g., "BrewPackages")
+	// Kind is the resource type (e.g., "HomeBrewPackages")
 	Kind string `json:"kind"`
 
 	// Group is the resource group name (e.g., "core-tools")
@@ -165,10 +165,10 @@ type Provider interface {
 	// Returns an error if any operation fails.
 	Apply(ctx context.Context, plan GroupPlan) error
 
-    // Import discovers an existing resource on the system and returns its state.
-    // This is used by the `state import` command to bring unmanaged resources
-    // under dotisan's control. NOTE: provider-level ImportItem was removed —
-    // CLI import functionality (and provider-level import helpers) are no
-    // longer supported; providers should expose only Reconcile/Apply.
-    Import(ctx context.Context, group string) (ResourceState, error)
+	// Import discovers an existing resource on the system and returns its state.
+	// This is used by the `state import` command to bring unmanaged resources
+	// under dotisan's control. NOTE: provider-level ImportItem was removed —
+	// CLI import functionality (and provider-level import helpers) are no
+	// longer supported; providers should expose only Reconcile/Apply.
+	Import(ctx context.Context, group string) (ResourceState, error)
 }

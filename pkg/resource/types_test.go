@@ -4,21 +4,21 @@ import (
 	"testing"
 )
 
-func TestBrewPackages_Validate(t *testing.T) {
+func TestHomeBrewPackages_Validate(t *testing.T) {
 	tests := []struct {
 		name    string
-		pkg     BrewPackages
+		pkg     HomeBrewPackages
 		wantErr bool
 	}{
 		{
 			name: "valid with formulae",
-			pkg: BrewPackages{
+			pkg: HomeBrewPackages{
 				BaseResource: BaseResource{
 					APIVersion: "github.com/wasilak/dotisan/v1",
-					Kind:       "BrewPackages",
+					Kind:       "HomeBrewPackages",
 					Metadata:   Metadata{Name: "core-tools"},
 				},
-				Spec: BrewPackagesSpec{
+				Spec: HomeBrewPackagesSpec{
 					Formulae: []Package{{Name: "ripgrep"}, {Name: "fd"}},
 				},
 			},
@@ -26,39 +26,40 @@ func TestBrewPackages_Validate(t *testing.T) {
 		},
 		{
 			name: "valid with taps only",
-			pkg: BrewPackages{
+			pkg: HomeBrewPackages{
 				BaseResource: BaseResource{
 					APIVersion: "github.com/wasilak/dotisan/v1",
-					Kind:       "BrewPackages",
+					Kind:       "HomeBrewPackages",
 					Metadata:   Metadata{Name: "fonts"},
 				},
-				Spec: BrewPackagesSpec{
-					Taps: []Tap{{Name: "homebrew/cask-fonts"}},
+				Spec: HomeBrewPackagesSpec{
+					// no formulae, but taps may live in RawSpec for HomeBrewTaps
+					Formulae: nil,
 				},
 			},
 			wantErr: false,
 		},
 		{
 			name: "missing metadata.name",
-			pkg: BrewPackages{
+			pkg: HomeBrewPackages{
 				BaseResource: BaseResource{
 					APIVersion: "github.com/wasilak/dotisan/v1",
-					Kind:       "BrewPackages",
+					Kind:       "HomeBrewPackages",
 					Metadata:   Metadata{},
 				},
-				Spec: BrewPackagesSpec{},
+				Spec: HomeBrewPackagesSpec{},
 			},
 			wantErr: true,
 		},
 		{
 			name: "empty spec allowed",
-			pkg: BrewPackages{
+			pkg: HomeBrewPackages{
 				BaseResource: BaseResource{
 					APIVersion: "github.com/wasilak/dotisan/v1",
-					Kind:       "BrewPackages",
+					Kind:       "HomeBrewPackages",
 					Metadata:   Metadata{Name: "empty"},
 				},
-				Spec: BrewPackagesSpec{},
+				Spec: HomeBrewPackagesSpec{},
 			},
 			wantErr: false,
 		},
@@ -321,55 +322,7 @@ func TestManagedFile_Validate(t *testing.T) {
 	}
 }
 
-func TestManagedDirectory_Validate(t *testing.T) {
-	tests := []struct {
-		name    string
-		dir     ManagedDirectory
-		wantErr bool
-	}{
-		{
-			name: "valid with recursive and clean",
-			dir: ManagedDirectory{
-				BaseResource: BaseResource{
-					APIVersion: "github.com/wasilak/dotisan/v1",
-					Kind:       "ManagedDirectory",
-					Metadata:   Metadata{Name: "skills"},
-				},
-				Spec: ManagedDirectorySpec{
-					Source:      "skills/",
-					Destination: "~/.claude/skills",
-					Recursive:   true,
-					Clean:       true,
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name: "valid minimal",
-			dir: ManagedDirectory{
-				BaseResource: BaseResource{
-					APIVersion: "github.com/wasilak/dotisan/v1",
-					Kind:       "ManagedDirectory",
-					Metadata:   Metadata{Name: "minimal"},
-				},
-				Spec: ManagedDirectorySpec{
-					Source:      "configs/",
-					Destination: "~/.configs",
-				},
-			},
-			wantErr: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := tt.dir.Validate()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
+// Note: ManagedDirectory has been removed. No validation tests remain for it.
 
 // TestManagedFile_GeneratorExpanded_ToGroup verifies that a generator-expanded ManagedFile
 // (Generator cleared, Files populated) passes through ToGroup() and GetFiles() correctly,

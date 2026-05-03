@@ -24,7 +24,7 @@ func TestLocalBackendLoadNormalizesMissingStatus(t *testing.T) {
 		UpdatedAt: now,
 		Resources: []provider.ResourceState{
 			{
-				Kind:  "BrewPackages",
+				Kind:  resource.KindHomeBrewPackages,
 				Group: "core-tools",
 				Items: []resource.ItemState{{Name: "ripgrep"}},
 			},

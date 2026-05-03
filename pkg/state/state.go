@@ -11,7 +11,7 @@
 //	  "updated_at": "2024-01-15T10:30:00Z",
 //	  "resources": [
 //	    {
-//	      "kind": "BrewPackages",
+//	      "kind": "HomeBrewPackages",
 //	      "group": "core-tools",
 //	      "namespace": "default",
 //	      "items": [

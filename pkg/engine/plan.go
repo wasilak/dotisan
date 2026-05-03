@@ -223,9 +223,9 @@ func (e *Engine) groupResourcesByProvider(groups []resource.ResourceGroup) map[s
 	for _, group := range groups {
 		var providerName string
 		switch group.Kind {
-		case resource.KindManagedFile, resource.KindManagedDirectory:
+		case resource.KindManagedFile:
 			providerName = providerFile
-		case resource.KindBrewPackages:
+		case resource.KindHomeBrewPackages, resource.KindHomeBrewCasks, resource.KindHomeBrewTaps:
 			providerName = providerHomebrew
 		case resource.KindNpmPackages:
 			providerName = providerNpm
@@ -251,9 +251,10 @@ func (e *Engine) filterStateForProvider(stateResources []provider.ResourceState,
 	switch providerName {
 	case providerFile:
 		providerKinds[resource.KindManagedFile] = true
-		providerKinds[resource.KindManagedDirectory] = true
 	case providerHomebrew:
-		providerKinds[resource.KindBrewPackages] = true
+		providerKinds[resource.KindHomeBrewPackages] = true
+		providerKinds[resource.KindHomeBrewCasks] = true
+		providerKinds[resource.KindHomeBrewTaps] = true
 	case providerNpm:
 		providerKinds[resource.KindNpmPackages] = true
 	case providerGo:

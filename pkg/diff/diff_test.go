@@ -3,6 +3,8 @@ package diff
 import (
 	"strings"
 	"testing"
+
+	"github.com/wasilak/dotisan/pkg/resource"
 )
 
 func TestNewEngine(t *testing.T) {
@@ -206,11 +208,11 @@ func TestPlanFormatter_FormatSummary(t *testing.T) {
 func TestPlanFormatter_FormatResourceHeader(t *testing.T) {
 	f := NewPlanFormatter()
 
-	header := f.FormatResourceHeader("BrewPackages", "core-tools")
+	header := f.FormatResourceHeader(resource.KindHomeBrewPackages, "core-tools")
 	if header == "" {
 		t.Error("FormatResourceHeader() returned empty")
 	}
-	if !strings.Contains(header, "BrewPackages") {
+	if !strings.Contains(header, resource.KindHomeBrewPackages) {
 		t.Error("header should contain kind")
 	}
 	if !strings.Contains(header, "core-tools") {

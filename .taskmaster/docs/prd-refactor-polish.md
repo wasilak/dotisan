@@ -65,12 +65,12 @@ Dotisan is a dotfiles/package manager CLI built incrementally via agentic AI wor
 - `pkg/resource/constants.go`:
   ```go
   const (
-      KindBrewPackages    = "BrewPackages"
+      KindHomeBrewPackages    = "HomeBrewPackages"
       KindNpmPackages     = "NpmPackages"
       KindGoPackages      = "GoPackages"
       KindCargoPackages   = "CargoPackages"
       KindManagedFile     = "ManagedFile"
-      KindManagedDirectory = "ManagedDirectory"
+      // KindManagedDirectory removed: ManagedDirectory no longer exists
   )
   
   func ResourceID(kind, group, item string) string {
@@ -320,7 +320,7 @@ Dotisan is a dotfiles/package manager CLI built incrementally via agentic AI wor
 
 **Requirements:**
 - **Plain format** (`pkg/diff/plan.go`):
-  - Add styled section dividers between provider groups (e.g., "── BrewPackages ──" in dim color)
+  - Add styled section dividers between provider groups (e.g., "── HomeBrewPackages ──" in dim color)
   - Add colored summary box at bottom: use existing `style.SuccessBox`/`style.WarningBox` with counts
   - Show drift items with a different icon (⚠ amber) vs additions (✚ green) vs removals (✖ red)
   - Unchanged: keep JSON output format completely clean (no lipgloss in json path)

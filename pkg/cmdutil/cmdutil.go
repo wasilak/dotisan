@@ -90,6 +90,10 @@ func RunSimple(ctx context.Context, name string, args ...string) (stdout, stderr
 	return result.Stdout, result.Stderr, result.Error
 }
 
+// RunSimpleFn is the function used by callers to execute simple commands.
+// Tests may override this to simulate command execution.
+var RunSimpleFn = RunSimple
+
 // CheckExecutable checks if an executable exists in PATH.
 // Returns the path to the executable if found, empty string if not.
 func CheckExecutable(name string) string {

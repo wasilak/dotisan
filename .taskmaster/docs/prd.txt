@@ -15,7 +15,7 @@
 Dotisan currently has inconsistent behavior:
 1. Files without state but with existing destination are marked "in sync" (should be "+ to create")
 2. Homebrew drift not detected - can't tell if packages were uninstalled externally
-3. Import syntax doesn't support lists (can't import `BrewPackages[ripgrep]`)
+3. Import syntax doesn't support lists (can't import `HomeBrewPackages[ripgrep]`)
 4. Resource models are inconsistent (files = single, packages = aggregate)
 
 ## 2. Functional Requirements
@@ -47,7 +47,7 @@ Resources to be created
 **Expected:** 
 ```
 Drifted resources (manual changes detected)
-  ⚠ BrewPackages/core-tools has drift
+  ⚠ HomeBrewPackages/core-tools has drift
     Package 'ripgrep' was uninstalled outside of dotisan
     Run 'dotisan apply' to restore
 ```
@@ -65,8 +65,8 @@ dotisan state import ManagedFile zshrc ~/.zshrc
 **Expected:**
 ```bash
 # Import specific item from a list resource
-dotisan state import BrewPackages core-tools[ripgrep] ripgrep
-dotisan state import BrewPackages core-tools[0] ripgrep  # index-based
+dotisan state import HomeBrewPackages core-tools[ripgrep] ripgrep
+dotisan state import HomeBrewPackages core-tools[0] ripgrep  # index-based
 ```
 
 ### FR4: Unified List Structure
@@ -74,8 +74,8 @@ dotisan state import BrewPackages core-tools[0] ripgrep  # index-based
 
 **Current Inconsistency:**
 - `ManagedFile` = single file
-- `ManagedDirectory` = single directory  
-- `BrewPackages` = list of formulae/casks
+-- `ManagedDirectory` = single directory  (removed)
+  - `HomeBrewPackages` = list of formulae/casks
 - `NpmPackages` = list of packages
 
 **Expected Consistency:**
@@ -163,7 +163,7 @@ type Provider interface {
 
 **Migration Plan:**
 1. `ManagedFile` - Add `Files []FileSpec` field
-2. `ManagedDirectory` - Add `Directories []DirectorySpec` field
+2. `ManagedDirectory` - Add `Directories []DirectorySpec` field (historical; ManagedDirectory removed, migrate to generators or files lists)
 3. Keep backward compatibility with single-item syntax
 4. Phase out old single-item fields over time
 
@@ -198,10 +198,10 @@ dotisan state import ManagedFile zshrc ~/.zshrc
 
 # Import specific item from list resource
 # Syntax 1: by name
-dotisan state import BrewPackages core-tools[ripgrep] ripgrep
+dotisan state import HomeBrewPackages core-tools[ripgrep] ripgrep
 
 # Syntax 2: by index  
-dotisan state import BrewPackages core-tools[0] ripgrep
+dotisan state import HomeBrewPackages core-tools[0] ripgrep
 
 # Import specific file from multi-file resource
 dotisan state import ManagedFile dotfiles[0] ~/.zshrc
@@ -229,7 +229,7 @@ dotisan state import ManagedFile dotfiles[0] ~/.zshrc
 
 ### AC4: Unified Lists
 - [ ] ManagedFile supports `files:` list field
-- [ ] ManagedDirectory supports `directories:` list field
+- [ ] ManagedDirectory supports `directories:` list field (note: ManagedDirectory removed; prefer generators)
 - [ ] All resources use consistent list structure
 - [ ] Backward compatibility maintained
 

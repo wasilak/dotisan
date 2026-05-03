@@ -59,7 +59,7 @@
 		},
 		{
 			"taskId": 7,
-			"taskTitle": "Implement Item-Level Import for ManagedFile and BrewPackages",
+            "taskTitle": "Implement Item-Level Import for ManagedFile and HomeBrewPackages",
 			"complexityScore": 8,
 			"recommendedSubtasks": 5,
 			"expansionPrompt": "Break down the implementation for `ManagedFileProvider.ImportItem` and `BrewProvider.ImportItem` separately, including logic for locating items by `itemKey`, generating `ResourceState` for individual items, updating state tracking, and comprehensive integration testing for both providers.",
@@ -75,7 +75,7 @@
 		},
 		{
 			"taskId": 9,
-			"taskTitle": "Migrate ManagedDirectory to List-Based Structure",
+            "taskTitle": "Migrate ManagedDirectory (removed) references to list/generator-based structures",
 			"complexityScore": 6,
 			"recommendedSubtasks": 3,
 			"expansionPrompt": "Outline the steps for modifying the `ManagedDirectory` struct, implementing backward compatibility logic, updating the `ManagedDirectoryProvider`'s methods, and creating unit tests for both old and new syntax, leveraging patterns from Task 8.",

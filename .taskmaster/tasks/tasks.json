@@ -112,8 +112,8 @@
       {
         "id": 3,
         "title": "Resource Object Parsing and Schema Validation",
-        "description": "Define Go structs for all specified resource kinds (`BrewPackages`, `NpmPackages`, `GoPackages`, `CargoPackages`, `ManagedFile`, `ManagedDirectory`). Implement a generic parser for `kind`-based YAML resource objects and integrate `go-playground/validator/v10` for schema validation.",
-        "details": "1. Create a `Resource` interface or base struct with `apiVersion`, `kind`, `metadata`. 2. Define specific Go structs for each `kind` (e.g., `BrewPackagesSpec`, `ManagedFileSpec`) adhering to the PRD's YAML structure. 3. Implement a YAML unmarshaler that can dynamically unmarshal based on the `kind` field using `gopkg.in/yaml.v3`. 4. Integrate `github.com/go-playground/validator/v10` to add validation tags to resource structs (e.g., `required`, `min`, `max`, `url`). 5. Implement a function to read all resource YAML files from the `~/.dotfiles/` directory layout, apply templating (if applicable, after `values.yaml` pass), and parse them into a list of `Resource` objects.",
+        "description": "Define Go structs for all specified resource kinds (`HomeBrewPackages`, `NpmPackages`, `GoPackages`, `CargoPackages`, `ManagedFile`). Implement a generic parser for `kind`-based YAML resource objects and integrate `go-playground/validator/v10` for schema validation.",
+        "details": "1. Create a `Resource` interface or base struct with `apiVersion`, `kind`, `metadata`. 2. Define specific Go structs for each `kind` (e.g., `HomeBrewPackagesSpec`, `ManagedFileSpec`) adhering to the PRD's YAML structure. 3. Implement a YAML unmarshaler that can dynamically unmarshal based on the `kind` field using `gopkg.in/yaml.v3`. 4. Integrate `github.com/go-playground/validator/v10` to add validation tags to resource structs (e.g., `required`, `min`, `max`, `url`). 5. Implement a function to read all resource YAML files from the `~/.dotfiles/` directory layout, apply templating (if applicable, after `values.yaml` pass), and parse them into a list of `Resource` objects.",
         "testStrategy": "1. Create valid and invalid YAML resource files for each `kind`. 2. Write unit tests to ensure correct parsing of valid resources. 3. Verify that invalid resources (e.g., missing required fields, incorrect types) trigger validation errors. 4. Test parsing of templated resource fields (e.g., `destination` in `ManagedFile`) after the `values.yaml` context is applied. 5. Ensure `namespace` defaults to 'default' if not specified.",
         "priority": "high",
         "dependencies": [
@@ -135,11 +135,11 @@
           {
             "id": 2,
             "title": "Define Specific Go Structs for Resource Kinds",
-            "description": "Create distinct Go structs for each specified resource kind (`BrewPackages`, `NpmPackages`, `GoPackages`, `CargoPackages`, `ManagedFile`, `ManagedDirectory`), ensuring they accurately reflect the YAML structure defined in the PRD.",
+            "description": "Create distinct Go structs for each specified resource kind (`HomeBrewPackages`, `NpmPackages`, `GoPackages`, `CargoPackages`, `ManagedFile`), ensuring they accurately reflect the YAML structure defined in the PRD.",
             "dependencies": [
               1
             ],
-            "details": "For each resource kind, define a corresponding Go struct (e.g., `BrewPackages`, `ManagedFile`) that embeds the base `Resource` interface/struct and includes a `Spec` field. The `Spec` field will contain the specific configuration for that resource type, adhering to the PRD's YAML schema for each kind.",
+            "details": "For each resource kind, define a corresponding Go struct (e.g., `HomeBrewPackages`, `ManagedFile`) that embeds the base `Resource` interface/struct and includes a `Spec` field. The `Spec` field will contain the specific configuration for that resource type, adhering to the PRD's YAML schema for each kind.",
             "status": "done",
             "testStrategy": null,
             "parentId": "undefined",
@@ -153,7 +153,7 @@
               1,
               2
             ],
-            "details": "Create a central parsing function that first unmarshals the YAML into a temporary struct to extract `apiVersion` and `kind`. Based on the `kind` value, use a switch statement or a map of `kind` to struct types to unmarshal the full YAML content into the correct specific resource struct (e.g., `BrewPackages`, `ManagedFile`). Handle unknown `kind` values gracefully by returning an error.",
+            "details": "Create a central parsing function that first unmarshals the YAML into a temporary struct to extract `apiVersion` and `kind`. Based on the `kind` value, use a switch statement or a map of `kind` to struct types to unmarshal the full YAML content into the correct specific resource struct (e.g., `HomeBrewPackages`, `ManagedFile`). Handle unknown `kind` values gracefully by returning an error.",
             "status": "done",
             "testStrategy": "Create valid YAML files for each resource kind. Write unit tests to ensure each file is correctly unmarshaled into its corresponding Go struct without errors. Test with invalid `kind` values to verify error handling.",
             "parentId": "undefined",
@@ -167,7 +167,7 @@
               2,
               3
             ],
-            "details": "Add validation tags to the fields within the `Spec` structs of all defined resource kinds (e.g., `BrewPackagesSpec`, `ManagedFileSpec`) as per PRD requirements. Implement a `Validate()` method on the `Resource` interface or a separate validation utility function that iterates through the parsed resource objects and applies the `go-playground/validator` validation.",
+            "details": "Add validation tags to the fields within the `Spec` structs of all defined resource kinds (e.g., `HomeBrewPackagesSpec`, `ManagedFileSpec`) as per PRD requirements. Implement a `Validate()` method on the `Resource` interface or a separate validation utility function that iterates through the parsed resource objects and applies the `go-playground/validator` validation.",
             "status": "done",
             "testStrategy": "Create valid and invalid YAML resource files for each `kind` (e.g., missing required fields, out-of-range values, incorrect formats). Write unit tests to verify that valid resources pass validation and invalid resources correctly trigger validation errors with informative messages.",
             "parentId": "undefined",
@@ -363,9 +363,9 @@
       {
         "id": 7,
         "title": "File Provider Implementation",
-        "description": "Implement the `ManagedFile` and `ManagedDirectory` providers. This includes handling file templating, destination path resolution, file mode, and recursive directory management with cleanup. Utilize the templating and diff engines.",
+        "description": "Implement the `ManagedFile` provider and multi-file workflows. This includes handling file templating, destination path resolution, file mode, and strategies for managing multiple files (generators or explicit file lists). Utilize the templating and diff engines.",
         "details": "1. Implement the `FileProvider` struct, embedding `TemplateContext` and `DiffEngine`. 2. For `ManagedFile`: implement `Reconcile` to compare desired state (rendered source, destination path, mode) with actual file state (on disk, `dest_hash` from state). Use the templating engine to render `source` if `template: true`. Resolve `destination` using `TemplateContext.Values`. 3. Implement `Apply` for `ManagedFile`: create/update file, set mode, handle `--backup` for conflicts. 4. For `ManagedDirectory`: implement `Reconcile` to compare source directory contents with destination. Handle `recursive: true` and `clean: true` (remove files at destination not in source). 5. Implement `Apply` for `ManagedDirectory`: copy/delete files/directories as per plan. 6. Calculate `checksum` for rendered file content and `source_hash`/`dest_hash` for state tracking.",
-        "testStrategy": "1. Create test cases for `ManagedFile`: new file creation, content update, mode change, templated content, static content, destination path with `Values` interpolation. 2. Test `ManagedDirectory`: recursive copy, `clean: true` functionality (verify files are removed), handling of empty directories. 3. Verify `dest_hash` and `checksum` calculations are accurate. 4. Simulate file drift (manual edit) and verify `plan` shows it as drift with a diff. 5. Test `apply --confirm --backup` behavior for conflicting files.",
+        "testStrategy": "1. Create test cases for `ManagedFile`: new file creation, content update, mode change, templated content, static content, destination path with `Values` interpolation. 2. For multi-file workflows, test generator outputs and explicit `files:` lists to ensure correct handling of multiple files and optional cleanup. 3. Verify `dest_hash` and `checksum` calculations are accurate. 4. Simulate file drift (manual edit) and verify `plan` shows it as drift with a diff. 5. Test `apply --confirm --backup` behavior for conflicting files.",
         "priority": "high",
         "dependencies": [
           "2",
@@ -420,8 +420,8 @@
           },
           {
             "id": 4,
-            "title": "Implement ManagedDirectory.Reconcile (Recursive Comparison, Cleanup Plan)",
-            "description": "Develop the `Reconcile` method for `ManagedDirectory` to compare source directory contents with the destination. This includes recursive traversal and identifying files/directories for cleanup.",
+            "title": "Implement generator/list-based directory reconciliation (replaces ManagedDirectory)",
+            "description": "Develop reconciliation logic for directory-like workflows using generators or explicit `files:` lists. This includes recursive traversal and identifying files/directories for cleanup.",
             "dependencies": [
               1,
               2,
@@ -435,8 +435,8 @@
           },
           {
             "id": 5,
-            "title": "Implement ManagedDirectory.Apply (Recursive Copy/Delete Operations)",
-            "description": "Implement the `Apply` method for `ManagedDirectory` to execute the plan generated by `Reconcile`. This involves copying new/updated files and directories, and deleting unwanted items.",
+            "title": "Implement generator/list-based Apply (copy/delete operations for directories)",
+            "description": "Implement Apply-like behavior for generator/list-based directory management to execute planned copy/delete operations. This involves copying new/updated files and deleting unwanted items based on generator output.",
             "dependencies": [
               4
             ],
@@ -449,14 +449,14 @@
           {
             "id": 6,
             "title": "Integrate Diff Engine and State Tracking for File Providers",
-            "description": "Ensure both `ManagedFile` and `ManagedDirectory` `Reconcile` methods correctly utilize the `DiffEngine` and manage `source_hash`/`dest_hash` for robust state tracking and change detection.",
+            "description": "Ensure both `ManagedFile` and generator/list-based directory reconciliation correctly utilize the `DiffEngine` and manage `source_hash`/`dest_hash` for robust state tracking and change detection.",
             "dependencies": [
               2,
               3,
               4,
               6
             ],
-            "details": "Refine the `Reconcile` methods of both `ManagedFile` and `ManagedDirectory` to fully integrate the embedded `DiffEngine` (Task 3). This includes calculating `source_hash` from the desired state and `dest_hash` from the actual state (Task 6), feeding these into the diff engine, and interpreting its output to generate the final `Plan`. Ensure `checksum` is consistently used for content comparison.",
+            "details": "Refine the `Reconcile` methods of both `ManagedFile` and generator/list-based directory handling to fully integrate the embedded `DiffEngine` (Task 3). This includes calculating `source_hash` from the desired state and `dest_hash` from the actual state (Task 6), feeding these into the diff engine, and interpreting its output to generate the final `Plan`. Ensure `checksum` is consistently used for content comparison.",
             "status": "done",
             "testStrategy": "Enhance existing `Reconcile` tests for both providers to explicitly verify `DiffEngine` interaction and correct `source_hash`/`dest_hash` usage. Test scenarios where only mode changes, content changes, or path changes are detected by the diff engine.",
             "parentId": "undefined",
@@ -465,13 +465,13 @@
         ],
         "complexity": 8,
         "recommendedSubtasks": 6,
-        "expansionPrompt": "Detail the implementation of the `ManagedFile` provider (including templating, destination path resolution, file mode, checksums, and backup logic) and the `ManagedDirectory` provider (recursive copy, cleanup logic). Focus on their `Reconcile` and `Apply` methods, and integration with the templating and diff engines.",
+        "expansionPrompt": "Detail the implementation of the `ManagedFile` provider (including templating, destination path resolution, file mode, checksums, and backup logic) and multi-file provider patterns (generator outputs and cleanup logic). Focus on reconciliation and apply semantics, and integration with the templating and diff engines.",
         "updatedAt": "2026-04-20T09:41:42.700Z"
       },
       {
         "id": 8,
         "title": "Package Providers Implementation (Brew, NPM, Go, Cargo)",
-        "description": "Implement the `BrewPackages`, `NpmPackages`, `GoPackages`, and `CargoPackages` providers. These providers will interact with system package managers using `os/exec` and external APIs where necessary.",
+        "description": "Implement the `HomeBrewPackages`, `NpmPackages`, `GoPackages`, and `CargoPackages` providers. These providers will interact with system package managers using `os/exec` and external APIs where necessary.",
         "details": "1. Implement `BrewProvider`: Use `os/exec` for `brew install`, `brew uninstall`, `brew upgrade`, `brew tap`. Use `brew list --formula --versions` to get installed state. Use `https://formulae.brew.sh/api/formula/<name>.json` (HTTP client) to validate formula existence and get available versions. Implement warning for version pinning if brew doesn't support it. 2. Implement `NpmProvider`: Use `os/exec` for `npm install -g`, `npm uninstall -g`, `npm list -g --json`. 3. Implement `GoProvider`: Use `os/exec` for `go install <module>@<version>`, `go list -m all` to check installed modules. 4. Implement `CargoProvider`: Use `os/exec` for `cargo install`, `cargo uninstall`, `cargo install --list`. 5. For each provider, implement `Reconcile` to compare desired packages/versions with current system state, and `Apply` to execute necessary commands.",
         "testStrategy": "1. For each provider, write integration tests that mock `os/exec` commands and HTTP requests (for Brew API). 2. Test `Available()` method for each provider. 3. Test `Reconcile` logic for adding, removing, and updating packages/taps/casks. 4. Test `Apply` logic for successful installations, uninstalls, and upgrades. 5. Verify correct handling of optional versions and warnings for unsupported pinning (Brew). 6. Ensure `id` and `version` are correctly extracted for state tracking.",
         "priority": "high",

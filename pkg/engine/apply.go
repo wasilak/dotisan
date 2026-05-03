@@ -1,18 +1,18 @@
 package engine
 
 import (
-    "context"
-    "fmt"
-    "strings"
-    "crypto/sha256"
-    "encoding/hex"
-    "io"
-    "os"
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
+	"io"
+	"os"
+	"strings"
 
-    "github.com/wasilak/dotisan/pkg/provider"
-    "github.com/wasilak/dotisan/pkg/resource"
-    "github.com/wasilak/dotisan/pkg/state"
-    "github.com/wasilak/dotisan/pkg/style"
+	"github.com/wasilak/dotisan/pkg/provider"
+	"github.com/wasilak/dotisan/pkg/resource"
+	"github.com/wasilak/dotisan/pkg/state"
+	"github.com/wasilak/dotisan/pkg/style"
 )
 
 // Apply executes the planned changes.
@@ -173,106 +173,106 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 		stateToSave = state.NewState()
 	}
 
-    for providerName, plan := range result.ProviderPlans {
-        if !providerSucceeded[providerName] {
-            continue
-        }
+	for providerName, plan := range result.ProviderPlans {
+		if !providerSucceeded[providerName] {
+			continue
+		}
 
-        _, ok := e.Providers[providerName]
-        if !ok {
-            // Provider missing; skip
-            continue
-        }
+		_, ok := e.Providers[providerName]
+		if !ok {
+			// Provider missing; skip
+			continue
+		}
 
-        // InSync: preserve exactly as provided
-        for _, inSync := range plan.InSync {
-            stateToSave.SetResourceGroup(provider.ResourceState{
-                Kind:      inSync.Kind,
-                Group:     inSync.Group,
-                Items:     inSync.Items,
-                Namespace: "default",
-            })
-        }
+		// InSync: preserve exactly as provided
+		for _, inSync := range plan.InSync {
+			stateToSave.SetResourceGroup(provider.ResourceState{
+				Kind:      inSync.Kind,
+				Group:     inSync.Group,
+				Items:     inSync.Items,
+				Namespace: "default",
+			})
+		}
 
-        // Additions: add new items with computed checksum (if available)
-        for _, addition := range plan.Additions {
-            items := make([]resource.ItemState, 0, len(addition.Items))
-            for _, item := range addition.Items {
-                checksum := ""
-                // Compute checksum when destination path is known.
-                // Reading files here is best-effort: if the destination is
-                // not present (e.g., apply will create it later) keep checksum
-                // empty.
-                if dest, ok := item.Extra["destination"].(string); ok && dest != "" {
-                    if data, err := readFileMaybe(dest); err == nil {
-                        h := sha256.Sum256(data)
-                        checksum = hex.EncodeToString(h[:])
-                    }
-                }
-                items = append(items, resource.ItemState{
-                    Name:     item.Name,
-                    Version:  item.Version,
-                    Status:   "present",
-                    Checksum: checksum,
-                })
-            }
-            stateToSave.SetResourceGroup(provider.ResourceState{
-                Kind:      addition.Kind,
-                Group:     addition.Group,
-                Items:     items,
-                Namespace: "default",
-            })
-        }
+		// Additions: add new items with computed checksum (if available)
+		for _, addition := range plan.Additions {
+			items := make([]resource.ItemState, 0, len(addition.Items))
+			for _, item := range addition.Items {
+				checksum := ""
+				// Compute checksum when destination path is known.
+				// Reading files here is best-effort: if the destination is
+				// not present (e.g., apply will create it later) keep checksum
+				// empty.
+				if dest, ok := item.Extra["destination"].(string); ok && dest != "" {
+					if data, err := readFileMaybe(dest); err == nil {
+						h := sha256.Sum256(data)
+						checksum = hex.EncodeToString(h[:])
+					}
+				}
+				items = append(items, resource.ItemState{
+					Name:     item.Name,
+					Version:  item.Version,
+					Status:   "present",
+					Checksum: checksum,
+				})
+			}
+			stateToSave.SetResourceGroup(provider.ResourceState{
+				Kind:      addition.Kind,
+				Group:     addition.Group,
+				Items:     items,
+				Namespace: "default",
+			})
+		}
 
-        // Modifications: update checksum/status in-place if group/item exists, otherwise add it
-        for _, modification := range plan.Modifications {
-            for _, change := range modification.Changes {
-                checksum := ""
-                if dest, ok := change.NewState.Extra["destination"].(string); ok && dest != "" {
-                    if data, err := readFileMaybe(dest); err == nil {
-                        h := sha256.Sum256(data)
-                        checksum = hex.EncodeToString(h[:])
-                    }
-                }
+		// Modifications: update checksum/status in-place if group/item exists, otherwise add it
+		for _, modification := range plan.Modifications {
+			for _, change := range modification.Changes {
+				checksum := ""
+				if dest, ok := change.NewState.Extra["destination"].(string); ok && dest != "" {
+					if data, err := readFileMaybe(dest); err == nil {
+						h := sha256.Sum256(data)
+						checksum = hex.EncodeToString(h[:])
+					}
+				}
 
-                updated := false
-                for gi := range stateToSave.Resources {
-                    r := &stateToSave.Resources[gi]
-                    if r.Kind != modification.Kind || r.Group != modification.Group {
-                        continue
-                    }
-                    for ii := range r.Items {
-                        if r.Items[ii].Name == change.ItemName {
-                            r.Items[ii].Checksum = checksum
-                            r.Items[ii].Status = "present"
-                            updated = true
-                            break
-                        }
-                    }
-                    // group matched & processed; break outer loop
-                    break
-                }
+				updated := false
+				for gi := range stateToSave.Resources {
+					r := &stateToSave.Resources[gi]
+					if r.Kind != modification.Kind || r.Group != modification.Group {
+						continue
+					}
+					for ii := range r.Items {
+						if r.Items[ii].Name == change.ItemName {
+							r.Items[ii].Checksum = checksum
+							r.Items[ii].Status = "present"
+							updated = true
+							break
+						}
+					}
+					// group matched & processed; break outer loop
+					break
+				}
 
-                if !updated {
-                    stateToSave.SetResourceGroup(provider.ResourceState{
-                        Kind:      modification.Kind,
-                        Group:     modification.Group,
-                        Namespace: "default",
-                        Items: []resource.ItemState{
-                            {Name: change.ItemName, Version: "", Checksum: checksum, Status: "present"},
-                        },
-                    })
-                }
-            }
-        }
+				if !updated {
+					stateToSave.SetResourceGroup(provider.ResourceState{
+						Kind:      modification.Kind,
+						Group:     modification.Group,
+						Namespace: "default",
+						Items: []resource.ItemState{
+							{Name: change.ItemName, Version: "", Checksum: checksum, Status: "present"},
+						},
+					})
+				}
+			}
+		}
 
-        // Removals: remove items from state
-        for _, removal := range plan.Removals {
-            for _, it := range removal.Items {
-                stateToSave.RemoveResourceItem(removal.Kind, removal.Group, it.Name)
-            }
-        }
-    }
+		// Removals: remove items from state
+		for _, removal := range plan.Removals {
+			for _, it := range removal.Items {
+				stateToSave.RemoveResourceItem(removal.Kind, removal.Group, it.Name)
+			}
+		}
+	}
 
 	if err := e.StateBackend.Save(ctx, stateToSave); err != nil {
 		return fmt.Errorf("failed to save state: %w", err)
@@ -322,10 +322,10 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 // readFileMaybe attempts to read a file and returns its bytes or an error.
 // It wraps os.Open + io.ReadAll to make testing and error handling clearer.
 func readFileMaybe(path string) ([]byte, error) {
-    f, err := os.Open(path)
-    if err != nil {
-        return nil, err
-    }
-    defer f.Close()
-    return io.ReadAll(f)
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	return io.ReadAll(f)
 }

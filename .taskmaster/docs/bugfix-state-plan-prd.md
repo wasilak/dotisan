@@ -155,9 +155,9 @@ t.Row(res.Kind, res.Group, strings.Join(itemNames, ", "), "managed")
 ┌──────────────┬────────────┬────────────┬─────────┐
 │     KIND     │   GROUP    │    ITEM   │ STATUS  │
 ├──────────────┼────────────┼────────────┼─────────┤
-│ BrewPackages │ core-tools │  ripgrep  │ managed │
-│ BrewPackages │ core-tools │   htop   │ managed │
-│ BrewPackages │ core-tools │  podman  │ managed │
+│ HomeBrewPackages │ core-tools │  ripgrep  │ managed │
+│ HomeBrewPackages │ core-tools │   htop   │ managed │
+│ HomeBrewPackages │ core-tools │  podman  │ managed │
 └──────────────┴────────────┴────────────┴─────────┘
 ```
 
