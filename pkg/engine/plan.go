@@ -190,7 +190,7 @@ func (e *Engine) Plan(ctx context.Context, opts PlanOptions) (*PlanResult, error
 		for _, sync := range plan.InSync {
 			result.TotalInSync += len(sync.Items)
 		}
-		for _ = range plan.Drifted {
+		for range plan.Drifted {
 			result.TotalDrifted++
 		}
 	}
