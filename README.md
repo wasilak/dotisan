@@ -119,6 +119,11 @@ $ dotisan apply --confirm
 We now provide dedicated resource kinds for Homebrew. If you're migrating from the
 legacy `BrewPackages` resource, split formulae, casks and taps into the new kinds.
 
+Note: The loader currently supports one resource per YAML file. Multi-document
+YAML files (several documents separated by `---`) will only load the first
+document. Create separate files for `HomeBrewPackages`, `HomeBrewCasks`, and
+`HomeBrewTaps` (one kind per file) to ensure all resources are discovered.
+
 Example migration (YAML):
 
 ```yaml
