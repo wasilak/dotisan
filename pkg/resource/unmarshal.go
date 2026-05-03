@@ -28,8 +28,12 @@ func UnmarshalYAML(data []byte) (Resource, error) {
 	// Create the appropriate resource type based on kind
 	var resource Resource
 	switch typeInfo.Kind {
-	case KindBrewPackages:
-		resource = &BrewPackages{}
+	case KindHomeBrewPackages:
+		resource = &HomeBrewPackages{}
+	case KindHomeBrewCasks:
+		resource = &HomeBrewCasks{}
+	case KindHomeBrewTaps:
+		resource = &HomeBrewTaps{}
 	case KindNpmPackages:
 		resource = &NpmPackages{}
 	case KindGoPackages:
@@ -53,7 +57,9 @@ func UnmarshalYAML(data []byte) (Resource, error) {
 // ValidResourceKinds returns all valid resource kind strings.
 func ValidResourceKinds() []string {
 	return []string{
-		KindBrewPackages,
+		KindHomeBrewPackages,
+		KindHomeBrewCasks,
+		KindHomeBrewTaps,
 		KindNpmPackages,
 		KindGoPackages,
 		KindCargoPackages,

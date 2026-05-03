@@ -65,7 +65,7 @@ func (p *GoProvider) getInstalledPackages(ctx context.Context) map[string]string
 	if goBin == "" {
 		goBin = "go"
 	}
-	stdout, _, err := cmdutil.RunSimple(ctx, goBin, "env", "GOBIN")
+	stdout, _, err := cmdutil.RunSimpleFn(ctx, goBin, "env", "GOBIN")
 	if err != nil {
 		slog.Warn("go getInstalledPackages: failed to get GOBIN", "err", err)
 		return installed
@@ -73,7 +73,7 @@ func (p *GoProvider) getInstalledPackages(ctx context.Context) map[string]string
 
 	goBinPath := strings.TrimSpace(stdout)
 	if goBinPath == "" {
-		stdout, _, err = cmdutil.RunSimple(ctx, goBin, "env", "GOPATH")
+		stdout, _, err = cmdutil.RunSimpleFn(ctx, goBin, "env", "GOPATH")
 		if err != nil {
 			slog.Warn("go getInstalledPackages: failed to get GOPATH", "err", err)
 			return installed
@@ -140,7 +140,7 @@ func (p *GoProvider) applyGroupAddition(ctx context.Context, addition provider.G
 			installPath = fmt.Sprintf("%s@%s", module, version)
 		}
 
-		if _, stderr, err := cmdutil.RunSimple(ctx, goBin, "install", installPath); err != nil {
+		if _, stderr, err := cmdutil.RunSimpleFn(ctx, goBin, "install", installPath); err != nil {
 			return fmt.Errorf("failed to install %s: %s: %w", module, stderr, err)
 		}
 	}
@@ -155,14 +155,14 @@ func (p *GoProvider) applyGroupRemoval(ctx context.Context, removal provider.Gro
 		goBin = "go"
 	}
 
-	stdout, _, err := cmdutil.RunSimple(ctx, goBin, "env", "GOBIN")
+	stdout, _, err := cmdutil.RunSimpleFn(ctx, goBin, "env", "GOBIN")
 	if err != nil {
 		return fmt.Errorf("failed to get GOBIN: %w", err)
 	}
 
 	goBinPath := strings.TrimSpace(stdout)
 	if goBinPath == "" {
-		stdout, _, err = cmdutil.RunSimple(ctx, goBin, "env", "GOPATH")
+		stdout, _, err = cmdutil.RunSimpleFn(ctx, goBin, "env", "GOPATH")
 		if err != nil {
 			return fmt.Errorf("failed to get GOPATH: %w", err)
 		}

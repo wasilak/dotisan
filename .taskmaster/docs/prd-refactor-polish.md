@@ -65,7 +65,7 @@ Dotisan is a dotfiles/package manager CLI built incrementally via agentic AI wor
 - `pkg/resource/constants.go`:
   ```go
   const (
-      KindBrewPackages    = "BrewPackages"
+      KindHomeBrewPackages    = "HomeBrewPackages"
       KindNpmPackages     = "NpmPackages"
       KindGoPackages      = "GoPackages"
       KindCargoPackages   = "CargoPackages"

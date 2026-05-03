@@ -47,7 +47,7 @@ func TestLoader_LoadResources(t *testing.T) {
 		t.Fatalf("Failed to create brew dir: %v", err)
 	}
 
-	brewContent := "apiVersion: github.com/wasilak/dotisan/v1\nkind: BrewPackages\nmetadata:\n  name: core-tools\nspec:\n  formulae:\n    - name: ripgrep\n    - name: fd\n"
+	brewContent := "apiVersion: github.com/wasilak/dotisan/v1\nkind: HomeBrewPackages\nmetadata:\n  name: core-tools\nspec:\n  formulae:\n    - name: ripgrep\n    - name: fd\n"
 	if err := os.WriteFile(filepath.Join(brewDir, "core.yaml"), []byte(brewContent), 0644); err != nil {
 		t.Fatalf("Failed to write brew resource: %v", err)
 	}
@@ -87,11 +87,11 @@ func TestLoader_LoadResources(t *testing.T) {
 	foundFile := false
 	for _, r := range resources {
 		switch r.(type) {
-		case *BrewPackages:
+		case *HomeBrewPackages:
 			foundBrew = true
-			bp := r.(*BrewPackages)
+			bp := r.(*HomeBrewPackages)
 			if bp.GetMetadata().Name != "core-tools" {
-				t.Errorf("BrewPackages name = %q, want %q", bp.GetMetadata().Name, "core-tools")
+				t.Errorf("HomeBrewPackages name = %q, want %q", bp.GetMetadata().Name, "core-tools")
 			}
 		case *ManagedFile:
 			foundFile = true

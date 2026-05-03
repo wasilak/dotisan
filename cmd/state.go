@@ -46,8 +46,8 @@ It is only needed when the logical state name differs from the actual resource
 on the system (e.g. a managed file whose path differs from its state name).
 
 Examples:
-  dotisan state import BrewPackages/homebrew-packages[ripgrep]
-  dotisan state import BrewPackages/homebrew-packages/fd[fd]
+  dotisan state import HomeBrewPackages/homebrew-packages[ripgrep]
+  dotisan state import HomeBrewPackages/homebrew-packages/fd[fd]
   dotisan state import ManagedFile/dotfiles[zshrc] ~/.zshrc`,
 	Args: cobra.RangeArgs(1, 2),
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -79,7 +79,7 @@ func kindToProvider(kind string) string {
 
 // parseID parses a resource ID in the form Kind/Group[Item] or Kind/Group.
 // The bracket notation avoids ambiguity when Group itself contains slashes.
-// Examples: BrewPackages/homebrew-packages/fd[fd], ManagedFile/dotfiles[zshrc]
+// Examples: HomeBrewPackages/homebrew-packages/fd[fd], ManagedFile/dotfiles[zshrc]
 func parseID(id string) (kind, group, item string, err error) {
 	firstSlash := strings.IndexByte(id, '/')
 	if firstSlash < 0 {
@@ -227,8 +227,8 @@ If destination item name is not provided, the source item name is used.
 The destination group must exist in the desired configuration.
 
 Examples:
-  dotisan state mv BrewPackages/core-tools/ripgrep BrewPackages/homebrew-packages/ripgrep
-  dotisan state mv BrewPackages/core-tools/ripgrep BrewPackages/homebrew-packages/`,
+  dotisan state mv HomeBrewPackages/core-tools/ripgrep HomeBrewPackages/homebrew-packages/ripgrep
+  dotisan state mv HomeBrewPackages/core-tools/ripgrep HomeBrewPackages/homebrew-packages/`,
 	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runStateMv(cmd.Context(), args[0], args[1])
@@ -275,8 +275,8 @@ var stateRemoveCmd = &cobra.Command{
 without affecting the actual system.
 
 Examples:
-  dotisan state remove BrewPackages/homebrew-packages
-  dotisan state remove BrewPackages/homebrew-packages/fd[fd]`,
+  dotisan state remove HomeBrewPackages/homebrew-packages
+  dotisan state remove HomeBrewPackages/homebrew-packages/fd[fd]`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		id := args[0]

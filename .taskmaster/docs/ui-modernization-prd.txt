@@ -179,7 +179,7 @@ ManagedFile          zshrc                     ManagedFile/zshrc                
 │ KIND        │ NAME       │ ID                               │ STATUS   │
 ├─────────────┼─────────────┼─────────────────────────────────┼──────────┤
 │ ManagedFile │ zshrc      │ ManagedFile/zshrc               │ ✓ in_sync│
-│ BrewPackages│ core-tools │ BrewPackages/core-tools[rip...]│ ✓ in_sync│
+│ HomeBrewPackages│ core-tools │ HomeBrewPackages/core-tools[rip...]│ ✓ in_sync│
 └─────────────┴─────────────┴─────────────────────────────────┴──────────┘
 
 ✓ 2 resources in sync
@@ -194,16 +194,16 @@ ManagedFile          zshrc                     ManagedFile/zshrc                
 
 **Current Output:**
 ```
-✓ Imported BrewPackages/core-tools[ripgrep]
+✓ Imported HomeBrewPackages/core-tools[ripgrep]
 Error: resource already exists
 ```
 
 **Proposed Output:**
 ```
-✓ Successfully imported BrewPackages/core-tools[ripgrep]
+✓ Successfully imported HomeBrewPackages/core-tools[ripgrep]
 
 ✖ Cannot import: resource already exists
-  Use 'dotisan state remove BrewPackages/core-tools[ripgrep]' first
+  Use 'dotisan state remove HomeBrewPackages/core-tools[ripgrep]' first
 ```
 
 **Implementation Notes:**
@@ -217,7 +217,7 @@ Error: resource already exists
 ```
 Applying changes...
 Created ManagedFile/zshrc
-Created BrewPackages/ripgrep
+Created HomeBrewPackages/ripgrep
 Apply complete! 2 resources created.
 ```
 
@@ -226,8 +226,8 @@ Apply complete! 2 resources created.
 Applying changes...
 
   ✓ ManagedFile/zshrc       created
-  ✓ BrewPackages/ripgrep   installed
-  ✓ BrewPackages/fd         installed
+  ✓ HomeBrewPackages/ripgrep   installed
+  ✓ HomeBrewPackages/fd         installed
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✓ Apply complete! 3 resources synchronized

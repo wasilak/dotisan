@@ -148,16 +148,16 @@ state:
 #   mode: "0644"
 #   template: true
 
-# Example 3: Install packages with Homebrew
-# ---
-# apiVersion: github.com/wasilak/dotisan/v1
-# kind: BrewPackages
-# metadata:
-#   name: cli-tools
-# spec:
-#   packages:
-#     - name: ripgrep
-#     - name: fzf
+    # Example 3: Install packages with Homebrew
+    # ---
+    # apiVersion: github.com/wasilak/dotisan/v1
+    # kind: HomeBrewPackages
+    # metadata:
+    #   name: cli-tools
+    # spec:
+    #   formulae:
+    #     - name: ripgrep
+    #     - name: fzf
 #     - name: fd
 `
 		if err := os.WriteFile(sampleResourcePath, []byte(sampleContent), 0644); err != nil {

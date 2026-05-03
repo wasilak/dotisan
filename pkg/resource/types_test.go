@@ -4,21 +4,21 @@ import (
 	"testing"
 )
 
-func TestBrewPackages_Validate(t *testing.T) {
+func TestHomeBrewPackages_Validate(t *testing.T) {
 	tests := []struct {
 		name    string
-		pkg     BrewPackages
+		pkg     HomeBrewPackages
 		wantErr bool
 	}{
 		{
 			name: "valid with formulae",
-			pkg: BrewPackages{
+			pkg: HomeBrewPackages{
 				BaseResource: BaseResource{
 					APIVersion: "github.com/wasilak/dotisan/v1",
-					Kind:       "BrewPackages",
+					Kind:       "HomeBrewPackages",
 					Metadata:   Metadata{Name: "core-tools"},
 				},
-				Spec: BrewPackagesSpec{
+				Spec: HomeBrewPackagesSpec{
 					Formulae: []Package{{Name: "ripgrep"}, {Name: "fd"}},
 				},
 			},
@@ -26,39 +26,40 @@ func TestBrewPackages_Validate(t *testing.T) {
 		},
 		{
 			name: "valid with taps only",
-			pkg: BrewPackages{
+			pkg: HomeBrewPackages{
 				BaseResource: BaseResource{
 					APIVersion: "github.com/wasilak/dotisan/v1",
-					Kind:       "BrewPackages",
+					Kind:       "HomeBrewPackages",
 					Metadata:   Metadata{Name: "fonts"},
 				},
-				Spec: BrewPackagesSpec{
-					Taps: []Tap{{Name: "homebrew/cask-fonts"}},
+				Spec: HomeBrewPackagesSpec{
+					// no formulae, but taps may live in RawSpec for HomeBrewTaps
+					Formulae: nil,
 				},
 			},
 			wantErr: false,
 		},
 		{
 			name: "missing metadata.name",
-			pkg: BrewPackages{
+			pkg: HomeBrewPackages{
 				BaseResource: BaseResource{
 					APIVersion: "github.com/wasilak/dotisan/v1",
-					Kind:       "BrewPackages",
+					Kind:       "HomeBrewPackages",
 					Metadata:   Metadata{},
 				},
-				Spec: BrewPackagesSpec{},
+				Spec: HomeBrewPackagesSpec{},
 			},
 			wantErr: true,
 		},
 		{
 			name: "empty spec allowed",
-			pkg: BrewPackages{
+			pkg: HomeBrewPackages{
 				BaseResource: BaseResource{
 					APIVersion: "github.com/wasilak/dotisan/v1",
-					Kind:       "BrewPackages",
+					Kind:       "HomeBrewPackages",
 					Metadata:   Metadata{Name: "empty"},
 				},
-				Spec: BrewPackagesSpec{},
+				Spec: HomeBrewPackagesSpec{},
 			},
 			wantErr: false,
 		},

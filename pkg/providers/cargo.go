@@ -46,7 +46,7 @@ func (p *CargoProvider) getInstalledPackages(ctx context.Context) map[string]str
 		return make(map[string]string)
 	}
 	// List installed crates
-	stdout, _, err := cmdutil.RunSimple(ctx, "cargo", "install", "--list")
+	stdout, _, err := cmdutil.RunSimpleFn(ctx, "cargo", "install", "--list")
 	if err != nil {
 		slog.Warn("cargo getInstalledPackages failed", "err", err)
 		return make(map[string]string)
@@ -99,7 +99,7 @@ func (p *CargoProvider) applyGroupAddition(ctx context.Context, addition provide
 		if item.Version != "" {
 			crate = fmt.Sprintf("%s@%s", item.Name, item.Version)
 		}
-		if _, stderr, err := cmdutil.RunSimple(ctx, "cargo", "install", crate); err != nil {
+		if _, stderr, err := cmdutil.RunSimpleFn(ctx, "cargo", "install", crate); err != nil {
 			return fmt.Errorf("failed to install %s: %s: %w", item.Name, stderr, err)
 		}
 	}
@@ -108,7 +108,7 @@ func (p *CargoProvider) applyGroupAddition(ctx context.Context, addition provide
 
 func (p *CargoProvider) applyGroupRemoval(ctx context.Context, removal provider.GroupRemoval) error {
 	for _, item := range removal.Items {
-		if _, stderr, err := cmdutil.RunSimple(ctx, "cargo", "uninstall", item.Name); err != nil {
+		if _, stderr, err := cmdutil.RunSimpleFn(ctx, "cargo", "uninstall", item.Name); err != nil {
 			return fmt.Errorf("failed to uninstall %s: %s: %w", item.Name, stderr, err)
 		}
 	}

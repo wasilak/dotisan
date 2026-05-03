@@ -45,7 +45,7 @@ func (p *NpmProvider) getInstalledPackages(ctx context.Context) map[string]strin
 		slog.Warn("npm getInstalledPackages called with nil context; returning empty set")
 		return make(map[string]string)
 	}
-	stdout, _, err := cmdutil.RunSimple(ctx, "npm", "list", "-g", "--depth=0", "--json")
+	stdout, _, err := cmdutil.RunSimpleFn(ctx, "npm", "list", "-g", "--depth=0", "--json")
 	if err != nil {
 		slog.Warn("npm getInstalledPackages failed", "err", err)
 		return make(map[string]string)
@@ -96,7 +96,7 @@ func (p *NpmProvider) applyGroupAddition(ctx context.Context, addition provider.
 		if item.Version != "" {
 			pkg = fmt.Sprintf("%s@%s", item.Name, item.Version)
 		}
-		if _, stderr, err := cmdutil.RunSimple(ctx, "npm", "install", "-g", pkg); err != nil {
+		if _, stderr, err := cmdutil.RunSimpleFn(ctx, "npm", "install", "-g", pkg); err != nil {
 			return fmt.Errorf("failed to install %s: %s: %w", item.Name, stderr, err)
 		}
 	}
@@ -105,7 +105,7 @@ func (p *NpmProvider) applyGroupAddition(ctx context.Context, addition provider.
 
 func (p *NpmProvider) applyGroupRemoval(ctx context.Context, removal provider.GroupRemoval) error {
 	for _, item := range removal.Items {
-		if _, stderr, err := cmdutil.RunSimple(ctx, "npm", "uninstall", "-g", item.Name); err != nil {
+		if _, stderr, err := cmdutil.RunSimpleFn(ctx, "npm", "uninstall", "-g", item.Name); err != nil {
 			return fmt.Errorf("failed to uninstall %s: %s: %w", item.Name, stderr, err)
 		}
 	}

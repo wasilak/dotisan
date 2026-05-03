@@ -52,15 +52,20 @@ func (p *BrewProvider) Reconcile(ctx context.Context,
 	// Track items already processed to avoid duplicates
 	processedItems := make(map[string]bool) // key: "group/item"
 
-	// Index state by group name for quick lookup
-	stateIndex := provider.IndexStateByGroup(state, resource.KindBrewPackages)
+	// Index state by group name for quick lookup. Include both legacy and new Homebrew kinds.
+	stateIndex := make(map[string]provider.ResourceState)
+	for _, s := range state {
+		if resource.IsBrewKind(s.Kind) {
+			stateIndex[s.Group] = s
+		}
+	}
 
 	// Get currently installed packages
 	installed, err := p.getInstalledPackages(ctx)
 	if err != nil {
 		// Can't get installed state, mark all as additions
 		for _, group := range desired {
-			if group.Kind == resource.KindBrewPackages {
+			if resource.IsBrewKind(group.Kind) {
 				plan.Additions = append(plan.Additions, provider.GroupAddition{
 					Kind:  group.Kind,
 					Group: group.Name,
@@ -73,7 +78,7 @@ func (p *BrewProvider) Reconcile(ctx context.Context,
 
 	// Process each desired group
 	for _, group := range desired {
-		if group.Kind != resource.KindBrewPackages {
+		if !resource.IsBrewKind(group.Kind) {
 			continue
 		}
 
@@ -83,18 +88,28 @@ func (p *BrewProvider) Reconcile(ctx context.Context,
 			// New group - check which items are already installed vs need installation
 			var toInstall, toImport []resource.ResourceItem
 
-			for _, item := range group.Items {
-				name := item.Name
-				if strings.HasSuffix(name, " (cask)") {
-					name = strings.TrimSuffix(name, " (cask)")
+			// Special-case taps: they are represented as items (created by ToGroup) but
+			// some resource kinds (HomeBrewTaps) might have no items and instead store
+			// taps in RawSpec. Handle both.
+			if len(group.Items) == 0 && group.Kind == resource.KindHomeBrewTaps {
+				// Extract taps from RawSpec if present
+				if spec, ok := group.RawSpec.(resource.HomeBrewTapsSpec); ok {
+					for _, t := range spec.Taps {
+						toInstall = append(toInstall, resource.ResourceItem{Name: t.Name})
+					}
 				}
-
-				if _, isInstalled := installed[name]; isInstalled {
-					// Already installed - needs to be imported
-					toImport = append(toImport, item)
-				} else {
-					// Not installed - needs installation
-					toInstall = append(toInstall, item)
+			} else {
+				for _, item := range group.Items {
+					name := item.Name
+					// For casks we rely on the resource.Kind to indicate cask vs formula.
+					lookupName := name
+					if _, isInstalled := installed[lookupName]; isInstalled {
+						// Already installed - needs to be imported
+						toImport = append(toImport, item)
+					} else {
+						// Not installed - needs installation
+						toInstall = append(toInstall, item)
+					}
 				}
 			}
 
@@ -199,7 +214,7 @@ func (p *BrewProvider) Reconcile(ctx context.Context,
 	// Check for removals (groups in state but not in desired)
 	desiredGroups := make(map[string]bool)
 	for _, group := range desired {
-		if group.Kind == resource.KindBrewPackages {
+		if resource.IsBrewKind(group.Kind) {
 			desiredGroups[group.Name] = true
 		}
 	}
@@ -212,17 +227,14 @@ func (p *BrewProvider) Reconcile(ctx context.Context,
 			var cleanupItems []resource.ResourceItem
 
 			for _, item := range stateGroup.Items {
-				name := item.Name
-				if strings.HasSuffix(name, " (cask)") {
-					name = strings.TrimSuffix(name, " (cask)")
-				}
+				lookupName := item.Name
 
 				// Check if installed (handle tap packages with base name fallback)
 				isInstalled := false
-				if _, ok := installed[name]; ok {
+				if _, ok := installed[lookupName]; ok {
 					isInstalled = true
-				} else if strings.Contains(name, "/") {
-					baseName := path.Base(name)
+				} else if strings.Contains(lookupName, "/") {
+					baseName := path.Base(lookupName)
 					if _, ok := installed[baseName]; ok {
 						isInstalled = true
 					}
@@ -250,7 +262,7 @@ func (p *BrewProvider) Reconcile(ctx context.Context,
 
 			if len(removalItems) > 0 {
 				plan.Removals = append(plan.Removals, provider.GroupRemoval{
-					Kind:  resource.KindBrewPackages,
+					Kind:  stateGroup.Kind,
 					Group: groupName,
 					Items: removalItems,
 				})
@@ -261,7 +273,7 @@ func (p *BrewProvider) Reconcile(ctx context.Context,
 
 			if len(cleanupItems) > 0 {
 				plan.Cleanup = append(plan.Cleanup, provider.GroupCleanup{
-					Kind:   resource.KindBrewPackages,
+					Kind:   stateGroup.Kind,
 					Group:  groupName,
 					Items:  cleanupItems,
 					Reason: "not_in_config_and_not_installed",
@@ -304,12 +316,7 @@ func (p *BrewProvider) compareGroupItems(
 	// Check each desired item
 	for _, desiredItem := range group.Items {
 		name := desiredItem.Name
-		// Normalize name: strip (cask) suffix for lookup
 		lookupName := name
-		isCask := strings.HasSuffix(name, " (cask)")
-		if isCask {
-			lookupName = strings.TrimSuffix(name, " (cask)")
-		}
 
 		// Try to find in installed - check full name first, then base name for tap packages
 		isInstalled := false
@@ -373,11 +380,7 @@ func (p *BrewProvider) compareGroupItems(
 	// Check for items in state but not in desired (removals or cleanup)
 	desiredItems := make(map[string]bool)
 	for _, item := range group.Items {
-		name := item.Name
-		if strings.HasSuffix(name, " (cask)") {
-			name = strings.TrimSuffix(name, " (cask)")
-		}
-		desiredItems[name] = true
+		desiredItems[item.Name] = true
 	}
 
 	desiredKeys := make([]string, 0, len(desiredItems))
@@ -390,9 +393,11 @@ func (p *BrewProvider) compareGroupItems(
 		if !desiredItems[name] {
 			// Check if installed to determine if removal or cleanup
 			lookupName := name
-			if strings.HasSuffix(name, " (cask)") {
-				lookupName = strings.TrimSuffix(name, " (cask)")
-			}
+			// Legacy code previously appended " (cask)" to state item names.
+			// We no longer encode caskness in the name; rely on the group's Kind
+			// to distinguish casks vs formulae. Keep lookupName as-is and
+			// allow base-name fallback for tapped packages (handled below).
+			lookupName = name
 
 			isInstalled := false
 			if _, ok := installed[lookupName]; ok {
@@ -430,7 +435,7 @@ func (p *BrewProvider) getInstalledPackages(ctx context.Context) (map[string]str
 	packages := make(map[string]string)
 
 	// Get formulae
-	stdout, _, err := cmdutil.RunSimple(ctx, "brew", "list", "--formula", "--versions")
+	stdout, _, err := cmdutil.RunSimpleFn(ctx, "brew", "list", "--formula", "--versions")
 	if err == nil {
 		lines := strings.Split(stdout, "\n")
 		for _, line := range lines {
@@ -441,8 +446,8 @@ func (p *BrewProvider) getInstalledPackages(ctx context.Context) (map[string]str
 		}
 	}
 
-	// Get casks
-	stdout, _, err = cmdutil.RunSimple(ctx, "brew", "list", "--cask", "--versions")
+	// Get casks (store plain names; cask vs formula is inferred from resource.Kind)
+	stdout, _, err = cmdutil.RunSimpleFn(ctx, "brew", "list", "--cask", "--versions")
 	if err == nil {
 		lines := strings.Split(stdout, "\n")
 		for _, line := range lines {
@@ -453,7 +458,7 @@ func (p *BrewProvider) getInstalledPackages(ctx context.Context) (map[string]str
 				if len(parts) >= 2 {
 					version = parts[1]
 				}
-				packages[name+" (cask)"] = version
+				packages[name] = version
 			}
 		}
 	}
@@ -491,17 +496,23 @@ func (p *BrewProvider) Apply(ctx context.Context, plan provider.GroupPlan) error
 func (p *BrewProvider) applyGroupAddition(ctx context.Context, addition provider.GroupAddition) error {
 	for _, item := range addition.Items {
 		name := item.Name
-		isCask := strings.HasSuffix(name, " (cask)")
-		if isCask {
-			name = strings.TrimSuffix(name, " (cask)")
+		isCask := addition.Kind == resource.KindHomeBrewCasks
+
+		// Handle taps
+		if addition.Kind == resource.KindHomeBrewTaps {
+			// For taps, item.Name holds the tap name (e.g., "homebrew/cask-fonts")
+			if _, stderr, err := cmdutil.RunSimpleFn(ctx, "brew", "tap", name); err != nil {
+				return fmt.Errorf("failed to tap %s: %s: %w", name, stderr, err)
+			}
+			continue
 		}
 
 		if isCask {
-			if _, stderr, err := cmdutil.RunSimple(ctx, "brew", "install", "--cask", name); err != nil {
+			if _, stderr, err := cmdutil.RunSimpleFn(ctx, "brew", "install", "--cask", name); err != nil {
 				return fmt.Errorf("failed to install cask %s: %s: %w", name, stderr, err)
 			}
 		} else {
-			if _, stderr, err := cmdutil.RunSimple(ctx, "brew", "install", name); err != nil {
+			if _, stderr, err := cmdutil.RunSimpleFn(ctx, "brew", "install", name); err != nil {
 				return fmt.Errorf("failed to install %s: %s: %w", name, stderr, err)
 			}
 		}
@@ -513,12 +524,21 @@ func (p *BrewProvider) applyGroupAddition(ctx context.Context, addition provider
 func (p *BrewProvider) applyGroupRemoval(ctx context.Context, removal provider.GroupRemoval) error {
 	for _, item := range removal.Items {
 		name := item.Name
-		isCask := strings.HasSuffix(name, " (cask)")
-		if isCask {
-			name = strings.TrimSuffix(name, " (cask)")
+		isCask := removal.Kind == resource.KindHomeBrewCasks
+		if removal.Kind == resource.KindHomeBrewTaps {
+			// Untap
+			if _, stderr, err := cmdutil.RunSimpleFn(ctx, "brew", "untap", name); err != nil {
+				if strings.Contains(stderr, "No such tap") {
+					// Already untapped, continue
+					slog.Warn("tap not present; skipping untap", "tap", name)
+					continue
+				}
+				return fmt.Errorf("failed to untap %s: %s: %w", name, stderr, err)
+			}
+			continue
 		}
 		if isCask {
-			_, stderr, err := cmdutil.RunSimple(ctx, "brew", "uninstall", "--cask", name)
+			_, stderr, err := cmdutil.RunSimpleFn(ctx, "brew", "uninstall", "--cask", name)
 			if err != nil {
 				// If the formula/cask is not present on this system, treat as no-op
 				if strings.Contains(stderr, "No available formula or cask with the name") || strings.Contains(stderr, "is not installed") {
@@ -533,7 +553,7 @@ func (p *BrewProvider) applyGroupRemoval(ctx context.Context, removal provider.G
 				return fmt.Errorf("failed to uninstall cask %s: %s: %w", name, stderr, err)
 			}
 		} else {
-			_, stderr, err := cmdutil.RunSimple(ctx, "brew", "uninstall", name)
+			_, stderr, err := cmdutil.RunSimpleFn(ctx, "brew", "uninstall", name)
 			if err != nil {
 				// If the formula is not present on this system, treat as no-op
 				if strings.Contains(stderr, "No available formula or cask with the name") || strings.Contains(stderr, "is not installed") {
@@ -543,7 +563,7 @@ func (p *BrewProvider) applyGroupRemoval(ctx context.Context, removal provider.G
 				// If Homebrew refuses due to dependencies, surface helpful message
 				if strings.Contains(stderr, "Refusing to uninstall") {
 					// Attempt to list installed dependents to give the user more context
-					depsOut, _, _ := cmdutil.RunSimple(ctx, "brew", "uses", "--installed", name)
+					depsOut, _, _ := cmdutil.RunSimpleFn(ctx, "brew", "uses", "--installed", name)
 					hint := strings.TrimSpace(depsOut)
 					if hint != "" {
 						stderr = stderr + "\nInstalled dependents:\n" + hint
@@ -562,7 +582,7 @@ func (p *BrewProvider) applyGroupModification(ctx context.Context, modification 
 	for _, change := range modification.Changes {
 		// For now, reinstall to update version
 		name := change.ItemName
-		if _, stderr, err := cmdutil.RunSimple(ctx, "brew", "reinstall", name); err != nil {
+		if _, stderr, err := cmdutil.RunSimpleFn(ctx, "brew", "reinstall", name); err != nil {
 			return fmt.Errorf("failed to update %s: %s: %w", name, stderr, err)
 		}
 	}

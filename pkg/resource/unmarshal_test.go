@@ -12,10 +12,10 @@ func TestUnmarshalYAML(t *testing.T) {
 		check   func(t *testing.T, r Resource)
 	}{
 		{
-			name: "valid BrewPackages",
+			name: "valid HomeBrewPackages",
 			yaml: `
 apiVersion: github.com/wasilak/dotisan/v1
-kind: BrewPackages
+kind: HomeBrewPackages
 metadata:
   name: core-tools
 spec:
@@ -25,9 +25,9 @@ spec:
 `,
 			wantErr: false,
 			check: func(t *testing.T, r Resource) {
-				bp, ok := r.(*BrewPackages)
+				bp, ok := r.(*HomeBrewPackages)
 				if !ok {
-					t.Errorf("expected *BrewPackages, got %T", r)
+					t.Errorf("expected *HomeBrewPackages, got %T", r)
 					return
 				}
 				if bp.GetMetadata().Name != "core-tools" {
@@ -166,10 +166,90 @@ spec:
 			},
 		},
 		{
+			name: "valid HomeBrewPackages",
+			yaml: `
+apiVersion: github.com/wasilak/dotisan/v1
+kind: HomeBrewPackages
+metadata:
+  name: core-tools
+spec:
+  formulae:
+    - name: ripgrep
+    - name: fd
+`,
+			wantErr: false,
+			check: func(t *testing.T, r Resource) {
+				hp, ok := r.(*HomeBrewPackages)
+				if !ok {
+					t.Errorf("expected *HomeBrewPackages, got %T", r)
+					return
+				}
+				if hp.GetMetadata().Name != "core-tools" {
+					t.Errorf("Name = %q, want %q", hp.GetMetadata().Name, "core-tools")
+				}
+				if len(hp.Spec.Formulae) != 2 {
+					t.Errorf("len(Formulae) = %d, want 2", len(hp.Spec.Formulae))
+				}
+			},
+		},
+		{
+			name: "valid HomeBrewCasks",
+			yaml: `
+apiVersion: github.com/wasilak/dotisan/v1
+kind: HomeBrewCasks
+metadata:
+  name: apps
+spec:
+  casks:
+    - name: wezterm
+    - name: raycast
+`,
+			wantErr: false,
+			check: func(t *testing.T, r Resource) {
+				c, ok := r.(*HomeBrewCasks)
+				if !ok {
+					t.Errorf("expected *HomeBrewCasks, got %T", r)
+					return
+				}
+				if c.GetMetadata().Name != "apps" {
+					t.Errorf("Name = %q, want %q", c.GetMetadata().Name, "apps")
+				}
+				if len(c.Spec.Casks) != 2 {
+					t.Errorf("len(Casks) = %d, want 2", len(c.Spec.Casks))
+				}
+			},
+		},
+		{
+			name: "valid HomeBrewTaps",
+			yaml: `
+apiVersion: github.com/wasilak/dotisan/v1
+kind: HomeBrewTaps
+metadata:
+  name: taps
+spec:
+  taps:
+    - name: homebrew/cask-fonts
+`,
+			wantErr: false,
+			check: func(t *testing.T, r Resource) {
+				tp, ok := r.(*HomeBrewTaps)
+				if !ok {
+					t.Errorf("expected *HomeBrewTaps, got %T", r)
+					return
+				}
+				if tp.GetMetadata().Name != "taps" {
+					t.Errorf("Name = %q, want %q", tp.GetMetadata().Name, "taps")
+				}
+				if len(tp.Spec.Taps) != 1 {
+					t.Errorf("len(Taps) = %d, want 1", len(tp.Spec.Taps))
+				}
+			},
+		},
+		{
 			name: "unsupported apiVersion",
 			yaml: `
 apiVersion: dotisan/v2
-kind: BrewPackages
+kind: HomeBrewPackages
 metadata:
   name: test
 spec: {}
@@ -200,7 +280,7 @@ invalid: yaml: [{
 		{
 			name: "missing apiVersion",
 			yaml: `
-kind: BrewPackages
+kind: HomeBrewPackages
 metadata:
   name: test
 spec: {}
@@ -230,7 +310,9 @@ spec: {}
 func TestValidResourceKinds(t *testing.T) {
 	kinds := ValidResourceKinds()
 	expected := []string{
-		"BrewPackages",
+		"HomeBrewPackages",
+		"HomeBrewCasks",
+		"HomeBrewTaps",
 		"NpmPackages",
 		"GoPackages",
 		"CargoPackages",

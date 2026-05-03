@@ -78,6 +78,26 @@ func TestBrewProvider_Reconcile_Additions(t *testing.T) {
 		len(plan.Additions), len(plan.Modifications), len(plan.Removals), len(plan.InSync))
 }
 
+func TestBrewProvider_Reconcile_Taps(t *testing.T) {
+	p := NewBrewProvider()
+
+	desired := []resource.ResourceGroup{
+		{
+			Kind: resource.KindHomeBrewTaps,
+			Name: "my-taps",
+			// RawSpec used by provider.Reconcile for taps when Items is empty
+			RawSpec: resource.HomeBrewTapsSpec{Taps: []resource.Tap{{Name: "homebrew/cask-fonts"}}},
+		},
+	}
+	state := []provider.ResourceState{}
+	plan := p.Reconcile(context.Background(), desired, state)
+
+	// Expect an addition for the tap group
+	if len(plan.Additions) == 0 {
+		t.Errorf("expected at least one addition for taps, got 0")
+	}
+}
+
 func TestBrewProvider_Apply(t *testing.T) {
 	p := NewBrewProvider()
 
