@@ -299,14 +299,14 @@ func TestState_MoveItem_ToNewGroup(t *testing.T) {
 	s := NewState()
 
 	// Set up initial state with one group
-    s.SetResourceGroup(provider.ResourceState{
-        Kind:      resource.KindHomeBrewPackages,
-        Group:     "core-tools",
-        Namespace: "default",
-        Items: []resource.ItemState{
-            {Name: "podman", Version: "4.9.0"},
-        },
-    })
+	s.SetResourceGroup(provider.ResourceState{
+		Kind:      resource.KindHomeBrewPackages,
+		Group:     "core-tools",
+		Namespace: "default",
+		Items: []resource.ItemState{
+			{Name: "podman", Version: "4.9.0"},
+		},
+	})
 
 	// Move podman to a new group that doesn't exist yet
 	_, ok := s.MoveItem(resource.KindHomeBrewPackages, "core-tools", "podman", resource.KindHomeBrewPackages, "new-group", "podman")

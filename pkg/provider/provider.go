@@ -127,7 +127,7 @@ type PlanWarning struct {
 // ResourceState represents the state of a resource group as tracked by dotisan.
 // Uses 3-level hierarchy: Kind -> Group -> Items
 type ResourceState struct {
-	// Kind is the resource type (e.g., "BrewPackages")
+	// Kind is the resource type (e.g., "HomeBrewPackages")
 	Kind string `json:"kind"`
 
 	// Group is the resource group name (e.g., "core-tools")

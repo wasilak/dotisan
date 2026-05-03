@@ -1,10 +1,10 @@
 package diff
 
 import (
-    "strings"
-    "testing"
+	"strings"
+	"testing"
 
-    "github.com/wasilak/dotisan/pkg/resource"
+	"github.com/wasilak/dotisan/pkg/resource"
 )
 
 func TestNewEngine(t *testing.T) {

@@ -47,7 +47,7 @@ type Resource interface {
 	// GetAPIVersion returns the API version (e.g., "github.com/wasilak/dotisan/v1")
 	GetAPIVersion() string
 
-	// GetKind returns the resource kind (e.g., "BrewPackages")
+	// GetKind returns the resource kind (e.g., "HomeBrewPackages")
 	GetKind() string
 
 	// GetMetadata returns the resource metadata
