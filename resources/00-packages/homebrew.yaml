@@ -1,0 +1,56 @@
+---
+# HomeBrew taps
+apiVersion: github.com/wasilak/dotisan/v1
+kind: HomeBrewTaps
+metadata:
+  name: homebrew-taps
+  namespace: packages
+  labels:
+    manager: homebrew
+    category: system-packages
+spec:
+  # Taps to add (optional)
+  {{- if .Values.packages.brew.taps }}
+  taps:
+    {{- range .Values.packages.brew.taps }}
+    - name: {{ . | quote }}
+    {{- end }}
+  {{- end }}
+
+---
+# HomeBrew formulae (command-line packages)
+apiVersion: github.com/wasilak/dotisan/v1
+kind: HomeBrewPackages
+metadata:
+  name: homebrew-packages
+  namespace: packages
+  labels:
+    manager: homebrew
+    category: system-packages
+spec:
+  # Formulae to install
+  {{- if .Values.packages.brew.formulas }}
+  formulae:
+    {{- range .Values.packages.brew.formulas }}
+    - name: {{ . | quote }}
+    {{- end }}
+  {{- end }}
+
+---
+# HomeBrew casks (GUI applications)
+apiVersion: github.com/wasilak/dotisan/v1
+kind: HomeBrewCasks
+metadata:
+  name: homebrew-casks
+  namespace: packages
+  labels:
+    manager: homebrew
+    category: system-packages
+spec:
+  # Casks to install
+  {{- if .Values.packages.brew.casks }}
+  casks:
+    {{- range .Values.packages.brew.casks }}
+    - name: {{ . | quote }}
+    {{- end }}
+  {{- end }}
