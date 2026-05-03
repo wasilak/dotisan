@@ -61,10 +61,12 @@ Examples:
 
 // kindToProvider maps resource kind to provider name
 func kindToProvider(kind string) string {
-	switch strings.ToLower(kind) {
+	lower := strings.ToLower(kind)
+	switch lower {
 	case "managedfile", "manageddirectory":
 		return "file"
-	case "brewpackages":
+	// Support both legacy and new Homebrew kinds
+	case "brewpackages", "homebrewpackages", "homebrewcasks", "homebrewtaps":
 		return "homebrew"
 	case "npmpackages":
 		return "npm"
@@ -73,7 +75,7 @@ func kindToProvider(kind string) string {
 	case "cargopackages":
 		return "cargo"
 	default:
-		return strings.ToLower(kind)
+		return lower
 	}
 }
 
