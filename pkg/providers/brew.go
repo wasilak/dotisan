@@ -571,5 +571,5 @@ func (p *BrewProvider) applyGroupModification(ctx context.Context, modification 
 
 // Import is not supported for BrewProvider (provider-level import removed).
 func (p *BrewProvider) Import(ctx context.Context, group string) (provider.ResourceState, error) {
-    return provider.ResourceState{}, fmt.Errorf("import not supported for provider homebrew")
+	return provider.ResourceState{}, fmt.Errorf("import not supported for provider homebrew")
 }

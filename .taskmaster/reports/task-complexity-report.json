@@ -62,8 +62,8 @@
 			"taskTitle": "File Provider Implementation",
 			"complexityScore": 8,
 			"recommendedSubtasks": 6,
-			"expansionPrompt": "Detail the implementation of the `ManagedFile` provider (including templating, destination path resolution, file mode, checksums, and backup logic) and the `ManagedDirectory` provider (recursive copy, cleanup logic). Focus on their `Reconcile` and `Apply` methods, and integration with the templating and diff engines.",
-			"reasoning": "This is one of the most complex providers due to the intricate file system interactions. `ManagedFile` involves content templating, checksum calculations, mode management, and backup strategies. `ManagedDirectory` adds recursive operations and cleanup logic, which is prone to errors and requires extensive testing. Deep integration with the templating and diff engines is also critical."
+            "expansionPrompt": "Detail the implementation of the `ManagedFile` provider (including templating, destination path resolution, file mode, checksums, and backup logic) and generator/list-based directory handling (recursive copy, cleanup logic). Focus on reconciliation and apply semantics, and integration with the templating and diff engines.",
+            "reasoning": "This is one of the most complex providers due to the intricate file system interactions. `ManagedFile` involves content templating, checksum calculations, mode management, and backup strategies. Directory handling via generators adds recursive operations and cleanup logic, which is prone to errors and requires extensive testing. Deep integration with the templating and diff engines is also critical."
 		},
 		{
 			"taskId": 8,

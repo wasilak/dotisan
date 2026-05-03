@@ -135,27 +135,7 @@ rm ~/dotfiles-test/resources/shell/config.yaml
 
 ### Directory Provider Tests
 
-```bash
-# Set up directory source
-mkdir -p ~/dotfiles-test/resources/dotfiles/git
-echo 'test' > ~/dotfiles-test/resources/dotfiles/git/file.txt
-
-# Create definition
-cat > ~/dotfiles-test/resources/shell/dirs.yaml <<'EOF'
----
-apiVersion: github.com/wasilak/dotisan/v1
-kind: ManagedDirectory
-metadata:
-  name: testdir
-spec:
-  sourceDir: dotfiles/git
-  destination: ~/.testdir
-  recursive: true
-EOF
-
-./dotisan apply --confirm
-# Expected: Directory synced to ~/.testdir/
-```
+Note: The `ManagedDirectory` resource kind has been removed. Use `ManagedFile` generators or explicit `files:` lists to manage directory contents in tests. Update any fixtures or test data that used `ManagedDirectory` accordingly.
 
 ### Brew Provider Tests
 

@@ -102,7 +102,7 @@ Kind-based dynamic dispatch in `pkg/resource/unmarshal.go`.
 | NpmProvider | `NpmPackages` | `npm install -g` |
 | GoProvider | `GoPackages` | `go install` |
 | CargoProvider | `CargoPackages` | `cargo install` |
-| FileProvider | `ManagedFile`, `ManagedDirectory` | File copy/symlink/sync |
+ | FileProvider | `ManagedFile` (ManagedDirectory removed) | File copy/symlink/sync |
 
 **Known issue (under refactor):** Brew, Npm, Go, Cargo providers have 90-95% identical Reconcile() implementations. Extraction to `pkg/provider/reconcile.go` is planned (Task R1 in active PRD).
 

@@ -23,7 +23,7 @@ var doctorCmd = &cobra.Command{
 	Use:          "doctor",
 	SilenceUsage: true,
 	Short:        "Check system prerequisites",
-    Long: "Check system prerequisites, provider availability, and configuration validity.",
+	Long:         "Check system prerequisites, provider availability, and configuration validity.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runDoctor(cmd.Context())
 	},

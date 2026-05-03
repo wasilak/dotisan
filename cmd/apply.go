@@ -18,7 +18,7 @@ var applyCmd = &cobra.Command{
 	Use:          "apply",
 	SilenceUsage: true,
 	Short:        "Apply changes",
-    Long: "Run plan and optionally apply changes to synchronize resources with the desired state.",
+	Long:         "Run plan and optionally apply changes to synchronize resources with the desired state.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runApply(cmd.Context())
 	},

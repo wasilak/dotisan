@@ -46,7 +46,7 @@ dotisan/
 - Interface methods: `Name()`, `Available()`, `Reconcile()`, `Apply()`, `Import()`
 
 ### Resource Kinds
-- Resource kinds: PascalCase (`BrewPackages`, `ManagedFile`, `ManagedDirectory`)
+- Resource kinds: PascalCase (`BrewPackages`, `ManagedFile`) — `ManagedDirectory` has been removed
 - Spec types: `<Kind>Spec` (e.g., `BrewPackagesSpec`)
 
 ## Style Guidelines

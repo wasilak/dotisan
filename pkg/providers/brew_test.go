@@ -107,15 +107,15 @@ func TestBrewProvider_Import(t *testing.T) {
 }
 
 func TestBrewProvider_ImportItem(t *testing.T) {
-    p := NewBrewProvider()
+	p := NewBrewProvider()
 
-    // ImportItem should handle non-empty args
-    // provider ImportItem removed; call Import and validate group-level result
-    state, err := p.Import(context.Background(), "core-tools")
-    if err != nil {
-        t.Logf("ImportItem() error (may be expected): %v", err)
-        return
-    }
+	// ImportItem should handle non-empty args
+	// provider ImportItem removed; call Import and validate group-level result
+	state, err := p.Import(context.Background(), "core-tools")
+	if err != nil {
+		t.Logf("ImportItem() error (may be expected): %v", err)
+		return
+	}
 
 	if state.Group != "core-tools" {
 		t.Errorf("ImportItem() Group = %q, want core-tools", state.Group)

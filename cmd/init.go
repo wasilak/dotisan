@@ -17,7 +17,7 @@ var initCmd = &cobra.Command{
 	Use:          "init",
 	SilenceUsage: true,
 	Short:        "Initialize dotisan configuration",
-    Long: "Create default configuration and example files under ~/.config/dotisan/ (config.yaml, values.yaml, resources/)",
+	Long:         "Create default configuration and example files under ~/.config/dotisan/ (config.yaml, values.yaml, resources/)",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runInit()
 	},

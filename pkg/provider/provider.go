@@ -165,10 +165,10 @@ type Provider interface {
 	// Returns an error if any operation fails.
 	Apply(ctx context.Context, plan GroupPlan) error
 
-    // Import discovers an existing resource on the system and returns its state.
-    // This is used by the `state import` command to bring unmanaged resources
-    // under dotisan's control. NOTE: provider-level ImportItem was removed —
-    // CLI import functionality (and provider-level import helpers) are no
-    // longer supported; providers should expose only Reconcile/Apply.
-    Import(ctx context.Context, group string) (ResourceState, error)
+	// Import discovers an existing resource on the system and returns its state.
+	// This is used by the `state import` command to bring unmanaged resources
+	// under dotisan's control. NOTE: provider-level ImportItem was removed —
+	// CLI import functionality (and provider-level import helpers) are no
+	// longer supported; providers should expose only Reconcile/Apply.
+	Import(ctx context.Context, group string) (ResourceState, error)
 }

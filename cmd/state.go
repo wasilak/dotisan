@@ -18,8 +18,8 @@ import (
 	"github.com/wasilak/dotisan/pkg/engine"
 	"github.com/wasilak/dotisan/pkg/output"
 	"github.com/wasilak/dotisan/pkg/provider"
-	"github.com/wasilak/dotisan/pkg/resource"
 	"github.com/wasilak/dotisan/pkg/providers"
+	"github.com/wasilak/dotisan/pkg/resource"
 	"github.com/wasilak/dotisan/pkg/state"
 	"github.com/wasilak/dotisan/pkg/style"
 
@@ -28,9 +28,9 @@ import (
 
 // stateCmd represents the state command
 var stateCmd = &cobra.Command{
-    Use:   "state",
-    Short: "Manage the persisted state file",
-    Long:  "Manage state file entries: add, move, remove, and list managed resources.",
+	Use:   "state",
+	Short: "Manage the persisted state file",
+	Long:  "Manage state file entries: add, move, remove, and list managed resources.",
 }
 
 // stateImportCmd imports an existing resource into state
@@ -131,29 +131,29 @@ func runStateImport(ctx context.Context, id, actual string) error {
 		return fmt.Errorf("provider %s is not available: %s", kind, msg)
 	}
 
-    if ctx == nil {
-        return fmt.Errorf("internal: context is nil")
-    }
-    // Use provider Import (group-level). Providers may return a ResourceState
-    // describing the group; if the specific item is not present, add it from
-    // the provided actualValue.
-    resourceState, err := p.Import(ctx, group)
-    if err != nil {
-        return fmt.Errorf("import failed: %w", err)
-    }
+	if ctx == nil {
+		return fmt.Errorf("internal: context is nil")
+	}
+	// Use provider Import (group-level). Providers may return a ResourceState
+	// describing the group; if the specific item is not present, add it from
+	// the provided actualValue.
+	resourceState, err := p.Import(ctx, group)
+	if err != nil {
+		return fmt.Errorf("import failed: %w", err)
+	}
 
-    // Ensure item exists in returned state; if not, add a single item entry
-    // using the actualValue as the item name.
-    found := false
-    for _, it := range resourceState.Items {
-        if it.Name == actualValue {
-            found = true
-            break
-        }
-    }
-    if !found {
-        resourceState.Items = append(resourceState.Items, resource.ItemState{Name: actualValue, Status: "present"})
-    }
+	// Ensure item exists in returned state; if not, add a single item entry
+	// using the actualValue as the item name.
+	found := false
+	for _, it := range resourceState.Items {
+		if it.Name == actualValue {
+			found = true
+			break
+		}
+	}
+	if !found {
+		resourceState.Items = append(resourceState.Items, resource.ItemState{Name: actualValue, Status: "present"})
+	}
 
 	// Ensure kind is set
 	resourceState.Kind = kind
@@ -214,10 +214,10 @@ func ensureProvidersRegistered() {
 
 // stateMoveCmd moves an item between resource groups in state
 var stateMvCmd = &cobra.Command{
-    Use:          "move SOURCE DESTINATION",
-    Aliases:      []string{"mv"},
-    SilenceUsage: true,
-    Short:        "Move an item between resource groups in state",
+	Use:          "move SOURCE DESTINATION",
+	Aliases:      []string{"mv"},
+	SilenceUsage: true,
+	Short:        "Move an item between resource groups in state",
 	Long: `mv moves an item from one resource group to another in state only.
 The actual system resource is not modified.
 
@@ -267,10 +267,10 @@ func runStateMv(ctx context.Context, source, destination string) error {
 
 // stateRemoveCmd removes a resource from state
 var stateRemoveCmd = &cobra.Command{
-    Use:          "remove KIND/GROUP or KIND/GROUP[ITEM]",
-    Aliases:      []string{"rm"},
-    SilenceUsage: true,
-    Short:        "Remove resource group or item from state",
+	Use:          "remove KIND/GROUP or KIND/GROUP[ITEM]",
+	Aliases:      []string{"rm"},
+	SilenceUsage: true,
+	Short:        "Remove resource group or item from state",
 	Long: `remove deletes a resource group or a single item from the state file
 without affecting the actual system.
 
@@ -288,8 +288,8 @@ var stateRemoveForce bool
 var stateRemoveConfirm bool
 
 func init() {
-    stateRemoveCmd.Flags().BoolVarP(&stateRemoveForce, "force", "f", false, "Skip confirmation prompt")
-    stateRemoveCmd.Flags().BoolVar(&stateRemoveConfirm, "confirm", false, "Skip confirmation and remove without prompting")
+	stateRemoveCmd.Flags().BoolVarP(&stateRemoveForce, "force", "f", false, "Skip confirmation prompt")
+	stateRemoveCmd.Flags().BoolVar(&stateRemoveConfirm, "confirm", false, "Skip confirmation and remove without prompting")
 }
 
 func runStateRemoveByID(ctx context.Context, id string) error {
@@ -298,7 +298,7 @@ func runStateRemoveByID(ctx context.Context, id string) error {
 		return err
 	}
 
-    if !stateRemoveForce && !stateRemoveConfirm {
+	if !stateRemoveForce && !stateRemoveConfirm {
 		title := ""
 		if item == "" {
 			title = fmt.Sprintf("Remove %s/%s from state?", kind, group)
@@ -363,10 +363,10 @@ func runStateRemoveByID(ctx context.Context, id string) error {
 
 // stateListCmd lists all managed resources
 var stateListCmd = &cobra.Command{
-    Use:          "list",
-    Aliases:      []string{"ls"},
-    SilenceUsage: true,
-    Short:        "List all managed resources",
+	Use:          "list",
+	Aliases:      []string{"ls"},
+	SilenceUsage: true,
+	Short:        "List all managed resources",
 	Long: `list displays all resources currently tracked in the state file
 along with their status.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -493,16 +493,16 @@ func displayStateTable(currentState *state.State) error {
 }
 
 func init() {
-    rootCmd.AddCommand(stateCmd)
-    stateCmd.AddCommand(stateImportCmd)
-    stateCmd.AddCommand(stateMvCmd)
-    stateCmd.AddCommand(stateRemoveCmd)
-    stateCmd.AddCommand(stateListCmd)
-    stateListCmd.Flags().StringVarP(&stateOutputFlag, "output", "o", "", "Output format (plain, tree, json)")
+	rootCmd.AddCommand(stateCmd)
+	stateCmd.AddCommand(stateImportCmd)
+	stateCmd.AddCommand(stateMvCmd)
+	stateCmd.AddCommand(stateRemoveCmd)
+	stateCmd.AddCommand(stateListCmd)
+	stateListCmd.Flags().StringVarP(&stateOutputFlag, "output", "o", "", "Output format (plain, tree, json)")
 
-    // Customize state command help to show aliases for subcommands inline.
-    // Cobra's default help doesn't display subcommand aliases in the list.
-    stateCmd.SetHelpTemplate(`{{with (or .Long .Short)}}{{.}}{{end}}
+	// Customize state command help to show aliases for subcommands inline.
+	// Cobra's default help doesn't display subcommand aliases in the list.
+	stateCmd.SetHelpTemplate(`{{with (or .Long .Short)}}{{.}}{{end}}
 
 Usage:
   {{.CommandPath}} [command]

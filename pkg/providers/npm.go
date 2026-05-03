@@ -131,5 +131,5 @@ func (p *NpmProvider) applyGroupModification(ctx context.Context, modification p
 
 // Import not supported for npm provider
 func (p *NpmProvider) Import(ctx context.Context, group string) (provider.ResourceState, error) {
-    return provider.ResourceState{}, fmt.Errorf("import not supported for provider npm")
+	return provider.ResourceState{}, fmt.Errorf("import not supported for provider npm")
 }

@@ -101,8 +101,8 @@ Validation & Tests
   - Template errors (syntax or runtime) are surfaced as loader errors with context (resource name, item index).
 
 Migration Plan
-- Convert existing ManagedDirectory manifests into ManagedFile generator manifests.
-- Provide example migration snippet in migration docs showing replacement.
+- Convert any historical ManagedDirectory manifests into ManagedFile generator manifests or list-based `files:` entries (ManagedDirectory has been removed).
+- Provide example migration snippet in migration docs showing replacement using `generator` or explicit `files:` listings.
 
 Acceptance Criteria
 - Loader expands generator specs into Files in-memory and the engine can plan/apply generated files with checksums persisted.
@@ -115,7 +115,7 @@ Risks
 
 Rollout Plan
 1. Implement GeneratorSpec and loader expansion.
-2. Add unit tests and update existing tests that referenced ManagedDirectory.
+2. Add unit tests and update existing tests that referenced ManagedDirectory. Replace such tests with scenarios using ManagedFile generators or explicit `files:` lists.
 3. Add docs and migration examples.
 4. Merge behind feature branch; run integration tests and smoke apply on a small example.
 

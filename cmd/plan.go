@@ -15,7 +15,7 @@ var planCmd = &cobra.Command{
 	Use:          "plan",
 	SilenceUsage: true,
 	Short:        "Show what would change",
-    Long: "Compute and display the changes that would be made without applying them. Supports plain, tree, and json outputs.",
+	Long:         "Compute and display the changes that would be made without applying them. Supports plain, tree, and json outputs.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runPlan(cmd.Context())
 	},

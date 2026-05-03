@@ -74,7 +74,7 @@ dotisan state import BrewPackages core-tools[0] ripgrep  # index-based
 
 **Current Inconsistency:**
 - `ManagedFile` = single file
-- `ManagedDirectory` = single directory  
+-- `ManagedDirectory` = single directory  (removed)
 - `BrewPackages` = list of formulae/casks
 - `NpmPackages` = list of packages
 
@@ -163,7 +163,7 @@ type Provider interface {
 
 **Migration Plan:**
 1. `ManagedFile` - Add `Files []FileSpec` field
-2. `ManagedDirectory` - Add `Directories []DirectorySpec` field
+2. `ManagedDirectory` - Add `Directories []DirectorySpec` field (historical; ManagedDirectory removed, migrate to generators or files lists)
 3. Keep backward compatibility with single-item syntax
 4. Phase out old single-item fields over time
 
@@ -229,7 +229,7 @@ dotisan state import ManagedFile dotfiles[0] ~/.zshrc
 
 ### AC4: Unified Lists
 - [ ] ManagedFile supports `files:` list field
-- [ ] ManagedDirectory supports `directories:` list field
+- [ ] ManagedDirectory supports `directories:` list field (note: ManagedDirectory removed; prefer generators)
 - [ ] All resources use consistent list structure
 - [ ] Backward compatibility maintained
 

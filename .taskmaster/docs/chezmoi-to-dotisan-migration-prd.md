@@ -134,7 +134,7 @@ This document outlines the complete migration of dotfiles management from **chez
     │   ├── vscode-mcp.yaml               # VS Code MCP
     │   └── taskmaster.yaml               # TaskMaster config
     ├── 50-agents/                        # AI agent files
-    │   └── agents.yaml                   # ManagedDirectory
+    │   └── agents.yaml                   # ManagedDirectory (removed) - convert to ManagedFile generators or files lists
     └── 99-generated/                     # Generated command files
         ├── opencode-commands.yaml        # OpenCode commands
         └── claude-commands.yaml          # Claude Code commands
@@ -848,7 +848,7 @@ Similar template structure adapted for VS Code's MCP format.
 ```yaml
 ---
 apiVersion: github.com/wasilak/dotisan/v1
-kind: ManagedDirectory
+kind: ManagedDirectory # REMOVED - convert to ManagedFile generator or files list
 metadata:
   name: agent-skills
   namespace: default

@@ -74,7 +74,7 @@ spec:
 			},
 		},
 		{
-			name: "valid ManagedDirectory",
+			name: "invalid ManagedDirectory (removed)",
 			yaml: `
 apiVersion: github.com/wasilak/dotisan/v1
 kind: ManagedDirectory
@@ -86,23 +86,8 @@ spec:
   recursive: true
   clean: true
 `,
-			wantErr: false,
-			check: func(t *testing.T, r Resource) {
-				md, ok := r.(*ManagedDirectory)
-				if !ok {
-					t.Errorf("expected *ManagedDirectory, got %T", r)
-					return
-				}
-				if md.GetMetadata().Name != "skills" {
-					t.Errorf("Name = %q, want %q", md.GetMetadata().Name, "skills")
-				}
-				if !md.Spec.Recursive {
-					t.Error("Recursive should be true")
-				}
-				if !md.Spec.Clean {
-					t.Error("Clean should be true")
-				}
-			},
+			wantErr: true,
+			check:   nil,
 		},
 		{
 			name: "valid NpmPackages",
@@ -250,7 +235,6 @@ func TestValidResourceKinds(t *testing.T) {
 		"GoPackages",
 		"CargoPackages",
 		"ManagedFile",
-		"ManagedDirectory",
 	}
 
 	if len(kinds) != len(expected) {

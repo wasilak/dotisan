@@ -203,5 +203,5 @@ func (p *GoProvider) applyGroupModification(ctx context.Context, modification pr
 
 // Import not supported for GoProvider
 func (p *GoProvider) Import(ctx context.Context, group string) (provider.ResourceState, error) {
-    return provider.ResourceState{}, fmt.Errorf("import not supported for provider go")
+	return provider.ResourceState{}, fmt.Errorf("import not supported for provider go")
 }

@@ -75,7 +75,7 @@
 		},
 		{
 			"taskId": 9,
-			"taskTitle": "Migrate ManagedDirectory to List-Based Structure",
+            "taskTitle": "Migrate ManagedDirectory (removed) references to list/generator-based structures",
 			"complexityScore": 6,
 			"recommendedSubtasks": 3,
 			"expansionPrompt": "Outline the steps for modifying the `ManagedDirectory` struct, implementing backward compatibility logic, updating the `ManagedDirectoryProvider`'s methods, and creating unit tests for both old and new syntax, leveraging patterns from Task 8.",

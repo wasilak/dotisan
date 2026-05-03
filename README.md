@@ -148,18 +148,7 @@ spec:
 
 #### Entire Directory
 
-```yaml
----
-apiVersion: dotisan.io/v1
-kind: ManagedDirectory
-metadata:
-  name: config-dir
-spec:
-  source: ~/.config/dotisan/config/
-  destination: ~/.config/
-  recursive: true
-  clean: true  # Remove files at destination not in source
-```
+Note: The previous `ManagedDirectory` resource kind has been removed. Use `ManagedFile` generator-based manifests or list-based `files:` entries to manage multiple files or directory-like workflows. Consult the migration guide in .taskmaster/docs/generators-prd.md for examples.
 
 ---
 
@@ -168,7 +157,6 @@ spec:
 | Kind | Description | Provider |
 |------|-------------|----------|
 | `ManagedFile` | Single file with templating support | Built-in |
-| `ManagedDirectory` | Recursive directory sync | Built-in |
 | `BrewPackages` | Homebrew formulae and casks | `brew` |
 | `NpmPackages` | Global npm packages | `npm` |
 | `GoPackages` | Go CLI tools (`go install`) | `go` |

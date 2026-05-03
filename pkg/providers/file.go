@@ -13,7 +13,7 @@ import (
 	"github.com/wasilak/dotisan/pkg/resource"
 )
 
-// FileProvider implements the Provider interface for ManagedFile and ManagedDirectory
+// FileProvider implements the Provider interface for ManagedFile
 type FileProvider struct {
 	dotfilesRoot string
 }
@@ -56,7 +56,7 @@ func (p *FileProvider) Reconcile(ctx context.Context,
 	// Index state by kind and group
 	stateIndex := make(map[string]map[string]provider.ResourceState)
 	for _, s := range state {
-		if s.Kind == "ManagedFile" || s.Kind == "ManagedDirectory" {
+		if s.Kind == "ManagedFile" {
 			if stateIndex[s.Kind] == nil {
 				stateIndex[s.Kind] = make(map[string]provider.ResourceState)
 			}
@@ -66,7 +66,7 @@ func (p *FileProvider) Reconcile(ctx context.Context,
 
 	// Process each desired group
 	for _, group := range desired {
-		if group.Kind != "ManagedFile" && group.Kind != "ManagedDirectory" {
+		if group.Kind != "ManagedFile" {
 			continue
 		}
 
@@ -121,7 +121,7 @@ func (p *FileProvider) Reconcile(ctx context.Context,
 	// Check for removals
 	desiredGroups := make(map[string]bool)
 	for _, group := range desired {
-		if group.Kind == "ManagedFile" || group.Kind == "ManagedDirectory" {
+		if group.Kind == "ManagedFile" {
 			desiredGroups[group.Kind+"/"+group.Name] = true
 		}
 	}
@@ -206,11 +206,11 @@ func (p *FileProvider) Reconcile(ctx context.Context,
 // resolveSource returns the full path for a source value. Absolute paths are
 // used as-is; relative paths are joined with the dotfiles root.
 func (p *FileProvider) resolveSource(source string) string {
-    if filepath.IsAbs(source) {
-        return source
-    }
-    // Relative source paths are resolved against the dotfiles root
-    return filepath.Join(p.dotfilesRoot, source)
+	if filepath.IsAbs(source) {
+		return source
+	}
+	// Relative source paths are resolved against the dotfiles root
+	return filepath.Join(p.dotfilesRoot, source)
 }
 
 // compareGroupItems compares desired group items with state
@@ -227,71 +227,71 @@ func (p *FileProvider) compareGroupItems(
 		name := desiredItem.Name
 		dest, _ := desiredItem.Extra["destination"].(string)
 
-        stateItem, inState := stateItems[name]
+		stateItem, inState := stateItems[name]
 
-        destExists := false
-        if dest != "" {
-            _, err := os.Stat(dest)
-            destExists = !os.IsNotExist(err)
-        }
+		destExists := false
+		if dest != "" {
+			_, err := os.Stat(dest)
+			destExists = !os.IsNotExist(err)
+		}
 
-        // Compute desired content checksum (from inline or source)
-        desiredHash := ""
-        if inline, ok := desiredItem.Extra["inline"].(string); ok && inline != "" {
-            h := sha256.Sum256([]byte(inline))
-            desiredHash = hex.EncodeToString(h[:])
-        } else if source, ok := desiredItem.Extra["source"].(string); ok && source != "" && source != "(inline)" {
-            sourcePath := p.resolveSource(source)
-            desiredHash = p.hashFile(sourcePath)
-        }
+		// Compute desired content checksum (from inline or source)
+		desiredHash := ""
+		if inline, ok := desiredItem.Extra["inline"].(string); ok && inline != "" {
+			h := sha256.Sum256([]byte(inline))
+			desiredHash = hex.EncodeToString(h[:])
+		} else if source, ok := desiredItem.Extra["source"].(string); ok && source != "" && source != "(inline)" {
+			sourcePath := p.resolveSource(source)
+			desiredHash = p.hashFile(sourcePath)
+		}
 
-        if !destExists {
-            additions = append(additions, desiredItem)
-            continue
-        }
+		if !destExists {
+			additions = append(additions, desiredItem)
+			continue
+		}
 
-        // Destination exists; compute current hash
-        currentHash := p.hashFile(dest)
+		// Destination exists; compute current hash
+		currentHash := p.hashFile(dest)
 
-        if inState {
-            if desiredHash != "" {
-                if desiredHash != currentHash {
-                    modifications = append(modifications, provider.ItemChange{
-                        ItemName: name,
-                        OldState: stateItem,
-                        NewState: resource.ItemState{
-                            Name:     name,
-                            Checksum: desiredHash,
-                            Status:   "present",
-                            Extra:    desiredItem.Extra,
-                        },
-                        Diff: "content changed",
-                    })
-                } else {
-                    inSync = append(inSync, stateItem)
-                }
-            } else {
-                // Fallback: compare current vs saved state
-                if currentHash != stateItem.Checksum {
-                    modifications = append(modifications, provider.ItemChange{
-                        ItemName: name,
-                        OldState: stateItem,
-                        NewState: resource.ItemState{
-                            Name:     name,
-                            Checksum: currentHash,
-                            Status:   "present",
-                            Extra:    desiredItem.Extra,
-                        },
-                        Diff: "content changed",
-                    })
-                } else {
-                    inSync = append(inSync, stateItem)
-                }
-            }
-        } else {
-            // File exists but not tracked
-            additions = append(additions, desiredItem)
-        }
+		if inState {
+			if desiredHash != "" {
+				if desiredHash != currentHash {
+					modifications = append(modifications, provider.ItemChange{
+						ItemName: name,
+						OldState: stateItem,
+						NewState: resource.ItemState{
+							Name:     name,
+							Checksum: desiredHash,
+							Status:   "present",
+							Extra:    desiredItem.Extra,
+						},
+						Diff: "content changed",
+					})
+				} else {
+					inSync = append(inSync, stateItem)
+				}
+			} else {
+				// Fallback: compare current vs saved state
+				if currentHash != stateItem.Checksum {
+					modifications = append(modifications, provider.ItemChange{
+						ItemName: name,
+						OldState: stateItem,
+						NewState: resource.ItemState{
+							Name:     name,
+							Checksum: currentHash,
+							Status:   "present",
+							Extra:    desiredItem.Extra,
+						},
+						Diff: "content changed",
+					})
+				} else {
+					inSync = append(inSync, stateItem)
+				}
+			}
+		} else {
+			// File exists but not tracked
+			additions = append(additions, desiredItem)
+		}
 	}
 
 	desiredItems := make(map[string]bool)
@@ -422,5 +422,5 @@ func (p *FileProvider) copyFile(src, dst string) error {
 // was removed: provider-level import/export functionality is deprecated and
 // handled outside providers.
 func (p *FileProvider) Import(ctx context.Context, group string) (provider.ResourceState, error) {
-    return provider.ResourceState{}, fmt.Errorf("import not supported for provider file")
+	return provider.ResourceState{}, fmt.Errorf("import not supported for provider file")
 }

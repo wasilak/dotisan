@@ -29,23 +29,23 @@ func TestLoader_LoadResources(t *testing.T) {
 	// Create temp dotfiles structure
 	tmpDir := t.TempDir()
 
-    // Create resources/ subdir for resource files
-    resourcesDir := filepath.Join(tmpDir, "resources")
-    if err := os.MkdirAll(resourcesDir, 0755); err != nil {
-        t.Fatalf("Failed to create resources dir: %v", err)
-    }
+	// Create resources/ subdir for resource files
+	resourcesDir := filepath.Join(tmpDir, "resources")
+	if err := os.MkdirAll(resourcesDir, 0755); err != nil {
+		t.Fatalf("Failed to create resources dir: %v", err)
+	}
 
-    // Create values.yaml (should be skipped)
-    valuesContent := "user:\n  name: testuser\n"
-    if err := os.WriteFile(filepath.Join(resourcesDir, "values.yaml"), []byte(valuesContent), 0644); err != nil {
-        t.Fatalf("Failed to write values.yaml: %v", err)
-    }
+	// Create values.yaml (should be skipped)
+	valuesContent := "user:\n  name: testuser\n"
+	if err := os.WriteFile(filepath.Join(resourcesDir, "values.yaml"), []byte(valuesContent), 0644); err != nil {
+		t.Fatalf("Failed to write values.yaml: %v", err)
+	}
 
 	// Create a BrewPackages resource
-    brewDir := filepath.Join(resourcesDir, "brew")
-    if err := os.MkdirAll(brewDir, 0755); err != nil {
-        t.Fatalf("Failed to create brew dir: %v", err)
-    }
+	brewDir := filepath.Join(resourcesDir, "brew")
+	if err := os.MkdirAll(brewDir, 0755); err != nil {
+		t.Fatalf("Failed to create brew dir: %v", err)
+	}
 
 	brewContent := "apiVersion: github.com/wasilak/dotisan/v1\nkind: BrewPackages\nmetadata:\n  name: core-tools\nspec:\n  formulae:\n    - name: ripgrep\n    - name: fd\n"
 	if err := os.WriteFile(filepath.Join(brewDir, "core.yaml"), []byte(brewContent), 0644); err != nil {
@@ -53,26 +53,26 @@ func TestLoader_LoadResources(t *testing.T) {
 	}
 
 	// Create a ManagedFile resource
-    filesDir := filepath.Join(resourcesDir, "files")
-    if err := os.MkdirAll(filesDir, 0755); err != nil {
-        t.Fatalf("Failed to create files dir: %v", err)
-    }
+	filesDir := filepath.Join(resourcesDir, "files")
+	if err := os.MkdirAll(filesDir, 0755); err != nil {
+		t.Fatalf("Failed to create files dir: %v", err)
+	}
 
 	fileContent := "apiVersion: github.com/wasilak/dotisan/v1\nkind: ManagedFile\nmetadata:\n  name: test-config\nspec:\n  source: templates/test.txt\n  destination: /tmp/test.txt\n  template: false\n"
 	if err := os.WriteFile(filepath.Join(filesDir, "test.yaml"), []byte(fileContent), 0644); err != nil {
 		t.Fatalf("Failed to write file resource: %v", err)
 	}
 
-    // Create a non-YAML file (should be skipped)
-    if err := os.WriteFile(filepath.Join(resourcesDir, "README.md"), []byte("# Dotfiles"), 0644); err != nil {
-        t.Fatalf("Failed to write README: %v", err)
-    }
+	// Create a non-YAML file (should be skipped)
+	if err := os.WriteFile(filepath.Join(resourcesDir, "README.md"), []byte("# Dotfiles"), 0644); err != nil {
+		t.Fatalf("Failed to write README: %v", err)
+	}
 
 	// Set up context with values
 	ctx := config.NewTemplateContext()
 
-    loader := NewLoader(tmpDir, ctx)
-    resources, err := loader.LoadResources()
+	loader := NewLoader(tmpDir, ctx)
+	resources, err := loader.LoadResources()
 	if err != nil {
 		t.Fatalf("LoadResources() failed: %v", err)
 	}
@@ -113,17 +113,17 @@ func TestLoader_LoadResources(t *testing.T) {
 func TestLoader_LoadResources_InvalidResource(t *testing.T) {
 	tmpDir := t.TempDir()
 
-    // Create resources/ subdir and put invalid resource there
-    resourcesDir := filepath.Join(tmpDir, "resources")
-    if err := os.MkdirAll(resourcesDir, 0755); err != nil {
-        t.Fatalf("Failed to create resources dir: %v", err)
-    }
+	// Create resources/ subdir and put invalid resource there
+	resourcesDir := filepath.Join(tmpDir, "resources")
+	if err := os.MkdirAll(resourcesDir, 0755); err != nil {
+		t.Fatalf("Failed to create resources dir: %v", err)
+	}
 
-    // Create an invalid resource (unknown kind)
-    invalidContent := "apiVersion: github.com/wasilak/dotisan/v1\nkind: UnknownKind\nmetadata:\n  name: invalid\nspec: {}\n"
-    if err := os.WriteFile(filepath.Join(resourcesDir, "invalid.yaml"), []byte(invalidContent), 0644); err != nil {
-        t.Fatalf("Failed to write invalid resource: %v", err)
-    }
+	// Create an invalid resource (unknown kind)
+	invalidContent := "apiVersion: github.com/wasilak/dotisan/v1\nkind: UnknownKind\nmetadata:\n  name: invalid\nspec: {}\n"
+	if err := os.WriteFile(filepath.Join(resourcesDir, "invalid.yaml"), []byte(invalidContent), 0644); err != nil {
+		t.Fatalf("Failed to write invalid resource: %v", err)
+	}
 
 	ctx := config.NewTemplateContext()
 	loader := NewLoader(tmpDir, ctx)

@@ -608,7 +608,7 @@ func Render(s string) string
 ```go
 const (
     IconManagedFile      = "🔵"  // Blue circle
-    IconManagedDirectory = "📁"  // Folder
+    // IconManagedDirectory removed: ManagedDirectory resource kind no longer exists
     IconBrewPackage      = "🟣"  // Purple circle
     IconNpmPackage      = "🟢"  // Green circle
     IconGoModule        = "🔷"  // Blue diamond

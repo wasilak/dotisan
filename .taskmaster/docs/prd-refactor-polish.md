@@ -70,7 +70,7 @@ Dotisan is a dotfiles/package manager CLI built incrementally via agentic AI wor
       KindGoPackages      = "GoPackages"
       KindCargoPackages   = "CargoPackages"
       KindManagedFile     = "ManagedFile"
-      KindManagedDirectory = "ManagedDirectory"
+      // KindManagedDirectory removed: ManagedDirectory no longer exists
   )
   
   func ResourceID(kind, group, item string) string {
