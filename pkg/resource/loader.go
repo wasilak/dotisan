@@ -93,8 +93,16 @@ func (l *Loader) loadResourceFile(path string) (Resource, error) {
 		return nil, fmt.Errorf("failed to read file: %w", err)
 	}
 
+	// Shield generator template fields from the first-pass resource-file render:
+	// replace {{ .Item }}/{{ .Index }} expressions with placeholders so they survive
+	// TemplateContext rendering, then restore originals after parsing.
+	shielded, rawGenTmpls, err := shieldGeneratorTemplates(data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to shield generator templates: %w", err)
+	}
+
 	// Render as template (second pass - uses full context including .Values)
-	rendered, err := l.engine.RenderTemplate(path, string(data))
+	rendered, err := l.engine.RenderTemplate(path, string(shielded))
 	if err != nil {
 		return nil, fmt.Errorf("failed to render template: %w", err)
 	}
@@ -110,9 +118,21 @@ func (l *Loader) loadResourceFile(path string) (Resource, error) {
 		return nil, fmt.Errorf("failed to parse resource: %w", err)
 	}
 
+	// Restore raw generator template strings (first-pass render may have corrupted them).
+	if mf, ok := resource.(*ManagedFile); ok {
+		restoreRawGeneratorTemplates(mf, rawGenTmpls)
+	}
+
 	// Validate the resource
 	if err := resource.Validate(); err != nil {
 		return nil, fmt.Errorf("validation failed: %w", err)
+	}
+
+	// Expand generator specs into concrete FileSpec entries before resolving source files.
+	if mf, ok := resource.(*ManagedFile); ok {
+		if err := expandGenerator(mf, l.engine.Context(), filepath.Dir(path)); err != nil {
+			return nil, fmt.Errorf("generator expansion failed: %w", err)
+		}
 	}
 
 	// Resolve relative sourceFile paths and render templates where requested.

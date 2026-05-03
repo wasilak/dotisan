@@ -1,0 +1,93 @@
+{
+	"meta": {
+		"generatedAt": "2026-05-02T20:08:15.066Z",
+		"tasksAnalyzed": 10,
+		"totalTasks": 10,
+		"analysisCount": 10,
+		"thresholdScore": 5,
+		"projectName": "Task Master",
+		"usedResearch": true
+	},
+	"complexityAnalysis": [
+		{
+			"taskId": 1,
+			"taskTitle": "Add GeneratorSpec to ManagedFileSpec data model",
+			"complexityScore": 3,
+			"recommendedSubtasks": 2,
+			"expansionPrompt": "Break down the data model implementation into struct definition and YAML marshaling/unmarshaling setup, plus validation logic for required fields",
+			"reasoning": "This is a straightforward data model change involving struct definition with Go tags and basic validation. The complexity is low as it primarily involves standard Go struct design patterns and YAML handling, with minimal business logic or complex interactions."
+		},
+		{
+			"taskId": 2,
+			"taskTitle": "Implement sourceKey resolution helper",
+			"complexityScore": 5,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Separate the implementation into path parsing, map traversal logic, and error handling components with distinct test cases for each",
+			"reasoning": "This task requires map traversal with dot-notation path resolution, error handling for missing keys, and validation of returned data types. While conceptually straightforward, it involves complex map navigation and error management that requires careful implementation and testing."
+		},
+		{
+			"taskId": 3,
+			"taskTitle": "Implement mutual exclusion validation",
+			"complexityScore": 4,
+			"recommendedSubtasks": 2,
+			"expansionPrompt": "Separate validation logic into field checking and error message generation components with distinct test scenarios for valid and invalid configurations",
+			"reasoning": "This involves validation logic for field conflicts in a data structure. The complexity is moderate as it requires understanding the data model structure, implementing proper validation checks, and generating clear error messages without complex business logic."
+		},
+		{
+			"taskId": 4,
+			"taskTitle": "Implement template rendering engine",
+			"complexityScore": 6,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Divide into template engine setup, context preparation, and error handling components with separate test coverage for each",
+			"reasoning": "This task involves Go's text/template package integration, which requires understanding template syntax, context management, and proper error handling. The complexity increases due to template parsing, execution, and error propagation requirements."
+		},
+		{
+			"taskId": 5,
+			"taskTitle": "Implement generator expansion logic",
+			"complexityScore": 8,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Split into source resolution, context building, template rendering, and FileSpec creation components with integration testing for each step",
+			"reasoning": "This is the core business logic task that orchestrates multiple components. It requires integration of source resolution, template rendering, path handling, and FileSpec creation with proper error propagation and state management, making it highly complex."
+		},
+		{
+			"taskId": 6,
+			"taskTitle": "Implement destination path validation and normalization",
+			"complexityScore": 5,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Separate path validation, ~ expansion handling, and error generation into distinct components with comprehensive test coverage for different path scenarios",
+			"reasoning": "This task requires path manipulation using Go's filepath package, handling tilde expansion, and validation of rendered paths. The complexity is moderate due to path handling nuances and the need for comprehensive validation scenarios."
+		},
+		{
+			"taskId": 7,
+			"taskTitle": "Implement template context building",
+			"complexityScore": 5,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Break into context field construction, data type handling, and error validation components with separate test coverage for each data type",
+			"reasoning": "This involves building complex context maps with multiple data types and ensuring proper field population. The complexity comes from handling different data types (scalars, maps, structs) and ensuring correct context structure for template rendering."
+		},
+		{
+			"taskId": 8,
+			"taskTitle": "Add comprehensive unit tests",
+			"complexityScore": 7,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Organize tests into separate categories: successful expansion, error cases, mutual exclusion, template rendering, and integration tests with table-driven test patterns",
+			"reasoning": "Comprehensive test coverage requires understanding all components and creating tests for multiple scenarios including edge cases. The complexity is high due to the need for thorough test coverage, table-driven testing patterns, and ensuring all code paths are tested."
+		},
+		{
+			"taskId": 9,
+			"taskTitle": "Integrate generator with existing loader system",
+			"complexityScore": 6,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Separate integration into loader modification, file structure integration, and downstream processing components with integration test scenarios",
+			"reasoning": "This task requires understanding the existing loader architecture and ensuring proper integration without breaking existing functionality. The complexity stems from system integration, maintaining compatibility, and ensuring proper state management during the expansion process."
+		},
+		{
+			"taskId": 10,
+			"taskTitle": "Verify provider compatibility with generated files",
+			"complexityScore": 5,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Create tests covering checksum calculation, state management, and file operations with both generated and static files to ensure identical behavior",
+			"reasoning": "This task requires understanding the provider system and ensuring generated files behave identically to static files. The complexity is moderate as it involves system testing and verification rather than core implementation, but requires careful attention to compatibility requirements."
+		}
+	]
+}

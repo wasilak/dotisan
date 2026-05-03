@@ -74,15 +74,12 @@ func (p *FileProvider) Reconcile(ctx context.Context,
 		stateGroup, exists := kindIndex[group.Name]
 
 		if !exists {
-			// New group - all items are additions
-			items := p.filterExistingItems(group)
-			if len(items) > 0 {
-				plan.Additions = append(plan.Additions, provider.GroupAddition{
-					Kind:  group.Kind,
-					Group: group.Name,
-					Items: items,
-				})
-			}
+			// New group - all items are additions (bring them under management even if dest exists)
+			plan.Additions = append(plan.Additions, provider.GroupAddition{
+				Kind:  group.Kind,
+				Group: group.Name,
+				Items: group.Items,
+			})
 		} else {
 			// Existing group - compare items
 			additions, removals, modifications, inSync := p.compareGroupItems(group, stateGroup)
@@ -214,22 +211,6 @@ func (p *FileProvider) resolveSource(source string) string {
     }
     // Relative source paths are resolved against the dotfiles root
     return filepath.Join(p.dotfilesRoot, source)
-}
-
-// filterExistingItems returns items that don't exist at destination
-func (p *FileProvider) filterExistingItems(group resource.ResourceGroup) []resource.ResourceItem {
-	var result []resource.ResourceItem
-	for _, item := range group.Items {
-		dest, ok := item.Extra["destination"].(string)
-		if !ok || dest == "" {
-			result = append(result, item)
-			continue
-		}
-		if _, err := os.Stat(dest); os.IsNotExist(err) {
-			result = append(result, item)
-		}
-	}
-	return result
 }
 
 // compareGroupItems compares desired group items with state

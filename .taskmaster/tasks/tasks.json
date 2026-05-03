@@ -5304,5 +5304,603 @@
         "pterm-migration"
       ]
     }
+  },
+  "generators": {
+    "tasks": [
+      {
+        "id": "1",
+        "title": "Add GeneratorSpec to ManagedFileSpec data model",
+        "description": "Implement the data model changes to support GeneratorSpec within ManagedFileSpec including sourceKey, template, destinationPattern, and optional mode fields",
+        "details": "Modify the ManagedFileSpec struct to include a GeneratorSpec field. GeneratorSpec should contain: sourceKey (string, required), template (string, required), destinationPattern (string, required), and mode (string, optional). Use Go struct tags for YAML marshaling/unmarshaling. Implement proper validation for required fields during struct initialization.",
+        "testStrategy": "Create unit tests that validate the struct definition, field presence, and YAML unmarshaling. Test that missing required fields cause validation errors. Verify that the struct correctly serializes to and from YAML format.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Define GeneratorSpec struct with YAML tags and validation",
+            "description": "Create the GeneratorSpec struct definition with required fields and proper YAML marshaling/unmarshaling tags",
+            "dependencies": [],
+            "details": "Implement the GeneratorSpec struct with sourceKey, template, destinationPattern (all required) and mode (optional) fields. Add appropriate Go struct tags for YAML marshaling/unmarshaling. Include validation logic during struct initialization to ensure required fields are present. Use standard Go struct design patterns and proper error handling.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T20:30:11.358Z"
+          },
+          {
+            "id": 2,
+            "title": "Integrate GeneratorSpec into ManagedFileSpec data model",
+            "description": "Modify ManagedFileSpec struct to include GeneratorSpec field and implement proper validation",
+            "dependencies": [],
+            "details": "Update the ManagedFileSpec struct to include a GeneratorSpec field. Implement validation logic to ensure the GeneratorSpec is properly initialized with required fields. Add proper error handling for validation failures. Ensure the integration maintains backward compatibility and follows existing code patterns for struct initialization and validation.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T20:30:13.655Z"
+          }
+        ],
+        "complexity": 3,
+        "recommendedSubtasks": 2,
+        "expansionPrompt": "Break down the data model implementation into struct definition and YAML marshaling/unmarshaling setup, plus validation logic for required fields",
+        "updatedAt": "2026-05-02T20:30:13.655Z"
+      },
+      {
+        "id": "2",
+        "title": "Implement sourceKey resolution helper",
+        "description": "Create a helper function to resolve dot-notation sourceKey paths into values lists",
+        "details": "Implement a helper function that takes a sourceKey string and a values map and resolves the dot-notation path to return a list/array. Handle nested paths like 'skills' or 'agents.skills'. Validate that the result is a list/array and return appropriate errors for invalid paths or non-list values. Use reflection or map traversal to navigate the values tree.",
+        "testStrategy": "Write unit tests covering various valid sourceKey paths including nested paths, edge cases with missing keys, and invalid non-list values. Test that proper errors are returned for invalid paths.",
+        "priority": "high",
+        "dependencies": [
+          "1"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement path parsing component for sourceKey resolution",
+            "description": "Create the path parsing logic to split dot-notation sourceKey strings into individual path components for traversal",
+            "dependencies": [],
+            "details": "Develop a function that takes a sourceKey string and splits it by dots, handling edge cases like empty components and escaped dots. The parser should return a slice of path components that can be used for map traversal. Include proper error handling for malformed paths.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T20:31:56.845Z"
+          },
+          {
+            "id": 2,
+            "title": "Implement map traversal and validation logic",
+            "description": "Create the core map traversal functionality that navigates through nested maps using parsed path components and validates returned values are lists/arrays",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement the main traversal logic that uses reflection or map traversal to navigate through nested data structures. The function should handle various data types including maps, slices, and nested structures. Validate that the final result is a list/array and return appropriate errors for invalid paths or non-list values.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T20:31:59.160Z"
+          },
+          {
+            "id": 3,
+            "title": "Implement error handling and edge case validation",
+            "description": "Create comprehensive error handling for missing keys, invalid data types, and boundary conditions in sourceKey resolution",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Develop robust error handling that covers missing keys, non-list values, empty paths, and invalid data types. Implement specific error types for different failure scenarios and ensure proper error messages are returned. Test edge cases including empty maps, nil values, and deeply nested structures with missing components.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T20:32:01.478Z"
+          }
+        ],
+        "complexity": 5,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Separate the implementation into path parsing, map traversal logic, and error handling components with distinct test cases for each",
+        "updatedAt": "2026-05-02T20:32:01.478Z"
+      },
+      {
+        "id": "3",
+        "title": "Implement mutual exclusion validation",
+        "description": "Add validation logic to ensure GeneratorSpec is mutually exclusive with other source fields",
+        "details": "Add validation logic in the loader that checks if GeneratorSpec is provided alongside Source, SourceFile, or Files fields. Return clear error messages when these conflicts occur. The validation should happen during the resource load/parse phase before expansion.",
+        "testStrategy": "Create unit tests that verify validation errors are thrown when generator is used with other source fields. Test that valid configurations (with only generator or only other fields) pass validation.",
+        "priority": "high",
+        "dependencies": [
+          "1"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement field conflict validation logic",
+            "description": "Create validation functions to check if GeneratorSpec is provided alongside Source, SourceFile, or Files fields",
+            "dependencies": [
+              3
+            ],
+            "details": "Develop a validation component that scans the resource structure during the load/parse phase to detect conflicts between GeneratorSpec and other source fields. The validation should identify when multiple source fields are present and return structured error messages indicating which fields conflict. Implement this logic in the loader module before any expansion occurs.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T20:33:45.740Z"
+          },
+          {
+            "id": 2,
+            "title": "Create error message generation and test scenarios",
+            "description": "Separate error message generation from field checking logic and implement comprehensive test cases",
+            "dependencies": [
+              1
+            ],
+            "details": "Refactor the validation logic to separate field checking from error message generation into distinct components. Create comprehensive test scenarios covering valid configurations (only GeneratorSpec, only other source fields) and invalid configurations (mixed fields). Implement unit tests that verify appropriate error messages are returned for each conflict scenario and that valid configurations pass validation without errors.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T20:33:48.045Z"
+          }
+        ],
+        "complexity": 4,
+        "recommendedSubtasks": 2,
+        "expansionPrompt": "Separate validation logic into field checking and error message generation components with distinct test scenarios for valid and invalid configurations",
+        "updatedAt": "2026-05-02T20:33:48.045Z"
+      },
+      {
+        "id": "4",
+        "title": "Implement template rendering engine",
+        "description": "Set up Go text/template engine for both content and destinationPattern rendering",
+        "details": "Implement the template rendering logic using Go's text/template package. Create a function that takes a template string, context map, and renders the template. The context should include: .item, .index, .Values, .Env, and .OS. Ensure proper error handling for template syntax errors and runtime errors.",
+        "testStrategy": "Write comprehensive tests covering template syntax errors, runtime errors, and successful rendering of various template patterns. Test with different context data types (scalars, maps, structs).",
+        "priority": "high",
+        "dependencies": [
+          "2"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Setup Go text/template engine for rendering",
+            "description": "Implement the core template engine setup using Go's text/template package with proper error handling for syntax and runtime errors",
+            "dependencies": [
+              4
+            ],
+            "details": "Create a function that initializes the template engine, handles template parsing, and implements error handling for template syntax errors and runtime errors. The engine should support rendering templates with the required context fields (.item, .index, .Values, .Env, .OS). Use Go's text/template package for template processing and ensure proper error propagation.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T20:35:24.104Z"
+          },
+          {
+            "id": 2,
+            "title": "Implement template context preparation",
+            "description": "Create the context map building logic with item, index, Values, Env, and OS fields for template rendering",
+            "dependencies": [
+              4
+            ],
+            "details": "Implement logic to build the template context for each item in the list. The context should include .item (current item), .index (0-based index), .Values (full values tree), .Env (environment variables), and .OS (runtime OS info). Use reflection or direct assignment to populate the context and ensure each field has correct value and type.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T20:35:26.399Z"
+          },
+          {
+            "id": 3,
+            "title": "Add comprehensive error handling for template rendering",
+            "description": "Implement robust error handling for template syntax errors, runtime errors, and path validation",
+            "dependencies": [
+              4
+            ],
+            "details": "Add comprehensive error handling for template syntax errors, runtime errors, and destination path validation. Implement proper error messages for template parsing failures, runtime execution errors, and invalid destination paths. Include validation for rendered paths to ensure they are not empty or whitespace, and handle ~ expansion to user home directory using Go's filepath package.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T20:35:28.746Z"
+          }
+        ],
+        "complexity": 6,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Divide into template engine setup, context preparation, and error handling components with separate test coverage for each",
+        "updatedAt": "2026-05-02T20:35:28.746Z"
+      },
+      {
+        "id": "5",
+        "title": "Implement generator expansion logic",
+        "description": "Create the core logic that expands generator specs into FileSpec entries",
+        "details": "Implement the main expansion logic that: 1) Resolves the sourceKey to get the list, 2) For each item in the list, 3) Builds the template context, 4) Renders template to produce content, 5) Renders destinationPattern to compute path, 6) Creates FileSpec objects with Source, Destination, and Mode, 7) Replaces ManagedFile.Spec.Files with generated entries and clears the generator field.",
+        "testStrategy": "Create unit tests that validate the complete expansion process with various input data types. Test edge cases like empty lists, single items, complex nested structures. Verify that the resulting FileSpec entries are correctly formed and that the generator field is cleared.",
+        "priority": "high",
+        "dependencies": [
+          "3",
+          "4"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement source key resolution component",
+            "description": "Create the helper function to resolve dot-notation sourceKey paths into values lists with proper error handling",
+            "dependencies": [
+              2
+            ],
+            "details": "Implement a function that takes a sourceKey string and values map, navigates nested paths using reflection or map traversal, validates results are lists/arrays, and returns appropriate errors for invalid paths or non-list values. Use Go's reflection package for dynamic path resolution and ensure proper error propagation.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T20:39:28.236Z"
+          },
+          {
+            "id": 2,
+            "title": "Implement template context building component",
+            "description": "Create the context map builder for template rendering with item, index, Values, Env, and OS fields",
+            "dependencies": [
+              4
+            ],
+            "details": "Develop logic to build template context for each item including .item (current item), .index (0-based index), .Values (full values tree), .Env (environment variables), and .OS (runtime OS info). Use reflection or direct assignment to populate context fields and ensure proper data types for each context element.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T20:39:30.551Z"
+          },
+          {
+            "id": 3,
+            "title": "Implement template rendering engine component",
+            "description": "Set up Go text/template engine for content and destinationPattern rendering with error handling",
+            "dependencies": [
+              4
+            ],
+            "details": "Implement template rendering logic using Go's text/template package with functions to render both content templates and destinationPattern templates. Include proper error handling for template syntax errors and runtime errors, and ensure context includes .item, .index, .Values, .Env, and .OS fields for comprehensive template processing.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T20:39:32.876Z"
+          },
+          {
+            "id": 4,
+            "title": "Implement FileSpec creation and integration",
+            "description": "Create FileSpec objects with Source, Destination, and Mode, and replace generator entries",
+            "dependencies": [
+              1,
+              2,
+              3,
+              5
+            ],
+            "details": "Implement logic to create FileSpec objects with Source, Destination, and Mode fields from rendered content and computed paths. Replace ManagedFile.Spec.Files with generated entries and clear the generator field. Integrate all previous components and ensure proper error propagation and state management throughout the complete expansion process.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T20:39:35.188Z"
+          }
+        ],
+        "complexity": 8,
+        "recommendedSubtasks": 4,
+        "expansionPrompt": "Split into source resolution, context building, template rendering, and FileSpec creation components with integration testing for each step",
+        "updatedAt": "2026-05-02T20:39:35.188Z"
+      },
+      {
+        "id": "6",
+        "title": "Implement destination path validation and normalization",
+        "description": "Add validation for destination paths and normalize ~ to user home directory",
+        "details": "Add validation logic that ensures destinationPattern renders to valid paths. Handle ~ expansion to user home directory. Validate that rendered paths are not empty or whitespace. Use Go's filepath package for path validation and normalization. Return clear errors for invalid paths.",
+        "testStrategy": "Write tests covering various destination pattern scenarios including valid absolute paths, relative paths, paths with ~ expansion, and invalid empty/whitespace paths. Test that ~ is correctly expanded to home directory.",
+        "priority": "medium",
+        "dependencies": [
+          "5"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement path validation logic using Go's filepath package",
+            "description": "Create validation functions that ensure destination patterns render to valid paths using Go's filepath package for proper path handling and normalization",
+            "dependencies": [
+              6
+            ],
+            "details": "Develop functions that utilize Go's filepath package to validate path structures, handle path normalization, and ensure rendered paths meet requirements for valid file system paths. Implement checks for path syntax, directory structure validity, and proper path formatting.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T20:40:23.058Z"
+          },
+          {
+            "id": 2,
+            "title": "Add ~ expansion handling for user home directory",
+            "description": "Implement logic to properly expand ~ characters in destination paths to the user's home directory location",
+            "dependencies": [
+              6
+            ],
+            "details": "Create functionality that identifies and expands ~ characters in destination patterns to the appropriate user home directory path. Handle both standalone ~ and ~/path scenarios, ensuring proper path construction and validation after expansion.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T20:40:25.389Z"
+          },
+          {
+            "id": 3,
+            "title": "Create comprehensive error handling and validation tests",
+            "description": "Develop extensive test coverage for various path scenarios including valid/invalid paths, empty/whitespace paths, and ~ expansion cases",
+            "dependencies": [
+              6
+            ],
+            "details": "Write comprehensive unit tests covering all path validation scenarios including valid absolute paths, relative paths, paths with ~ expansion, invalid empty/whitespace paths, and edge cases. Test that appropriate errors are returned for invalid paths and that the system properly handles all expected path formats.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T20:40:27.686Z"
+          }
+        ],
+        "complexity": 5,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Separate path validation, ~ expansion handling, and error generation into distinct components with comprehensive test coverage for different path scenarios",
+        "updatedAt": "2026-05-02T20:40:27.686Z"
+      },
+      {
+        "id": "7",
+        "title": "Implement template context building",
+        "description": "Create the context map for template rendering with item, index, Values, Env, and OS",
+        "details": "Implement logic to build the template context for each item in the list. The context should include: .item (current item), .index (0-based index), .Values (full values tree), .Env (environment variables), and .OS (runtime OS info). Use reflection or direct assignment to populate the context.",
+        "testStrategy": "Create tests that verify the context is correctly built for different types of items (scalars, maps, structs). Test that each context field has the correct value and type.",
+        "priority": "medium",
+        "dependencies": [
+          "4"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement context field construction for template rendering",
+            "description": "Create the core logic to build context fields including .item, .index, .Values, .Env, and .OS using reflection or direct assignment",
+            "dependencies": [
+              4
+            ],
+            "details": "Develop the function that constructs the template context map with all required fields. Implement logic to populate .item with current item data, .index with 0-based index, .Values with full values tree, .Env with environment variables, and .OS with runtime OS information. Use Go reflection for dynamic field population and ensure proper data type handling.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T20:41:01.616Z"
+          },
+          {
+            "id": 2,
+            "title": "Handle data type conversion and validation for context fields",
+            "description": "Implement proper data type handling for scalar, map, and struct values in the template context",
+            "dependencies": [
+              1
+            ],
+            "details": "Create data type conversion logic that properly handles different input types (scalars, maps, structs) when building the context. Implement validation to ensure each context field contains the correct data type and value. Add error handling for invalid data types and ensure proper serialization for template rendering.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T20:41:03.959Z"
+          },
+          {
+            "id": 3,
+            "title": "Add error validation and testing for context building",
+            "description": "Implement comprehensive error validation and create test coverage for all data types in template context",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Add comprehensive error validation checks for context building including invalid paths, missing fields, and data type mismatches. Create unit tests that verify context is correctly built for different data types including scalars, maps, and structs. Test edge cases like empty lists, nil values, and complex nested structures to ensure robust error handling and proper context population.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T20:41:06.297Z"
+          }
+        ],
+        "complexity": 5,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Break into context field construction, data type handling, and error validation components with separate test coverage for each data type",
+        "updatedAt": "2026-05-02T20:41:06.297Z"
+      },
+      {
+        "id": "8",
+        "title": "Add comprehensive unit tests",
+        "description": "Write extensive unit tests covering all generator functionality including edge cases",
+        "details": "Create a comprehensive test suite covering: 1) Successful expansion of various data types, 2) Error cases for invalid sourceKey, 3) Mutual exclusion validation, 4) Template syntax/runtime errors, 5) Destination path validation, 6) Context building correctness, 7) Integration tests for the complete expansion process. Use table-driven tests where appropriate.",
+        "testStrategy": "Implement table-driven tests for multiple scenarios including valid inputs, error conditions, and edge cases. Ensure test coverage for all code paths and error conditions. Verify that test errors provide helpful context about which resource and item failed.",
+        "priority": "high",
+        "dependencies": [
+          "5",
+          "7"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create successful expansion test cases",
+            "description": "Implement table-driven tests for successful expansion of various data types including edge cases",
+            "dependencies": [
+              5
+            ],
+            "details": "Develop comprehensive test cases covering different data types (strings, numbers, nested objects, arrays) that should successfully expand. Use table-driven testing patterns to validate multiple scenarios including empty lists, single items, and complex nested structures. Ensure all valid input combinations produce correct FileSpec outputs.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T20:49:51.598Z"
+          },
+          {
+            "id": 2,
+            "title": "Implement error case validation tests",
+            "description": "Write tests for invalid sourceKey error cases and other validation failures",
+            "dependencies": [
+              5
+            ],
+            "details": "Create test scenarios covering invalid sourceKey paths, missing required fields, and other error conditions. Implement table-driven tests that verify appropriate error messages are returned for invalid sourceKey references, non-list values, and other validation failures. Ensure error messages provide helpful context about which resource and item failed.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T20:49:53.928Z"
+          },
+          {
+            "id": 3,
+            "title": "Develop mutual exclusion validation tests",
+            "description": "Create tests for mutual exclusion validation between GeneratorSpec and other source fields",
+            "dependencies": [
+              3
+            ],
+            "details": "Implement unit tests that verify validation errors are properly thrown when GeneratorSpec is used alongside Source, SourceFile, or Files fields. Test both invalid configurations (conflicting fields) and valid configurations (only generator or only other fields). Use table-driven approach to cover multiple invalid combinations.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T20:49:56.243Z"
+          },
+          {
+            "id": 4,
+            "title": "Build template rendering and context tests",
+            "description": "Create comprehensive tests for template syntax/runtime errors and context building correctness",
+            "dependencies": [
+              5
+            ],
+            "details": "Develop tests covering template syntax errors, runtime errors, and context building validation. Test various template scenarios including valid templates, invalid syntax, and edge cases. Verify that context variables are correctly built and passed to templates, and that destination path validation works properly with different template patterns.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T20:49:58.598Z"
+          },
+          {
+            "id": 5,
+            "title": "Execute integration tests for complete expansion process",
+            "description": "Implement integration tests covering the complete expansion process from start to finish",
+            "dependencies": [
+              5
+            ],
+            "details": "Create end-to-end integration tests that validate the complete expansion workflow. Test the full process including sourceKey resolution, template rendering, destination path computation, and FileSpec creation. Use table-driven tests to cover multiple scenarios including successful expansions, error conditions, and edge cases. Ensure all code paths are tested and verify that generator fields are properly cleared after expansion.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-02T20:50:00.940Z"
+          }
+        ],
+        "complexity": 7,
+        "recommendedSubtasks": 5,
+        "expansionPrompt": "Organize tests into separate categories: successful expansion, error cases, mutual exclusion, template rendering, and integration tests with table-driven test patterns",
+        "updatedAt": "2026-05-02T20:50:00.940Z"
+      },
+      {
+        "id": "9",
+        "title": "Integrate generator with existing loader system",
+        "description": "Ensure generator expansion integrates properly with the existing resource loading and parsing pipeline",
+        "details": "Modify the loader to call the generator expansion logic during the resource load/parse phase. Ensure that the expanded files are properly integrated into the existing ManagedFile structure. Verify that the system treats generated files identically to static files in terms of processing and state management.",
+        "testStrategy": "Write integration tests that simulate the complete loader pipeline with generator resources. Verify that generated files appear in the final ManagedFile structure and that downstream systems process them identically to static files.",
+        "priority": "medium",
+        "dependencies": [
+          "5",
+          "8"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Modify loader to invoke generator expansion during resource parsing",
+            "description": "Update the existing loader system to call generator expansion logic at the appropriate phase of resource loading and parsing",
+            "dependencies": [
+              5,
+              8
+            ],
+            "details": "Implement changes to the loader's resource processing pipeline to detect and invoke generator expansion when encountering generator specs. Ensure the expansion logic is called during the parse phase and that the expanded files are properly integrated into the ManagedFile structure. Maintain backward compatibility with existing static file processing.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-03T05:54:19.720Z"
+          },
+          {
+            "id": 2,
+            "title": "Integrate expanded files into ManagedFile structure",
+            "description": "Ensure generated files are properly incorporated into the existing ManagedFile structure and treated identically to static files",
+            "dependencies": [
+              1
+            ],
+            "details": "Modify the ManagedFile structure integration logic to accept and properly handle generated FileSpec entries. Verify that generated files maintain the same state management properties as static files. Ensure the system treats both file types identically in terms of processing, checksum calculation, and file operations. Implement proper cleanup of generator fields after expansion.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-03T05:54:21.476Z"
+          },
+          {
+            "id": 3,
+            "title": "Validate downstream processing with generated files",
+            "description": "Verify that downstream systems process generated files identically to static files throughout the pipeline",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Create integration tests that simulate the complete loader pipeline with generator resources. Test that generated files appear correctly in the final ManagedFile structure and that downstream systems (providers, checksum calculators, etc.) process them identically to static files. Validate state management, file operations, and import/export functionality work seamlessly with generated content.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-03T05:54:23.216Z"
+          }
+        ],
+        "complexity": 6,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Separate integration into loader modification, file structure integration, and downstream processing components with integration test scenarios",
+        "updatedAt": "2026-05-03T05:54:23.216Z"
+      },
+      {
+        "id": "10",
+        "title": "Verify provider compatibility with generated files",
+        "description": "Ensure existing provider code works transparently with generated files",
+        "details": "Test that existing providers can process generated ManagedFile.Files without modification. Create tests that simulate provider behavior with generated files and verify that checksums, state management, and file operations work correctly. Confirm that generated files are treated identically to static files by the provider system.",
+        "testStrategy": "Create provider integration tests that validate file operations, checksum calculations, and state management with generated files. Test that the same provider code works for both generated and static files. Verify that state import/export works correctly for generated files.",
+        "priority": "medium",
+        "dependencies": [
+          "9"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create provider integration tests for generated files",
+            "description": "Develop comprehensive integration tests that validate provider behavior with generated ManagedFile.Files to ensure identical processing as static files",
+            "dependencies": [
+              9
+            ],
+            "details": "Implement test suites that simulate the complete provider pipeline with generated files, focusing on checksum calculations, state management, and file operations. These tests should verify that the same provider code works seamlessly with both generated and static files, confirming transparent compatibility.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-03T05:54:26.674Z"
+          },
+          {
+            "id": 2,
+            "title": "Implement checksum and state management verification",
+            "description": "Develop specific tests to validate that checksum calculations and state management work identically for generated and static files",
+            "dependencies": [
+              1
+            ],
+            "details": "Create test cases that compare checksum results, state import/export functionality, and file operation behaviors between generated and static files. Ensure that the provider system treats both file types with identical consistency in terms of integrity checking and state tracking.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-03T05:54:28.410Z"
+          },
+          {
+            "id": 3,
+            "title": "Validate file operations compatibility",
+            "description": "Test that all file operations work identically for generated files as they do for static files within the provider system",
+            "dependencies": [
+              1
+            ],
+            "details": "Execute comprehensive testing of file read, write, delete, and other operations on generated files to confirm they behave exactly like static files. This includes verifying that file paths, permissions, and access patterns are handled consistently by the provider system.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-03T05:54:30.214Z"
+          }
+        ],
+        "complexity": 5,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Create tests covering checksum calculation, state management, and file operations with both generated and static files to ensure identical behavior",
+        "updatedAt": "2026-05-03T05:54:30.214Z"
+      }
+    ],
+    "metadata": {
+      "version": "1.0.0",
+      "lastModified": "2026-05-03T05:54:30.215Z",
+      "taskCount": 10,
+      "completedCount": 10,
+      "tags": [
+        "generators"
+      ]
+    }
   }
 }

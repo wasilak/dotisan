@@ -26,6 +26,11 @@ func NewTemplateEngine(ctx *TemplateContext) *TemplateEngine {
 	return &TemplateEngine{ctx: ctx}
 }
 
+// Context returns the template context used by this engine.
+func (e *TemplateEngine) Context() *TemplateContext {
+	return e.ctx
+}
+
 // RenderTemplate renders a template string using the engine's context.
 func (e *TemplateEngine) RenderTemplate(name, content string) (string, error) {
 	// Create template with Sprig functions
