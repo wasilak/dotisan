@@ -149,7 +149,7 @@ go build ./...
 go test ./...
 dotisan plan                          # spinner animates, succeeds/fails correctly
 dotisan apply                         # pterm confirm prompt appears, Y/n works
-dotisan state remove BrewPackages/x   # pterm confirm prompt, Ctrl+C cancels
+dotisan state remove HomeBrewPackages/x   # pterm confirm prompt, Ctrl+C cancels
 dotisan plan -o json                  # JSON output unaffected
 ```
 

@@ -112,8 +112,8 @@
       {
         "id": 3,
         "title": "Resource Object Parsing and Schema Validation",
-        "description": "Define Go structs for all specified resource kinds (`BrewPackages`, `NpmPackages`, `GoPackages`, `CargoPackages`, `ManagedFile`). Implement a generic parser for `kind`-based YAML resource objects and integrate `go-playground/validator/v10` for schema validation.",
-        "details": "1. Create a `Resource` interface or base struct with `apiVersion`, `kind`, `metadata`. 2. Define specific Go structs for each `kind` (e.g., `BrewPackagesSpec`, `ManagedFileSpec`) adhering to the PRD's YAML structure. 3. Implement a YAML unmarshaler that can dynamically unmarshal based on the `kind` field using `gopkg.in/yaml.v3`. 4. Integrate `github.com/go-playground/validator/v10` to add validation tags to resource structs (e.g., `required`, `min`, `max`, `url`). 5. Implement a function to read all resource YAML files from the `~/.dotfiles/` directory layout, apply templating (if applicable, after `values.yaml` pass), and parse them into a list of `Resource` objects.",
+        "description": "Define Go structs for all specified resource kinds (`HomeBrewPackages`, `NpmPackages`, `GoPackages`, `CargoPackages`, `ManagedFile`). Implement a generic parser for `kind`-based YAML resource objects and integrate `go-playground/validator/v10` for schema validation.",
+        "details": "1. Create a `Resource` interface or base struct with `apiVersion`, `kind`, `metadata`. 2. Define specific Go structs for each `kind` (e.g., `HomeBrewPackagesSpec`, `ManagedFileSpec`) adhering to the PRD's YAML structure. 3. Implement a YAML unmarshaler that can dynamically unmarshal based on the `kind` field using `gopkg.in/yaml.v3`. 4. Integrate `github.com/go-playground/validator/v10` to add validation tags to resource structs (e.g., `required`, `min`, `max`, `url`). 5. Implement a function to read all resource YAML files from the `~/.dotfiles/` directory layout, apply templating (if applicable, after `values.yaml` pass), and parse them into a list of `Resource` objects.",
         "testStrategy": "1. Create valid and invalid YAML resource files for each `kind`. 2. Write unit tests to ensure correct parsing of valid resources. 3. Verify that invalid resources (e.g., missing required fields, incorrect types) trigger validation errors. 4. Test parsing of templated resource fields (e.g., `destination` in `ManagedFile`) after the `values.yaml` context is applied. 5. Ensure `namespace` defaults to 'default' if not specified.",
         "priority": "high",
         "dependencies": [
@@ -135,11 +135,11 @@
           {
             "id": 2,
             "title": "Define Specific Go Structs for Resource Kinds",
-            "description": "Create distinct Go structs for each specified resource kind (`BrewPackages`, `NpmPackages`, `GoPackages`, `CargoPackages`, `ManagedFile`), ensuring they accurately reflect the YAML structure defined in the PRD.",
+            "description": "Create distinct Go structs for each specified resource kind (`HomeBrewPackages`, `NpmPackages`, `GoPackages`, `CargoPackages`, `ManagedFile`), ensuring they accurately reflect the YAML structure defined in the PRD.",
             "dependencies": [
               1
             ],
-            "details": "For each resource kind, define a corresponding Go struct (e.g., `BrewPackages`, `ManagedFile`) that embeds the base `Resource` interface/struct and includes a `Spec` field. The `Spec` field will contain the specific configuration for that resource type, adhering to the PRD's YAML schema for each kind.",
+            "details": "For each resource kind, define a corresponding Go struct (e.g., `HomeBrewPackages`, `ManagedFile`) that embeds the base `Resource` interface/struct and includes a `Spec` field. The `Spec` field will contain the specific configuration for that resource type, adhering to the PRD's YAML schema for each kind.",
             "status": "done",
             "testStrategy": null,
             "parentId": "undefined",
@@ -153,7 +153,7 @@
               1,
               2
             ],
-            "details": "Create a central parsing function that first unmarshals the YAML into a temporary struct to extract `apiVersion` and `kind`. Based on the `kind` value, use a switch statement or a map of `kind` to struct types to unmarshal the full YAML content into the correct specific resource struct (e.g., `BrewPackages`, `ManagedFile`). Handle unknown `kind` values gracefully by returning an error.",
+            "details": "Create a central parsing function that first unmarshals the YAML into a temporary struct to extract `apiVersion` and `kind`. Based on the `kind` value, use a switch statement or a map of `kind` to struct types to unmarshal the full YAML content into the correct specific resource struct (e.g., `HomeBrewPackages`, `ManagedFile`). Handle unknown `kind` values gracefully by returning an error.",
             "status": "done",
             "testStrategy": "Create valid YAML files for each resource kind. Write unit tests to ensure each file is correctly unmarshaled into its corresponding Go struct without errors. Test with invalid `kind` values to verify error handling.",
             "parentId": "undefined",
@@ -167,7 +167,7 @@
               2,
               3
             ],
-            "details": "Add validation tags to the fields within the `Spec` structs of all defined resource kinds (e.g., `BrewPackagesSpec`, `ManagedFileSpec`) as per PRD requirements. Implement a `Validate()` method on the `Resource` interface or a separate validation utility function that iterates through the parsed resource objects and applies the `go-playground/validator` validation.",
+            "details": "Add validation tags to the fields within the `Spec` structs of all defined resource kinds (e.g., `HomeBrewPackagesSpec`, `ManagedFileSpec`) as per PRD requirements. Implement a `Validate()` method on the `Resource` interface or a separate validation utility function that iterates through the parsed resource objects and applies the `go-playground/validator` validation.",
             "status": "done",
             "testStrategy": "Create valid and invalid YAML resource files for each `kind` (e.g., missing required fields, out-of-range values, incorrect formats). Write unit tests to verify that valid resources pass validation and invalid resources correctly trigger validation errors with informative messages.",
             "parentId": "undefined",
@@ -471,7 +471,7 @@
       {
         "id": 8,
         "title": "Package Providers Implementation (Brew, NPM, Go, Cargo)",
-        "description": "Implement the `BrewPackages`, `NpmPackages`, `GoPackages`, and `CargoPackages` providers. These providers will interact with system package managers using `os/exec` and external APIs where necessary.",
+        "description": "Implement the `HomeBrewPackages`, `NpmPackages`, `GoPackages`, and `CargoPackages` providers. These providers will interact with system package managers using `os/exec` and external APIs where necessary.",
         "details": "1. Implement `BrewProvider`: Use `os/exec` for `brew install`, `brew uninstall`, `brew upgrade`, `brew tap`. Use `brew list --formula --versions` to get installed state. Use `https://formulae.brew.sh/api/formula/<name>.json` (HTTP client) to validate formula existence and get available versions. Implement warning for version pinning if brew doesn't support it. 2. Implement `NpmProvider`: Use `os/exec` for `npm install -g`, `npm uninstall -g`, `npm list -g --json`. 3. Implement `GoProvider`: Use `os/exec` for `go install <module>@<version>`, `go list -m all` to check installed modules. 4. Implement `CargoProvider`: Use `os/exec` for `cargo install`, `cargo uninstall`, `cargo install --list`. 5. For each provider, implement `Reconcile` to compare desired packages/versions with current system state, and `Apply` to execute necessary commands.",
         "testStrategy": "1. For each provider, write integration tests that mock `os/exec` commands and HTTP requests (for Brew API). 2. Test `Available()` method for each provider. 3. Test `Reconcile` logic for adding, removing, and updating packages/taps/casks. 4. Test `Apply` logic for successful installations, uninstalls, and upgrades. 5. Verify correct handling of optional versions and warnings for unsupported pinning (Brew). 6. Ensure `id` and `version` are correctly extracted for state tracking.",
         "priority": "high",

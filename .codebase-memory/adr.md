@@ -18,7 +18,7 @@
 All resources follow a strict 3-level hierarchy:
 
 ```
-Kind (e.g., BrewPackages)
+Kind (e.g., HomeBrewPackages)
   └── Group (e.g., "core-tools")
         └── Item (e.g., "ripgrep")
 ```
@@ -98,7 +98,7 @@ Kind-based dynamic dispatch in `pkg/resource/unmarshal.go`.
 
 | Provider | Resource Kind | Installation Command |
 |---|---|---|
-| BrewProvider | `BrewPackages` | `brew install` / `brew install --cask` |
+| BrewProvider | `HomeBrewPackages` | `brew install` / `brew install --cask` |
 | NpmProvider | `NpmPackages` | `npm install -g` |
 | GoProvider | `GoPackages` | `go install` |
 | CargoProvider | `CargoPackages` | `cargo install` |
@@ -163,7 +163,7 @@ Kind-based dynamic dispatch in `pkg/resource/unmarshal.go`.
 
 1. **Provider duplication** — Reconcile/compareGroupItems copied 4x (brew/npm/go/cargo)
 2. **engine.go monolith** — 979 lines; Plan, Apply, TUI, cleanup all in one file
-3. **Hardcoded strings** — "BrewPackages" etc. appear 40+ times as raw literals
+3. **Hardcoded strings** — "HomeBrewPackages" (formerly "BrewPackages") etc. appear 40+ times as raw literals
 4. **Two Apply implementations** — `engine.go:ApplyWithProgress()` and `apply.go:Apply()` overlap
 5. **Debug artifacts** — AI-generated debug prints in brew.go (4 locations), resource/brew.go, loader.go
 6. **Silent errors** — getInstalledPackages() returns empty map with no log in go/npm/cargo providers

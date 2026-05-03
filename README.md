@@ -176,8 +176,9 @@ Note: The previous `ManagedDirectory` resource kind has been removed. Use `Manag
 | Kind | Description | Provider |
 |------|-------------|----------|
 | `ManagedFile` | Single file with templating support | Built-in |
-| `BrewPackages` | Homebrew formulae and casks (legacy) | `brew` |
 | `HomeBrewPackages` | Homebrew formulae (preferred) | `brew` |
+| `HomeBrewCasks` | Homebrew casks (preferred) | `brew` |
+| `HomeBrewTaps` | Homebrew taps (preferred) | `brew` |
 | `HomeBrewCasks` | Homebrew casks (preferred) | `brew` |
 | `HomeBrewTaps` | Homebrew taps (preferred) | `brew` |
 | `NpmPackages` | Global npm packages | `npm` |

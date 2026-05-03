@@ -144,7 +144,7 @@ Note: The `ManagedDirectory` resource kind has been removed. Use `ManagedFile` g
 cat > ~/dotfiles-test/resources/brew.yaml <<'EOF'
 ---
 apiVersion: github.com/wasilak/dotisan/v1
-kind: BrewPackages
+    kind: HomeBrewPackages
 metadata:
   name: test-packages
 spec:

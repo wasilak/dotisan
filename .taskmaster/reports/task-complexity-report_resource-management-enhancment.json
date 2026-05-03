@@ -59,7 +59,7 @@
 		},
 		{
 			"taskId": 7,
-			"taskTitle": "Implement Item-Level Import for ManagedFile and BrewPackages",
+            "taskTitle": "Implement Item-Level Import for ManagedFile and HomeBrewPackages",
 			"complexityScore": 8,
 			"recommendedSubtasks": 5,
 			"expansionPrompt": "Break down the implementation for `ManagedFileProvider.ImportItem` and `BrewProvider.ImportItem` separately, including logic for locating items by `itemKey`, generating `ResourceState` for individual items, updating state tracking, and comprehensive integration testing for both providers.",

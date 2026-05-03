@@ -160,7 +160,7 @@ ManagedFile          zshrc                     ManagedFile/zshrc                
 ├───────────────┼────────────┼──────────────────────────────────┼───────────────────┤
 │  🔵 ManagedFile│ zshrc      │ 🔴 ManagedFile/zshrc             │ ✓ in_sync        │
 │  🔵 ManagedFile│ vimrc      │ 🔴 ManagedFile/vimrc             │ ⚠ drifted       │
-│  🟣 BrewPackages│ core-tools │ 🟣 BrewPackages/core-tools[rip..]│ ⚠ missing      │
+│  🟣 HomeBrewPackages│ core-tools │ 🟣 HomeBrewPackages/core-tools[rip..]│ ⚠ missing      │
 ├───────────────┴────────────┴──────────────────────────────────┴───────────────────┤
 │  📊 Total: 3 resources  │  ✓ 1 in sync  │  ⚠ 2 need attention                │
 ╰─────────────────────────────────────────────────────────────────────────────────────╯
@@ -179,7 +179,7 @@ ManagedFile          zshrc                     ManagedFile/zshrc                
 
 **Current:**
 ```
-✓ Imported BrewPackages/core-tools[ripgrep]
+✓ Imported HomeBrewPackages/core-tools[ripgrep]
 Error: resource already exists
 ```
 
@@ -189,7 +189,7 @@ Error: resource already exists
 │                                                       │
 │  ✨ Successfully imported resource                   │
 │                                                       │
-│  Resource:  🔴 BrewPackages/core-tools[ripgrep]     │
+│  Resource:  🔴 HomeBrewPackages/core-tools[ripgrep]     │
 │  Provider:  🟣 homebrew                            │
 │  Status:    ✓ Added to state                       │
 │                                                       │
@@ -201,11 +201,11 @@ OR on error:
 │                                                       │
 │  ✘ Cannot import: resource already exists            │
 │                                                       │
-│  Resource:  🔴 BrewPackages/core-tools[ripgrep]     │
+│  Resource:  🔴 HomeBrewPackages/core-tools[ripgrep]     │
 │  Existing:  State already tracks this resource       │
 │                                                       │
 │  💡 Suggestion: Remove first with:                   │
-│     dotisan state remove BrewPackages/core-tools[..]│
+│     dotisan state remove HomeBrewPackages/core-tools[..]│
 │                                                       │
 ╰──────────────────────────────────────────────────────╯
 ```
@@ -222,7 +222,7 @@ OR on error:
 ```
 Applying changes...
 Created ManagedFile/zshrc
-Created BrewPackages/ripgrep
+Created HomeBrewPackages/ripgrep
 Apply complete! 2 resources created.
 ```
 
@@ -239,8 +239,8 @@ Apply complete! 2 resources created.
 │                                                          │
 │  ✓ ManagedFile/zshrc              created             │
 │  ✓ ManagedFile/vimrc               created             │
-│  ✓ BrewPackages/ripgrep            installed            │
-│  ○ BrewPackages/fd                 pending              │
+│  ✓ HomeBrewPackages/ripgrep            installed            │
+│  ○ HomeBrewPackages/fd                 pending              │
 │                                                          │
 ╰──────────────────────────────────────────────────────────╯
 
@@ -642,7 +642,7 @@ const (
 │  🔵 ManagedFile      │ vimrc                         │ ~/.vimrc                   │
 │  🔵 ManagedFile      │ zshrc                        │ ~/.zshrc                   │
 │  📁 ManagedDirectory│ dotfiles                     │ ~/dotfiles                 │
-│  🟣 BrewPackages    │ cli-tools    [ripgrep, fzf]  │ 2 packages                 │
+│  🟣 HomeBrewPackages    │ cli-tools    [ripgrep, fzf]  │ 2 packages                 │
 ├───────────────────────┴─────────────────────────────────────────────────────────────┤
 │  📊 4 resources  │  ✓ 2 in sync  │  ⚠ 1 drifted  │  ✎ 1 modified                │
 ╰──────────────────────────────────────────────────────────────────────────────────────╯

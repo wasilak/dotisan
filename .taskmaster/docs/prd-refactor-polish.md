@@ -320,7 +320,7 @@ Dotisan is a dotfiles/package manager CLI built incrementally via agentic AI wor
 
 **Requirements:**
 - **Plain format** (`pkg/diff/plan.go`):
-  - Add styled section dividers between provider groups (e.g., "── BrewPackages ──" in dim color)
+  - Add styled section dividers between provider groups (e.g., "── HomeBrewPackages ──" in dim color)
   - Add colored summary box at bottom: use existing `style.SuccessBox`/`style.WarningBox` with counts
   - Show drift items with a different icon (⚠ amber) vs additions (✚ green) vs removals (✖ red)
   - Unchanged: keep JSON output format completely clean (no lipgloss in json path)

@@ -64,7 +64,7 @@ func TestBrewProvider_Reconcile_Additions(t *testing.T) {
 	// Reconcile with desired resources
 	desired := []resource.ResourceGroup{
 		{
-			Kind:  "BrewPackages",
+			Kind:  resource.KindHomeBrewPackages,
 			Name:  "core-tools",
 			Items: []resource.ResourceItem{{Name: "ripgrep"}},
 		},
@@ -121,8 +121,8 @@ func TestBrewProvider_Import(t *testing.T) {
 		return
 	}
 
-	if state.Kind != "BrewPackages" {
-		t.Errorf("Import() Kind = %q, want BrewPackages", state.Kind)
+	if state.Kind != resource.KindHomeBrewPackages {
+		t.Errorf("Import() Kind = %q, want %s", state.Kind, resource.KindHomeBrewPackages)
 	}
 }
 

@@ -46,8 +46,8 @@ dotisan/
 - Interface methods: `Name()`, `Available()`, `Reconcile()`, `Apply()`, `Import()`
 
 ### Resource Kinds
-- Resource kinds: PascalCase (`BrewPackages`, `ManagedFile`) — `ManagedDirectory` has been removed
-- Spec types: `<Kind>Spec` (e.g., `BrewPackagesSpec`)
+- Resource kinds: PascalCase (`HomeBrewPackages`, `ManagedFile`) — `ManagedDirectory` has been removed
+- Spec types: `<Kind>Spec` (e.g., `HomeBrewPackagesSpec`)
 
 ## Style Guidelines
 
@@ -88,7 +88,7 @@ func (p *BrewProvider) Reconcile(desired []Resource, state []ResourceState) (Pla
 - YAML: `yaml:"field_name"`
 - Validation: `validate:"required,min=1"`
 ```go
-type BrewPackagesSpec struct {
+type HomeBrewPackagesSpec struct {
     Taps     []Tap     `yaml:"taps" validate:"dive"`
     Formulae []Package `yaml:"formulae" validate:"dive"`
 }

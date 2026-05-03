@@ -473,7 +473,7 @@ dotisan plan
 ```yaml
 ---
 apiVersion: github.com/wasilak/dotisan/v1
-kind: BrewPackages
+    kind: HomeBrewPackages
 metadata:
   name: core-tools
   namespace: default
@@ -992,7 +992,7 @@ dotisan plan
 # Should show: "Plan: 0 to add, 0 to change, 0 to remove"
 
 # Test removals work
-dotisan state remove BrewPackages core-tools
+dotisan state remove HomeBrewPackages core-tools
 dotisan plan
 # Should show removal plan
 ```
