@@ -78,20 +78,28 @@ var noChangesMessages = []noChangesEntry{
 	},
 }
 
-// rainbowColors cycles through terminal hues for character-level rainbow.
-var rainbowColors = []pterm.Color{
-	pterm.FgRed,
-	pterm.FgYellow,
-	pterm.FgGreen,
-	pterm.FgCyan,
-	pterm.FgBlue,
-	pterm.FgMagenta,
-}
+// purpleBorderRGB is the RGB color used for the single-color box border.
+// dark-ish purple used for the box border.
+// We'll construct the style inline where needed to keep usage obvious.
 
-func rainbowString(s string) string {
+// RenderNoChanges prints a random rainbow-bordered kudos card.
+func RenderNoChanges() {
+	entry := noChangesMessages[rand.Intn(len(noChangesMessages))]
+
+	// Per-character rainbow title (previous behavior) — this produced the
+	// most readable and pleasing result across terminals, so restore it.
+	rainbowColors := []pterm.Color{
+		pterm.FgRed,
+		pterm.FgYellow,
+		pterm.FgGreen,
+		pterm.FgCyan,
+		pterm.FgBlue,
+		pterm.FgMagenta,
+	}
+
 	var b strings.Builder
 	i := 0
-	for _, ch := range s {
+	for _, ch := range entry.title {
 		if ch != ' ' {
 			b.WriteString(pterm.NewStyle(rainbowColors[i%len(rainbowColors)], pterm.Bold).Sprint(string(ch)))
 			i++
@@ -99,16 +107,20 @@ func rainbowString(s string) string {
 			b.WriteRune(' ')
 		}
 	}
-	return b.String()
-}
+	title := b.String()
 
-// RenderNoChanges prints a random rainbow-bordered kudos card.
-func RenderNoChanges() {
-	entry := noChangesMessages[rand.Intn(len(noChangesMessages))]
-
-	title := rainbowString(entry.title)
-
+	// Single-color dark purple border and white body text.
+	// We build pre-colored border characters using RGB and keep BoxStyle empty
+	// so the box printer doesn't re-wrap them (which would mangle RGB escapes).
+	borderColor := pterm.NewRGB(88, 24, 150) // dark purple
 	box := pterm.DefaultBox.
+		WithBoxStyle(pterm.NewStyle()).
+		WithVerticalString(borderColor.Sprint("|")).
+		WithHorizontalString(borderColor.Sprint("─")).
+		WithTopRightCornerString(borderColor.Sprint("└")).
+		WithTopLeftCornerString(borderColor.Sprint("┘")).
+		WithBottomLeftCornerString(borderColor.Sprint("┐")).
+		WithBottomRightCornerString(borderColor.Sprint("┌")).
 		WithTitle(title).
 		WithTitleTopCenter().
 		WithRightPadding(6).
