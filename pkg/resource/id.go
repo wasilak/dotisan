@@ -29,17 +29,8 @@ func ParseResourceID(id string) (ResourceID, error) {
 		return rid, fmt.Errorf("empty id")
 	}
 
-	// Handle optional namespace prefix: namespace/Kind/...
-	parts := strings.Split(id, "/")
-
-	// If there are 3 or more parts, treat first as namespace
-	if len(parts) >= 3 {
-		rid.Namespace = parts[0]
-		// Rejoin remainder for further parsing
-		id = strings.Join(parts[1:], "/")
-	}
-
-	// Extract item if present using bracket syntax
+	// Extract the item part FIRST so that slashes inside [...] (e.g. tap names
+	// like "stigoleg/homebrew-tap") don't interfere with path splitting.
 	if idx := strings.IndexByte(id, '['); idx >= 0 {
 		if !strings.HasSuffix(id, "]") {
 			return rid, fmt.Errorf("unclosed '[' in id: %s", id)
@@ -48,16 +39,19 @@ func ParseResourceID(id string) (ResourceID, error) {
 		id = id[:idx]
 	}
 
-	// Remaining format: Kind or Kind/Group
-	rem := strings.SplitN(id, "/", 2)
-	if len(rem) >= 1 {
-		rid.Kind = rem[0]
+	// Parse the path prefix: Kind | Kind/Group | namespace/Kind/Group
+	parts := strings.SplitN(id, "/", 3)
+	switch len(parts) {
+	case 1:
+		rid.Kind = parts[0]
+	case 2:
+		rid.Kind, rid.Group = parts[0], parts[1]
+	case 3:
+		rid.Namespace, rid.Kind, rid.Group = parts[0], parts[1], parts[2]
 	}
+
 	if rid.Kind == "" {
 		return rid, fmt.Errorf("empty kind in id")
-	}
-	if len(rem) == 2 {
-		rid.Group = rem[1]
 	}
 
 	return rid, nil

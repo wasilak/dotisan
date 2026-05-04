@@ -12,7 +12,9 @@ func TestParseResourceID_Valid(t *testing.T) {
 		{"Kind", "Kind", "", ""},
 		{"Kind/Group", "Kind", "Group", ""},
 		{"Kind/Group[item]", "Kind", "Group", "item"},
+		{"Kind/Group[user/repo]", "Kind", "Group", "user/repo"},
 		{"ns/Kind/Group[item]", "Kind", "Group", "item"},
+		{"ns/Kind/Group[user/repo]", "Kind", "Group", "user/repo"},
 		{"ns/Kind/Group", "Kind", "Group", ""},
 	}
 	for _, c := range cases {
