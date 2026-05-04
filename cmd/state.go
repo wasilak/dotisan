@@ -108,16 +108,20 @@ func runStateImport(ctx context.Context, id, actual string) error {
 			Items: []resource.ItemState{{Name: actualValue, Status: "present"}},
 		}
 	} else {
-		// Ensure the requested item is present in discovered set
-		found := false
-		for _, it := range resourceState.Items {
+		// Find the requested item in the discovered set and keep only that one.
+		// Import discovers the whole installed set; we must not write unrelated
+		// packages into state.
+		var foundItem *resource.ItemState
+		for i, it := range resourceState.Items {
 			if it.Name == actualValue {
-				found = true
+				foundItem = &resourceState.Items[i]
 				break
 			}
 		}
-		if !found {
-			resourceState.Items = append(resourceState.Items, resource.ItemState{Name: actualValue, Status: "present"})
+		if foundItem == nil {
+			resourceState.Items = []resource.ItemState{{Name: actualValue, Status: "present"}}
+		} else {
+			resourceState.Items = []resource.ItemState{*foundItem}
 		}
 
 		// Ensure kind/group are set consistently with the parsed ID

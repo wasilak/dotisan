@@ -20,11 +20,17 @@ func IndexStateByGroup(state []ResourceState, kind string) map[string]ResourceSt
 
 // CompareGroupItems compares desired items against state and installed packages.
 // Returns additions, removals, modifications, and in-sync items.
+// normalizeName converts a desired item name to the lookup key used in installed;
+// pass nil for identity.
 func CompareGroupItems(
 	group resource.ResourceGroup,
 	stateGroup ResourceState,
 	installed map[string]string,
+	normalizeName func(string) string,
 ) (additions, removals []resource.ResourceItem, modifications []ItemChange, inSync []resource.ItemState) {
+	if normalizeName == nil {
+		normalizeName = func(name string) string { return name }
+	}
 	stateItems := make(map[string]resource.ItemState)
 	for _, item := range stateGroup.Items {
 		stateItems[item.Name] = item
@@ -33,13 +39,14 @@ func CompareGroupItems(
 	for _, desiredItem := range group.Items {
 		name := desiredItem.Name
 		_, inState := stateItems[name]
-		_, isInstalled := installed[name]
+		_, isInstalled := installed[normalizeName(name)]
 
-		if !isInstalled {
-			additions = append(additions, desiredItem)
-		} else if inState {
+		if inState {
+			// State is the source of truth — if managed, treat as present regardless
+			// of whether the binary scan found it (binary may be installed via a
+			// different mechanism, e.g. brew).
 			stateItem := stateItems[name]
-			if stateItem.Version != desiredItem.Version && desiredItem.Version != "" {
+			if stateItem.Version != desiredItem.Version && desiredItem.Version != "" && desiredItem.Version != "latest" {
 				modifications = append(modifications, ItemChange{
 					ItemName: name,
 					OldState: stateItem,
@@ -49,7 +56,10 @@ func CompareGroupItems(
 			} else {
 				inSync = append(inSync, stateItem)
 			}
+		} else if !isInstalled {
+			additions = append(additions, desiredItem)
 		} else {
+			// Installed but not yet tracked in state — needs import.
 			additions = append(additions, desiredItem)
 		}
 	}
@@ -124,7 +134,7 @@ func BaseReconcile(
 				})
 			}
 		} else {
-			additions, removals, modifications, inSync := CompareGroupItems(group, stateGroup, installed)
+			additions, removals, modifications, inSync := CompareGroupItems(group, stateGroup, installed, normalizeName)
 
 			if len(additions) > 0 {
 				plan.Additions = append(plan.Additions, GroupAddition{

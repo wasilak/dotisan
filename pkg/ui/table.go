@@ -46,6 +46,8 @@ func StateIcon(state string) (string, *pterm.Style) {
 		return EmojiUpdate, StateUpdate
 	case "drift":
 		return EmojiDrift, StateDrift
+	case "cleanup":
+		return EmojiRemove, StateDim
 	case "sync", "in_sync", "in-sync", "insync", "present":
 		return EmojiSync, StateSync
 	case "warn":

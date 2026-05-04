@@ -247,6 +247,28 @@ func (p *BrewProvider) Reconcile(ctx context.Context,
 
 	for groupName, stateGroup := range stateIndex {
 		if !desiredGroups[groupName] {
+			// Tap groups are not tracked in the formula `installed` map — skip the
+			// installation check entirely and treat all items as stale state cleanup.
+			if stateGroup.Kind == resource.KindHomeBrewTaps {
+				var tapCleanup []resource.ResourceItem
+				for _, item := range stateGroup.Items {
+					key := fmt.Sprintf("%s/%s", groupName, item.Name)
+					if !processedItems[key] {
+						tapCleanup = append(tapCleanup, resource.ResourceItem{Name: item.Name, Version: item.Version})
+						processedItems[key] = true
+					}
+				}
+				if len(tapCleanup) > 0 {
+					plan.Cleanup = append(plan.Cleanup, provider.GroupCleanup{
+						Kind:   stateGroup.Kind,
+						Group:  groupName,
+						Items:  tapCleanup,
+						Reason: "not_in_config_and_not_installed",
+					})
+				}
+				continue
+			}
+
 			// Entire group should be removed - but distinguish between
 			// actual removals (installed) and cleanup (not installed)
 			var removalItems []resource.ResourceItem
@@ -524,6 +546,13 @@ func (p *BrewProvider) getInstalledPackagesFor(ctx context.Context, names []stri
 		ver := f.InstalledVersion()
 		if f.Name != "" {
 			packages[f.Name] = ver
+		}
+		// Index by aliases too so user-facing names like "kubectl" resolve to
+		// their canonical formula (e.g. "kubernetes-cli").
+		for _, alias := range f.Aliases {
+			if alias != "" {
+				packages[alias] = ver
+			}
 		}
 	}
 	for _, c := range parsed.Casks {

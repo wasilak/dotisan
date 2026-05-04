@@ -10,6 +10,7 @@ type brewInfoOutput struct {
 
 type brewFormulaInfo struct {
 	Name      string                 `json:"name"`
+	Aliases   []string               `json:"aliases"`
 	Versions  brewFormulaVersions    `json:"versions"`
 	Installed []brewFormulaInstalled `json:"installed"`
 }

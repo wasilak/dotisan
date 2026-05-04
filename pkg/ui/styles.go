@@ -50,6 +50,7 @@ var (
 	StateDrift  = &pterm.Style{ColorDrift, pterm.Bold}
 	StateSync   = &pterm.Style{ColorAdd, pterm.Bold}
 
+	StateDim  = &pterm.Style{ColorMuted}
 	InfoStyle = &pterm.Style{ColorMuted}
 	WarnStyle = &pterm.Style{ColorWarning}
 )
