@@ -11,11 +11,12 @@ import (
 // resource type and unmarshals the full document into it.
 func UnmarshalYAML(data []byte) (Resource, error) {
 	// First, extract just the type information
-	var typeInfo struct {
+	type yamlTypeInfo struct {
 		APIVersion string `yaml:"apiVersion"`
 		Kind       string `yaml:"kind"`
 	}
 
+	var typeInfo yamlTypeInfo
 	if err := yaml.Unmarshal(data, &typeInfo); err != nil {
 		return nil, fmt.Errorf("failed to parse resource type info: %w", err)
 	}

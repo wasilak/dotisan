@@ -521,52 +521,21 @@ func (p *BrewProvider) getInstalledPackagesFor(ctx context.Context, names []stri
 	}
 
 	// Brew's JSON structure for --json=v2 contains 'formulae' and 'casks' keys.
-	var parsed struct {
-		Formulae []struct {
-			Name     string `json:"name"`
-			Versions struct {
-				Stable string `json:"stable"`
-			} `json:"versions"`
-			Installed []struct {
-				Version string `json:"version"`
-			} `json:"installed"`
-		} `json:"formulae"`
-		Casks []struct {
-			Token     string `json:"token"`
-			Name      string `json:"name"`
-			Installed []struct {
-				Version string `json:"version"`
-			} `json:"installed"`
-		} `json:"casks"`
-	}
+	var parsed brewInfoOutput
 
 	if err := json.Unmarshal([]byte(stdout), &parsed); err != nil {
 		return nil, fmt.Errorf("failed to parse brew info json: %w", err)
 	}
 
 	for _, f := range parsed.Formulae {
-		// Prefer installed[].version if present, otherwise versions.stable
-		ver := ""
-		if len(f.Installed) > 0 {
-			ver = f.Installed[0].Version
-		}
-		if ver == "" {
-			ver = f.Versions.Stable
-		}
+		ver := f.InstalledVersion()
 		if f.Name != "" {
 			packages[f.Name] = ver
 		}
 	}
 	for _, c := range parsed.Casks {
-		ver := ""
-		if len(c.Installed) > 0 {
-			ver = c.Installed[0].Version
-		}
-		// cask token is the identifier; use token if name is blank
-		name := c.Name
-		if name == "" {
-			name = c.Token
-		}
+		ver := c.InstalledVersion()
+		name := c.DisplayName()
 		if name != "" {
 			packages[name] = ver
 		}
