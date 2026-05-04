@@ -54,11 +54,10 @@ func runPlanApply(ctx context.Context, opts PlanApplyOptions) error {
 		}
 	}
 	if allEmpty {
-		if opts.IsApply {
-			fmt.Println(style.Info.Render("No resources to apply for your targets."))
-		} else {
-			ui.RenderNoChanges()
-		}
+		// Show the friendly no-changes card for both plan and apply flows.
+		// Previously apply printed a plain message while plan used the
+		// celebratory UI; unify behaviour so users see the same output.
+		ui.RenderNoChanges()
 		return nil
 	}
 	if !result.HasChanges {
