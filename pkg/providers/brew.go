@@ -2,6 +2,7 @@ package providers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -60,10 +61,42 @@ func (p *BrewProvider) Reconcile(ctx context.Context,
 		}
 	}
 
-	// Get currently installed packages
-	installed, err := p.getInstalledPackages(ctx)
+	// Build the set of names we need to query from brew: union of desired items and state-tracked items.
+	neededNamesSet := make(map[string]bool)
+	for _, group := range desired {
+		if !resource.IsBrewKind(group.Kind) {
+			continue
+		}
+		if len(group.Items) == 0 && group.Kind == resource.KindHomeBrewTaps {
+			if spec, ok := group.RawSpec.(resource.HomeBrewTapsSpec); ok {
+				for _, t := range spec.Taps {
+					neededNamesSet[t.Name] = true
+				}
+			}
+		} else {
+			for _, item := range group.Items {
+				neededNamesSet[item.Name] = true
+			}
+		}
+	}
+	for _, s := range state {
+		if resource.IsBrewKind(s.Kind) {
+			for _, it := range s.Items {
+				neededNamesSet[it.Name] = true
+			}
+		}
+	}
+
+	neededNames := make([]string, 0, len(neededNamesSet))
+	for n := range neededNamesSet {
+		neededNames = append(neededNames, n)
+	}
+
+	// Query brew only for the targeted set of names. If discovery fails, fall back to
+	// the old behavior: treat all desired items as additions.
+	installed, err := p.getInstalledPackagesFor(ctx, neededNames)
 	if err != nil {
-		// Can't get installed state, mark all as additions
+		slog.Warn("brew targeted discovery failed; falling back to additions-only", "err", err)
 		for _, group := range desired {
 			if resource.IsBrewKind(group.Kind) {
 				plan.Additions = append(plan.Additions, provider.GroupAddition{
@@ -466,6 +499,82 @@ func (p *BrewProvider) getInstalledPackages(ctx context.Context) (map[string]str
 	return packages, nil
 }
 
+// getInstalledPackagesFor queries Homebrew for the provided list of package/tap names
+// and returns a map[name]version for those that are present. If names is empty,
+// return an empty map.
+func (p *BrewProvider) getInstalledPackagesFor(ctx context.Context, names []string) (map[string]string, error) {
+	packages := make(map[string]string)
+	if ctx == nil {
+		slog.Warn("brew getInstalledPackagesFor called with nil context; returning empty set")
+		return packages, nil
+	}
+	if len(names) == 0 {
+		return packages, nil
+	}
+
+	// Use `brew info --json=v2 <names...>` to get structured info about requested items.
+	args := append([]string{"info", "--json=v2"}, names...)
+	stdout, stderr, err := cmdutil.RunSimpleFn(ctx, "brew", args...)
+	if err != nil {
+		// Some names may not exist; surface stderr for debugging
+		return nil, fmt.Errorf("brew info failed: %s: %w", stderr, err)
+	}
+
+	// Brew's JSON structure for --json=v2 contains 'formulae' and 'casks' keys.
+	var parsed struct {
+		Formulae []struct {
+			Name     string `json:"name"`
+			Versions struct {
+				Stable string `json:"stable"`
+			} `json:"versions"`
+			Installed []struct {
+				Version string `json:"version"`
+			} `json:"installed"`
+		} `json:"formulae"`
+		Casks []struct {
+			Token     string `json:"token"`
+			Name      string `json:"name"`
+			Installed []struct {
+				Version string `json:"version"`
+			} `json:"installed"`
+		} `json:"casks"`
+	}
+
+	if err := json.Unmarshal([]byte(stdout), &parsed); err != nil {
+		return nil, fmt.Errorf("failed to parse brew info json: %w", err)
+	}
+
+	for _, f := range parsed.Formulae {
+		// Prefer installed[].version if present, otherwise versions.stable
+		ver := ""
+		if len(f.Installed) > 0 {
+			ver = f.Installed[0].Version
+		}
+		if ver == "" {
+			ver = f.Versions.Stable
+		}
+		if f.Name != "" {
+			packages[f.Name] = ver
+		}
+	}
+	for _, c := range parsed.Casks {
+		ver := ""
+		if len(c.Installed) > 0 {
+			ver = c.Installed[0].Version
+		}
+		// cask token is the identifier; use token if name is blank
+		name := c.Name
+		if name == "" {
+			name = c.Token
+		}
+		if name != "" {
+			packages[name] = ver
+		}
+	}
+
+	return packages, nil
+}
+
 // Apply executes the given GroupPlan
 func (p *BrewProvider) Apply(ctx context.Context, plan provider.GroupPlan) error {
 	// Process additions
@@ -589,7 +698,29 @@ func (p *BrewProvider) applyGroupModification(ctx context.Context, modification 
 	return nil
 }
 
-// Import is not supported for BrewProvider (provider-level import removed).
+// Import performs discovery for the requested group. Historically provider-level
+// import for Homebrew was used by the CLI to perform a best-effort discovery
+// of installed packages. This implementation performs discovery and returns
+// an error when discovery fails. Callers that previously relied on an empty
+// fallback must explicitly handle errors and decide whether to append an
+// item to state.
 func (p *BrewProvider) Import(ctx context.Context, group string) (provider.ResourceState, error) {
-	return provider.ResourceState{}, fmt.Errorf("import not supported for provider homebrew")
+	if ctx == nil {
+		return provider.ResourceState{}, fmt.Errorf("nil context")
+	}
+
+	// Attempt to list installed packages as a minimal discovery.
+	installed, err := p.getInstalledPackages(ctx)
+	if err != nil {
+		return provider.ResourceState{}, fmt.Errorf("failed to discover installed brew packages: %w", err)
+	}
+
+	items := make([]resource.ItemState, 0, len(installed))
+	for name, version := range installed {
+		items = append(items, resource.ItemState{Name: name, Version: version, Status: "present"})
+	}
+
+	// Return a group-level state. Default Kind is HomeBrewPackages to align
+	// with historical behavior and test expectations.
+	return provider.ResourceState{Kind: resource.KindHomeBrewPackages, Group: group, Items: items}, nil
 }

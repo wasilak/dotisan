@@ -6,6 +6,7 @@ import (
 	"github.com/wasilak/dotisan/pkg/config"
 	"github.com/wasilak/dotisan/pkg/provider"
 	"github.com/wasilak/dotisan/pkg/providers"
+	"github.com/wasilak/dotisan/pkg/resource"
 	"github.com/wasilak/dotisan/pkg/state"
 )
 
@@ -34,27 +35,31 @@ func NewEngine() (*Engine, error) {
 	// FileProvider
 	fileProvider := providers.NewFileProvider(cfg.DotfilesRoot)
 	providerMap[providerFile] = fileProvider
-	provider.Register(providerFile, fileProvider)
+	provider.Register(providerFile, fileProvider, resource.KindManagedFile)
 
 	// BrewProvider
 	brewProvider := providers.NewBrewProvider()
 	providerMap[providerHomebrew] = brewProvider
-	provider.Register(providerHomebrew, brewProvider)
+	provider.Register(providerHomebrew, brewProvider,
+		resource.KindHomeBrewPackages,
+		resource.KindHomeBrewCasks,
+		resource.KindHomeBrewTaps,
+	)
 
 	// NpmProvider
 	npmProvider := providers.NewNpmProvider()
 	providerMap[providerNpm] = npmProvider
-	provider.Register(providerNpm, npmProvider)
+	provider.Register(providerNpm, npmProvider, resource.KindNpmPackages)
 
 	// GoProvider
 	goProvider := providers.NewGoProvider()
 	providerMap[providerGo] = goProvider
-	provider.Register(providerGo, goProvider)
+	provider.Register(providerGo, goProvider, resource.KindGoPackages)
 
 	// CargoProvider
 	cargoProvider := providers.NewCargoProvider()
 	providerMap[providerCargo] = cargoProvider
-	provider.Register(providerCargo, cargoProvider)
+	provider.Register(providerCargo, cargoProvider, resource.KindCargoPackages)
 
 	return &Engine{
 		Config:          cfg,

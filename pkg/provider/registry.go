@@ -10,21 +10,26 @@ import (
 type Registry struct {
 	providers map[string]Provider
 	mu        sync.RWMutex
+	// Map resource kind -> provider name
+	kindToProvider map[string]string
 }
 
 // globalRegistry is the singleton registry instance.
 var globalRegistry = &Registry{
-	providers: make(map[string]Provider),
+	providers:      make(map[string]Provider),
+	kindToProvider: make(map[string]string),
 }
 
 // Register adds a provider to the global registry.
 // Returns an error if a provider with the same name is already registered.
-func Register(name string, p Provider) error {
-	return globalRegistry.Register(name, p)
+// Register registers a provider with optional resource kinds it manages.
+// Usage: Register("homebrew", brewProvider, resource.KindHomeBrewPackages, resource.KindHomeBrewCasks)
+func Register(name string, p Provider, kinds ...string) error {
+	return globalRegistry.Register(name, p, kinds...)
 }
 
 // Register adds a provider to the registry.
-func (r *Registry) Register(name string, p Provider) error {
+func (r *Registry) Register(name string, p Provider, kinds ...string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -33,6 +38,12 @@ func (r *Registry) Register(name string, p Provider) error {
 	}
 
 	r.providers[name] = p
+
+	// Map kinds to provider name
+	for _, k := range kinds {
+		r.kindToProvider[k] = name
+	}
+
 	return nil
 }
 
@@ -53,6 +64,37 @@ func (r *Registry) Get(name string) (Provider, error) {
 	}
 
 	return p, nil
+}
+
+// GetByKind returns the provider registered for the given resource kind.
+func GetByKind(kind string) (Provider, error) {
+	return globalRegistry.GetByKind(kind)
+}
+
+// ProviderNameForKind returns the provider name registered for the given kind
+// and a boolean indicating if a mapping exists.
+func ProviderNameForKind(kind string) (string, bool) {
+	return globalRegistry.ProviderNameForKind(kind)
+}
+
+// GetByKind returns the provider registered for the given resource kind.
+func (r *Registry) GetByKind(kind string) (Provider, error) {
+	r.mu.RLock()
+	name, ok := r.kindToProvider[kind]
+	r.mu.RUnlock()
+	if !ok {
+		return nil, fmt.Errorf("provider for kind %q not found", kind)
+	}
+	return r.Get(name)
+}
+
+// ProviderNameForKind returns the provider name registered for the given kind
+// and a boolean indicating if a mapping exists.
+func (r *Registry) ProviderNameForKind(kind string) (string, bool) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	name, ok := r.kindToProvider[kind]
+	return name, ok
 }
 
 // List returns all registered provider names from the global registry.

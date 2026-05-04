@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/wasilak/dotisan/pkg/resource"
 	"github.com/wasilak/dotisan/pkg/style"
 )
 
@@ -25,42 +26,24 @@ type StateMvResult struct {
 	Success  bool
 }
 
-// parseStateMvRef parses a state mv reference in the form Kind/Group[Item] or Kind/Group.
-// The bracket notation avoids ambiguity when Group itself contains slashes.
-func parseStateMvRef(ref string) (kind, group, item string, err error) {
-	firstSlash := strings.IndexByte(ref, '/')
-	if firstSlash < 0 {
-		return "", "", "", fmt.Errorf("invalid reference format: %s (expected Kind/Group or Kind/Group[Item])", ref)
-	}
-	kind = ref[:firstSlash]
-	rest := ref[firstSlash+1:]
-
-	if bracketIdx := strings.IndexByte(rest, '['); bracketIdx >= 0 {
-		if !strings.HasSuffix(rest, "]") {
-			return "", "", "", fmt.Errorf("invalid reference format: %s (unclosed '[')", ref)
-		}
-		group = rest[:bracketIdx]
-		item = rest[bracketIdx+1 : len(rest)-1]
-	} else {
-		group = rest
-	}
-	return kind, group, item, nil
-}
+// Parsing of resource references is performed by resource.ParseResourceID
 
 // StateMv moves an item from one resource group to another in state only.
 // The source item must exist in state, and the destination group must exist in desired config.
 func (e *Engine) StateMv(ctx context.Context, opts StateMvOptions) (*StateMvResult, error) {
 	// Parse source
-	srcKind, srcGroup, srcItem, err := parseStateMvRef(opts.Source)
+	srcRID, err := resource.ParseResourceID(opts.Source)
 	if err != nil {
 		return nil, fmt.Errorf("invalid source: %w", err)
 	}
+	srcKind, srcGroup, srcItem := srcRID.Kind, srcRID.Group, srcRID.Item
 
 	// Parse destination
-	dstKind, dstGroup, dstItem, err := parseStateMvRef(opts.Destination)
+	dstRID, err := resource.ParseResourceID(opts.Destination)
 	if err != nil {
 		return nil, fmt.Errorf("invalid destination: %w", err)
 	}
+	dstKind, dstGroup, dstItem := dstRID.Kind, dstRID.Group, dstRID.Item
 
 	// Load current state
 	state, err := e.StateBackend.Load(ctx)

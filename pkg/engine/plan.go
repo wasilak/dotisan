@@ -221,23 +221,10 @@ func (e *Engine) groupResourcesByProvider(groups []resource.ResourceGroup) map[s
 	grouped := make(map[string][]resource.ResourceGroup)
 
 	for _, group := range groups {
-		var providerName string
-		switch group.Kind {
-		case resource.KindManagedFile:
-			providerName = providerFile
-		case resource.KindHomeBrewPackages, resource.KindHomeBrewCasks, resource.KindHomeBrewTaps:
-			providerName = providerHomebrew
-		case resource.KindNpmPackages:
-			providerName = providerNpm
-		case resource.KindGoPackages:
-			providerName = providerGo
-		case resource.KindCargoPackages:
-			providerName = providerCargo
-		default:
-			continue
+		// Look up provider by kind from the registry. If not registered, skip.
+		if provName, ok := provider.ProviderNameForKind(group.Kind); ok {
+			grouped[provName] = append(grouped[provName], group)
 		}
-
-		grouped[providerName] = append(grouped[providerName], group)
 	}
 
 	return grouped
@@ -247,24 +234,10 @@ func (e *Engine) groupResourcesByProvider(groups []resource.ResourceGroup) map[s
 func (e *Engine) filterStateForProvider(stateResources []provider.ResourceState, providerName string) []provider.ResourceState {
 	var filtered []provider.ResourceState
 
-	providerKinds := make(map[string]bool)
-	switch providerName {
-	case providerFile:
-		providerKinds[resource.KindManagedFile] = true
-	case providerHomebrew:
-		providerKinds[resource.KindHomeBrewPackages] = true
-		providerKinds[resource.KindHomeBrewCasks] = true
-		providerKinds[resource.KindHomeBrewTaps] = true
-	case providerNpm:
-		providerKinds[resource.KindNpmPackages] = true
-	case providerGo:
-		providerKinds[resource.KindGoPackages] = true
-	case providerCargo:
-		providerKinds[resource.KindCargoPackages] = true
-	}
-
+	// Build a reverse mapping: kind -> providerName is in registry. Filter
+	// stateResources by asking the registry which provider handles each kind.
 	for _, s := range stateResources {
-		if providerKinds[s.Kind] {
+		if provName, ok := provider.ProviderNameForKind(s.Kind); ok && provName == providerName {
 			filtered = append(filtered, s)
 		}
 	}

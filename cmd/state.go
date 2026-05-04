@@ -8,7 +8,6 @@ import (
 	"io/fs"
 	"log/slog"
 	"os"
-	"strings"
 
 	"github.com/pterm/pterm"
 	"github.com/wasilak/dotisan/pkg/ui"
@@ -59,107 +58,72 @@ Examples:
 	},
 }
 
-// kindToProvider maps resource kind to provider name
-func kindToProvider(kind string) string {
-	lower := strings.ToLower(kind)
-	switch lower {
-	case "managedfile", "manageddirectory":
-		return "file"
-	// Support both legacy and new Homebrew kinds
-	case "brewpackages", "homebrewpackages", "homebrewcasks", "homebrewtaps":
-		return "homebrew"
-	case "npmpackages":
-		return "npm"
-	case "gopackages":
-		return "go"
-	case "cargopackages":
-		return "cargo"
-	default:
-		return lower
-	}
-}
-
-// parseID parses a resource ID in the form Kind/Group[Item] or Kind/Group.
-// The bracket notation avoids ambiguity when Group itself contains slashes.
-// Examples: HomeBrewPackages/homebrew-packages/fd[fd], ManagedFile/dotfiles[zshrc]
-func parseID(id string) (kind, group, item string, err error) {
-	firstSlash := strings.IndexByte(id, '/')
-	if firstSlash < 0 {
-		return "", "", "", fmt.Errorf("invalid ID format: %s (expected Kind/group[item])", id)
-	}
-	kind = id[:firstSlash]
-	rest := id[firstSlash+1:]
-
-	if bracketIdx := strings.IndexByte(rest, '['); bracketIdx >= 0 {
-		if !strings.HasSuffix(rest, "]") {
-			return "", "", "", fmt.Errorf("invalid ID format: %s (unclosed '[')", id)
-		}
-		group = rest[:bracketIdx]
-		item = rest[bracketIdx+1 : len(rest)-1]
-	} else {
-		group = rest
-	}
-	return kind, group, item, nil
-}
+// parseID/parsing is handled centrally by pkg/resource.ParseResourceID
 
 func runStateImport(ctx context.Context, id, actual string) error {
-	kind, group, item, err := parseID(id)
+	// Parse canonical ResourceID
+	rid, err := resource.ParseResourceID(id)
 	if err != nil {
 		return err
 	}
-	if item == "" {
+	if rid.Item == "" {
 		return fmt.Errorf("invalid ID format: %s (item name required, e.g. Kind/group[item])", id)
 	}
+	kind, group, item := rid.Kind, rid.Group, rid.Item
+
 	actualValue := actual
 	if actualValue == "" {
-		actualValue = item
+		actualValue = rid.Item
 	}
 
-	// Ensure providers are registered
+	// Ensure providers are registered (idempotent)
 	ensureProvidersRegistered()
 
-	// Map kind to provider name
-	providerName := kindToProvider(kind)
-
-	// Get the provider
-	p, err := provider.Get(providerName)
+	// Get provider by kind (registry maps kinds to providers)
+	p, err := provider.GetByKind(rid.Kind)
 	if err != nil {
-		return fmt.Errorf("provider not found: %w", err)
+		return fmt.Errorf("provider not found for kind %s: %w", rid.Kind, err)
 	}
 
 	// Check if provider is available
 	available, msg := p.Available()
 	if !available {
-		return fmt.Errorf("provider %s is not available: %s", kind, msg)
+		return fmt.Errorf("provider %s is not available: %s", rid.Kind, msg)
 	}
 
 	if ctx == nil {
 		return fmt.Errorf("internal: context is nil")
 	}
-	// Use provider Import (group-level). Providers may return a ResourceState
-	// describing the group; if the specific item is not present, add it from
-	// the provided actualValue.
-	resourceState, err := p.Import(ctx, group)
+	// Use provider Import (group-level). Providers return discovered group
+	// state or an error. For backward compatibility, when import fails we
+	// fall back to creating a minimal ResourceState with the provided item
+	// so the CLI can still record it in state. This is a transitional
+	// compatibility behavior; callers should prefer explicit import handling.
+	resourceState, err := p.Import(ctx, rid.Group)
 	if err != nil {
-		return fmt.Errorf("import failed: %w", err)
-	}
-
-	// Ensure item exists in returned state; if not, add a single item entry
-	// using the actualValue as the item name.
-	found := false
-	for _, it := range resourceState.Items {
-		if it.Name == actualValue {
-			found = true
-			break
+		// Fall back to minimal state with the requested item only
+		resourceState = provider.ResourceState{
+			Kind:  rid.Kind,
+			Group: rid.Group,
+			Items: []resource.ItemState{{Name: actualValue, Status: "present"}},
 		}
-	}
-	if !found {
-		resourceState.Items = append(resourceState.Items, resource.ItemState{Name: actualValue, Status: "present"})
-	}
+	} else {
+		// Ensure the requested item is present in discovered set
+		found := false
+		for _, it := range resourceState.Items {
+			if it.Name == actualValue {
+				found = true
+				break
+			}
+		}
+		if !found {
+			resourceState.Items = append(resourceState.Items, resource.ItemState{Name: actualValue, Status: "present"})
+		}
 
-	// Ensure kind is set
-	resourceState.Kind = kind
-	resourceState.Group = group
+		// Ensure kind/group are set consistently with the parsed ID
+		resourceState.Kind = rid.Kind
+		resourceState.Group = rid.Group
+	}
 
 	// Load current state
 	cfg, cfgErr := config.LoadConfigFromDefaultPath()
@@ -198,19 +162,19 @@ func runStateImport(ctx context.Context, id, actual string) error {
 // ensureProvidersRegistered registers all providers
 func ensureProvidersRegistered() {
 	if _, err := provider.Get("file"); err != nil {
-		provider.Register("file", providers.NewFileProvider(""))
+		provider.Register("file", providers.NewFileProvider(""), resource.KindManagedFile)
 	}
 	if _, err := provider.Get("homebrew"); err != nil {
-		provider.Register("homebrew", providers.NewBrewProvider())
+		provider.Register("homebrew", providers.NewBrewProvider(), resource.KindHomeBrewPackages, resource.KindHomeBrewCasks, resource.KindHomeBrewTaps)
 	}
 	if _, err := provider.Get("npm"); err != nil {
-		provider.Register("npm", providers.NewNpmProvider())
+		provider.Register("npm", providers.NewNpmProvider(), resource.KindNpmPackages)
 	}
 	if _, err := provider.Get("go"); err != nil {
-		provider.Register("go", providers.NewGoProvider())
+		provider.Register("go", providers.NewGoProvider(), resource.KindGoPackages)
 	}
 	if _, err := provider.Get("cargo"); err != nil {
-		provider.Register("cargo", providers.NewCargoProvider())
+		provider.Register("cargo", providers.NewCargoProvider(), resource.KindCargoPackages)
 	}
 }
 
@@ -295,10 +259,11 @@ func init() {
 }
 
 func runStateRemoveByID(ctx context.Context, id string) error {
-	kind, group, item, err := parseID(id)
+	rid, err := resource.ParseResourceID(id)
 	if err != nil {
 		return err
 	}
+	kind, group, item := rid.Kind, rid.Group, rid.Item
 
 	if !stateRemoveForce && !stateRemoveConfirm {
 		title := ""
