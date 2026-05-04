@@ -57,12 +57,12 @@ func runPlanApply(ctx context.Context, opts PlanApplyOptions) error {
 		if opts.IsApply {
 			fmt.Println(style.Info.Render("No resources to apply for your targets."))
 		} else {
-			fmt.Println(style.Info.Render("No resources would change for your targets."))
+			ui.RenderNoChanges()
 		}
 		return nil
 	}
 	if !result.HasChanges {
-		fmt.Println(style.Info.Render("No changes to apply."))
+		ui.RenderNoChanges()
 		return nil
 	}
 

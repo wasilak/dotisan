@@ -57,7 +57,7 @@ func DisplayPlanResult(result *engine.PlanResult, outputFormat output.Format, sh
 		return nil
 	default:
 		if !result.HasChanges {
-			fmt.Println(style.Info.Render("No changes to apply."))
+			RenderNoChanges()
 			return nil
 		}
 		fmt.Println(style.Header.Render("Plan Summary"))
