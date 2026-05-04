@@ -14,7 +14,7 @@ import (
 
 // fakeProvider is a controllable provider for testing apply ordering and failures.
 type fakeProvider struct {
-	name      string
+	name       string
 	applyOrder []string        // records "kind/group" in the order Apply was called
 	failGroups map[string]bool // groups to fail (key: "kind/group")
 }
@@ -23,8 +23,8 @@ func newFakeProvider(name string) *fakeProvider {
 	return &fakeProvider{name: name, failGroups: make(map[string]bool)}
 }
 
-func (f *fakeProvider) Name() string                            { return f.name }
-func (f *fakeProvider) Available() (bool, string)              { return true, "" }
+func (f *fakeProvider) Name() string              { return f.name }
+func (f *fakeProvider) Available() (bool, string) { return true, "" }
 func (f *fakeProvider) Import(_ context.Context, _ string) (provider.ResourceState, error) {
 	return provider.ResourceState{}, nil
 }

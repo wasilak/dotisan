@@ -1,0 +1,93 @@
+{
+	"meta": {
+		"generatedAt": "2026-05-04T06:56:12.614Z",
+		"tasksAnalyzed": 10,
+		"totalTasks": 10,
+		"analysisCount": 10,
+		"thresholdScore": 5,
+		"projectName": "Task Master",
+		"usedResearch": true
+	},
+	"complexityAnalysis": [
+		{
+			"taskId": 1,
+			"taskTitle": "Update Resource Schema with DependsOn and Version Fields",
+			"complexityScore": 3,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Break down the schema update task into individual struct modifications: 1) Update Package struct in types_common.go, 2) Update Tap struct in types_common.go, 3) Update GoPackage struct in go.go, 4) Update FileSpec struct in file.go, 5) Update GeneratorSpec struct in file.go. Include YAML tag validation and serialization tests for each.",
+			"reasoning": "This is a straightforward schema modification task involving 5 different structs. Each requires careful attention to YAML serialization, but no complex logic. The complexity is low to moderate as it's primarily about adding fields with proper tags and maintaining existing functionality."
+		},
+		{
+			"taskId": 2,
+			"taskTitle": "Add Resource-Level DependsOn to Metadata",
+			"complexityScore": 2,
+			"recommendedSubtasks": 2,
+			"expansionPrompt": "Split into 1) Modify Metadata struct in resource.go to add DependsOn field with proper YAML tags, 2) Add unit tests for YAML serialization and parsing of the new field. Ensure the field supports the same address format as item-level dependencies.",
+			"reasoning": "This is a simple field addition to an existing struct with YAML serialization requirements. The complexity is low as it involves minimal logic beyond field definition and proper serialization handling."
+		},
+		{
+			"taskId": 3,
+			"taskTitle": "Implement Graph Package with Node and DAG Structures",
+			"complexityScore": 7,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Divide into 1) Create node.go with NodeID type and Node struct, 2) Create dag.go with DAG struct and core methods (Build, Validate, TopologicalOrder), 3) Implement graph algorithms (Kahn's algorithm, DFS for cycle detection), 4) Create resolver.go with address resolution functions. Include unit tests for each component.",
+			"reasoning": "This involves creating a new package with complex data structures and algorithms. Requires implementation of graph theory concepts (topological sorting, cycle detection), proper data structure design, and algorithmic correctness. The complexity is moderate-high due to the algorithmic nature and need for robust error handling."
+		},
+		{
+			"taskId": 4,
+			"taskTitle": "Implement Dependency Validation and Resolution",
+			"complexityScore": 6,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Split into 1) Implement Validate() method with DFS cycle detection and error reporting, 2) Implement ResolveAddress() function for address validation, 3) Add dependency reference validation. Include comprehensive unit tests for various cycle scenarios and address resolution cases.",
+			"reasoning": "This task requires implementing complex validation logic using graph algorithms. Involves cycle detection, address resolution, and proper error handling. The complexity is moderate-high due to the algorithmic requirements and need for robust error reporting."
+		},
+		{
+			"taskId": 5,
+			"taskTitle": "Integrate DAG Building and Validation into Engine Plan Phase",
+			"complexityScore": 5,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Break into 1) Modify plan.go to call graph.Build() after resource loading, 2) Add dag.Validate() call with error handling, 3) Implement TopologicalOrder() integration and PlanResult updates. Include integration tests for the complete workflow.",
+			"reasoning": "This involves integrating existing graph functionality into the engine's plan phase. The complexity is moderate as it requires understanding of existing code flow and proper integration points, but doesn't involve new algorithmic logic."
+		},
+		{
+			"taskId": 6,
+			"taskTitle": "Implement DAG-Ordered Execution in Engine Apply Phase",
+			"complexityScore": 6,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Split into 1) Modify apply.go to process items in topological order, 2) Implement failure tracking and skip propagation, 3) Update GroupPlan with SkippedDueToDependencyFailure status, 4) Add integration tests for dependency ordering and skip propagation. Ensure proper error handling during execution.",
+			"reasoning": "This task requires modifying execution flow to respect dependency order and implementing skip propagation logic. The complexity is moderate-high due to the need for proper state management, error handling during execution, and maintaining correct execution order."
+		},
+		{
+			"taskId": 7,
+			"taskTitle": "Add Generator Dependency Inheritance",
+			"complexityScore": 4,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Divide into 1) Modify generator.go to implement DependsOn inheritance logic, 2) Add unit tests for inheritance scenarios, 3) Validate YAML handling for generated FileSpec entries. Ensure proper propagation from GeneratorSpec to FileSpec entries.",
+			"reasoning": "This involves implementing inheritance logic in a generator system. The complexity is moderate-low as it's primarily about propagating fields from parent to child structures, but requires careful handling of the expansion process and YAML serialization."
+		},
+		{
+			"taskId": 8,
+			"taskTitle": "Implement Resource-Level Dependency Validation",
+			"complexityScore": 5,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Split into 1) Add validation to resource Validate() methods for DependsOn format validation, 2) Implement address format checking (Kind/Group or Kind/Group[Item]), 3) Add unit tests for valid/invalid DependsOn formats. Ensure cross-resource validation is deferred to graph build phase.",
+			"reasoning": "This task involves adding validation logic to existing methods. The complexity is moderate as it requires proper validation rules implementation, but doesn't involve new algorithmic components. The deferred validation approach adds some complexity to the design."
+		},
+		{
+			"taskId": 9,
+			"taskTitle": "Update Provider Status Handling for Skipped Items",
+			"complexityScore": 3,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Break into 1) Add ItemSkipped status to ItemStatus enum in provider.go, 2) Update GroupPlan struct to track skipped items, 3) Implement reporting logic for skipped items with descriptive messages. Include unit tests for status handling and reporting.",
+			"reasoning": "This is a straightforward status update task that involves adding a new enum value and updating data structures. The complexity is low as it's primarily about extending existing functionality with minimal new logic."
+		},
+		{
+			"taskId": 10,
+			"taskTitle": "Implement Comprehensive Test Suite",
+			"complexityScore": 8,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Divide into 1) Create unit tests for graph package algorithms (cycle detection, topological sorting), 2) Add unit tests for schema changes with YAML round-trip validation, 3) Implement integration tests for full plan+apply workflow, 4) Create end-to-end tests for dependency scenarios and error handling. Ensure comprehensive coverage of all dependency scenarios.",
+			"reasoning": "This is a complex testing task that requires creating comprehensive test coverage for multiple components. The complexity is high due to the breadth of testing required, including unit tests for algorithms, integration tests for workflows, and end-to-end scenarios covering all dependency interactions."
+		}
+	]
+}

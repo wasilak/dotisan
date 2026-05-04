@@ -2,9 +2,9 @@ package resource
 
 // ResourceGroup represents a level-2 entity (e.g., "core-tools" containing multiple packages)
 type ResourceGroup struct {
-	Kind  string
-	Name  string
-	Items []ResourceItem
+	Kind    string
+	Name    string
+	Items   []ResourceItem
 	RawSpec interface{} // Original resource spec for provider use
 }
 

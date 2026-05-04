@@ -57,10 +57,9 @@ func TestState_SetResourceGroup_New(t *testing.T) {
 	s := NewState()
 
 	s.SetResourceGroup(provider.ResourceState{
-		Kind:      resource.KindHomeBrewPackages,
-		Group:     "core-tools",
-		Items:     []resource.ItemState{{Name: "ripgrep"}},
-
+		Kind:  resource.KindHomeBrewPackages,
+		Group: "core-tools",
+		Items: []resource.ItemState{{Name: "ripgrep"}},
 	})
 
 	if len(s.Resources) != 1 {
@@ -75,17 +74,15 @@ func TestState_SetResourceGroup_New(t *testing.T) {
 func TestState_SetResourceGroup_Update(t *testing.T) {
 	s := NewState()
 	s.SetResourceGroup(provider.ResourceState{
-		Kind:      resource.KindHomeBrewPackages,
-		Group:     "core-tools",
-		Items:     []resource.ItemState{{Name: "ripgrep"}},
-
+		Kind:  resource.KindHomeBrewPackages,
+		Group: "core-tools",
+		Items: []resource.ItemState{{Name: "ripgrep"}},
 	})
 
 	s.SetResourceGroup(provider.ResourceState{
-		Kind:      resource.KindHomeBrewPackages,
-		Group:     "core-tools",
-		Items:     []resource.ItemState{{Name: "ripgrep"}, {Name: "jq"}},
-
+		Kind:  resource.KindHomeBrewPackages,
+		Group: "core-tools",
+		Items: []resource.ItemState{{Name: "ripgrep"}, {Name: "jq"}},
 	})
 
 	if len(s.Resources) != 1 {
@@ -101,16 +98,14 @@ func TestState_SetResourceGroup_Update(t *testing.T) {
 func TestState_RemoveResourceGroup(t *testing.T) {
 	s := NewState()
 	s.SetResourceGroup(provider.ResourceState{
-		Kind:      resource.KindHomeBrewPackages,
-		Group:     "core-tools",
-		Items:     []resource.ItemState{{Name: "ripgrep"}},
-
+		Kind:  resource.KindHomeBrewPackages,
+		Group: "core-tools",
+		Items: []resource.ItemState{{Name: "ripgrep"}},
 	})
 	s.SetResourceGroup(provider.ResourceState{
-		Kind:      resource.KindHomeBrewPackages,
-		Group:     "dev-tools",
-		Items:     []resource.ItemState{{Name: "jq"}},
-
+		Kind:  resource.KindHomeBrewPackages,
+		Group: "dev-tools",
+		Items: []resource.ItemState{{Name: "jq"}},
 	})
 
 	removed := s.RemoveResourceGroup(resource.KindHomeBrewPackages, "core-tools")
@@ -138,8 +133,8 @@ func TestLocalBackend_SaveAndLoad(t *testing.T) {
 	// Create and save state
 	state := NewState()
 	state.SetResourceGroup(provider.ResourceState{
-		Kind:      resource.KindHomeBrewPackages,
-		Group:     "core-tools",
+		Kind:  resource.KindHomeBrewPackages,
+		Group: "core-tools",
 
 		Items: []resource.ItemState{
 			{Name: "ripgrep", Version: "15.0.0"},
@@ -238,8 +233,8 @@ func TestState_MoveItem(t *testing.T) {
 
 	// Set up initial state with two groups
 	s.SetResourceGroup(provider.ResourceState{
-		Kind:      resource.KindHomeBrewPackages,
-		Group:     "core-tools",
+		Kind:  resource.KindHomeBrewPackages,
+		Group: "core-tools",
 
 		Items: []resource.ItemState{
 			{Name: "ripgrep", Version: "14.0.0"},
@@ -247,8 +242,8 @@ func TestState_MoveItem(t *testing.T) {
 		},
 	})
 	s.SetResourceGroup(provider.ResourceState{
-		Kind:      resource.KindHomeBrewPackages,
-		Group:     "homebrew-packages",
+		Kind:  resource.KindHomeBrewPackages,
+		Group: "homebrew-packages",
 
 		Items: []resource.ItemState{
 			{Name: "zsh", Version: "5.9"},
@@ -300,8 +295,8 @@ func TestState_MoveItem_ToNewGroup(t *testing.T) {
 
 	// Set up initial state with one group
 	s.SetResourceGroup(provider.ResourceState{
-		Kind:      resource.KindHomeBrewPackages,
-		Group:     "core-tools",
+		Kind:  resource.KindHomeBrewPackages,
+		Group: "core-tools",
 
 		Items: []resource.ItemState{
 			{Name: "podman", Version: "4.9.0"},
@@ -335,8 +330,8 @@ func TestState_MoveItem_NotFound(t *testing.T) {
 
 	// Set up initial state
 	s.SetResourceGroup(provider.ResourceState{
-		Kind:      resource.KindHomeBrewPackages,
-		Group:     "core-tools",
+		Kind:  resource.KindHomeBrewPackages,
+		Group: "core-tools",
 
 		Items: []resource.ItemState{
 			{Name: "ripgrep", Version: "14.0.0"},

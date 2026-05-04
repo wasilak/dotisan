@@ -10,7 +10,8 @@
       "Bash(go get *)",
       "Bash(go mod *)",
       "Bash(go run *)",
-      "Bash(gofmt -w pkg/diff/diff.go)"
+      "Bash(gofmt -w pkg/diff/diff.go)",
+      "WebSearch"
     ]
   }
 }
