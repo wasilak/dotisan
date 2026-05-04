@@ -86,13 +86,12 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 	type kindGroup struct{ kind, group string }
 	succeededGroups := make(map[kindGroup]bool)
 
-	// parseNodeID splits a NodeID of the form "namespace/Kind/Group" into parts.
+	// parseNodeID splits a NodeID of the form "Kind/Group" into its two parts.
 	parseNodeID := func(id graph.NodeID) (kind, group string) {
 		s := string(id)
-		// Format: namespace/Kind/Group — take the last two slash-separated segments.
-		parts := strings.SplitN(s, "/", 3)
-		if len(parts) == 3 {
-			return parts[1], parts[2]
+		parts := strings.SplitN(s, "/", 2)
+		if len(parts) == 2 {
+			return parts[0], parts[1]
 		}
 		return "", ""
 	}
@@ -266,10 +265,9 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 		// InSync groups always update state (they require no apply action).
 		for _, inSync := range plan.InSync {
 			stateToSave.SetResourceGroup(provider.ResourceState{
-				Kind:      inSync.Kind,
-				Group:     inSync.Group,
-				Items:     inSync.Items,
-				Namespace: "default",
+				Kind:  inSync.Kind,
+				Group: inSync.Group,
+				Items: inSync.Items,
 			})
 		}
 
@@ -295,10 +293,9 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 				})
 			}
 			stateToSave.SetResourceGroup(provider.ResourceState{
-				Kind:      addition.Kind,
-				Group:     addition.Group,
-				Items:     items,
-				Namespace: "default",
+				Kind:  addition.Kind,
+				Group: addition.Group,
+				Items: items,
 			})
 		}
 
@@ -335,9 +332,8 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 
 				if !updated {
 					stateToSave.SetResourceGroup(provider.ResourceState{
-						Kind:      modification.Kind,
-						Group:     modification.Group,
-						Namespace: "default",
+						Kind:  modification.Kind,
+						Group: modification.Group,
 						Items: []resource.ItemState{
 							{Name: change.ItemName, Version: "", Checksum: checksum, Status: "present"},
 						},

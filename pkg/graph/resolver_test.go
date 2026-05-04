@@ -3,55 +3,56 @@ package graph
 import "testing"
 
 func TestResolveAddress_ResourceLevel(t *testing.T) {
-	id, err := ResolveAddress("HomeBrewPackages/core-tools", "default")
+	id, err := ResolveAddress("HomeBrewPackages/core-tools")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	want := NodeID("default/HomeBrewPackages/core-tools")
+	want := NodeID("HomeBrewPackages/core-tools")
 	if id != want {
 		t.Errorf("got %q, want %q", id, want)
 	}
 }
 
 func TestResolveAddress_ItemLevel(t *testing.T) {
-	id, err := ResolveAddress("HomeBrewPackages/core-tools[ripgrep]", "default")
+	id, err := ResolveAddress("HomeBrewPackages/core-tools[ripgrep]")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	want := NodeID("default/HomeBrewPackages/core-tools[ripgrep]")
+	want := NodeID("HomeBrewPackages/core-tools[ripgrep]")
 	if id != want {
 		t.Errorf("got %q, want %q", id, want)
 	}
 }
 
-func TestResolveAddress_WithNamespace(t *testing.T) {
-	id, err := ResolveAddress("myns/GoPackages/tools", "default")
+func TestResolveAddress_NamespaceStripped(t *testing.T) {
+	// Namespace prefix is accepted (backwards compat) but stripped from NodeID.
+	id, err := ResolveAddress("myns/GoPackages/tools")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	want := NodeID("myns/GoPackages/tools")
+	want := NodeID("GoPackages/tools")
 	if id != want {
 		t.Errorf("got %q, want %q", id, want)
 	}
 }
 
 func TestResolveAddress_Empty(t *testing.T) {
-	if _, err := ResolveAddress("", "default"); err == nil {
+	if _, err := ResolveAddress(""); err == nil {
 		t.Fatal("expected error for empty address")
 	}
 }
 
 func TestResourceNodeID(t *testing.T) {
-	got := ResourceNodeID("default", "GoPackages", "tools")
-	want := NodeID("default/GoPackages/tools")
+	got := ResourceNodeID("GoPackages", "tools")
+	want := NodeID("GoPackages/tools")
 	if got != want {
 		t.Errorf("got %q, want %q", got, want)
 	}
 }
 
 func TestItemNodeID(t *testing.T) {
-	got := ItemNodeID("default", "HomeBrewPackages", "core", "ripgrep")
-	want := NodeID("default/HomeBrewPackages/core[ripgrep]")
+	got := ItemNodeID("HomeBrewPackages", "core", "ripgrep")
+	want := NodeID("HomeBrewPackages/core[ripgrep]")
 	if got != want {
 		t.Errorf("got %q, want %q", got, want)
 	}

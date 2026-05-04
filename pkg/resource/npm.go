@@ -32,10 +32,9 @@ func (r NpmPackages) ToGroup() ResourceGroup {
 	}
 
 	return ResourceGroup{
-		Kind:      r.Kind,
-		Name:      r.Metadata.Name,
-		Namespace: r.Metadata.GetNamespace(),
-		Items:     items,
-		RawSpec:   r.Spec,
+		Kind:    r.Kind,
+		Name:    r.Metadata.Name,
+		Items:   items,
+		RawSpec: r.Spec,
 	}
 }

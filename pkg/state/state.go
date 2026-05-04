@@ -143,11 +143,9 @@ func (s *State) MoveItem(srcKind, srcGroup, srcItem, dstKind, dstGroup, dstItem 
 
 	// Find source resource group index (use index to avoid pointer issues on slice reallocation)
 	srcIndex := -1
-	var srcNamespace string
 	for i, r := range s.Resources {
 		if r.Kind == srcKind && r.Group == srcGroup {
 			srcIndex = i
-			srcNamespace = r.Namespace
 			break
 		}
 	}
@@ -188,10 +186,9 @@ func (s *State) MoveItem(srcKind, srcGroup, srcItem, dstKind, dstGroup, dstItem 
 	if dstIndex == -1 {
 		// Create new resource group
 		s.Resources = append(s.Resources, provider.ResourceState{
-			Kind:      dstKind,
-			Group:     dstGroup,
-			Namespace: srcNamespace,
-			Items:     []resource.ItemState{itemToMove},
+			Kind:  dstKind,
+			Group: dstGroup,
+			Items: []resource.ItemState{itemToMove},
 		})
 		dstIndex = len(s.Resources) - 1
 	} else {
@@ -208,10 +205,9 @@ func (s *State) MoveItem(srcKind, srcGroup, srcItem, dstKind, dstGroup, dstItem 
 	}
 
 	return provider.ResourceState{
-		Kind:      dstKind,
-		Group:     dstGroup,
-		Namespace: srcNamespace,
-		Items:     []resource.ItemState{itemToMove},
+		Kind:  dstKind,
+		Group: dstGroup,
+		Items: []resource.ItemState{itemToMove},
 	}, true
 }
 

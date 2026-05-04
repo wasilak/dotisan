@@ -146,9 +146,8 @@ func (p *CargoProvider) ImportItem(ctx context.Context, group string, item strin
 	}
 
 	return provider.ResourceState{
-		Kind:      resource.KindCargoPackages,
-		Group:     group,
-		Namespace: "default",
+		Kind:  resource.KindCargoPackages,
+		Group: group,
 		Items: []resource.ItemState{
 			{
 				Name:    item,

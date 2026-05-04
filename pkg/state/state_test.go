@@ -60,7 +60,7 @@ func TestState_SetResourceGroup_New(t *testing.T) {
 		Kind:      resource.KindHomeBrewPackages,
 		Group:     "core-tools",
 		Items:     []resource.ItemState{{Name: "ripgrep"}},
-		Namespace: "default",
+
 	})
 
 	if len(s.Resources) != 1 {
@@ -78,14 +78,14 @@ func TestState_SetResourceGroup_Update(t *testing.T) {
 		Kind:      resource.KindHomeBrewPackages,
 		Group:     "core-tools",
 		Items:     []resource.ItemState{{Name: "ripgrep"}},
-		Namespace: "default",
+
 	})
 
 	s.SetResourceGroup(provider.ResourceState{
 		Kind:      resource.KindHomeBrewPackages,
 		Group:     "core-tools",
 		Items:     []resource.ItemState{{Name: "ripgrep"}, {Name: "jq"}},
-		Namespace: "default",
+
 	})
 
 	if len(s.Resources) != 1 {
@@ -104,13 +104,13 @@ func TestState_RemoveResourceGroup(t *testing.T) {
 		Kind:      resource.KindHomeBrewPackages,
 		Group:     "core-tools",
 		Items:     []resource.ItemState{{Name: "ripgrep"}},
-		Namespace: "default",
+
 	})
 	s.SetResourceGroup(provider.ResourceState{
 		Kind:      resource.KindHomeBrewPackages,
 		Group:     "dev-tools",
 		Items:     []resource.ItemState{{Name: "jq"}},
-		Namespace: "default",
+
 	})
 
 	removed := s.RemoveResourceGroup(resource.KindHomeBrewPackages, "core-tools")
@@ -140,7 +140,7 @@ func TestLocalBackend_SaveAndLoad(t *testing.T) {
 	state.SetResourceGroup(provider.ResourceState{
 		Kind:      resource.KindHomeBrewPackages,
 		Group:     "core-tools",
-		Namespace: "default",
+
 		Items: []resource.ItemState{
 			{Name: "ripgrep", Version: "15.0.0"},
 		},
@@ -240,7 +240,7 @@ func TestState_MoveItem(t *testing.T) {
 	s.SetResourceGroup(provider.ResourceState{
 		Kind:      resource.KindHomeBrewPackages,
 		Group:     "core-tools",
-		Namespace: "default",
+
 		Items: []resource.ItemState{
 			{Name: "ripgrep", Version: "14.0.0"},
 			{Name: "podman", Version: "4.9.0"},
@@ -249,7 +249,7 @@ func TestState_MoveItem(t *testing.T) {
 	s.SetResourceGroup(provider.ResourceState{
 		Kind:      resource.KindHomeBrewPackages,
 		Group:     "homebrew-packages",
-		Namespace: "default",
+
 		Items: []resource.ItemState{
 			{Name: "zsh", Version: "5.9"},
 		},
@@ -302,7 +302,7 @@ func TestState_MoveItem_ToNewGroup(t *testing.T) {
 	s.SetResourceGroup(provider.ResourceState{
 		Kind:      resource.KindHomeBrewPackages,
 		Group:     "core-tools",
-		Namespace: "default",
+
 		Items: []resource.ItemState{
 			{Name: "podman", Version: "4.9.0"},
 		},
@@ -337,7 +337,7 @@ func TestState_MoveItem_NotFound(t *testing.T) {
 	s.SetResourceGroup(provider.ResourceState{
 		Kind:      resource.KindHomeBrewPackages,
 		Group:     "core-tools",
-		Namespace: "default",
+
 		Items: []resource.ItemState{
 			{Name: "ripgrep", Version: "14.0.0"},
 		},

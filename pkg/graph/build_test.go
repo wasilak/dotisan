@@ -7,15 +7,14 @@ import (
 	"github.com/wasilak/dotisan/pkg/resource"
 )
 
-// makeHB is a helper that constructs a minimal HomeBrewPackages resource.
-func makeHB(name, namespace string, dependsOn ...string) *resource.HomeBrewPackages {
+// makeHB constructs a minimal HomeBrewPackages resource.
+func makeHB(name string, dependsOn ...string) *resource.HomeBrewPackages {
 	return &resource.HomeBrewPackages{
 		BaseResource: resource.BaseResource{
 			APIVersion: "github.com/wasilak/dotisan/v1",
 			Kind:       "HomeBrewPackages",
 			Metadata: resource.Metadata{
 				Name:      name,
-				Namespace: namespace,
 				DependsOn: dependsOn,
 			},
 		},
@@ -24,10 +23,10 @@ func makeHB(name, namespace string, dependsOn ...string) *resource.HomeBrewPacka
 
 func TestBuild_NoDeps(t *testing.T) {
 	resources := []resource.Resource{
-		makeHB("tools", "default"),
-		makeHB("fonts", "default"),
+		makeHB("tools"),
+		makeHB("fonts"),
 	}
-	d, err := Build(resources, "default")
+	d, err := Build(resources)
 	if err != nil {
 		t.Fatalf("Build() error: %v", err)
 	}
@@ -39,10 +38,10 @@ func TestBuild_NoDeps(t *testing.T) {
 func TestBuild_WithDeps_TopologicalOrder(t *testing.T) {
 	// fonts depends on tools
 	resources := []resource.Resource{
-		makeHB("tools", "default"),
-		makeHB("fonts", "default", "HomeBrewPackages/tools"),
+		makeHB("tools"),
+		makeHB("fonts", "HomeBrewPackages/tools"),
 	}
-	d, err := Build(resources, "default")
+	d, err := Build(resources)
 	if err != nil {
 		t.Fatalf("Build() error: %v", err)
 	}
@@ -59,8 +58,8 @@ func TestBuild_WithDeps_TopologicalOrder(t *testing.T) {
 	for i, id := range order {
 		pos[id] = i
 	}
-	toolsID := ResourceNodeID("default", "HomeBrewPackages", "tools")
-	fontsID := ResourceNodeID("default", "HomeBrewPackages", "fonts")
+	toolsID := ResourceNodeID("HomeBrewPackages", "tools")
+	fontsID := ResourceNodeID("HomeBrewPackages", "fonts")
 	if pos[toolsID] >= pos[fontsID] {
 		t.Errorf("tools must come before fonts: tools=%d fonts=%d", pos[toolsID], pos[fontsID])
 	}
@@ -69,10 +68,10 @@ func TestBuild_WithDeps_TopologicalOrder(t *testing.T) {
 func TestBuild_CycleReturnsError(t *testing.T) {
 	// A depends on B, B depends on A
 	resources := []resource.Resource{
-		makeHB("a", "default", "HomeBrewPackages/b"),
-		makeHB("b", "default", "HomeBrewPackages/a"),
+		makeHB("a", "HomeBrewPackages/b"),
+		makeHB("b", "HomeBrewPackages/a"),
 	}
-	d, err := Build(resources, "default")
+	d, err := Build(resources)
 	if err != nil {
 		t.Fatalf("Build() should not fail — cycle is detected at Validate: %v", err)
 	}
@@ -88,15 +87,15 @@ func TestBuild_CycleReturnsError(t *testing.T) {
 func TestBuild_InvalidAddress(t *testing.T) {
 	// "[bad]" is an invalid resource ID
 	resources := []resource.Resource{
-		makeHB("a", "default", "[bad]"),
+		makeHB("a", "[bad]"),
 	}
-	if _, err := Build(resources, "default"); err == nil {
+	if _, err := Build(resources); err == nil {
 		t.Fatal("expected error for invalid dependency address")
 	}
 }
 
 func TestBuild_Empty(t *testing.T) {
-	d, err := Build(nil, "default")
+	d, err := Build(nil)
 	if err != nil {
 		t.Fatalf("Build(nil) error: %v", err)
 	}
@@ -110,13 +109,13 @@ func TestBuild_ImplicitTapDeps_PackagesDependOnTaps(t *testing.T) {
 		BaseResource: resource.BaseResource{
 			APIVersion: "github.com/wasilak/dotisan/v1",
 			Kind:       "HomeBrewTaps",
-			Metadata:   resource.Metadata{Name: "extra-taps", Namespace: "default"},
+			Metadata:   resource.Metadata{Name: "extra-taps"},
 		},
 		Spec: resource.HomeBrewTapsSpec{},
 	}
-	packages := makeHB("tools", "default") // no explicit dependsOn
+	packages := makeHB("tools") // no explicit dependsOn
 
-	d, err := Build([]resource.Resource{taps, packages}, "default")
+	d, err := Build([]resource.Resource{taps, packages})
 	if err != nil {
 		t.Fatalf("Build() error: %v", err)
 	}
@@ -130,8 +129,8 @@ func TestBuild_ImplicitTapDeps_PackagesDependOnTaps(t *testing.T) {
 	for i, id := range order {
 		pos[id] = i
 	}
-	tapID := ResourceNodeID("default", "HomeBrewTaps", "extra-taps")
-	pkgID := ResourceNodeID("default", "HomeBrewPackages", "tools")
+	tapID := ResourceNodeID("HomeBrewTaps", "extra-taps")
+	pkgID := ResourceNodeID("HomeBrewPackages", "tools")
 	if pos[tapID] >= pos[pkgID] {
 		t.Errorf("taps must be applied before packages: tap=%d pkg=%d", pos[tapID], pos[pkgID])
 	}
@@ -142,7 +141,7 @@ func TestBuild_ImplicitTapDeps_CasksAlsoDependOnTaps(t *testing.T) {
 		BaseResource: resource.BaseResource{
 			APIVersion: "github.com/wasilak/dotisan/v1",
 			Kind:       "HomeBrewTaps",
-			Metadata:   resource.Metadata{Name: "cask-fonts", Namespace: "default"},
+			Metadata:   resource.Metadata{Name: "cask-fonts"},
 		},
 		Spec: resource.HomeBrewTapsSpec{},
 	}
@@ -150,12 +149,12 @@ func TestBuild_ImplicitTapDeps_CasksAlsoDependOnTaps(t *testing.T) {
 		BaseResource: resource.BaseResource{
 			APIVersion: "github.com/wasilak/dotisan/v1",
 			Kind:       "HomeBrewCasks",
-			Metadata:   resource.Metadata{Name: "fonts", Namespace: "default"},
+			Metadata:   resource.Metadata{Name: "fonts"},
 		},
 		Spec: resource.HomeBrewCasksSpec{},
 	}
 
-	d, err := Build([]resource.Resource{taps, casks}, "default")
+	d, err := Build([]resource.Resource{taps, casks})
 	if err != nil {
 		t.Fatalf("Build() error: %v", err)
 	}
@@ -169,8 +168,8 @@ func TestBuild_ImplicitTapDeps_CasksAlsoDependOnTaps(t *testing.T) {
 	for i, id := range order {
 		pos[id] = i
 	}
-	tapID := ResourceNodeID("default", "HomeBrewTaps", "cask-fonts")
-	caskID := ResourceNodeID("default", "HomeBrewCasks", "fonts")
+	tapID := ResourceNodeID("HomeBrewTaps", "cask-fonts")
+	caskID := ResourceNodeID("HomeBrewCasks", "fonts")
 	if pos[tapID] >= pos[caskID] {
 		t.Errorf("taps must be applied before casks: tap=%d cask=%d", pos[tapID], pos[caskID])
 	}
@@ -181,20 +180,20 @@ func TestBuild_ImplicitTapDeps_NoDuplicateWhenExplicit(t *testing.T) {
 		BaseResource: resource.BaseResource{
 			APIVersion: "github.com/wasilak/dotisan/v1",
 			Kind:       "HomeBrewTaps",
-			Metadata:   resource.Metadata{Name: "extra-taps", Namespace: "default"},
+			Metadata:   resource.Metadata{Name: "extra-taps"},
 		},
 		Spec: resource.HomeBrewTapsSpec{},
 	}
 	// packages already declares the tap dep explicitly
-	packages := makeHB("tools", "default", "HomeBrewTaps/extra-taps")
+	packages := makeHB("tools", "HomeBrewTaps/extra-taps")
 
-	d, err := Build([]resource.Resource{taps, packages}, "default")
+	d, err := Build([]resource.Resource{taps, packages})
 	if err != nil {
 		t.Fatalf("Build() error: %v", err)
 	}
 
-	tapID := ResourceNodeID("default", "HomeBrewTaps", "extra-taps")
-	pkgID := ResourceNodeID("default", "HomeBrewPackages", "tools")
+	tapID := ResourceNodeID("HomeBrewTaps", "extra-taps")
+	pkgID := ResourceNodeID("HomeBrewPackages", "tools")
 	deps := d.DependenciesOf(pkgID)
 	count := 0
 	for _, dep := range deps {
@@ -207,36 +206,37 @@ func TestBuild_ImplicitTapDeps_NoDuplicateWhenExplicit(t *testing.T) {
 	}
 }
 
-func TestBuild_ImplicitTapDeps_CrossNamespaceIsolation(t *testing.T) {
-	// Taps in "other" namespace should NOT be injected into packages in "default"
-	tapsOther := &resource.HomeBrewTaps{
+func TestBuild_ImplicitTapDeps_GlobalInjection(t *testing.T) {
+	// Taps are injected into all packages regardless of what namespace was in YAML.
+	taps := &resource.HomeBrewTaps{
 		BaseResource: resource.BaseResource{
 			APIVersion: "github.com/wasilak/dotisan/v1",
 			Kind:       "HomeBrewTaps",
-			Metadata:   resource.Metadata{Name: "other-taps", Namespace: "other"},
+			Metadata:   resource.Metadata{Name: "some-taps", Namespace: "other"},
 		},
 		Spec: resource.HomeBrewTapsSpec{},
 	}
-	packages := makeHB("tools", "default") // default namespace
+	packages := makeHB("tools")
 
-	d, err := Build([]resource.Resource{tapsOther, packages}, "default")
+	d, err := Build([]resource.Resource{taps, packages})
 	if err != nil {
 		t.Fatalf("Build() error: %v", err)
 	}
 
-	pkgID := ResourceNodeID("default", "HomeBrewPackages", "tools")
+	pkgID := ResourceNodeID("HomeBrewPackages", "tools")
 	deps := d.DependenciesOf(pkgID)
-	if len(deps) != 0 {
-		t.Errorf("packages in 'default' should have no implicit tap deps from 'other' ns, got %v", deps)
+	if len(deps) != 1 {
+		t.Errorf("expected 1 implicit tap dep, got %d: %v", len(deps), deps)
 	}
 }
 
-func TestBuild_CrossNamespaceDependency(t *testing.T) {
-	// "apps" (ns: apps) depends on "tools" (ns: default) using an explicit namespace prefix
-	tools := makeHB("tools", "default")
-	apps := makeHB("apps", "apps", "default/HomeBrewPackages/tools")
+func TestBuild_NamespacePrefixInDependsOn_Stripped(t *testing.T) {
+	// A DependsOn with a namespace prefix resolves to the same NodeID as one without.
+	tools := makeHB("tools")
+	// "default/HomeBrewPackages/tools" should resolve to "HomeBrewPackages/tools"
+	fonts := makeHB("fonts", "default/HomeBrewPackages/tools")
 
-	d, err := Build([]resource.Resource{tools, apps}, "default")
+	d, err := Build([]resource.Resource{tools, fonts})
 	if err != nil {
 		t.Fatalf("Build() error: %v", err)
 	}
@@ -245,31 +245,27 @@ func TestBuild_CrossNamespaceDependency(t *testing.T) {
 	if err != nil {
 		t.Fatalf("TopologicalOrder() error: %v", err)
 	}
-	if len(order) != 2 {
-		t.Fatalf("order len = %d, want 2", len(order))
-	}
 
 	pos := make(map[NodeID]int, 2)
 	for i, id := range order {
 		pos[id] = i
 	}
-	toolsID := ResourceNodeID("default", "HomeBrewPackages", "tools")
-	appsID := ResourceNodeID("apps", "HomeBrewPackages", "apps")
-	if pos[toolsID] >= pos[appsID] {
-		t.Errorf("tools (default ns) must come before apps (apps ns): tools=%d apps=%d", pos[toolsID], pos[appsID])
+	toolsID := ResourceNodeID("HomeBrewPackages", "tools")
+	fontsID := ResourceNodeID("HomeBrewPackages", "fonts")
+	if pos[toolsID] >= pos[fontsID] {
+		t.Errorf("tools must come before fonts: tools=%d fonts=%d", pos[toolsID], pos[fontsID])
 	}
 }
 
 func TestBuild_MultipleKinds(t *testing.T) {
 	// ManagedFile depends on HomeBrewPackages
-	brew := makeHB("tools", "default")
+	brew := makeHB("tools")
 	file := &resource.ManagedFile{
 		BaseResource: resource.BaseResource{
 			APIVersion: "github.com/wasilak/dotisan/v1",
 			Kind:       "ManagedFile",
 			Metadata: resource.Metadata{
 				Name:      "dotfiles",
-				Namespace: "default",
 				DependsOn: []string{"HomeBrewPackages/tools"},
 			},
 		},
@@ -279,7 +275,7 @@ func TestBuild_MultipleKinds(t *testing.T) {
 		},
 	}
 
-	d, err := Build([]resource.Resource{brew, file}, "default")
+	d, err := Build([]resource.Resource{brew, file})
 	if err != nil {
 		t.Fatalf("Build() error: %v", err)
 	}
@@ -295,8 +291,8 @@ func TestBuild_MultipleKinds(t *testing.T) {
 	for i, id := range order {
 		pos[id] = i
 	}
-	brewID := ResourceNodeID("default", "HomeBrewPackages", "tools")
-	fileID := ResourceNodeID("default", "ManagedFile", "dotfiles")
+	brewID := ResourceNodeID("HomeBrewPackages", "tools")
+	fileID := ResourceNodeID("ManagedFile", "dotfiles")
 	if pos[brewID] >= pos[fileID] {
 		t.Errorf("brew tools must come before managed file: brew=%d file=%d", pos[brewID], pos[fileID])
 	}

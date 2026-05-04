@@ -2,7 +2,7 @@
 package graph
 
 // NodeID is the unique identifier for a node in the dependency graph.
-// Format mirrors the resource address: "namespace/Kind/Group[Item]"
+// Format: "Kind/Group" or "Kind/Group[Item]"
 type NodeID string
 
 // Node represents a single vertex in the dependency graph.

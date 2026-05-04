@@ -2,11 +2,10 @@ package resource
 
 // ResourceGroup represents a level-2 entity (e.g., "core-tools" containing multiple packages)
 type ResourceGroup struct {
-	Kind      string
-	Name      string
-	Namespace string
-	Items     []ResourceItem
-	RawSpec   interface{} // Original resource spec for provider use
+	Kind  string
+	Name  string
+	Items []ResourceItem
+	RawSpec interface{} // Original resource spec for provider use
 }
 
 // ResourceItem represents a level-3 entity (e.g., "ripgrep" within "core-tools")
@@ -30,9 +29,8 @@ type ItemState struct {
 // Each resource type should implement this method
 func (br *BaseResource) ToGroup(items []ResourceItem) ResourceGroup {
 	return ResourceGroup{
-		Kind:      br.Kind,
-		Name:      br.Metadata.Name,
-		Namespace: br.Metadata.Namespace,
-		Items:     items,
+		Kind:  br.Kind,
+		Name:  br.Metadata.Name,
+		Items: items,
 	}
 }

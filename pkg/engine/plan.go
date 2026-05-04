@@ -56,7 +56,7 @@ func (e *Engine) Plan(ctx context.Context, opts PlanOptions) (*PlanResult, error
 	resourceGroups := e.resourcesToGroups(resources)
 
 	// Build dependency graph and validate it before proceeding.
-	dag, err := graph.Build(resources, "default")
+	dag, err := graph.Build(resources)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build dependency graph: %w", err)
 	}

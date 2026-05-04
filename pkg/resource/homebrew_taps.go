@@ -24,10 +24,9 @@ func (r HomeBrewTaps) Validate() error {
 func (r HomeBrewTaps) ToGroup() ResourceGroup {
 	// No items for taps — providers will read RawSpec to act on taps
 	return ResourceGroup{
-		Kind:      r.Kind,
-		Name:      r.Metadata.Name,
-		Namespace: r.Metadata.GetNamespace(),
-		Items:     []ResourceItem{},
-		RawSpec:   r.Spec,
+		Kind:    r.Kind,
+		Name:    r.Metadata.Name,
+		Items:   []ResourceItem{},
+		RawSpec: r.Spec,
 	}
 }

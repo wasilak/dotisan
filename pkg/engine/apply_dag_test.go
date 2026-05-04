@@ -48,8 +48,8 @@ func (f *fakeProvider) Apply(_ context.Context, plan provider.GroupPlan) error {
 func buildTestPlanResult(t *testing.T, providerName string) *PlanResult {
 	t.Helper()
 
-	toolsID := graph.ResourceNodeID("default", "HomeBrewPackages", "tools")
-	fontsID := graph.ResourceNodeID("default", "HomeBrewPackages", "fonts")
+	toolsID := graph.ResourceNodeID("HomeBrewPackages", "tools")
+	fontsID := graph.ResourceNodeID("HomeBrewPackages", "fonts")
 
 	d := graph.New()
 	_ = d.AddNode(&graph.Node{ID: toolsID, Kind: "HomeBrewPackages"})
@@ -141,9 +141,9 @@ func TestApply_SkipPropagation(t *testing.T) {
 func buildChainPlanResult(t *testing.T, providerName string) *PlanResult {
 	t.Helper()
 
-	baseID := graph.ResourceNodeID("default", "HomeBrewPackages", "base")
-	midID := graph.ResourceNodeID("default", "HomeBrewPackages", "middle")
-	topID := graph.ResourceNodeID("default", "HomeBrewPackages", "top")
+	baseID := graph.ResourceNodeID("HomeBrewPackages", "base")
+	midID := graph.ResourceNodeID("HomeBrewPackages", "middle")
+	topID := graph.ResourceNodeID("HomeBrewPackages", "top")
 
 	d := graph.New()
 	_ = d.AddNode(&graph.Node{ID: baseID, Kind: "HomeBrewPackages"})

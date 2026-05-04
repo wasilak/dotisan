@@ -155,9 +155,6 @@ type ResourceState struct {
 	// Group is the resource group name (e.g., "core-tools")
 	Group string `json:"group"`
 
-	// Namespace is the resource namespace
-	Namespace string `json:"namespace"`
-
 	// Items are the individual items within this group
 	Items []resource.ItemState `json:"items"`
 
