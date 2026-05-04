@@ -64,6 +64,9 @@ type GeneratorSpec struct {
 
 	// Mode is the file permissions for generated files (e.g., "0644")
 	Mode string `yaml:"mode,omitempty" validate:"omitempty,file_mode"`
+
+	// DependsOn lists resource names this generator depends on.
+	DependsOn []string `yaml:"dependsOn,omitempty"`
 }
 
 // FileSpec represents a single file in the list-based ManagedFile structure.
@@ -82,6 +85,9 @@ type FileSpec struct {
 
 	// Mode is the file permissions for this file
 	Mode string `yaml:"mode,omitempty"`
+
+	// DependsOn lists resource names this file depends on.
+	DependsOn []string `yaml:"dependsOn,omitempty"`
 }
 
 // Validate implements Resource.Validate.
@@ -128,7 +134,7 @@ func (r ManagedFile) Validate() error {
 		}
 	}
 
-	return nil
+	return validateDependsOnAddresses(r.Metadata.DependsOn)
 }
 
 // GetFiles returns the list of files to manage with ~ expanded in all destinations.

@@ -146,6 +146,37 @@ func TestCheckExecutable(t *testing.T) {
 	}
 }
 
+func TestItemStatus_Constants(t *testing.T) {
+	if ItemSkipped != "skipped" {
+		t.Errorf("ItemSkipped = %q, want %q", ItemSkipped, "skipped")
+	}
+	if ItemApplied != "applied" {
+		t.Errorf("ItemApplied = %q, want %q", ItemApplied, "applied")
+	}
+	if ItemFailed != "failed" {
+		t.Errorf("ItemFailed = %q, want %q", ItemFailed, "failed")
+	}
+}
+
+func TestGroupSkip_InGroupPlan(t *testing.T) {
+	plan := GroupPlan{
+		Skipped: []GroupSkip{
+			{Kind: "HomeBrewPackages", Group: "fonts", Reason: "dependency failed"},
+		},
+	}
+	if len(plan.Skipped) != 1 {
+		t.Fatalf("len(Skipped) = %d, want 1", len(plan.Skipped))
+	}
+	skip := plan.Skipped[0]
+	if skip.Kind != "HomeBrewPackages" || skip.Group != "fonts" {
+		t.Errorf("skip = %+v", skip)
+	}
+	if ItemStatus(skip.Reason) != ItemSkipped {
+		// Reason is a free-form string; just verify the constant is usable as a value
+		_ = ItemSkipped
+	}
+}
+
 func TestCheckExecutables(t *testing.T) {
 	// Test with multiple executables
 	available, message := CheckExecutables("ls", "cat")

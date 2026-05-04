@@ -14,7 +14,10 @@ type NpmPackagesSpec struct {
 
 // Validate implements Resource.Validate.
 func (r NpmPackages) Validate() error {
-	return ValidateStruct(r)
+	if err := ValidateStruct(r); err != nil {
+		return err
+	}
+	return validateDependsOnAddresses(r.Metadata.DependsOn)
 }
 
 // ToGroup implements Resource.ToGroup.

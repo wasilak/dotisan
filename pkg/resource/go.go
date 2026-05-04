@@ -19,11 +19,17 @@ type GoPackage struct {
 
 	// Version is the version to install (e.g., "latest", "v0.15.0")
 	Version string `yaml:"version,omitempty"`
+
+	// DependsOn lists resource names this package depends on.
+	DependsOn []string `yaml:"dependsOn,omitempty"`
 }
 
 // Validate implements Resource.Validate.
 func (r GoPackages) Validate() error {
-	return ValidateStruct(r)
+	if err := ValidateStruct(r); err != nil {
+		return err
+	}
+	return validateDependsOnAddresses(r.Metadata.DependsOn)
 }
 
 // ToGroup implements Resource.ToGroup.

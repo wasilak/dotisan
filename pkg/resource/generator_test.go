@@ -311,6 +311,46 @@ func TestExpandGenerator(t *testing.T) {
 			t.Errorf("error %q should mention empty string", err.Error())
 		}
 	})
+
+	t.Run("dependsOn inherited by all generated FileSpecs", func(t *testing.T) {
+		mf := baseMF(&GeneratorSpec{
+			SourceKey:          "skills",
+			Template:           "skill: {{ .Item }}",
+			DestinationPattern: "/out/{{ .Item }}.md",
+			DependsOn:          []string{"homebrew-packages", "dotfiles-base"},
+		})
+		if err := expandGenerator(mf, ctx, ""); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(mf.Spec.Files) != 2 {
+			t.Fatalf("want 2 files, got %d", len(mf.Spec.Files))
+		}
+		for i, f := range mf.Spec.Files {
+			if len(f.DependsOn) != 2 {
+				t.Errorf("file[%d].DependsOn len = %d, want 2", i, len(f.DependsOn))
+				continue
+			}
+			if f.DependsOn[0] != "homebrew-packages" || f.DependsOn[1] != "dotfiles-base" {
+				t.Errorf("file[%d].DependsOn = %v", i, f.DependsOn)
+			}
+		}
+	})
+
+	t.Run("nil dependsOn not inherited (stays nil)", func(t *testing.T) {
+		mf := baseMF(&GeneratorSpec{
+			SourceKey:          "skills",
+			Template:           "skill: {{ .Item }}",
+			DestinationPattern: "/out/{{ .Item }}.md",
+		})
+		if err := expandGenerator(mf, ctx, ""); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		for i, f := range mf.Spec.Files {
+			if f.DependsOn != nil {
+				t.Errorf("file[%d].DependsOn should be nil, got %v", i, f.DependsOn)
+			}
+		}
+	})
 }
 
 func TestRenderGeneratorTemplate_ReadFile(t *testing.T) {

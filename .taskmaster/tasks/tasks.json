@@ -5902,5 +5902,639 @@
         "generators"
       ]
     }
+  },
+  "resource-dependencies": {
+    "tasks": [
+      {
+        "id": "1",
+        "title": "Update Resource Schema with DependsOn and Version Fields",
+        "description": "Add DependsOn and Version fields to Package, Tap, GoPackage, FileSpec, and GeneratorSpec structs to support dependency declarations.",
+        "details": "Modify pkg/resource/types_common.go to add DependsOn field to Package struct and Version + DependsOn fields to Tap struct. Modify pkg/resource/go.go to add DependsOn field to GoPackage struct. Modify pkg/resource/file.go to add DependsOn field to FileSpec and GeneratorSpec structs. Ensure all structs maintain YAML tags and proper serialization.",
+        "testStrategy": "Unit tests for YAML round-trip serialization of all modified structs with DependsOn fields, validation that Version field is properly handled in Tap struct",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Update Package struct with DependsOn field",
+            "description": "Modify pkg/resource/types_common.go to add DependsOn field to Package struct with proper YAML tags",
+            "dependencies": [],
+            "details": "Update the Package struct in types_common.go to include a DependsOn field of type []string with yaml:\"dependsOn\" tag. Ensure the field supports proper YAML serialization and deserialization while maintaining backward compatibility.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-04T08:32:13.592Z"
+          },
+          {
+            "id": 2,
+            "title": "Update Tap struct with Version and DependsOn fields",
+            "description": "Modify pkg/resource/types_common.go to add Version and DependsOn fields to Tap struct with proper YAML tags",
+            "dependencies": [],
+            "details": "Update the Tap struct in types_common.go to include Version field of type string and DependsOn field of type []string, both with appropriate yaml tags. Ensure proper YAML round-trip serialization for both fields.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-04T08:32:16.070Z"
+          },
+          {
+            "id": 3,
+            "title": "Update GoPackage struct with DependsOn field",
+            "description": "Modify pkg/resource/go.go to add DependsOn field to GoPackage struct with proper YAML tags",
+            "dependencies": [],
+            "details": "Update the GoPackage struct in go.go to include a DependsOn field of type []string with yaml:\"dependsOn\" tag. Verify that the field properly serializes and deserializes from YAML format while maintaining existing functionality.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-04T08:32:18.337Z"
+          },
+          {
+            "id": 4,
+            "title": "Update FileSpec and GeneratorSpec structs with DependsOn fields",
+            "description": "Modify pkg/resource/file.go to add DependsOn field to both FileSpec and GeneratorSpec structs with proper YAML tags",
+            "dependencies": [],
+            "details": "Update both FileSpec and GeneratorSpec structs in file.go to include DependsOn field of type []string with yaml:\"dependsOn\" tag. Ensure proper YAML serialization and validation for both structs while maintaining existing functionality.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-04T08:32:20.636Z"
+          },
+          {
+            "id": 5,
+            "title": "Validate YAML serialization and tags for all modified structs",
+            "description": "Implement comprehensive YAML round-trip tests for all modified structs to ensure proper serialization and tag handling",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "details": "Create unit tests to validate YAML serialization and deserialization for all modified structs (Package, Tap, GoPackage, FileSpec, GeneratorSpec). Test round-trip scenarios to ensure that DependsOn fields are properly handled and YAML tags are correctly applied across all modified structures.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-04T08:32:22.921Z"
+          }
+        ],
+        "complexity": 3,
+        "recommendedSubtasks": 5,
+        "expansionPrompt": "Break down the schema update task into individual struct modifications: 1) Update Package struct in types_common.go, 2) Update Tap struct in types_common.go, 3) Update GoPackage struct in go.go, 4) Update FileSpec struct in file.go, 5) Update GeneratorSpec struct in file.go. Include YAML tag validation and serialization tests for each.",
+        "updatedAt": "2026-05-04T08:32:22.921Z"
+      },
+      {
+        "id": "2",
+        "title": "Add Resource-Level DependsOn to Metadata",
+        "description": "Extend Metadata struct to include DependsOn field for resource-level dependency declarations.",
+        "details": "Modify pkg/resource/resource.go to add DependsOn []string field to Metadata struct. Ensure the field is properly tagged for YAML serialization and deserialization. The field should support the same address format as item-level dependencies.",
+        "testStrategy": "Unit tests for Metadata struct YAML serialization, validation that DependsOn field is properly parsed from YAML",
+        "priority": "high",
+        "dependencies": [
+          "1"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Modify Metadata struct to add DependsOn field with YAML tags",
+            "description": "Update the Metadata struct in pkg/resource/resource.go to include a DependsOn field of type []string with proper YAML serialization tags",
+            "dependencies": [],
+            "details": "Modify the Metadata struct in pkg/resource/resource.go to add DependsOn []string field with yaml:\"dependsOn\" tag. Ensure the field supports the same address format as item-level dependencies and maintains proper YAML serialization and deserialization behavior.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-04T08:35:39.134Z"
+          },
+          {
+            "id": 2,
+            "title": "Add unit tests for DependsOn YAML serialization and parsing",
+            "description": "Create comprehensive unit tests to verify YAML serialization and parsing of the new DependsOn field in Metadata struct",
+            "dependencies": [],
+            "details": "Implement unit tests that verify the DependsOn field properly serializes to and from YAML format, ensuring it maintains the same address format as item-level dependencies. Test various valid and invalid address formats to confirm proper parsing behavior and error handling.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-04T08:35:41.402Z"
+          }
+        ],
+        "complexity": 2,
+        "recommendedSubtasks": 2,
+        "expansionPrompt": "Split into 1) Modify Metadata struct in resource.go to add DependsOn field with proper YAML tags, 2) Add unit tests for YAML serialization and parsing of the new field. Ensure the field supports the same address format as item-level dependencies.",
+        "updatedAt": "2026-05-04T08:35:41.402Z"
+      },
+      {
+        "id": "3",
+        "title": "Implement Graph Package with Node and DAG Structures",
+        "description": "Create new package pkg/graph with Node and DAG structures to represent dependencies and perform topological sorting.",
+        "details": "Create pkg/graph/node.go with NodeID type and Node struct containing ID, Kind, and DependsOn fields. Create pkg/graph/dag.go with DAG struct and methods Build(), Validate(), and TopologicalOrder(). Implement Kahn's algorithm for topological sorting and DFS for cycle detection. Create pkg/graph/resolver.go with ResolveAddress(), ResourceID(), and ItemID() functions for address resolution.",
+        "testStrategy": "Unit tests for Node and DAG structures, cycle detection algorithms, topological sorting correctness, address resolution functions",
+        "priority": "high",
+        "dependencies": [
+          "1"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Node Structure and NodeID Type",
+            "description": "Implement the NodeID type and Node struct with ID, Kind, and DependsOn fields in pkg/graph/node.go",
+            "dependencies": [],
+            "details": "Create pkg/graph/node.go file with NodeID type definition and Node struct containing ID (string), Kind (string), and DependsOn ([]string) fields. Include proper package structure and necessary imports for the graph package.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-04T08:36:48.757Z"
+          },
+          {
+            "id": 2,
+            "title": "Implement DAG Structure and Core Methods",
+            "description": "Create DAG struct and implement Build(), Validate(), and TopologicalOrder() methods in pkg/graph/dag.go",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement pkg/graph/dag.go with DAG struct containing nodes map and methods Build() to construct the graph, Validate() to check for cycles, and TopologicalOrder() to return ordered nodes. Include proper error handling and data structure design for efficient graph operations.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-04T08:37:10.711Z"
+          },
+          {
+            "id": 3,
+            "title": "Implement Graph Algorithms and Cycle Detection",
+            "description": "Implement Kahn's algorithm for topological sorting and DFS for cycle detection in the graph package",
+            "dependencies": [
+              2
+            ],
+            "details": "Add implementation of Kahn's algorithm for topological sorting and Depth-First Search for cycle detection within the DAG package. Ensure proper algorithmic correctness, handle edge cases, and integrate with existing Validate() method to detect and report cycle paths.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-04T08:37:13.024Z"
+          },
+          {
+            "id": 4,
+            "title": "Create Resolver Functions for Address Resolution",
+            "description": "Implement ResolveAddress(), ResourceID(), and ItemID() functions in pkg/graph/resolver.go",
+            "dependencies": [
+              3
+            ],
+            "details": "Create pkg/graph/resolver.go file with functions to resolve addresses to NodeIDs, extract ResourceID from addresses, and extract ItemID from addresses. Include proper validation logic for address format and existence checks, and integrate with existing graph structures for address resolution.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-04T08:37:55.650Z"
+          }
+        ],
+        "complexity": 7,
+        "recommendedSubtasks": 4,
+        "expansionPrompt": "Divide into 1) Create node.go with NodeID type and Node struct, 2) Create dag.go with DAG struct and core methods (Build, Validate, TopologicalOrder), 3) Implement graph algorithms (Kahn's algorithm, DFS for cycle detection), 4) Create resolver.go with address resolution functions. Include unit tests for each component.",
+        "updatedAt": "2026-05-04T08:37:55.650Z"
+      },
+      {
+        "id": "4",
+        "title": "Implement Dependency Validation and Resolution",
+        "description": "Add validation logic to ensure dependency references are valid and resolve addresses to NodeIDs.",
+        "details": "Implement Validate() method in graph package to detect cycles using DFS algorithm and return error with cycle path. Implement ResolveAddress() function in resolver.go to validate address format and existence. Add validation to ensure all dependencies reference existing resources/items.",
+        "testStrategy": "Unit tests for cycle detection with various scenarios (simple cycle, transitive cycle, no cycle), address resolution validation, error messages for unknown references",
+        "priority": "high",
+        "dependencies": [
+          "3"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Validate() method with DFS cycle detection",
+            "description": "Implement the Validate() method in the graph package using DFS algorithm to detect cycles and return detailed error messages with cycle paths",
+            "dependencies": [
+              3
+            ],
+            "details": "Create the Validate() method in pkg/graph/dag.go that implements depth-first search to detect cycles in the dependency graph. The method should track visited nodes and recursion stack to identify cycles, then construct and return detailed error messages including the cycle path. Ensure proper error handling and integration with existing Node and DAG structures.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-04T08:42:08.897Z"
+          },
+          {
+            "id": 2,
+            "title": "Implement ResolveAddress() function for address validation",
+            "description": "Implement the ResolveAddress() function in resolver.go to validate address format and resolve addresses to NodeIDs",
+            "dependencies": [
+              3
+            ],
+            "details": "Create the ResolveAddress() function in pkg/graph/resolver.go that validates address format according to expected patterns (Kind/Group or Kind/Group[Item]). The function should validate address structure, check existence of referenced resources, and resolve valid addresses to corresponding NodeIDs. Include proper error handling for invalid formats and non-existent references.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-04T08:42:11.153Z"
+          },
+          {
+            "id": 3,
+            "title": "Add dependency reference validation",
+            "description": "Add validation logic to ensure all dependencies reference existing resources/items and implement comprehensive unit tests",
+            "dependencies": [
+              3
+            ],
+            "details": "Implement validation logic to verify that all dependency references in the graph point to existing resources or items. This includes checking that referenced addresses exist in the system and are properly formatted. Create comprehensive unit tests covering various cycle scenarios, address resolution cases, and error conditions to ensure robust validation behavior.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-04T08:42:13.423Z"
+          }
+        ],
+        "complexity": 6,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Split into 1) Implement Validate() method with DFS cycle detection and error reporting, 2) Implement ResolveAddress() function for address validation, 3) Add dependency reference validation. Include comprehensive unit tests for various cycle scenarios and address resolution cases.",
+        "updatedAt": "2026-05-04T08:42:13.423Z"
+      },
+      {
+        "id": "5",
+        "title": "Integrate DAG Building and Validation into Engine Plan Phase",
+        "description": "Modify engine plan phase to build and validate DAG after resource loading.",
+        "details": "Modify pkg/engine/plan.go to call graph.Build() after resourcesToGroups() and before groupResourcesByProvider(). Call dag.Validate() to detect cycles and abort plan with error if detected. Call dag.TopologicalOrder() to get sorted NodeIDs and store in PlanResult. Add DependencyOrder and CycleError fields to PlanResult struct.",
+        "testStrategy": "Integration tests for full plan phase with dependency ordering, cycle detection at plan time, validation that plan fails with proper error messages",
+        "priority": "high",
+        "dependencies": [
+          "3"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Modify plan.go to integrate graph.Build() call",
+            "description": "Update pkg/engine/plan.go to call graph.Build() after resourcesToGroups() and before groupResourcesByProvider()",
+            "dependencies": [
+              3
+            ],
+            "details": "Modify the engine plan phase in pkg/engine/plan.go to integrate the graph.Build() function call at the appropriate location in the execution flow, ensuring it's called after resource loading is complete but before provider grouping occurs",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-04T08:43:45.454Z"
+          },
+          {
+            "id": 2,
+            "title": "Add DAG validation with cycle detection",
+            "description": "Implement dag.Validate() call with proper error handling to detect cycles and abort plan execution",
+            "dependencies": [
+              3,
+              4
+            ],
+            "details": "Integrate dag.Validate() into the engine plan phase to detect dependency cycles and ensure proper error handling that aborts the plan with appropriate error messages when cycles are detected, following the existing error handling patterns in the codebase",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-04T08:44:22.264Z"
+          },
+          {
+            "id": 3,
+            "title": "Implement TopologicalOrder integration and PlanResult updates",
+            "description": "Add dag.TopologicalOrder() integration and update PlanResult struct with DependencyOrder and CycleError fields",
+            "dependencies": [
+              3,
+              4
+            ],
+            "details": "Implement the integration of dag.TopologicalOrder() to generate sorted NodeIDs and store them in PlanResult, while also adding the new DependencyOrder and CycleError fields to the PlanResult struct as specified in the requirements",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-04T08:44:24.519Z"
+          }
+        ],
+        "complexity": 5,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Break into 1) Modify plan.go to call graph.Build() after resource loading, 2) Add dag.Validate() call with error handling, 3) Implement TopologicalOrder() integration and PlanResult updates. Include integration tests for the complete workflow.",
+        "updatedAt": "2026-05-04T08:44:24.519Z"
+      },
+      {
+        "id": "6",
+        "title": "Implement DAG-Ordered Execution in Engine Apply Phase",
+        "description": "Modify engine apply phase to execute items in topological order and propagate skips on dependency failures.",
+        "details": "Modify pkg/engine/apply.go to process items in DAG-ordered execution instead of arbitrary map iteration. Load topological order from plan, process items in that order, track failures, and mark dependents as skipped when a dependency fails. Update GroupPlan to include SkippedDueToDependencyFailure status.",
+        "testStrategy": "Integration tests for full plan+apply with dependency ordering, verification that apply order matches DAG order, skip propagation tests when dependency fails",
+        "priority": "high",
+        "dependencies": [
+          "5"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Modify apply.go to process items in topological order",
+            "description": "Update pkg/engine/apply.go to process items in DAG-ordered execution instead of arbitrary map iteration",
+            "dependencies": [],
+            "details": "Modify the engine apply phase to load topological order from plan and process items in that order rather than using arbitrary map iteration. This involves changing the iteration logic to respect dependency order and ensuring proper execution flow.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-04T08:50:49.027Z"
+          },
+          {
+            "id": 2,
+            "title": "Implement failure tracking and skip propagation",
+            "description": "Add logic to track failures and mark dependents as skipped when a dependency fails",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement failure tracking mechanisms to monitor execution results and propagate skips to dependent items when a dependency fails. This requires maintaining state about execution status and updating dependent items accordingly.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-04T08:50:51.283Z"
+          },
+          {
+            "id": 3,
+            "title": "Update GroupPlan with SkippedDueToDependencyFailure status",
+            "description": "Modify GroupPlan to include SkippedDueToDependencyFailure status for tracking skipped items",
+            "dependencies": [
+              2
+            ],
+            "details": "Update the GroupPlan structure to include a new SkippedDueToDependencyFailure status field that can be set when items are skipped due to dependency failures. This ensures proper tracking and reporting of skipped items.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-04T08:50:53.600Z"
+          },
+          {
+            "id": 4,
+            "title": "Add integration tests for dependency ordering and skip propagation",
+            "description": "Create integration tests to verify dependency ordering and skip propagation functionality",
+            "dependencies": [
+              3
+            ],
+            "details": "Implement comprehensive integration tests that verify the full plan+apply workflow with dependency ordering, confirm that apply order matches DAG order, and test skip propagation when dependencies fail. Tests should cover various dependency scenarios and error conditions.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-04T08:52:04.046Z"
+          }
+        ],
+        "complexity": 6,
+        "recommendedSubtasks": 4,
+        "expansionPrompt": "Split into 1) Modify apply.go to process items in topological order, 2) Implement failure tracking and skip propagation, 3) Update GroupPlan with SkippedDueToDependencyFailure status, 4) Add integration tests for dependency ordering and skip propagation. Ensure proper error handling during execution.",
+        "updatedAt": "2026-05-04T08:52:04.046Z"
+      },
+      {
+        "id": "7",
+        "title": "Add Generator Dependency Inheritance",
+        "description": "Ensure GeneratorSpec DependsOn field is inherited by generated FileSpec entries.",
+        "details": "Modify pkg/resource/generator.go to propagate GeneratorSpec.DependsOn to expanded FileSpec entries. When generator expands into FileSpec entries, each generated FileSpec should inherit the generator's DependsOn field. Ensure proper YAML handling and validation.",
+        "testStrategy": "Unit tests for generator expansion with DependsOn inheritance, validation that generated FileSpecs correctly inherit dependencies",
+        "priority": "medium",
+        "dependencies": [
+          "1"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Modify generator.go to implement DependsOn inheritance logic",
+            "description": "Update pkg/resource/generator.go to propagate GeneratorSpec.DependsOn field to expanded FileSpec entries during the generation process",
+            "dependencies": [
+              7
+            ],
+            "details": "Implement logic in generator.go to iterate through generated FileSpec entries and copy the DependsOn field from the parent GeneratorSpec. Ensure the inheritance occurs during the expansion phase and maintains proper YAML serialization. Handle edge cases where GeneratorSpec might not have DependsOn set.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-04T09:04:17.119Z"
+          },
+          {
+            "id": 2,
+            "title": "Add unit tests for inheritance scenarios",
+            "description": "Create comprehensive unit tests to verify DependsOn field inheritance from GeneratorSpec to generated FileSpec entries",
+            "dependencies": [
+              1
+            ],
+            "details": "Write test cases covering various inheritance scenarios including: normal inheritance with single dependency, multiple dependencies, empty DependsOn field, and inheritance with nested generator structures. Test both successful inheritance and proper error handling when dependencies are invalid.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-04T09:04:19.446Z"
+          },
+          {
+            "id": 3,
+            "title": "Validate YAML handling for generated FileSpec entries",
+            "description": "Ensure proper YAML serialization and validation of generated FileSpec entries with inherited DependsOn fields",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement YAML round-trip testing to verify that generated FileSpec entries maintain their DependsOn field when serialized and deserialized. Test that the YAML output correctly represents the inherited dependencies and that validation logic properly handles the serialized format. Include testing for edge cases like empty dependencies and complex dependency structures.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-04T09:04:21.760Z"
+          }
+        ],
+        "complexity": 4,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Divide into 1) Modify generator.go to implement DependsOn inheritance logic, 2) Add unit tests for inheritance scenarios, 3) Validate YAML handling for generated FileSpec entries. Ensure proper propagation from GeneratorSpec to FileSpec entries.",
+        "updatedAt": "2026-05-04T09:04:21.760Z"
+      },
+      {
+        "id": "8",
+        "title": "Implement Resource-Level Dependency Validation",
+        "description": "Add validation logic to ensure resource-level depends_on references are valid.",
+        "details": "Add validation to resource Validate() methods to check that DependsOn address format matches expected patterns (Kind/Group or Kind/Group[Item]). Cross-resource validation should be deferred to graph build phase as it requires all resources to be loaded.",
+        "testStrategy": "Unit tests for resource validation with various valid and invalid DependsOn formats, ensuring proper error handling",
+        "priority": "medium",
+        "dependencies": [
+          "1",
+          "4"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Add DependsOn Format Validation to Resource Validate() Methods",
+            "description": "Implement validation logic in resource Validate() methods to check that DependsOn address format matches expected patterns",
+            "dependencies": [
+              8
+            ],
+            "details": "Modify existing resource Validate() methods to include validation for DependsOn address format, ensuring it matches Kind/Group or Kind/Group[Item] patterns. This validation should check the syntax and structure of address references without performing cross-resource validation.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-04T09:20:15.619Z"
+          },
+          {
+            "id": 2,
+            "title": "Implement Address Format Checking Logic",
+            "description": "Create address format validation functions to verify Kind/Group or Kind/Group[Item] patterns for DependsOn references",
+            "dependencies": [
+              1
+            ],
+            "details": "Develop validation functions that parse and validate address formats, ensuring they follow the required pattern of Kind/Group or Kind/Group[Item]. These functions should handle proper parsing of resource identifiers and validate the structure of dependency references.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-04T09:19:42.068Z"
+          },
+          {
+            "id": 3,
+            "title": "Add Unit Tests for DependsOn Validation",
+            "description": "Create comprehensive unit tests covering valid and invalid DependsOn formats with proper error handling",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Implement unit tests that verify the validation logic works correctly for both valid and invalid DependsOn formats, ensuring proper error messages are returned for invalid references. Tests should cover various address format scenarios and confirm cross-resource validation is properly deferred to graph build phase.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-04T09:20:17.897Z"
+          }
+        ],
+        "complexity": 5,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Split into 1) Add validation to resource Validate() methods for DependsOn format validation, 2) Implement address format checking (Kind/Group or Kind/Group[Item]), 3) Add unit tests for valid/invalid DependsOn formats. Ensure cross-resource validation is deferred to graph build phase.",
+        "updatedAt": "2026-05-04T09:20:17.897Z"
+      },
+      {
+        "id": "9",
+        "title": "Update Provider Status Handling for Skipped Items",
+        "description": "Add ItemSkipped status to provider GroupPlan to track skipped items due to dependency failures.",
+        "details": "Modify pkg/provider/provider.go to add ItemSkipped status to ItemStatus enum. Update GroupPlan struct to support tracking skipped items. Ensure proper reporting of skipped items in apply output with descriptive messages.",
+        "testStrategy": "Unit tests for provider status handling, validation that skipped items are properly tracked and reported",
+        "priority": "medium",
+        "dependencies": [
+          "6"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Add ItemSkipped status to ItemStatus enum in provider.go",
+            "description": "Modify pkg/provider/provider.go to add ItemSkipped status to the existing ItemStatus enum to support tracking skipped items due to dependency failures",
+            "dependencies": [],
+            "details": "Update the ItemStatus enum definition in pkg/provider/provider.go to include a new ItemSkipped constant. Ensure the enum is properly exported and can be used throughout the provider package. The change should maintain backward compatibility with existing status values.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-04T09:14:17.443Z"
+          },
+          {
+            "id": 2,
+            "title": "Update GroupPlan struct to track skipped items",
+            "description": "Modify GroupPlan struct to support tracking skipped items and their associated status information",
+            "dependencies": [
+              1
+            ],
+            "details": "Update the GroupPlan struct in pkg/provider/provider.go to include fields for tracking skipped items. This should include maintaining a list of skipped items with their ItemSkipped status and associated dependency failure information. The implementation should properly integrate with existing GroupPlan functionality.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-04T09:13:22.117Z"
+          },
+          {
+            "id": 3,
+            "title": "Implement reporting logic for skipped items with descriptive messages",
+            "description": "Ensure proper reporting of skipped items in apply output with descriptive messages and implement unit tests for status handling",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Implement the logic to generate descriptive messages for skipped items in the apply output. This includes formatting the messages to clearly indicate which items were skipped and why due to dependency failures. Create comprehensive unit tests to validate that skipped items are properly tracked and reported with accurate status information.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-04T09:14:19.745Z"
+          }
+        ],
+        "complexity": 3,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Break into 1) Add ItemSkipped status to ItemStatus enum in provider.go, 2) Update GroupPlan struct to track skipped items, 3) Implement reporting logic for skipped items with descriptive messages. Include unit tests for status handling and reporting.",
+        "updatedAt": "2026-05-04T09:14:19.745Z"
+      },
+      {
+        "id": "10",
+        "title": "Implement Comprehensive Test Suite",
+        "description": "Create comprehensive unit and integration tests for all new functionality.",
+        "details": "Create unit tests for pkg/graph package covering cycle detection, topological sorting, and address resolution. Create unit tests for schema changes with YAML round-trip validation. Create integration tests for full plan+apply workflow with dependency ordering, cycle detection, and skip propagation. Ensure test coverage includes all scenarios mentioned in the PRD.",
+        "testStrategy": "Full test suite including unit tests for graph algorithms, integration tests for plan+apply workflow, end-to-end tests for dependency scenarios, and error handling validation",
+        "priority": "medium",
+        "dependencies": [
+          "1",
+          "3",
+          "4",
+          "5",
+          "6",
+          "7",
+          "8",
+          "9"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Unit Tests for Graph Package Algorithms",
+            "description": "Develop comprehensive unit tests for the pkg/graph package covering cycle detection, topological sorting, and address resolution functionality.",
+            "dependencies": [
+              3
+            ],
+            "details": "Implement test cases for cycle detection using DFS algorithm including simple cycles, transitive cycles, and no cycle scenarios. Create tests for topological sorting using Kahn's algorithm with various graph configurations. Add tests for address resolution functions including valid and invalid address formats with proper error handling.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-04T09:24:03.201Z"
+          },
+          {
+            "id": 2,
+            "title": "Add Unit Tests for Schema Changes with YAML Round-trip Validation",
+            "description": "Implement unit tests to validate YAML round-trip functionality for schema changes and ensure proper serialization/deserialization.",
+            "dependencies": [
+              2
+            ],
+            "details": "Create test suite that validates YAML serialization and deserialization for all schema changes. Implement round-trip validation tests that ensure data integrity when converting between Go structs and YAML format. Include tests for various data types, nested structures, and edge cases in schema definitions.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-04T09:24:03.206Z"
+          },
+          {
+            "id": 3,
+            "title": "Implement Integration Tests for Full Plan+Apply Workflow",
+            "description": "Develop integration tests covering the complete plan+apply workflow with dependency ordering, cycle detection, and skip propagation.",
+            "dependencies": [
+              1,
+              4,
+              8
+            ],
+            "details": "Create integration test scenarios that simulate complete plan+apply workflows including dependency resolution, cycle detection, and skip propagation mechanisms. Test various dependency ordering scenarios, validate error handling for cycle detection, and ensure proper skip propagation behavior in complex dependency graphs.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-04T09:24:03.211Z"
+          },
+          {
+            "id": 4,
+            "title": "Create End-to-End Tests for Dependency Scenarios and Error Handling",
+            "description": "Develop comprehensive end-to-end tests covering all dependency scenarios and error handling cases mentioned in the PRD.",
+            "dependencies": [
+              1,
+              2,
+              3
+            ],
+            "details": "Implement end-to-end test cases that cover all dependency interaction scenarios described in the PRD. Include comprehensive error handling tests for invalid dependencies, missing references, and edge cases. Ensure all scenarios mentioned in the PRD are covered with proper test assertions and validation.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-04T09:24:03.216Z"
+          }
+        ],
+        "complexity": 8,
+        "recommendedSubtasks": 4,
+        "expansionPrompt": "Divide into 1) Create unit tests for graph package algorithms (cycle detection, topological sorting), 2) Add unit tests for schema changes with YAML round-trip validation, 3) Implement integration tests for full plan+apply workflow, 4) Create end-to-end tests for dependency scenarios and error handling. Ensure comprehensive coverage of all dependency scenarios.",
+        "updatedAt": "2026-05-04T09:24:03.216Z"
+      }
+    ],
+    "metadata": {
+      "version": "1.0.0",
+      "lastModified": "2026-05-04T09:24:03.216Z",
+      "taskCount": 10,
+      "completedCount": 10,
+      "tags": [
+        "resource-dependencies"
+      ]
+    }
   }
 }

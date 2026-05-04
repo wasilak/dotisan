@@ -4,11 +4,13 @@ package engine
 import (
 	"context"
 	"fmt"
+	"strings"
+
+	"github.com/wasilak/dotisan/pkg/graph"
 	"github.com/wasilak/dotisan/pkg/planctx"
 	"github.com/wasilak/dotisan/pkg/provider"
 	"github.com/wasilak/dotisan/pkg/resource"
 	"github.com/wasilak/dotisan/pkg/state"
-	"strings"
 )
 
 // PlanResult contains the result of a plan operation.
@@ -24,6 +26,13 @@ type PlanResult struct {
 	HasChanges         bool
 	// UnmatchedTargets are targets provided by the user that didn't match any resource
 	UnmatchedTargets []string
+	// DependencyOrder is the topological order of resources by NodeID.
+	// Resources earlier in the slice must be applied before those later.
+	DependencyOrder []graph.NodeID
+
+	// DAG is the validated dependency graph built during planning.
+	// Used by Apply to check per-node dependencies for skip propagation.
+	DAG *graph.DAG
 }
 
 // Plan loads state, parses resources, and generates plans from all providers.
@@ -45,6 +54,16 @@ func (e *Engine) Plan(ctx context.Context, opts PlanOptions) (*PlanResult, error
 
 	// Convert resources to groups
 	resourceGroups := e.resourcesToGroups(resources)
+
+	// Build dependency graph and validate it before proceeding.
+	dag, err := graph.Build(resources, "default")
+	if err != nil {
+		return nil, fmt.Errorf("failed to build dependency graph: %w", err)
+	}
+	dependencyOrder, err := dag.TopologicalOrder()
+	if err != nil {
+		return nil, fmt.Errorf("dependency error: %w", err)
+	}
 
 	// If targets provided, parse them. We'll not filter out resourceGroups here
 	// (desired) because targets may refer to state-only groups. Instead we will
@@ -140,8 +159,10 @@ func (e *Engine) Plan(ctx context.Context, opts PlanOptions) (*PlanResult, error
 	// Generate plans for each provider
 	providerPlans := make(map[string]provider.GroupPlan)
 	result := &PlanResult{
-		CurrentState:  currentState,
-		ProviderPlans: providerPlans,
+		CurrentState:    currentState,
+		ProviderPlans:   providerPlans,
+		DependencyOrder: dependencyOrder,
+		DAG:             dag,
 	}
 
 	if len(unmatched) > 0 {

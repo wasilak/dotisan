@@ -18,6 +18,18 @@ import (
 	"github.com/wasilak/dotisan/pkg/resource"
 )
 
+// ItemStatus represents the apply-time outcome for a single item.
+type ItemStatus string
+
+const (
+	// ItemSkipped means the item was not applied because a dependency failed.
+	ItemSkipped ItemStatus = "skipped"
+	// ItemApplied means the item was applied successfully.
+	ItemApplied ItemStatus = "applied"
+	// ItemFailed means the item failed to apply.
+	ItemFailed ItemStatus = "failed"
+)
+
 // GroupPlan represents the changes needed to reconcile desired state with actual state.
 // Organized by resource groups (3-level hierarchy: Kind -> Group -> Items)
 type GroupPlan struct {
@@ -42,6 +54,9 @@ type GroupPlan struct {
 
 	// Warnings are provider-generated advisory messages that do not block apply
 	Warnings []PlanWarning
+
+	// Skipped are groups that were not applied because a dependency failed.
+	Skipped []GroupSkip
 }
 
 // GroupAddition represents items to add within a resource group
@@ -103,6 +118,13 @@ type ItemDrift struct {
 	ActualState   resource.ItemState
 	Description   string
 	Diff          string
+}
+
+// GroupSkip records a resource group that was skipped during apply due to a dependency failure.
+type GroupSkip struct {
+	Kind   string
+	Group  string
+	Reason string
 }
 
 // PlanWarning represents a non-blocking advisory produced during reconcile.

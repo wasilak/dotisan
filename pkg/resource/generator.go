@@ -99,6 +99,7 @@ func expandGenerator(mf *ManagedFile, ctx *config.TemplateContext, dir string) e
 			Source:      content,
 			Destination: dest,
 			Mode:        gen.Mode,
+			DependsOn:   gen.DependsOn,
 		})
 	}
 

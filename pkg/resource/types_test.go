@@ -397,6 +397,66 @@ func TestManagedFile_GeneratorExpanded_ToGroup(t *testing.T) {
 	}
 }
 
+func TestValidateDependsOnAddresses(t *testing.T) {
+	base := BaseResource{
+		APIVersion: "github.com/wasilak/dotisan/v1",
+		Kind:       "HomeBrewPackages",
+		Metadata:   Metadata{Name: "test"},
+	}
+	spec := HomeBrewPackagesSpec{}
+
+	cases := []struct {
+		name      string
+		dependsOn []string
+		wantErr   bool
+	}{
+		{"nil dependsOn", nil, false},
+		{"empty dependsOn", []string{}, false},
+		{"valid Kind/Group", []string{"HomeBrewPackages/core-tools"}, false},
+		{"valid Kind/Group[Item]", []string{"HomeBrewPackages/core-tools[ripgrep]"}, false},
+		{"valid namespace/Kind/Group", []string{"default/GoPackages/tools"}, false},
+		{"multiple valid", []string{"HomeBrewPackages/tools", "GoPackages/dev"}, false},
+		{"empty string is invalid", []string{""}, true},
+		{"missing kind (bare slash)", []string{"/group"}, true},
+		{"unclosed bracket", []string{"Kind/Group[unclosed"}, true},
+		{"empty kind with bracket", []string{"[item]"}, true},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			b := base
+			b.Metadata.DependsOn = c.dependsOn
+			r := HomeBrewPackages{BaseResource: b, Spec: spec}
+			err := r.Validate()
+			if (err != nil) != c.wantErr {
+				t.Errorf("Validate() error = %v, wantErr %v", err, c.wantErr)
+			}
+		})
+	}
+}
+
+func TestValidateDependsOn_AllResourceTypes(t *testing.T) {
+	invalid := []string{"[bad]"}
+	meta := Metadata{Name: "test", DependsOn: invalid}
+	br := BaseResource{APIVersion: "github.com/wasilak/dotisan/v1", Kind: "K", Metadata: meta}
+
+	resources := []Resource{
+		HomeBrewPackages{BaseResource: br, Spec: HomeBrewPackagesSpec{}},
+		HomeBrewCasks{BaseResource: br, Spec: HomeBrewCasksSpec{}},
+		HomeBrewTaps{BaseResource: br, Spec: HomeBrewTapsSpec{}},
+		NpmPackages{BaseResource: br, Spec: NpmPackagesSpec{Packages: []Package{{Name: "x"}}}},
+		GoPackages{BaseResource: br, Spec: GoPackagesSpec{Packages: []GoPackage{{Module: "x"}}}},
+		CargoPackages{BaseResource: br, Spec: CargoPackagesSpec{Packages: []Package{{Name: "x"}}}},
+		ManagedFile{BaseResource: br, Spec: ManagedFileSpec{Source: "s", Destination: "/d"}},
+	}
+
+	for _, r := range resources {
+		if err := r.Validate(); err == nil {
+			t.Errorf("%T.Validate() should reject invalid dependsOn, got nil", r)
+		}
+	}
+}
+
 // TestManagedFile_GeneratorExpanded_GetFiles_NoFallback verifies that GetFiles does NOT
 // fall back to the single-file fields when Files is populated (generator case).
 func TestManagedFile_GeneratorExpanded_GetFiles_NoFallback(t *testing.T) {

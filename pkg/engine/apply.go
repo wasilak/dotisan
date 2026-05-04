@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/wasilak/dotisan/pkg/graph"
 	"github.com/wasilak/dotisan/pkg/provider"
 	"github.com/wasilak/dotisan/pkg/resource"
 	"github.com/wasilak/dotisan/pkg/state"
@@ -69,98 +70,186 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 		return fmt.Errorf("failed to save state after cleanup: %w", err)
 	}
 
-	// STEP 2: Execute provider changes
+	// STEP 2: Execute provider changes in dependency order.
 	type failureEntry struct {
 		Resource string
 		Err      error
 	}
 	var failures []failureEntry
-	providerSucceeded := make(map[string]bool)
 
-	for providerName, plan := range result.ProviderPlans {
+	// failedNodes tracks NodeIDs that failed or were skipped; used to propagate
+	// skips to dependents.
+	failedNodes := make(map[graph.NodeID]bool)
+
+	// succeededGroups tracks (kind, group) pairs that applied without error;
+	// only those groups get their state updated in STEP 3.
+	type kindGroup struct{ kind, group string }
+	succeededGroups := make(map[kindGroup]bool)
+
+	// parseNodeID splits a NodeID of the form "namespace/Kind/Group" into parts.
+	parseNodeID := func(id graph.NodeID) (kind, group string) {
+		s := string(id)
+		// Format: namespace/Kind/Group — take the last two slash-separated segments.
+		parts := strings.SplitN(s, "/", 3)
+		if len(parts) == 3 {
+			return parts[1], parts[2]
+		}
+		return "", ""
+	}
+
+	// applyGroup executes all plan entries (adds, modifies, removes) for a single
+	// (kind, group) pair and returns whether all operations succeeded.
+	applyGroup := func(providerName, kind, group string) bool {
 		prov, exists := e.Providers[providerName]
+		plan := result.ProviderPlans[providerName]
 		if !exists {
 			dummyErr := fmt.Errorf("provider %s not found", providerName)
 			for _, a := range plan.Additions {
+				if a.Kind != kind || a.Group != group {
+					continue
+				}
 				for _, it := range a.Items {
-					failures = append(failures, failureEntry{Resource: fmt.Sprintf("%s/%s/%s", a.Kind, a.Group, it.Name), Err: dummyErr})
+					failures = append(failures, failureEntry{Resource: fmt.Sprintf("%s/%s/%s", kind, group, it.Name), Err: dummyErr})
 				}
 			}
-			for _, m := range plan.Modifications {
-				for _, c := range m.Changes {
-					failures = append(failures, failureEntry{Resource: fmt.Sprintf("%s/%s/%s", m.Kind, m.Group, c.ItemName), Err: dummyErr})
+			return false
+		}
+
+		ok := true
+		for _, a := range plan.Additions {
+			if a.Kind != kind || a.Group != group {
+				continue
+			}
+			for _, it := range a.Items {
+				if opts.OnItemStart != nil {
+					opts.OnItemStart(kind, group, it.Name)
+				}
+				singlePlan := provider.GroupPlan{
+					Additions: []provider.GroupAddition{{Kind: kind, Group: group, Items: []resource.ResourceItem{it}}},
+				}
+				err := prov.Apply(ctx, singlePlan)
+				if opts.OnItemComplete != nil {
+					opts.OnItemComplete(kind, group, it.Name, err)
+				}
+				if err != nil {
+					failures = append(failures, failureEntry{Resource: fmt.Sprintf("%s/%s/%s", kind, group, it.Name), Err: fmt.Errorf("failed to add: %w", err)})
+					ok = false
 				}
 			}
-			for _, r := range plan.Removals {
-				for _, it := range r.Items {
-					failures = append(failures, failureEntry{Resource: fmt.Sprintf("%s/%s/%s", r.Kind, r.Group, it.Name), Err: dummyErr})
+		}
+		for _, m := range plan.Modifications {
+			if m.Kind != kind || m.Group != group {
+				continue
+			}
+			for _, c := range m.Changes {
+				if opts.OnItemStart != nil {
+					opts.OnItemStart(kind, group, c.ItemName)
+				}
+				singlePlan := provider.GroupPlan{
+					Modifications: []provider.GroupModification{{Kind: kind, Group: group, Changes: []provider.ItemChange{c}}},
+				}
+				err := prov.Apply(ctx, singlePlan)
+				if opts.OnItemComplete != nil {
+					opts.OnItemComplete(kind, group, c.ItemName, err)
+				}
+				if err != nil {
+					failures = append(failures, failureEntry{Resource: fmt.Sprintf("%s/%s/%s", kind, group, c.ItemName), Err: fmt.Errorf("failed to modify: %w", err)})
+					ok = false
 				}
 			}
-			providerSucceeded[providerName] = false
+		}
+		for _, r := range plan.Removals {
+			if r.Kind != kind || r.Group != group {
+				continue
+			}
+			for _, it := range r.Items {
+				if opts.OnItemStart != nil {
+					opts.OnItemStart(kind, group, it.Name)
+				}
+				singlePlan := provider.GroupPlan{
+					Removals: []provider.GroupRemoval{{Kind: kind, Group: group, Items: []resource.ResourceItem{it}}},
+				}
+				err := prov.Apply(ctx, singlePlan)
+				if opts.OnItemComplete != nil {
+					opts.OnItemComplete(kind, group, it.Name, err)
+				}
+				if err != nil {
+					failures = append(failures, failureEntry{Resource: fmt.Sprintf("%s/%s/%s", kind, group, it.Name), Err: fmt.Errorf("failed to remove: %w", err)})
+					ok = false
+				}
+			}
+		}
+		return ok
+	}
+
+	// Pass 1: process groups in topological (dependency) order.
+	processedGroups := make(map[kindGroup]bool)
+	for _, nodeID := range result.DependencyOrder {
+		kind, group := parseNodeID(nodeID)
+		if kind == "" {
+			continue
+		}
+		kg := kindGroup{kind, group}
+		processedGroups[kg] = true
+
+		// Check if any direct dependency failed; skip this group if so.
+		depFailed := false
+		if result.DAG != nil {
+			for _, dep := range result.DAG.DependenciesOf(nodeID) {
+				if failedNodes[dep] {
+					depFailed = true
+					break
+				}
+			}
+		}
+
+		provName, ok := provider.ProviderNameForKind(kind)
+		if !ok {
+			continue // no provider — no plan entries for this kind
+		}
+
+		if depFailed {
+			failedNodes[nodeID] = true
+			// Record the skip in the provider plan for visibility.
+			plan := result.ProviderPlans[provName]
+			plan.Skipped = append(plan.Skipped, provider.GroupSkip{
+				Kind:   kind,
+				Group:  group,
+				Reason: fmt.Sprintf("dependency failed"),
+			})
+			result.ProviderPlans[provName] = plan
 			continue
 		}
 
-		// --- Refactored: run apply per resource for progress bar support ---
-		var theseSucceeded = true
-		// Add
+		if applyGroup(provName, kind, group) {
+			succeededGroups[kg] = true
+		} else {
+			failedNodes[nodeID] = true
+		}
+	}
+
+	// Pass 2: process any groups not covered by DependencyOrder (e.g. synthetic
+	// target groups added after DAG building).
+	for provName, plan := range result.ProviderPlans {
+		allKGs := make(map[kindGroup]bool)
 		for _, a := range plan.Additions {
-			for _, it := range a.Items {
-				if opts.OnItemStart != nil {
-					opts.OnItemStart(a.Kind, a.Group, it.Name)
-				}
-				singlePlan := provider.GroupPlan{
-					Additions: []provider.GroupAddition{{Kind: a.Kind, Group: a.Group, Items: []resource.ResourceItem{it}}},
-				}
-				err := prov.Apply(ctx, singlePlan)
-				if opts.OnItemComplete != nil {
-					opts.OnItemComplete(a.Kind, a.Group, it.Name, err)
-				}
-				if err != nil {
-					failures = append(failures, failureEntry{Resource: fmt.Sprintf("%s/%s/%s", a.Kind, a.Group, it.Name), Err: fmt.Errorf("failed to add: %w", err)})
-					theseSucceeded = false
-				}
-			}
+			allKGs[kindGroup{a.Kind, a.Group}] = true
 		}
-		// Modify
 		for _, m := range plan.Modifications {
-			for _, c := range m.Changes {
-				if opts.OnItemStart != nil {
-					opts.OnItemStart(m.Kind, m.Group, c.ItemName)
-				}
-				// To apply a single modification: pass just this change
-				singlePlan := provider.GroupPlan{
-					Modifications: []provider.GroupModification{{Kind: m.Kind, Group: m.Group, Changes: []provider.ItemChange{c}}},
-				}
-				err := prov.Apply(ctx, singlePlan)
-				if opts.OnItemComplete != nil {
-					opts.OnItemComplete(m.Kind, m.Group, c.ItemName, err)
-				}
-				if err != nil {
-					failures = append(failures, failureEntry{Resource: fmt.Sprintf("%s/%s/%s", m.Kind, m.Group, c.ItemName), Err: fmt.Errorf("failed to modify: %w", err)})
-					theseSucceeded = false
-				}
-			}
+			allKGs[kindGroup{m.Kind, m.Group}] = true
 		}
-		// Remove
 		for _, r := range plan.Removals {
-			for _, it := range r.Items {
-				if opts.OnItemStart != nil {
-					opts.OnItemStart(r.Kind, r.Group, it.Name)
-				}
-				singlePlan := provider.GroupPlan{
-					Removals: []provider.GroupRemoval{{Kind: r.Kind, Group: r.Group, Items: []resource.ResourceItem{it}}},
-				}
-				err := prov.Apply(ctx, singlePlan)
-				if opts.OnItemComplete != nil {
-					opts.OnItemComplete(r.Kind, r.Group, it.Name, err)
-				}
-				if err != nil {
-					failures = append(failures, failureEntry{Resource: fmt.Sprintf("%s/%s/%s", r.Kind, r.Group, it.Name), Err: fmt.Errorf("failed to remove: %w", err)})
-					theseSucceeded = false
-				}
+			allKGs[kindGroup{r.Kind, r.Group}] = true
+		}
+		for kg := range allKGs {
+			if processedGroups[kg] {
+				continue
+			}
+			processedGroups[kg] = true
+			if applyGroup(provName, kg.kind, kg.group) {
+				succeededGroups[kg] = true
 			}
 		}
-		providerSucceeded[providerName] = theseSucceeded
 	}
 
 	// STEP 3: Update state with successful provider operations
@@ -173,18 +262,8 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 		stateToSave = state.NewState()
 	}
 
-	for providerName, plan := range result.ProviderPlans {
-		if !providerSucceeded[providerName] {
-			continue
-		}
-
-		_, ok := e.Providers[providerName]
-		if !ok {
-			// Provider missing; skip
-			continue
-		}
-
-		// InSync: preserve exactly as provided
+	for _, plan := range result.ProviderPlans {
+		// InSync groups always update state (they require no apply action).
 		for _, inSync := range plan.InSync {
 			stateToSave.SetResourceGroup(provider.ResourceState{
 				Kind:      inSync.Kind,
@@ -194,15 +273,14 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 			})
 		}
 
-		// Additions: add new items with computed checksum (if available)
+		// Additions: only persist state for groups that succeeded.
 		for _, addition := range plan.Additions {
+			if !succeededGroups[kindGroup{addition.Kind, addition.Group}] {
+				continue
+			}
 			items := make([]resource.ItemState, 0, len(addition.Items))
 			for _, item := range addition.Items {
 				checksum := ""
-				// Compute checksum when destination path is known.
-				// Reading files here is best-effort: if the destination is
-				// not present (e.g., apply will create it later) keep checksum
-				// empty.
 				if dest, ok := item.Extra["destination"].(string); ok && dest != "" {
 					if data, err := readFileMaybe(dest); err == nil {
 						h := sha256.Sum256(data)
@@ -224,8 +302,11 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 			})
 		}
 
-		// Modifications: update checksum/status in-place if group/item exists, otherwise add it
+		// Modifications: only persist state for groups that succeeded.
 		for _, modification := range plan.Modifications {
+			if !succeededGroups[kindGroup{modification.Kind, modification.Group}] {
+				continue
+			}
 			for _, change := range modification.Changes {
 				checksum := ""
 				if dest, ok := change.NewState.Extra["destination"].(string); ok && dest != "" {
@@ -249,7 +330,6 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 							break
 						}
 					}
-					// group matched & processed; break outer loop
 					break
 				}
 
@@ -266,8 +346,11 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 			}
 		}
 
-		// Removals: remove items from state
+		// Removals: only update state for groups that succeeded.
 		for _, removal := range plan.Removals {
+			if !succeededGroups[kindGroup{removal.Kind, removal.Group}] {
+				continue
+			}
 			for _, it := range removal.Items {
 				stateToSave.RemoveResourceItem(removal.Kind, removal.Group, it.Name)
 			}
@@ -278,16 +361,16 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 		return fmt.Errorf("failed to save state: %w", err)
 	}
 
+	// Collect all skipped groups across provider plans.
+	var skippedGroups []provider.GroupSkip
+	for _, plan := range result.ProviderPlans {
+		skippedGroups = append(skippedGroups, plan.Skipped...)
+	}
+
 	// Display results
 	fmt.Println()
 	if len(failures) > 0 {
-		// Calculate success count
-		successCount := 0
-		for providerName := range result.ProviderPlans {
-			if providerSucceeded[providerName] {
-				successCount++
-			}
-		}
+		successCount := len(succeededGroups)
 
 		fmt.Println()
 		if successCount == 0 {
@@ -299,6 +382,9 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 			fmt.Println()
 			fmt.Printf("%s %d succeeded\n", style.IconSuccess, successCount)
 			fmt.Printf("%s %d failed\n", style.IconError, len(failures))
+			if len(skippedGroups) > 0 {
+				fmt.Printf("%s %d skipped (dependency failed)\n", style.IconWarning, len(skippedGroups))
+			}
 		}
 		fmt.Println()
 		fmt.Println(style.Bold.Render("Failed resources:"))
@@ -308,6 +394,19 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 			errLines := strings.Split(f.Err.Error(), "\n")
 			for _, line := range errLines {
 				fmt.Printf("    %s\n", style.Error.Render(line))
+			}
+			fmt.Println()
+		}
+		if len(skippedGroups) > 0 {
+			fmt.Println(style.Bold.Render("Skipped resources:"))
+			fmt.Println()
+			for _, s := range skippedGroups {
+				fmt.Printf("  %s %s/%s — %s\n",
+					style.Warning.Render("•"),
+					style.Dim.Render(s.Kind),
+					style.Dim.Render(s.Group),
+					s.Reason,
+				)
 			}
 			fmt.Println()
 		}

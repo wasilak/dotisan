@@ -74,6 +74,9 @@ type Metadata struct {
 
 	// Annotations are optional metadata for tooling
 	Annotations map[string]string `yaml:"annotations,omitempty"`
+
+	// DependsOn lists resource names (namespace/name or name) this resource depends on.
+	DependsOn []string `yaml:"dependsOn,omitempty"`
 }
 
 // GetNamespace returns the namespace or "default" if not set.
@@ -123,6 +126,18 @@ func ValidateStruct(s interface{}) error {
 			return fmt.Errorf("validation failed: %v", validationErrors)
 		}
 		return err
+	}
+	return nil
+}
+
+// validateDependsOnAddresses checks that each entry in a DependsOn slice is a
+// syntactically valid resource address (parseable by ParseResourceID).
+// Cross-resource existence checks are deferred to the graph build phase.
+func validateDependsOnAddresses(deps []string) error {
+	for _, addr := range deps {
+		if _, err := ParseResourceID(addr); err != nil {
+			return fmt.Errorf("dependsOn: invalid address %q: %w", addr, err)
+		}
 	}
 	return nil
 }

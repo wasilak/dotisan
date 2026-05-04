@@ -246,6 +246,50 @@ spec:
 			},
 		},
 		{
+			name: "resource-level dependsOn in metadata",
+			yaml: `
+apiVersion: github.com/wasilak/dotisan/v1
+kind: HomeBrewPackages
+metadata:
+  name: core-tools
+  dependsOn:
+    - xcode-tools
+    - homebrew-taps
+spec:
+  formulae:
+    - name: ripgrep
+`,
+			wantErr: false,
+			check: func(t *testing.T, r Resource) {
+				deps := r.GetMetadata().DependsOn
+				if len(deps) != 2 {
+					t.Errorf("Metadata.DependsOn len = %d, want 2", len(deps))
+				}
+				if deps[0] != "xcode-tools" || deps[1] != "homebrew-taps" {
+					t.Errorf("Metadata.DependsOn = %v", deps)
+				}
+			},
+		},
+		{
+			name: "resource-level dependsOn absent when not set",
+			yaml: `
+apiVersion: github.com/wasilak/dotisan/v1
+kind: GoPackages
+metadata:
+  name: tools
+spec:
+  packages:
+    - module: golang.org/x/tools/gopls
+      version: latest
+`,
+			wantErr: false,
+			check: func(t *testing.T, r Resource) {
+				if r.GetMetadata().DependsOn != nil {
+					t.Errorf("Metadata.DependsOn should be nil, got %v", r.GetMetadata().DependsOn)
+				}
+			},
+		},
+		{
 			name: "unsupported apiVersion",
 			yaml: `
 apiVersion: dotisan/v2
@@ -256,6 +300,151 @@ spec: {}
 `,
 			wantErr: true,
 			check:   nil,
+		},
+		{
+			name: "HomeBrewPackages formulae with dependsOn",
+			yaml: `
+apiVersion: github.com/wasilak/dotisan/v1
+kind: HomeBrewPackages
+metadata:
+  name: core-tools
+spec:
+  formulae:
+    - name: ripgrep
+      dependsOn:
+        - homebrew-taps
+        - xcode-tools
+    - name: fd
+`,
+			wantErr: false,
+			check: func(t *testing.T, r Resource) {
+				hp, ok := r.(*HomeBrewPackages)
+				if !ok {
+					t.Fatalf("expected *HomeBrewPackages, got %T", r)
+				}
+				deps := hp.Spec.Formulae[0].DependsOn
+				if len(deps) != 2 {
+					t.Errorf("Formulae[0].DependsOn len = %d, want 2", len(deps))
+				}
+				if deps[0] != "homebrew-taps" || deps[1] != "xcode-tools" {
+					t.Errorf("Formulae[0].DependsOn = %v", deps)
+				}
+				if hp.Spec.Formulae[1].DependsOn != nil {
+					t.Errorf("Formulae[1].DependsOn should be nil, got %v", hp.Spec.Formulae[1].DependsOn)
+				}
+			},
+		},
+		{
+			name: "HomeBrewTaps with version and dependsOn",
+			yaml: `
+apiVersion: github.com/wasilak/dotisan/v1
+kind: HomeBrewTaps
+metadata:
+  name: taps
+spec:
+  taps:
+    - name: homebrew/cask-fonts
+      version: "1.0"
+      dependsOn:
+        - xcode-tools
+`,
+			wantErr: false,
+			check: func(t *testing.T, r Resource) {
+				tp, ok := r.(*HomeBrewTaps)
+				if !ok {
+					t.Fatalf("expected *HomeBrewTaps, got %T", r)
+				}
+				tap := tp.Spec.Taps[0]
+				if tap.Version != "1.0" {
+					t.Errorf("Taps[0].Version = %q, want %q", tap.Version, "1.0")
+				}
+				if len(tap.DependsOn) != 1 || tap.DependsOn[0] != "xcode-tools" {
+					t.Errorf("Taps[0].DependsOn = %v", tap.DependsOn)
+				}
+			},
+		},
+		{
+			name: "GoPackages with dependsOn",
+			yaml: `
+apiVersion: github.com/wasilak/dotisan/v1
+kind: GoPackages
+metadata:
+  name: tools
+spec:
+  packages:
+    - module: golang.org/x/tools/gopls
+      version: latest
+      dependsOn:
+        - go-sdk
+`,
+			wantErr: false,
+			check: func(t *testing.T, r Resource) {
+				gp, ok := r.(*GoPackages)
+				if !ok {
+					t.Fatalf("expected *GoPackages, got %T", r)
+				}
+				pkg := gp.Spec.Packages[0]
+				if len(pkg.DependsOn) != 1 || pkg.DependsOn[0] != "go-sdk" {
+					t.Errorf("Packages[0].DependsOn = %v", pkg.DependsOn)
+				}
+			},
+		},
+		{
+			name: "ManagedFile FileSpec with dependsOn",
+			yaml: `
+apiVersion: github.com/wasilak/dotisan/v1
+kind: ManagedFile
+metadata:
+  name: configs
+spec:
+  files:
+    - source: "content"
+      destination: ~/.config/app.yaml
+      dependsOn:
+        - homebrew-packages
+        - dotfiles-base
+`,
+			wantErr: false,
+			check: func(t *testing.T, r Resource) {
+				mf, ok := r.(*ManagedFile)
+				if !ok {
+					t.Fatalf("expected *ManagedFile, got %T", r)
+				}
+				deps := mf.Spec.Files[0].DependsOn
+				if len(deps) != 2 {
+					t.Errorf("Files[0].DependsOn len = %d, want 2", len(deps))
+				}
+				if deps[0] != "homebrew-packages" || deps[1] != "dotfiles-base" {
+					t.Errorf("Files[0].DependsOn = %v", deps)
+				}
+			},
+		},
+		{
+			name: "ManagedFile GeneratorSpec with dependsOn",
+			yaml: `
+apiVersion: github.com/wasilak/dotisan/v1
+kind: ManagedFile
+metadata:
+  name: gen-skills
+spec:
+  generator:
+    sourceKey: skills
+    template: "skill: {{ .item }}"
+    destinationPattern: ~/.claude/skills/{{ .item }}.md
+    dependsOn:
+      - claude-setup
+`,
+			wantErr: false,
+			check: func(t *testing.T, r Resource) {
+				mf, ok := r.(*ManagedFile)
+				if !ok {
+					t.Fatalf("expected *ManagedFile, got %T", r)
+				}
+				deps := mf.Spec.Generator.DependsOn
+				if len(deps) != 1 || deps[0] != "claude-setup" {
+					t.Errorf("Generator.DependsOn = %v", deps)
+				}
+			},
 		},
 		{
 			name: "unknown kind",
