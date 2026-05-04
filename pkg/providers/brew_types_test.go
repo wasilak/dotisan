@@ -23,7 +23,8 @@ func TestBrewInfoParsingFormulae(t *testing.T) {
 }
 
 func TestBrewInfoParsingCasks(t *testing.T) {
-	sample := `{"formulae":[],"casks":[{"token":"baz-token","name":"Baz App","installed":[{"version":"3.4.5"}]},{"token":"no-name-token","name":"","installed":[]} ]}`
+	// Real brew info --json=v2: cask name is []string, installed is a version string or null.
+	sample := `{"formulae":[],"casks":[{"token":"baz-token","name":["Baz App"],"installed":"3.4.5"},{"token":"no-name-token","name":[],"installed":null}]}`
 	var out brewInfoOutput
 	if err := json.Unmarshal([]byte(sample), &out); err != nil {
 		t.Fatalf("unmarshal failed: %v", err)
@@ -36,6 +37,9 @@ func TestBrewInfoParsingCasks(t *testing.T) {
 	}
 	if out.Casks[0].DisplayName() != "Baz App" {
 		t.Fatalf("expected Baz App display name, got %q", out.Casks[0].DisplayName())
+	}
+	if out.Casks[0].Token != "baz-token" {
+		t.Fatalf("expected baz-token token, got %q", out.Casks[0].Token)
 	}
 	if out.Casks[1].DisplayName() != "no-name-token" {
 		t.Fatalf("expected token fallback display name, got %q", out.Casks[1].DisplayName())

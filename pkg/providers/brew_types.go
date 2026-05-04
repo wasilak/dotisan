@@ -23,13 +23,9 @@ type brewFormulaInstalled struct {
 }
 
 type brewCaskInfo struct {
-	Token     string              `json:"token"`
-	Name      string              `json:"name"`
-	Installed []brewCaskInstalled `json:"installed"`
-}
-
-type brewCaskInstalled struct {
-	Version string `json:"version"`
+	Token     string   `json:"token"`
+	Name      []string `json:"name"`
+	Installed *string  `json:"installed"` // version string or null
 }
 
 // InstalledVersion returns the installed version for a formula, or the stable
@@ -43,16 +39,17 @@ func (f brewFormulaInfo) InstalledVersion() string {
 
 // InstalledVersion returns the installed version for a cask if present.
 func (c brewCaskInfo) InstalledVersion() string {
-	if len(c.Installed) > 0 {
-		return c.Installed[0].Version
+	if c.Installed != nil {
+		return *c.Installed
 	}
 	return ""
 }
 
-// DisplayName returns the best identifier for the cask: prefer Name then Token.
+// DisplayName returns a human-readable name for the cask: first element of Name
+// if present, otherwise Token.
 func (c brewCaskInfo) DisplayName() string {
-	if c.Name != "" {
-		return c.Name
+	if len(c.Name) > 0 && c.Name[0] != "" {
+		return c.Name[0]
 	}
 	return c.Token
 }

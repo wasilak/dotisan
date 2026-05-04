@@ -62,25 +62,18 @@ func (p *BrewProvider) Reconcile(ctx context.Context,
 	}
 
 	// Build the set of names we need to query from brew: union of desired items and state-tracked items.
+	// Taps are excluded — brew info only understands formulae and casks, not tap identifiers.
 	neededNamesSet := make(map[string]bool)
 	for _, group := range desired {
-		if !resource.IsBrewKind(group.Kind) {
+		if !resource.IsBrewKind(group.Kind) || group.Kind == resource.KindHomeBrewTaps {
 			continue
 		}
-		if len(group.Items) == 0 && group.Kind == resource.KindHomeBrewTaps {
-			if spec, ok := group.RawSpec.(resource.HomeBrewTapsSpec); ok {
-				for _, t := range spec.Taps {
-					neededNamesSet[t.Name] = true
-				}
-			}
-		} else {
-			for _, item := range group.Items {
-				neededNamesSet[item.Name] = true
-			}
+		for _, item := range group.Items {
+			neededNamesSet[item.Name] = true
 		}
 	}
 	for _, s := range state {
-		if resource.IsBrewKind(s.Kind) {
+		if resource.IsBrewKind(s.Kind) && s.Kind != resource.KindHomeBrewTaps {
 			for _, it := range s.Items {
 				neededNamesSet[it.Name] = true
 			}
@@ -534,10 +527,8 @@ func (p *BrewProvider) getInstalledPackagesFor(ctx context.Context, names []stri
 		}
 	}
 	for _, c := range parsed.Casks {
-		ver := c.InstalledVersion()
-		name := c.DisplayName()
-		if name != "" {
-			packages[name] = ver
+		if c.Token != "" {
+			packages[c.Token] = c.InstalledVersion()
 		}
 	}
 
