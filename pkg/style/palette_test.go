@@ -7,7 +7,7 @@ func TestGetSetColor(t *testing.T) {
 
 	// Remember original value so we can assert change and not disrupt other tests
 	orig := p.GetColor("success")
-	newSeq := "\033[38;5;200m"
+	newSeq := Red
 
 	p.SetColor("success", newSeq)
 	if got := p.GetColor("success"); got != newSeq {
@@ -15,7 +15,7 @@ func TestGetSetColor(t *testing.T) {
 	}
 
 	// Setting an unknown role should be a no-op and should not panic
-	p.SetColor("unknown_role", "\033[31m")
+	p.SetColor("unknown_role", Red)
 
 	// Restore original to avoid cross-test interference
 	p.SetColor("success", orig)

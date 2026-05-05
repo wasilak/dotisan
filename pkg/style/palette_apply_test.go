@@ -7,7 +7,8 @@ import (
 func TestSetAndGetColor(t *testing.T) {
 	t.Parallel()
 	p := DefaultPalette()
-	seq := "\033[38;5;200m"
+	// Use an existing palette constant instead of a raw escape sequence.
+	seq := Magenta
 	p.SetColor("info", seq)
 	if got := p.GetColor("info"); got != seq {
 		t.Fatalf("expected info color %q, got %q", seq, got)
@@ -26,7 +27,8 @@ func TestApplyPaletteAndRefresh(t *testing.T) {
 
 	// Apply new palette with a distinct Success sequence
 	p := DefaultPalette()
-	p.Success = "\033[38;5;82m"
+	// Use a distinct existing constant for Success to verify ApplyPalette
+	p.Success = Green
 	ApplyPalette(p)
 
 	// DefaultColors should reflect the new value
@@ -49,7 +51,7 @@ func TestApplyToDefaultsMerge(t *testing.T) {
 	defer ApplyPalette(orig)
 
 	// Partial palette: only change Error
-	p := ColorPalette{Error: "\033[38;5;201m"}
+	p := ColorPalette{Error: Red}
 	p.ApplyToDefaults()
 
 	if DefaultColors.Error != p.Error {

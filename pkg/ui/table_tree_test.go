@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/wasilak/dotisan/pkg/diff"
+	"github.com/wasilak/dotisan/pkg/style"
 )
 
 // captureOutput temporarily redirects os.Stdout to a pipe and returns the
@@ -25,7 +26,8 @@ func captureStdout(f func()) string {
 }
 
 func TestTableAndTreeUseTableBlue(t *testing.T) {
-	esc := "\033[34m"
+	// Use the palette value rather than a hard-coded escape sequence.
+	esc := style.DefaultColors.NoChangesBorder
 
 	// Capture table output
 	outTable := captureStdout(func() {
