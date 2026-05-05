@@ -126,7 +126,9 @@ func RenderNoChanges() {
 	margin := 4
 	prefix := strings.Repeat(" ", margin)
 	fmt.Println(prefix)
-	fmt.Println(prefix + style.NoChangesBorder.Render(line))
+	// Use decorative accent for the top/bottom lines so the banner has a
+	// pop distinct from structural table borders.
+	fmt.Println(prefix + style.NoChangesAccent.Render(line))
 	fmt.Println(prefix)
 
 	// Center the rainbow title (use uncolored rune length for centering)
@@ -155,7 +157,7 @@ func RenderNoChanges() {
 
 	// Trailing blank line and bottom decorative line
 	fmt.Println(prefix)
-	fmt.Println(prefix + style.NoChangesBorder.Render(line))
+	fmt.Println(prefix + style.NoChangesAccent.Render(line))
 	fmt.Println(prefix)
 
 }

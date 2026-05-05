@@ -70,6 +70,9 @@ var (
 
 	// No changes
 	NoChangesBorder = NewStyle(DefaultColors.NoChangesBorder)
+	// Decorative accent for the no-changes banner (separate from the
+	// structural border). Use this for top/bottom decorative lines.
+	NoChangesAccent = NewStyle(DefaultColors.NoChangesAccent)
 	// Generic border style (alias of NoChangesBorder).
 	Border = NoChangesBorder
 	// TableLine alias of the palette border role so callers can refer to the
@@ -133,6 +136,7 @@ func RefreshStyles() {
 	HeaderKindUpdate = NewStyle(DefaultColors.HeaderKindUpdate)
 
 	NoChangesBorder = NewStyle(DefaultColors.NoChangesBorder)
+	NoChangesAccent = NewStyle(DefaultColors.NoChangesAccent)
 	// Border remains the same as NoChangesBorder (used for banners).
 	Border = NewStyle(DefaultColors.NoChangesBorder)
 	// TableLine should remain the canonical table/box border SGR 34 so that
