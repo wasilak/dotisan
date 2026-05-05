@@ -19,19 +19,23 @@ const (
 // ColorPalette centralizes all color/style mappings for the UI.
 type ColorPalette struct {
 	// Primary/main color for prominent UI elements (spinner, headers)
-	Main        string
-	Success     string
-	Error       string
-	Warning     string
-	Info        string
-	Dim         string
-	RowSuccess  string
-	RowError    string
-	RowWarning  string
-	Header      string
-	TableHeader string
-	TableRow    string
-	TableCell   string
+	Main         string
+	Success      string
+	Error        string
+	Warning      string
+	Info         string
+	Dim          string
+	RowSuccess   string
+	RowError     string
+	RowWarning   string
+	Header       string
+	TableHeader  string
+	TableRow     string
+	TableCell    string
+	VersionColor string
+
+	// Group label color used for resource groups (e.g. homebrew-taps)
+	GroupLabel string
 
 	// Combined roles for common pairings
 	HeaderKindAdd    string
@@ -90,8 +94,10 @@ func DefaultPalette() ColorPalette {
 		SuccessBox:       "\033[1;42m", // Bold + green bg
 		InfoBox:          "\033[1;44m", // Bold + blue bg
 
-		TableRow:  "",
-		TableCell: "",
+		TableRow:     "",
+		TableCell:    Magenta,
+		GroupLabel:   Orange,
+		VersionColor: Yellow,
 		// Specific status and badge roles
 		TableStatusAdd:     Green,
 		TableStatusRemove:  Red,
@@ -144,6 +150,10 @@ func (p ColorPalette) Get(role string) string {
 		return p.TableRow
 	case "table_cell":
 		return p.TableCell
+	case "group_label":
+		return p.GroupLabel
+	case "version_color":
+		return p.VersionColor
 	case "table_status_add":
 		return p.TableStatusAdd
 	case "table_status_remove":
@@ -215,6 +225,10 @@ func (p *ColorPalette) SetColor(name, seq string) {
 		p.TableRow = seq
 	case "table_cell":
 		p.TableCell = seq
+	case "group_label":
+		p.GroupLabel = seq
+	case "version_color":
+		p.VersionColor = seq
 	case "success_box":
 		p.SuccessBox = seq
 	case "info_box":

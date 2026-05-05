@@ -421,9 +421,9 @@ func runStateList(ctx context.Context) error {
 func displayStateTree(currentState *state.State) error {
 	var resources []diff.StateResource
 	for _, res := range currentState.Resources {
-		items := make([]string, 0, len(res.Items))
+		items := make([]diff.StateItem, 0, len(res.Items))
 		for _, item := range res.Items {
-			items = append(items, item.Name)
+			items = append(items, diff.StateItem{Name: item.Name, Info: item.Version})
 		}
 		resources = append(resources, diff.StateResource{
 			Kind:   res.Kind,

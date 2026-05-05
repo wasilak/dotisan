@@ -43,8 +43,8 @@ func RenderResourceTable(rows []ResourceRow, showHeader bool) error {
 		tbl.SetHeaders(
 			styleHeader("Status"),
 			styleHeader("ID"),
-			styleHeader("Kind"),
-			styleHeader("Group"),
+			style.NewStyle(style.DefaultColors.HeaderKindAdd).Render("Kind"),
+			style.NewStyle(style.DefaultColors.GroupLabel).Render("Group"),
 			styleHeader("Name"),
 			styleHeader("Info"),
 		)
@@ -135,10 +135,10 @@ func RenderResourceTable(rows []ResourceRow, showHeader bool) error {
 				tbl.AddRow(
 					styleFn(r.Status),
 					styleFn(id),
-					style.TableHeader.Render(r.Kind),
-					style.TableHeader.Render(r.Group),
-					style.TableHeader.Render(r.Name),
-					info,
+					style.NewStyle(style.DefaultColors.HeaderKindAdd).Render(r.Kind),
+					style.NewStyle(style.DefaultColors.GroupLabel).Render(r.Group),
+					style.NewStyle(style.DefaultColors.TableCell).Render(r.Name),
+					style.NewStyle(style.DefaultColors.VersionColor).Render(info),
 				)
 			} else {
 				tbl.AddRow(

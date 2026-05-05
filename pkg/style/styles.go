@@ -37,6 +37,14 @@ var (
 	TableStatusUpdate  = NewStyle(DefaultColors.TableStatusUpdate)
 	TableStatusCleanup = NewStyle(DefaultColors.TableStatusCleanup)
 	TableStatusDrift   = NewStyle(DefaultColors.TableStatusDrift)
+	// Table cell color (names/info)
+	TableCell = NewStyle(DefaultColors.TableCell)
+
+	// Group label style
+	GroupLabel = NewStyle(DefaultColors.GroupLabel)
+
+	// Version color (separate role for package versions)
+	VersionColor = NewStyle(DefaultColors.VersionColor)
 
 	DiffBadgeAdd    = NewStyle(DefaultColors.DiffBadgeAdd)
 	DiffBadgeRemove = NewStyle(DefaultColors.DiffBadgeRemove)
@@ -84,6 +92,15 @@ func RefreshStyles() {
 	TableStatusUpdate = NewStyle(DefaultColors.TableStatusUpdate)
 	TableStatusCleanup = NewStyle(DefaultColors.TableStatusCleanup)
 	TableStatusDrift = NewStyle(DefaultColors.TableStatusDrift)
+
+	// Table cell color (names/info)
+	TableCell = NewStyle(DefaultColors.TableCell)
+
+	// Group label style
+	GroupLabel = NewStyle(DefaultColors.GroupLabel)
+
+	// Version color (separate role for package versions)
+	VersionColor = NewStyle(DefaultColors.VersionColor)
 
 	DiffBadgeAdd = NewStyle(DefaultColors.DiffBadgeAdd)
 	DiffBadgeRemove = NewStyle(DefaultColors.DiffBadgeRemove)

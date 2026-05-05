@@ -24,8 +24,8 @@ func NewTreeFormatter() *TreeFormatter {
 	return &TreeFormatter{
 		enumeratorStyle: style.Header,
 		kindStyle:       style.HeaderKindAdd,
-		nameStyle:       style.TableStatusUpdate,
-		itemStyle:       style.TableStatusDrift,
+		nameStyle:       style.NewStyle(style.DefaultColors.GroupLabel),
+		itemStyle:       style.NewStyle(style.DefaultColors.TableCell),
 		actionStyle:     style.DiffProvider,
 	}
 }
@@ -148,10 +148,17 @@ func (f *TreeFormatter) formatDrifted(drifted []provider.ItemDrift) *treeview.No
 
 // StateResource represents a resource in state for tree rendering
 type StateResource struct {
-	Kind   string
-	Group  string
-	Items  []string
+	Kind  string
+	Group string
+	// Items now include optional Info (e.g., version) to display in tree
+	Items  []StateItem
 	Status string
+}
+
+// StateItem represents a named item with optional info (version)
+type StateItem struct {
+	Name string
+	Info string
 }
 
 // FormatStateAsTree renders state list as a 3-level tree using pterm.DefaultTree
@@ -175,8 +182,17 @@ func (f *TreeFormatter) FormatStateAsTree(resources []StateResource) error {
 		for _, group := range groups {
 			groupNode := treeview.NewNode[string]("group-"+group.Group, f.nameStyle.Render(group.Group), "")
 			for _, item := range group.Items {
-				itemText := f.itemStyle.Render(item) + " " + f.actionStyle.Render(group.Status)
-				itemNode := treeview.NewNode[string]("item-"+item, itemText, "")
+				// name + optional info (version) styled the same (TableCell)
+				itemText := f.itemStyle.Render(item.Name)
+				if item.Info != "" {
+					// render version with dedicated VersionColor
+					itemText = itemText + " " + style.NewStyle(style.DefaultColors.VersionColor).Render(item.Info)
+				}
+				// append status (e.g. managed) in action style (dim/gray)
+				if group.Status != "" {
+					itemText = itemText + " " + f.actionStyle.Render(group.Status)
+				}
+				itemNode := treeview.NewNode[string]("item-"+item.Name, itemText, "")
 				groupNode.AddChild(itemNode)
 			}
 			kindNode.AddChild(groupNode)
