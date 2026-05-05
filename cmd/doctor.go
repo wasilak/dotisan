@@ -50,9 +50,9 @@ func runDoctor(ctx context.Context) error {
 	ensureProvidersRegistered()
 	availableProviders := provider.CheckAvailable()
 	for name, info := range availableProviders {
-        if info.Available {
-            fmt.Printf("  %s %-20s %s\n", style.StyledIconSuccess, name, style.Success.Render("installed"))
-        } else {
+		if info.Available {
+			fmt.Printf("  %s %-20s %s\n", style.StyledIconSuccess, name, style.Success.Render("installed"))
+		} else {
 			fmt.Printf("  %s %-20s %s\n", style.IconWarning, name, info.Message)
 			warnings = append(warnings, fmt.Sprintf("Provider %s: %s", name, info.Message))
 		}
@@ -73,16 +73,16 @@ func runDoctor(ctx context.Context) error {
 		_, err := backend.Load(ctx)
 		if err != nil {
 			// Error is acceptable if state file doesn't exist yet
-        if os.IsNotExist(err) {
-                fmt.Printf("  %s State backend (local) ready\n", style.StyledIconSuccess)
-        } else {
-                fmt.Printf("  %s State backend error: %s\n", style.StyledIconError, err)
-                hasErrors = true
-                issues = append(issues, fmt.Sprintf("State backend error: %s", err))
-            }
-        } else {
-            fmt.Printf("  %s State backend (local) ready\n", style.StyledIconSuccess)
-        }
+			if os.IsNotExist(err) {
+				fmt.Printf("  %s State backend (local) ready\n", style.StyledIconSuccess)
+			} else {
+				fmt.Printf("  %s State backend error: %s\n", style.StyledIconError, err)
+				hasErrors = true
+				issues = append(issues, fmt.Sprintf("State backend error: %s", err))
+			}
+		} else {
+			fmt.Printf("  %s State backend (local) ready\n", style.StyledIconSuccess)
+		}
 	}
 	fmt.Println()
 
@@ -108,18 +108,18 @@ func runDoctor(ctx context.Context) error {
 			fmt.Printf("  %s Cannot parse config.yaml: %s\n", style.IconError, err)
 			hasErrors = true
 			issues = append(issues, fmt.Sprintf("Cannot parse config.yaml: %s", err))
-        } else {
-            fmt.Printf("  %s config.yaml valid\n", style.StyledIconSuccess)
-        }
+		} else {
+			fmt.Printf("  %s config.yaml valid\n", style.StyledIconSuccess)
+		}
 	}
 
 	// Check ~/.config/dotisan/values.yaml
 	valuesPath := os.ExpandEnv("$HOME/.config/dotisan/values.yaml")
 	_, err = os.Stat(valuesPath)
 	if err != nil {
-        if os.IsNotExist(err) {
-            fmt.Printf("  %s values.yaml not found (optional)\n", style.StyledIconSuccess)
-        } else {
+		if os.IsNotExist(err) {
+			fmt.Printf("  %s values.yaml not found (optional)\n", style.StyledIconSuccess)
+		} else {
 			fmt.Printf("  %s Cannot read values.yaml: %s\n", style.IconError, err)
 			hasErrors = true
 			issues = append(issues, fmt.Sprintf("Cannot read values.yaml: %s", err))
@@ -132,8 +132,8 @@ func runDoctor(ctx context.Context) error {
 			hasErrors = true
 			issues = append(issues, fmt.Sprintf("Cannot parse values.yaml: %s", err))
 		} else {
-            fmt.Printf("  %s values.yaml valid\n", style.StyledIconSuccess)
-        }
+			fmt.Printf("  %s values.yaml valid\n", style.StyledIconSuccess)
+		}
 	}
 
 	// Check ~/.config/dotisan/ directory
@@ -149,9 +149,9 @@ func runDoctor(ctx context.Context) error {
 			hasErrors = true
 			issues = append(issues, fmt.Sprintf("Cannot read ~/.config/dotisan/: %s", err))
 		}
-    } else {
-        fmt.Printf("  %s ~/.config/dotisan/ directory exists\n", style.StyledIconSuccess)
-    }
+	} else {
+		fmt.Printf("  %s ~/.config/dotisan/ directory exists\n", style.StyledIconSuccess)
+	}
 	fmt.Println()
 
 	// 4. Validate Resources (if requested)
@@ -170,7 +170,7 @@ func runDoctor(ctx context.Context) error {
 				issues = append(issues, err)
 			}
 		} else {
-            fmt.Printf("  %s All resource files valid\n", style.StyledIconSuccess)
+			fmt.Printf("  %s All resource files valid\n", style.StyledIconSuccess)
 		}
 		fmt.Println()
 	}
@@ -185,18 +185,18 @@ func runDoctor(ctx context.Context) error {
 		fmt.Println()
 		fmt.Println(style.Warning.Render("Some checks failed. Please fix the issues above before running 'dotisan apply'."))
 		os.Exit(1)
-    } else if len(warnings) > 0 {
-        fmt.Printf("  %s Working, but %d warnings:\n", style.IconWarning, len(warnings))
-        for _, warning := range warnings {
-            fmt.Printf("    - %s\n", warning)
-        }
-        fmt.Println()
-        fmt.Println(style.Success.Render("dotisan is functional but some features may be limited."))
-    } else {
-        fmt.Printf("  %s All checks passed!\n", style.StyledIconSuccess)
-        fmt.Println()
-        fmt.Println(style.Success.Render("Your dotisan setup looks good. Ready to use 'dotisan plan' and 'dotisan apply'."))
-    }
+	} else if len(warnings) > 0 {
+		fmt.Printf("  %s Working, but %d warnings:\n", style.IconWarning, len(warnings))
+		for _, warning := range warnings {
+			fmt.Printf("    - %s\n", warning)
+		}
+		fmt.Println()
+		fmt.Println(style.Success.Render("dotisan is functional but some features may be limited."))
+	} else {
+		fmt.Printf("  %s All checks passed!\n", style.StyledIconSuccess)
+		fmt.Println()
+		fmt.Println(style.Success.Render("Your dotisan setup looks good. Ready to use 'dotisan plan' and 'dotisan apply'."))
+	}
 
 	return nil
 }

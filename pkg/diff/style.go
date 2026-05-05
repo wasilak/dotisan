@@ -30,11 +30,11 @@ type Styles struct {
 // Uses color constants from pkg/style for consistency.
 func DefaultStyles() Styles {
 	return Styles{
-		Addition:     style.NewStyle(style.Green+style.BgBlack),
-		Deletion:     style.NewStyle(style.Red+style.BgBlack),
-		Modification: style.NewStyle(style.Yellow+style.BgBlack),
+		Addition:     style.NewStyle(style.Green + style.BgBlack),
+		Deletion:     style.NewStyle(style.Red + style.BgBlack),
+		Modification: style.NewStyle(style.Yellow + style.BgBlack),
 		Unchanged:    style.NewStyle(style.Gray),
-		Header:       style.NewStyle(style.BoldSeq+style.White),
+		Header:       style.NewStyle(style.BoldSeq + style.White),
 	}
 }
 

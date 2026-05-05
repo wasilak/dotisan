@@ -23,7 +23,7 @@ type TreeFormatter struct {
 func NewTreeFormatter() *TreeFormatter {
 	return &TreeFormatter{
 		enumeratorStyle: style.NewStyle(style.BoldSeq),
-		kindStyle:       style.NewStyle(style.BoldSeq+style.Green),
+		kindStyle:       style.NewStyle(style.BoldSeq + style.Green),
 		nameStyle:       style.NewStyle(style.Yellow),
 		itemStyle:       style.NewStyle(style.Magenta),
 		actionStyle:     style.NewStyle(style.Gray),
@@ -51,15 +51,17 @@ func (f *TreeFormatter) FormatGroupPlanAsTree(info GroupPlanInfo) error {
 		children = append(children, f.formatDrifted(info.Plan.Drifted))
 	}
 	root := treeview.NewNode[string]("root", "Managed Resources", "")
-	for _, c := range children { root.AddChild(c) }
+	for _, c := range children {
+		root.AddChild(c)
+	}
 
-tree := treeview.NewTree[string]([]*treeview.Node[string]{root})
-out, err := tree.Render(context.Background())
-if err != nil {
-	return err
-}
-fmt.Println(out)
-return nil
+	tree := treeview.NewTree[string]([]*treeview.Node[string]{root})
+	out, err := tree.Render(context.Background())
+	if err != nil {
+		return err
+	}
+	fmt.Println(out)
+	return nil
 }
 
 func (f *TreeFormatter) formatAdditions(additions []provider.GroupAddition) *treeview.Node[string] {
@@ -176,11 +178,11 @@ func (f *TreeFormatter) FormatStateAsTree(resources []StateResource) error {
 		root.AddChild(kindNode)
 	}
 
-tree := treeview.NewTree[string]([]*treeview.Node[string]{root})
-out, err := tree.Render(context.Background())
-if err != nil {
-	return err
-}
-fmt.Println(out)
-return nil
+	tree := treeview.NewTree[string]([]*treeview.Node[string]{root})
+	out, err := tree.Render(context.Background())
+	if err != nil {
+		return err
+	}
+	fmt.Println(out)
+	return nil
 }

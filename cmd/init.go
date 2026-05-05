@@ -52,8 +52,8 @@ func runInit() error {
 	if err := os.MkdirAll(resourcesDir, 0755); err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", resourcesDir, err)
 	}
-    fmt.Printf("%s Created %s\n", style.StyledIconSuccess, configDir)
-    fmt.Printf("%s Created %s\n", style.StyledIconSuccess, resourcesDir)
+	fmt.Printf("%s Created %s\n", style.StyledIconSuccess, configDir)
+	fmt.Printf("%s Created %s\n", style.StyledIconSuccess, resourcesDir)
 
 	// Create default config.yaml if it doesn't exist
 	if _, err := os.Stat(configPath); os.IsNotExist(err) || initForceFlag {
@@ -81,7 +81,7 @@ state:
 		if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
 			return fmt.Errorf("failed to create config.yaml: %w", err)
 		}
-        fmt.Printf("%s Created %s\n", style.StyledIconSuccess, configPath)
+		fmt.Printf("%s Created %s\n", style.StyledIconSuccess, configPath)
 	} else {
 		fmt.Printf("%s %s already exists (skipped)\n", style.IconWarning, configPath)
 	}
@@ -108,7 +108,7 @@ state:
 		if err := os.WriteFile(valuesPath, []byte(valuesContent), 0644); err != nil {
 			return fmt.Errorf("failed to create values.yaml: %w", err)
 		}
-        fmt.Printf("%s Created %s\n", style.StyledIconSuccess, valuesPath)
+		fmt.Printf("%s Created %s\n", style.StyledIconSuccess, valuesPath)
 	} else {
 		fmt.Printf("%s %s already exists (skipped)\n", style.IconWarning, valuesPath)
 	}
@@ -163,7 +163,7 @@ state:
 		if err := os.WriteFile(sampleResourcePath, []byte(sampleContent), 0644); err != nil {
 			return fmt.Errorf("failed to create sample.yaml: %w", err)
 		}
-        fmt.Printf("%s Created %s (example file)\n", style.StyledIconSuccess, sampleResourcePath)
+		fmt.Printf("%s Created %s (example file)\n", style.StyledIconSuccess, sampleResourcePath)
 	}
 
 	fmt.Println()

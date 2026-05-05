@@ -3,74 +3,74 @@ package ui
 import (
 	"encoding/json"
 	"fmt"
-	"os"
-	"strings"
 	"github.com/wasilak/dotisan/pkg/diff"
 	"github.com/wasilak/dotisan/pkg/engine"
 	"github.com/wasilak/dotisan/pkg/output"
-    "github.com/wasilak/dotisan/pkg/style"
+	"github.com/wasilak/dotisan/pkg/style"
+	"os"
+	"strings"
 )
 
 // DisplayPlanResult handles displaying a PlanResult in plain, tree, or JSON modes.
 func DisplayPlanResult(result *engine.PlanResult, outputFormat output.Format, showDiff bool) error {
 	switch outputFormat {
 	case output.FormatJSON:
-        output := map[string]interface{}{
-            "summary": map[string]int{
-                "additions":     result.TotalAdditions,
-                "modifications": result.TotalModifications,
-                "removals":      result.TotalRemovals,
-                "cleanup":       result.TotalCleanup,
-                "in_sync":       result.TotalInSync,
-                "drifted":       result.TotalDrifted,
-            },
-            "has_changes": result.HasChanges,
-            "providers":   map[string]interface{}{},
-            // top-level aggregated warnings for machine consumption
-            "warnings":    []map[string]interface{}{},
-        }
-        providers := make(map[string]interface{})
-        allWarnings := make([]map[string]interface{}, 0)
-        for name, plan := range result.ProviderPlans {
-            prov := map[string]interface{}{
-                "additions":     plan.Additions,
-                "modifications": plan.Modifications,
-                "removals":      plan.Removals,
-                "cleanup":       plan.Cleanup,
-                "in_sync":       plan.InSync,
-                "drifted":       plan.Drifted,
-            }
-            // include per-provider warnings in the aggregated list and embed per-provider
-            // warnings into the provider object for easier machine consumption.
-            if len(plan.Warnings) > 0 {
-                pw := make([]map[string]interface{}, 0, len(plan.Warnings))
-                for _, w := range plan.Warnings {
-                    entry := map[string]interface{}{
-                        "group_id":   w.GroupID,
-                        "item_id":    w.ItemID,
-                        "severity":   w.Severity,
-                        "message":    w.Message,
-                        "suggestion": w.Suggestion,
-                    }
-                    pw = append(pw, entry)
-                    allWarnings = append(allWarnings, map[string]interface{}{
-                        "provider":   name,
-                        "group_id":   w.GroupID,
-                        "item_id":    w.ItemID,
-                        "severity":   w.Severity,
-                        "message":    w.Message,
-                        "suggestion": w.Suggestion,
-                    })
-                }
-                prov["warnings"] = pw
-            }
+		output := map[string]interface{}{
+			"summary": map[string]int{
+				"additions":     result.TotalAdditions,
+				"modifications": result.TotalModifications,
+				"removals":      result.TotalRemovals,
+				"cleanup":       result.TotalCleanup,
+				"in_sync":       result.TotalInSync,
+				"drifted":       result.TotalDrifted,
+			},
+			"has_changes": result.HasChanges,
+			"providers":   map[string]interface{}{},
+			// top-level aggregated warnings for machine consumption
+			"warnings": []map[string]interface{}{},
+		}
+		providers := make(map[string]interface{})
+		allWarnings := make([]map[string]interface{}, 0)
+		for name, plan := range result.ProviderPlans {
+			prov := map[string]interface{}{
+				"additions":     plan.Additions,
+				"modifications": plan.Modifications,
+				"removals":      plan.Removals,
+				"cleanup":       plan.Cleanup,
+				"in_sync":       plan.InSync,
+				"drifted":       plan.Drifted,
+			}
+			// include per-provider warnings in the aggregated list and embed per-provider
+			// warnings into the provider object for easier machine consumption.
+			if len(plan.Warnings) > 0 {
+				pw := make([]map[string]interface{}, 0, len(plan.Warnings))
+				for _, w := range plan.Warnings {
+					entry := map[string]interface{}{
+						"group_id":   w.GroupID,
+						"item_id":    w.ItemID,
+						"severity":   w.Severity,
+						"message":    w.Message,
+						"suggestion": w.Suggestion,
+					}
+					pw = append(pw, entry)
+					allWarnings = append(allWarnings, map[string]interface{}{
+						"provider":   name,
+						"group_id":   w.GroupID,
+						"item_id":    w.ItemID,
+						"severity":   w.Severity,
+						"message":    w.Message,
+						"suggestion": w.Suggestion,
+					})
+				}
+				prov["warnings"] = pw
+			}
 
-            providers[name] = prov
-        }
-        output["providers"] = providers
-        if len(allWarnings) > 0 {
-            output["warnings"] = allWarnings
-        }
+			providers[name] = prov
+		}
+		output["providers"] = providers
+		if len(allWarnings) > 0 {
+			output["warnings"] = allWarnings
+		}
 		encoder := json.NewEncoder(os.Stdout)
 		encoder.SetIndent("", "  ")
 		return encoder.Encode(output)
@@ -106,55 +106,55 @@ func DisplayPlanResult(result *engine.PlanResult, outputFormat output.Format, sh
 		}
 		return nil
 	default:
-        // helper type for rendering warnings
-        type providerWarning struct {
-            GroupID    string
-            ItemID     string
-            Severity   string
-            Message    string
-            Suggestion string
-        }
+		// helper type for rendering warnings
+		type providerWarning struct {
+			GroupID    string
+			ItemID     string
+			Severity   string
+			Message    string
+			Suggestion string
+		}
 
-        // Collect any provider-generated warnings early so they can be shown even
-        // when there are no actionable changes. Warnings are advisory and useful
-        // independently of the plan counts.
-        allWarnings := []providerWarning{}
-        for _, plan := range result.ProviderPlans {
-            for _, w := range plan.Warnings {
-                allWarnings = append(allWarnings, providerWarning{
-                    GroupID:    w.GroupID,
-                    ItemID:     w.ItemID,
-                    Severity:   w.Severity,
-                    Message:    w.Message,
-                    Suggestion: w.Suggestion,
-                })
-            }
-        }
+		// Collect any provider-generated warnings early so they can be shown even
+		// when there are no actionable changes. Warnings are advisory and useful
+		// independently of the plan counts.
+		allWarnings := []providerWarning{}
+		for _, plan := range result.ProviderPlans {
+			for _, w := range plan.Warnings {
+				allWarnings = append(allWarnings, providerWarning{
+					GroupID:    w.GroupID,
+					ItemID:     w.ItemID,
+					Severity:   w.Severity,
+					Message:    w.Message,
+					Suggestion: w.Suggestion,
+				})
+			}
+		}
 
-        // If there are no changes and no warnings, render the no-changes banner.
-        if !result.HasChanges && len(allWarnings) == 0 {
-            RenderNoChanges()
-            return nil
-        }
+		// If there are no changes and no warnings, render the no-changes banner.
+		if !result.HasChanges && len(allWarnings) == 0 {
+			RenderNoChanges()
+			return nil
+		}
 
-        fmt.Println(style.Header.Render("Plan Summary"))
-        fmt.Println()
+		fmt.Println(style.Header.Render("Plan Summary"))
+		fmt.Println()
 
-        if len(allWarnings) > 0 {
-            fmt.Println(style.Header.Render("Warnings"))
-            for _, w := range allWarnings {
-                icon := style.Warning.Render("⚠")
-                id := w.GroupID
-                if w.ItemID != "" {
-                    id = id + "/" + w.ItemID
-                }
-                fmt.Printf("  %s %s: %s\n", icon, style.Bold.Render(id), style.Warning.Render(w.Message))
-                if w.Suggestion != "" {
-                    fmt.Printf("    %s %s\n", style.Info.Render("Suggestion:"), style.DimStyle.Render(w.Suggestion))
-                }
-            }
-            fmt.Println()
-        }
+		if len(allWarnings) > 0 {
+			fmt.Println(style.Header.Render("Warnings"))
+			for _, w := range allWarnings {
+				icon := style.Warning.Render("⚠")
+				id := w.GroupID
+				if w.ItemID != "" {
+					id = id + "/" + w.ItemID
+				}
+				fmt.Printf("  %s %s: %s\n", icon, style.Bold.Render(id), style.Warning.Render(w.Message))
+				if w.Suggestion != "" {
+					fmt.Printf("    %s %s\n", style.Info.Render("Suggestion:"), style.DimStyle.Render(w.Suggestion))
+				}
+			}
+			fmt.Println()
+		}
 		type PlanItem struct {
 			Action      string
 			Name        string
@@ -165,7 +165,7 @@ func DisplayPlanResult(result *engine.PlanResult, outputFormat output.Format, sh
 		}
 		var flatItems []PlanItem
 
-        // (providerWarning already declared above)
+		// (providerWarning already declared above)
 		for _, groupPlan := range result.ProviderPlans {
 			for _, add := range groupPlan.Additions {
 				for _, item := range add.Items {
@@ -353,8 +353,6 @@ func printDiffHeader(action, filePath, providerName string) {
 	fmt.Println(rule)
 	// (All pterm styles stubbed, now using color palette)
 }
-
-
 
 // ensureTrailingNewline mirrors the behavior in pkg/diff to guarantee
 // the UI uses normalized content when generating diffs.

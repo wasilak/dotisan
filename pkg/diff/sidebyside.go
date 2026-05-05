@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/mattn/go-runewidth"
+	"github.com/wasilak/dotisan/pkg/style"
 	// TODO: All color/styles migrated to palette/ANSI – no pterm
 )
 
@@ -75,9 +76,9 @@ func (r *SideBySideRenderer) Render(oldContent, newContent, action string) strin
 
 	var b strings.Builder
 
-	// TODO: Apply styling/palette once available; for now, just plain headers
-	leftHdr := padRight("  BEFORE", colWidth)
-	rightHdr := padRight("  AFTER", colWidth)
+	// Render headers with palette style
+	leftHdr := style.Header.Render(padRight("  BEFORE", colWidth))
+	rightHdr := style.Header.Render(padRight("  AFTER", colWidth))
 	b.WriteString(leftHdr + sep + rightHdr + "\n")
 
 	// Divider under header
@@ -85,15 +86,15 @@ func (r *SideBySideRenderer) Render(oldContent, newContent, action string) strin
 	b.WriteString(divLine + divSep + divLine + "\n")
 
 	if len(rows) == 0 {
-			note := padRight("  (no textual differences — state checksum may be stale)", colWidth*2+1)
-			b.WriteString(note + "\n") // TODO: style as hint/gray
+		note := padRight("  (no textual differences — state checksum may be stale)", colWidth*2+1)
+		b.WriteString(style.DimStyle.Render(note) + "\n") // hint/gray
 
 	} else {
 		for _, row := range rows {
 			switch row.kind {
 			case rowHunkBreak:
 				msg := padRight(fmt.Sprintf("  ···  %d unchanged lines  ···", row.skipCount), colWidth)
-				b.WriteString(msg + sep + msg + "\n") // TODO: style as gray
+				b.WriteString(style.DimStyle.Render(msg) + sep + style.DimStyle.Render(msg) + "\n")
 			default:
 				left := applyDiffStyle(padRight(row.leftText, colWidth), row.leftType)
 				right := applyDiffStyle(padRight(row.rightText, colWidth), row.rightType)
@@ -238,14 +239,13 @@ func truncateToWidth(s string, width int) string {
 
 // applyDiffStyle colours a pre-padded raw string based on the change type.
 func applyDiffStyle(text string, ct ChangeType) string {
-	// TODO: switch to palette color functions
+	// Use the palette styles where possible.
 	switch ct {
 	case LineDeleted:
-		return "\033[31m" + text + "\033[0m" // red
+		return style.Error.Render(text)
 	case LineAdded:
-		return "\033[32m" + text + "\033[0m" // green
+		return style.Success.Render(text)
 	default:
-		return text // gray not used; would be "\033[90m"
+		return text // no change styling for unchanged lines
 	}
 }
-

@@ -15,16 +15,16 @@ func (s Style) Render(x string) string {
 
 var (
 	// Core color role styles
-	Error      = NewStyle(DefaultColors.Error)
-	Warning    = NewStyle(DefaultColors.Warning)
-	Info       = NewStyle(DefaultColors.Info)
-	DimStyle   = NewStyle(DefaultColors.Dim)
-	Bold       = NewStyle(BoldSeq)
-	RowSuccess = NewStyle(DefaultColors.RowSuccess)
-	RowError   = NewStyle(DefaultColors.RowError)
-	RowWarning = NewStyle(DefaultColors.RowWarning)
-	Success    = NewStyle(DefaultColors.Success)
-	Header     = NewStyle(DefaultColors.Header)
+	Error       = NewStyle(DefaultColors.Error)
+	Warning     = NewStyle(DefaultColors.Warning)
+	Info        = NewStyle(DefaultColors.Info)
+	DimStyle    = NewStyle(DefaultColors.Dim)
+	Bold        = NewStyle(BoldSeq)
+	RowSuccess  = NewStyle(DefaultColors.RowSuccess)
+	RowError    = NewStyle(DefaultColors.RowError)
+	RowWarning  = NewStyle(DefaultColors.RowWarning)
+	Success     = NewStyle(DefaultColors.Success)
+	Header      = NewStyle(DefaultColors.Header)
 	TableHeader = NewStyle(DefaultColors.TableHeader)
 
 	// Banner/info boxes
@@ -32,9 +32,9 @@ var (
 	InfoBox    = NewStyle(DefaultColors.InfoBox)
 
 	// Plan/table/diff roles
-	TableStatusAdd    = NewStyle(DefaultColors.TableStatusAdd)
-	TableStatusRemove = NewStyle(DefaultColors.TableStatusRemove)
-	TableStatusUpdate = NewStyle(DefaultColors.TableStatusUpdate)
+	TableStatusAdd     = NewStyle(DefaultColors.TableStatusAdd)
+	TableStatusRemove  = NewStyle(DefaultColors.TableStatusRemove)
+	TableStatusUpdate  = NewStyle(DefaultColors.TableStatusUpdate)
 	TableStatusCleanup = NewStyle(DefaultColors.TableStatusCleanup)
 	TableStatusDrift   = NewStyle(DefaultColors.TableStatusDrift)
 
@@ -51,7 +51,7 @@ var (
 // Extra bg/fg for legacy compatibility
 const (
 	BgBlack = "\033[40m"
-	White = "\033[97m"
+	White   = "\033[97m"
 )
 
 // Emoji/icon constants
@@ -68,12 +68,12 @@ const (
 
 // Styled icons - decorated with color for tables/plans
 var (
-    StyledIconAdd    = TableStatusAdd.Render(EmojiAdd)
-    StyledIconRemove = TableStatusRemove.Render(EmojiRemove)
-    StyledIconUpdate = TableStatusUpdate.Render(EmojiUpdate)
-    // Styled icons for generic success/error states
-    StyledIconSuccess = Success.Render(IconSuccess)
-    StyledIconError   = Error.Render(IconError)
+	StyledIconAdd    = TableStatusAdd.Render(EmojiAdd)
+	StyledIconRemove = TableStatusRemove.Render(EmojiRemove)
+	StyledIconUpdate = TableStatusUpdate.Render(EmojiUpdate)
+	// Styled icons for generic success/error states
+	StyledIconSuccess = Success.Render(IconSuccess)
+	StyledIconError   = Error.Render(IconError)
 )
 
 // Main exported palette (singleton)

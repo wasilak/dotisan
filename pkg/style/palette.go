@@ -2,31 +2,31 @@ package style
 
 // ANSI color constants for palette roles
 const (
-	Green   = "\033[32m"
-	Red     = "\033[31m"
-	Orange  = "\033[38;5;208m" // True orange
-	Yellow  = "\033[33m"
-	Gray    = "\033[38;5;245m"
-	RowGreen = "\033[48;5;22m"
-	RowRed   = "\033[48;5;52m"
+	Green     = "\033[32m"
+	Red       = "\033[31m"
+	Orange    = "\033[38;5;208m" // True orange
+	Yellow    = "\033[33m"
+	Gray      = "\033[38;5;245m"
+	RowGreen  = "\033[48;5;22m"
+	RowRed    = "\033[48;5;52m"
 	RowYellow = "\033[48;5;94m"
-	Magenta  = "\033[35m"
-	BoldSeq  = "\033[1m"
-	Reset    = "\033[0m"
-	Dim      = "\033[2m"
+	Magenta   = "\033[35m"
+	BoldSeq   = "\033[1m"
+	Reset     = "\033[0m"
+	Dim       = "\033[2m"
 )
 
 // ColorPalette centralizes all color/style mappings for the UI.
 type ColorPalette struct {
-	Success string
-	Error   string
-	Warning string
-	Info    string
-	Dim     string
-	RowSuccess string
-	RowError   string
-	RowWarning string
-	Header     string
+	Success     string
+	Error       string
+	Warning     string
+	Info        string
+	Dim         string
+	RowSuccess  string
+	RowError    string
+	RowWarning  string
+	Header      string
 	TableHeader string
 	TableRow    string
 	TableCell   string
@@ -42,49 +42,49 @@ type ColorPalette struct {
 	TableStatusDrift   string
 	TableStatusCleanup string
 
-	DiffBadgeAdd       string
-	DiffBadgeRemove    string
-	DiffBadgeUpdate    string
-	DiffProvider       string
-	DiffPath           string
+	DiffBadgeAdd    string
+	DiffBadgeRemove string
+	DiffBadgeUpdate string
+	DiffProvider    string
+	DiffPath        string
 
 	// No changes (kudos card)
-	NoChangesBorder    string
-	NoChangesRainbow   []string // ANSI codes for per-letter rainbow, palette order
+	NoChangesBorder  string
+	NoChangesRainbow []string // ANSI codes for per-letter rainbow, palette order
 }
 
 // DefaultPalette returns a ColorPalette populated with current ANSI codes.
 func DefaultPalette() ColorPalette {
 	return ColorPalette{
-		Success:    Green,
-		Error:      Red,
-		Warning:    Orange,
-		Info:       Yellow,
-		Dim:        Dim,
-		RowSuccess: RowGreen,
-		RowError:   RowRed,
-		RowWarning: RowYellow,
-		Header:     BoldSeq,
+		Success:     Green,
+		Error:       Red,
+		Warning:     Orange,
+		Info:        Yellow,
+		Dim:         Dim,
+		RowSuccess:  RowGreen,
+		RowError:    RowRed,
+		RowWarning:  RowYellow,
+		Header:      BoldSeq,
 		TableHeader: BoldSeq,
-		SuccessBox: "\033[1;42m",    // Bold + green bg
-		InfoBox:    "\033[1;44m",    // Bold + blue bg
+		SuccessBox:  "\033[1;42m", // Bold + green bg
+		InfoBox:     "\033[1;44m", // Bold + blue bg
 
-		TableRow:    "",
-		TableCell:   "",
+		TableRow:  "",
+		TableCell: "",
 		// Specific status and badge roles
-		TableStatusAdd:    Green,
-		TableStatusRemove: Red,
-		TableStatusUpdate: Orange,
-		TableStatusDrift:  Magenta,
+		TableStatusAdd:     Green,
+		TableStatusRemove:  Red,
+		TableStatusUpdate:  Orange,
+		TableStatusDrift:   Magenta,
 		TableStatusCleanup: Dim,
-		DiffBadgeAdd:      Green,
-		DiffBadgeRemove:   Red,
-		DiffBadgeUpdate:   Orange,
-		DiffProvider: Gray,
-		DiffPath: BoldSeq,
+		DiffBadgeAdd:       Green,
+		DiffBadgeRemove:    Red,
+		DiffBadgeUpdate:    Orange,
+		DiffProvider:       Gray,
+		DiffPath:           BoldSeq,
 		// NoChanges specifics
-		NoChangesBorder:   "\033[38;5;97m", // purple
-		NoChangesRainbow: []string{ "\033[31m", "\033[33m", "\033[32m", "\033[36m", "\033[34m", "\033[35m" },
+		NoChangesBorder:  "\033[38;5;97m", // purple
+		NoChangesRainbow: []string{"\033[31m", "\033[33m", "\033[32m", "\033[36m", "\033[34m", "\033[35m"},
 	}
 }
 

@@ -2,13 +2,13 @@ package cmd
 
 import (
 	"context"
-	"fmt"
-	"os"
-	"strings"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"io/fs"
 	"log/slog"
-	"encoding/json"
+	"os"
+	"strings"
 
 	// pterm import removed. TODO: migrate all CLI UI calls to palette-based toolkit.
 	"github.com/wasilak/dotisan/pkg/ui"
@@ -160,7 +160,7 @@ func runStateImport(ctx context.Context, id, actual string) error {
 		return fmt.Errorf("failed to save state: %w", err)
 	}
 
-    fmt.Printf("%s Successfully imported %s/%s[%s]\n", style.StyledIconSuccess, kind, group, item)
+	fmt.Printf("%s Successfully imported %s/%s[%s]\n", style.StyledIconSuccess, kind, group, item)
 	return nil
 }
 
@@ -317,9 +317,9 @@ func runStateRemoveByID(ctx context.Context, id string) error {
 
 	if !removed {
 		if item == "" {
-            fmt.Printf("%s Resource %s/%s not found in state\n", style.StyledIconError, kind, group)
+			fmt.Printf("%s Resource %s/%s not found in state\n", style.StyledIconError, kind, group)
 		} else {
-            fmt.Printf("%s Resource %s/%s/%s not found in state\n", style.StyledIconError, kind, group, item)
+			fmt.Printf("%s Resource %s/%s/%s not found in state\n", style.StyledIconError, kind, group, item)
 		}
 		return nil
 	}
@@ -329,9 +329,9 @@ func runStateRemoveByID(ctx context.Context, id string) error {
 	}
 
 	if item == "" {
-        fmt.Printf("%s Removed %s/%s from state\n", style.StyledIconSuccess, kind, group)
+		fmt.Printf("%s Removed %s/%s from state\n", style.StyledIconSuccess, kind, group)
 	} else {
-        fmt.Printf("%s Removed %s/%s/%s from state\n", style.StyledIconSuccess, kind, group, item)
+		fmt.Printf("%s Removed %s/%s/%s from state\n", style.StyledIconSuccess, kind, group, item)
 	}
 	return nil
 }

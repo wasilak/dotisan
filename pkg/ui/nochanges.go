@@ -2,9 +2,9 @@ package ui
 
 import (
 	"fmt"
+	"github.com/wasilak/dotisan/pkg/style"
 	"math/rand"
 	"strings"
-	"github.com/wasilak/dotisan/pkg/style"
 )
 
 // noChangesEntry holds a title and body for a "nothing to do" kudos card.
@@ -97,8 +97,7 @@ func RenderNoChanges() {
 		}
 	}
 	title := b.String()
-// (Palette rainbow logic applied)
-
+	// (Palette rainbow logic applied)
 
 	// Single-color dark purple border and white body text.
 	// We build pre-colored border characters using RGB and keep BoxStyle empty
