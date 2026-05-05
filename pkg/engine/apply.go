@@ -376,10 +376,10 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 		} else {
 			fmt.Println(style.Warning.Render("⚠ Apply completed with errors"))
 			fmt.Println()
-			fmt.Printf("%s %d succeeded\n", style.StyledIconSuccess, successCount)
-			fmt.Printf("%s %d failed\n", style.StyledIconError, len(failures))
+            fmt.Println(style.Iconf(style.StyledIconSuccess, style.Success, "%d succeeded", successCount))
+            fmt.Println(style.Iconf(style.StyledIconError, style.Error, "%d failed", len(failures)))
 			if len(skippedGroups) > 0 {
-				fmt.Printf("%s %d skipped (dependency failed)\n", style.IconWarning, len(skippedGroups))
+                fmt.Println(style.Iconf(style.IconWarning, style.Warning, "%d skipped (dependency failed)", len(skippedGroups)))
 			}
 		}
 		fmt.Println()
@@ -410,7 +410,7 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 		return fmt.Errorf("apply completed with %d error(s)", len(failures))
 	}
 
-	fmt.Printf("%s Apply complete! All resources synchronized\n", style.StyledIconSuccess)
+    fmt.Println(style.Iconf(style.StyledIconSuccess, style.Success, "Apply complete! All resources synchronized"))
 	return nil
 }
 

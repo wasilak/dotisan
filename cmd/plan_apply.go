@@ -110,7 +110,7 @@ func runPlanApply(ctx context.Context, opts PlanApplyOptions) error {
 	if err := eng.Apply(ctx, result, appOpts); err != nil {
 		return fmt.Errorf("apply failed: %w", err)
 	}
-	fmt.Println(style.StyledIconSuccess + " Changes applied successfully.")
-	return nil
+    fmt.Println(style.StyledIconText(style.StyledIconSuccess, style.Success, "Changes applied successfully."))
+    return nil
 
 }

@@ -1,6 +1,7 @@
 package style
 
 import "strings"
+import "fmt"
 
 // FormatKudosCard returns a pre-colored kudos card using the palette's
 // NoChangesBorder for the border and leaving body text unmodified. The
@@ -22,4 +23,16 @@ func FormatKudosCard(coloredTitle, body string, width int) string {
     b.WriteString(border)
     b.WriteString("\n\n")
     return b.String()
+}
+
+// StyledIconText composes an icon (already styled) and a text styled via s.
+// It ensures consistent spacing and returns a ready-to-print string.
+func StyledIconText(icon string, s Style, text string) string {
+    return fmt.Sprintf("%s %s", icon, s.Render(text))
+}
+
+// Iconf formats text using format and args, then styles it with s and prefixes with icon.
+func Iconf(icon string, s Style, format string, a ...interface{}) string {
+    txt := fmt.Sprintf(format, a...)
+    return fmt.Sprintf("%s %s", icon, s.Render(txt))
 }

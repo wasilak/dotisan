@@ -29,15 +29,13 @@ type Styles struct {
 // DefaultStyles returns the default color scheme for diffs.
 // Uses color constants from pkg/style for consistency.
 func DefaultStyles() Styles {
-	return Styles{
-		// Use palette roles from DefaultColors so colors are centralized.
-        // Use palette roles directly; background pairing (BgBlack) can be
-        // restored later if necessary from the palette values.
-        Addition:     style.NewStyle(style.DefaultColors.DiffBadgeAdd),
-        Deletion:     style.NewStyle(style.DefaultColors.DiffBadgeRemove),
-        Modification: style.NewStyle(style.DefaultColors.DiffBadgeUpdate),
-        Unchanged:    style.NewStyle(style.DefaultColors.DiffProvider),
-        Header:       style.NewStyle(style.DefaultColors.DiffPath),
+    return Styles{
+        // Use style wrappers defined in pkg/style/styles.go for consistency.
+        Addition:     style.DiffBadgeAdd,
+        Deletion:     style.DiffBadgeRemove,
+        Modification: style.DiffBadgeUpdate,
+        Unchanged:    style.DiffProvider,
+        Header:       style.DiffPath,
     }
 }
 

@@ -22,11 +22,11 @@ type TreeFormatter struct {
 // NewTreeFormatter creates a new TreeFormatter with default colors
 func NewTreeFormatter() *TreeFormatter {
     return &TreeFormatter{
-        enumeratorStyle: style.NewStyle(style.DefaultColors.Header),
-        kindStyle:       style.NewStyle(style.DefaultColors.HeaderKindAdd),
-        nameStyle:       style.NewStyle(style.DefaultColors.TableStatusUpdate),
-        itemStyle:       style.NewStyle(style.DefaultColors.TableStatusDrift),
-        actionStyle:     style.NewStyle(style.DefaultColors.DiffProvider),
+        enumeratorStyle: style.Header,
+        kindStyle:       style.HeaderKindAdd,
+        nameStyle:       style.TableStatusUpdate,
+        itemStyle:       style.TableStatusDrift,
+        actionStyle:     style.DiffProvider,
     }
 }
 

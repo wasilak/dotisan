@@ -44,6 +44,11 @@ var (
 	DiffPath        = NewStyle(DefaultColors.DiffPath)
 	DiffProvider    = NewStyle(DefaultColors.DiffProvider)
 
+	// Combined header-kind styles
+	HeaderKindAdd    = NewStyle(DefaultColors.HeaderKindAdd)
+	HeaderKindRemove = NewStyle(DefaultColors.HeaderKindRemove)
+	HeaderKindUpdate = NewStyle(DefaultColors.HeaderKindUpdate)
+
 	// No changes
 	NoChangesBorder = NewStyle(DefaultColors.NoChangesBorder)
 )
