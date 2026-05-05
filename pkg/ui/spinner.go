@@ -38,6 +38,13 @@ func NewSpinner() *Spinner {
 	s.Writer = os.Stdout
 	// Add a small left margin so spinner doesn't touch the screen edge
 	s.Prefix = strings.Repeat(" ", 2)
+	// Prefer palette-provided spinner color; fallback to a random pick.
+	col := style.DefaultColors.SpinnerColor
+	if col == "" {
+		colors := []string{"fgHiMagenta", "fgHiCyan", "fgHiYellow", "fgHiGreen", "fgHiBlue", "fgHiRed", "magenta", "cyan", "yellow", "green", "blue", "red", "bold"}
+		col = colors[rand.Intn(len(colors))]
+	}
+	s.Color(col)
 	return &Spinner{s: s}
 }
 
@@ -142,6 +149,9 @@ func (s *Spinner) Success(msg string) {
 	}
 }
 func (s *Spinner) Fail(msg string) {
+	// Clear FinalMSG and stop, then write the failure final message
+	// directly to the configured writer. This avoids races where the
+	// underlying library might not synchronously flush FinalMSG.
 	s.s.FinalMSG = ""
 	s.s.Stop()
 	if s.s.Writer != nil {
