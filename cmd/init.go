@@ -36,7 +36,7 @@ func runInit() error {
 
 	welcomeBanner := style.SuccessBox.Render(
 		style.Bold.Render("dotisan") + " - Your Dotfiles Manager\n\n" +
-			style.Dim.Render("Version: 0.1.0") + " | " + style.Dim.Render("Manage your dotfiles with ease"),
+			style.DimStyle.Render("Version: 0.1.0") + " | " + style.DimStyle.Render("Manage your dotfiles with ease"),
 	)
 	fmt.Println(welcomeBanner)
 	fmt.Println("Initializing...")
@@ -52,8 +52,8 @@ func runInit() error {
 	if err := os.MkdirAll(resourcesDir, 0755); err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", resourcesDir, err)
 	}
-	fmt.Printf("%s Created %s\n", style.IconSuccess, configDir)
-	fmt.Printf("%s Created %s\n", style.IconSuccess, resourcesDir)
+    fmt.Printf("%s Created %s\n", style.StyledIconSuccess, configDir)
+    fmt.Printf("%s Created %s\n", style.StyledIconSuccess, resourcesDir)
 
 	// Create default config.yaml if it doesn't exist
 	if _, err := os.Stat(configPath); os.IsNotExist(err) || initForceFlag {
@@ -81,7 +81,7 @@ state:
 		if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
 			return fmt.Errorf("failed to create config.yaml: %w", err)
 		}
-		fmt.Printf("%s Created %s\n", style.IconSuccess, configPath)
+        fmt.Printf("%s Created %s\n", style.StyledIconSuccess, configPath)
 	} else {
 		fmt.Printf("%s %s already exists (skipped)\n", style.IconWarning, configPath)
 	}
@@ -108,7 +108,7 @@ state:
 		if err := os.WriteFile(valuesPath, []byte(valuesContent), 0644); err != nil {
 			return fmt.Errorf("failed to create values.yaml: %w", err)
 		}
-		fmt.Printf("%s Created %s\n", style.IconSuccess, valuesPath)
+        fmt.Printf("%s Created %s\n", style.StyledIconSuccess, valuesPath)
 	} else {
 		fmt.Printf("%s %s already exists (skipped)\n", style.IconWarning, valuesPath)
 	}
@@ -163,16 +163,16 @@ state:
 		if err := os.WriteFile(sampleResourcePath, []byte(sampleContent), 0644); err != nil {
 			return fmt.Errorf("failed to create sample.yaml: %w", err)
 		}
-		fmt.Printf("%s Created %s (example file)\n", style.IconSuccess, sampleResourcePath)
+        fmt.Printf("%s Created %s (example file)\n", style.StyledIconSuccess, sampleResourcePath)
 	}
 
 	fmt.Println()
 	fmt.Println(style.Header.Render("Directory structure:"))
-	fmt.Println("  " + style.Dim.Render("~/.config/dotisan/"))
-	fmt.Println("  " + style.Dim.Render("├── config.yaml"))
-	fmt.Println("  " + style.Dim.Render("├── values.yaml"))
-	fmt.Println("  " + style.Dim.Render("└── resources/"))
-	fmt.Println("      " + style.Dim.Render("└── sample.yaml"))
+	fmt.Println("  " + style.DimStyle.Render("~/.config/dotisan/"))
+	fmt.Println("  " + style.DimStyle.Render("├── config.yaml"))
+	fmt.Println("  " + style.DimStyle.Render("├── values.yaml"))
+	fmt.Println("  " + style.DimStyle.Render("└── resources/"))
+	fmt.Println("      " + style.DimStyle.Render("└── sample.yaml"))
 	fmt.Println()
 
 	nextStepsBox := style.InfoBox.Render(

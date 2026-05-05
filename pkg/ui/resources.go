@@ -1,8 +1,8 @@
 package ui
 
-import "github.com/pterm/pterm"
+import "github.com/wasilak/dotisan/pkg/style"
 
-// ResourceRow is the canonical input format for the human-facing resource table (pterm-based).
+// ResourceRow is the canonical input format for the human-facing resource table.
 type ResourceRow struct {
 	Status string // add/remove/update/drift/sync/warn/info
 	ID     string // composite ID e.g. Kind/Group[Name]
@@ -12,32 +12,49 @@ type ResourceRow struct {
 	Info   string
 }
 
-// RenderResourceTable renders a canonical resource table using pterm (migrated from Bubbletea/Lipgloss) with a shared column layout.
+// RenderResourceTable renders a resource table using palette-driven styling for status+header.
 func RenderResourceTable(rows []ResourceRow, showHeader bool) error {
-	header := []string{"Status", "ID", "Kind", "Group", "Name", "Info"}
-	data := make([][]string, 0, len(rows))
-	// Prepare to collect column styles for the header
-	colStyles := make([]*pterm.Style, len(header))
-	colStyles[0] = HeaderStyle // Status header colored (optional)
-	colStyles[5] = InfoStyle   // Info header colored (optional)
-
+	tbl := NewTable(nil)
+	styleHeader := func(s string) string { return style.TableHeader.Render(s) }
+	statusStyle := func(status string) func(string) string {
+		switch status {
+		case "add":
+			return style.Success.Render
+		case "remove":
+			return style.Error.Render
+		case "update":
+			return style.Warning.Render
+		case "drift":
+			return style.Warning.Render
+		case "info":
+			return style.Info.Render
+		case "sync":
+			return style.DimStyle.Render
+		default:
+			return func(s string) string { return s }
+		}
+	}
+	if showHeader {
+		tbl.SetHeaders(
+			styleHeader("Status"),
+			styleHeader("ID"),
+			styleHeader("Kind"),
+			styleHeader("Group"),
+			styleHeader("Name"),
+			styleHeader("Info"),
+		)
+	}
 	for _, r := range rows {
-		icon, statusStyle := StateIcon(r.Status)
 		row := []string{
-			statusStyle.Sprint(icon),
+			statusStyle(r.Status)(r.Status),
 			r.ID,
 			r.Kind,
 			r.Group,
 			r.Name,
-			InfoStyle.Sprint(r.Info),
+			r.Info,
 		}
-		data = append(data, row)
+		tbl.AddRow(row...)
 	}
-	// Only show header if requested
-	if !showHeader {
-		// pterm doesn't support hiding header row, logic present if header need must be faked
-		// (could be extended for interactive modes if needed)
-		header = nil
-	}
-	return RenderTable(header, data, colStyles)
+	tbl.Render()
+	return nil
 }

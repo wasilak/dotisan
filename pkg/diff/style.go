@@ -3,7 +3,6 @@ package diff
 import (
 	"strings"
 
-	"github.com/pterm/pterm"
 	"github.com/sergi/go-diff/diffmatchpatch"
 	"github.com/wasilak/dotisan/pkg/style"
 )
@@ -31,11 +30,11 @@ type Styles struct {
 // Uses color constants from pkg/style for consistency.
 func DefaultStyles() Styles {
 	return Styles{
-		Addition:     style.NewStyle(pterm.FgGreen, pterm.BgBlack),
-		Deletion:     style.NewStyle(pterm.FgRed, pterm.BgBlack),
-		Modification: style.NewStyle(pterm.FgYellow, pterm.BgBlack),
-		Unchanged:    style.NewStyle(pterm.FgGray),
-		Header:       style.NewStyle(pterm.Bold, pterm.FgWhite),
+		Addition:     style.NewStyle(style.Green+style.BgBlack),
+		Deletion:     style.NewStyle(style.Red+style.BgBlack),
+		Modification: style.NewStyle(style.Yellow+style.BgBlack),
+		Unchanged:    style.NewStyle(style.Gray),
+		Header:       style.NewStyle(style.BoldSeq+style.White),
 	}
 }
 

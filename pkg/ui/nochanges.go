@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"strings"
-
-	"github.com/pterm/pterm"
+	"github.com/wasilak/dotisan/pkg/style"
 )
 
 // noChangesEntry holds a title and body for a "nothing to do" kudos card.
@@ -86,50 +85,34 @@ var noChangesMessages = []noChangesEntry{
 func RenderNoChanges() {
 	entry := noChangesMessages[rand.Intn(len(noChangesMessages))]
 
-	// Per-character rainbow title (previous behavior) — this produced the
-	// most readable and pleasing result across terminals, so restore it.
-	rainbowColors := []pterm.Color{
-		pterm.FgRed,
-		pterm.FgYellow,
-		pterm.FgGreen,
-		pterm.FgCyan,
-		pterm.FgBlue,
-		pterm.FgMagenta,
-	}
-
+	// Per-character rainbow title — now palette-driven
 	var b strings.Builder
-	i := 0
+	idx := 0
 	for _, ch := range entry.title {
 		if ch != ' ' {
-			b.WriteString(pterm.NewStyle(rainbowColors[i%len(rainbowColors)], pterm.Bold).Sprint(string(ch)))
-			i++
+			b.WriteString(style.RenderNoChangesRainbowChar(ch, idx))
+			idx++
 		} else {
 			b.WriteRune(' ')
 		}
 	}
 	title := b.String()
+// (Palette rainbow logic applied)
+
 
 	// Single-color dark purple border and white body text.
 	// We build pre-colored border characters using RGB and keep BoxStyle empty
 	// so the box printer doesn't re-wrap them (which would mangle RGB escapes).
-	borderColor := pterm.NewRGB(88, 24, 150) // dark purple
-	box := pterm.DefaultBox.
-		WithBoxStyle(pterm.NewStyle()).
-		WithVerticalString(borderColor.Sprint("|")).
-		WithHorizontalString(borderColor.Sprint("─")).
-		WithTopRightCornerString(borderColor.Sprint("└")).
-		WithTopLeftCornerString(borderColor.Sprint("┘")).
-		WithBottomLeftCornerString(borderColor.Sprint("┐")).
-		WithBottomRightCornerString(borderColor.Sprint("┌")).
-		WithTitle(title).
-		WithTitleTopCenter().
-		WithRightPadding(6).
-		WithLeftPadding(6).
-		WithTopPadding(1).
-		WithBottomPadding(1).
-		Sprint(pterm.NewStyle(pterm.FgWhite).Sprint(entry.body))
+	// TODO: Replace with new border print logic from color palette
+	fmt.Println()
+	fmt.Printf("%s\n", title)
+	border := style.NoChangesBorder.Render(strings.Repeat("─", 42))
+	fmt.Println(border)
+	fmt.Println(entry.body)
+	fmt.Println(border)
 
 	fmt.Println()
-	fmt.Println(box)
+	// fmt.Println(box) // replaced above with direct print for now
 	fmt.Println()
+
 }

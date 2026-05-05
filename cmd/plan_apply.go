@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
-	"github.com/pterm/pterm"
+	// pterm import removed. TODO: migrate all CLI UI calls to palette-based toolkit.
 	"github.com/wasilak/dotisan/pkg/engine"
 	"github.com/wasilak/dotisan/pkg/output"
 	"github.com/wasilak/dotisan/pkg/style"
@@ -32,11 +33,12 @@ func runPlanApply(ctx context.Context, opts PlanApplyOptions) error {
 	// Run plan (show spinner while planning)
 	var result *engine.PlanResult
 	var planErr error
-	if err = style.RunWithSpinner(ctx, "Planning...", func(ctx context.Context) error {
-		result, planErr = eng.Plan(ctx, engine.PlanOptions{Targets: opts.Targets, ShowDiff: opts.ShowDiff})
-		return planErr
-	}); err != nil {
-		return fmt.Errorf("plan failed: %w", err)
+	// TODO: Replace with spinner from toolkit; for now, print and wait.
+	fmt.Print("Planning...")
+	result, planErr = eng.Plan(ctx, engine.PlanOptions{Targets: opts.Targets, ShowDiff: opts.ShowDiff})
+	fmt.Println()
+	if planErr != nil {
+		return fmt.Errorf("plan failed: %w", planErr)
 	}
 
 	// Print warnings for unmatched targets
@@ -86,49 +88,29 @@ func runPlanApply(ctx context.Context, opts PlanApplyOptions) error {
 			changeSummary = fmt.Sprintf("Apply %d changes?", totalChanges)
 		}
 		var confirmErr error
-		confirmed, confirmErr = pterm.DefaultInteractiveConfirm.Show(changeSummary)
-		if confirmErr != nil {
+		// TODO: Replace with palette-based confirm prompt
+		fmt.Printf("%s [y/N]: ", changeSummary)
+		var resp string
+		_, confirmErr = fmt.Scanln(&resp)
+		if confirmErr != nil && confirmErr.Error() != "unexpected newline" {
 			return fmt.Errorf("confirmation prompt error: %w", confirmErr)
 		}
-		if !confirmed {
+		if strings.ToLower(resp) != "y" && strings.ToLower(resp) != "yes" {
 			fmt.Println()
-			fmt.Println(style.Info.Render("→ Apply cancelled."))
+			fmt.Println("→ Apply cancelled.")
 			return nil
 		}
+		confirmed = true
 	}
 
 	// ==== Now, setup progress and actually apply ====
-	progressItems := 0
-	for _, providerPlan := range result.ProviderPlans {
-		for _, add := range providerPlan.Additions {
-			progressItems += len(add.Items)
-		}
-		for _, mod := range providerPlan.Modifications {
-			progressItems += len(mod.Changes)
-		}
-		for _, rem := range providerPlan.Removals {
-			progressItems += len(rem.Items)
-		}
-	}
-	var progress *style.ApplyProgress
-	if progressItems > 0 {
-		progress = style.NewApplyProgress(progressItems)
-	}
+	// TODO: Add progress bar with new UI toolkit
 	appOpts := engine.ApplyOptions{Confirm: confirmed}
-	if progress != nil {
-		appOpts.OnItemStart = func(kind, group, item string) { progress.StartItem(kind, group, item) }
-		appOpts.OnItemComplete = func(kind, group, item string, err error) { progress.CompleteItem(err) }
-	}
-	defer func() {
-		if progress != nil {
-			progress.Stop()
-		}
-	}()
 
 	if err := eng.Apply(ctx, result, appOpts); err != nil {
 		return fmt.Errorf("apply failed: %w", err)
 	}
-	fmt.Println(style.IconSuccess + " Changes applied successfully.")
+    fmt.Println(style.StyledIconSuccess + " Changes applied successfully.")
 	return nil
 
 }

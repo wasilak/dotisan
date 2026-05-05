@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-
-	"github.com/pterm/pterm"
 	"github.com/wasilak/dotisan/pkg/diff"
 	"github.com/wasilak/dotisan/pkg/engine"
 	"github.com/wasilak/dotisan/pkg/output"
@@ -216,13 +214,13 @@ func DisplayPlanResult(result *engine.PlanResult, outputFormat output.Format, sh
 		}
 
 		planParts := []string{
-			fmt.Sprintf("%s to add", style.Success.Render(fmt.Sprintf("%d", result.TotalAdditions))),
-			fmt.Sprintf("%s to change", style.Info.Render(fmt.Sprintf("%d", result.TotalModifications))),
-			fmt.Sprintf("%s to destroy", style.Error.Render(fmt.Sprintf("%d", result.TotalRemovals))),
+			fmt.Sprintf("%s to add", style.TableStatusAdd.Render(fmt.Sprintf("%d", result.TotalAdditions))),
+			fmt.Sprintf("%s to change", style.TableStatusUpdate.Render(fmt.Sprintf("%d", result.TotalModifications))),
+			fmt.Sprintf("%s to destroy", style.TableStatusRemove.Render(fmt.Sprintf("%d", result.TotalRemovals))),
 		}
 
 		if result.TotalCleanup > 0 {
-			planParts = append(planParts, fmt.Sprintf("%s cleanup (will be removed from state)", style.Dim.Render(fmt.Sprintf("%d", result.TotalCleanup))))
+			planParts = append(planParts, fmt.Sprintf("%s cleanup (will be removed from state)", style.TableStatusCleanup.Render(fmt.Sprintf("%d", result.TotalCleanup))))
 		}
 		fmt.Printf("Plan: %s\n", strings.Join(planParts, ", "))
 		return nil
@@ -232,30 +230,34 @@ func DisplayPlanResult(result *engine.PlanResult, outputFormat output.Format, sh
 // printDiffHeader renders a visual divider and a colour-coded action label
 // with the file path before each diff block.
 func printDiffHeader(action, filePath, providerName string) {
-	width := pterm.GetTerminalWidth()
+	// TODO: migrate to os terminal or use default width
+	width := 80
 	if width < 20 {
 		width = 72
 	}
-	rule := pterm.NewStyle(pterm.FgGray).Sprint(strings.Repeat("─", width))
+	rule := strings.Repeat("─", width) // removed pterm, replace with palette later
 
 	var badge string
 	switch action {
 	case "add":
-		badge = pterm.NewStyle(pterm.FgGreen, pterm.Bold).Sprint("+ add   ")
+		badge = style.DiffBadgeAdd.Render("+ add   ")
 	case "remove":
-		badge = pterm.NewStyle(pterm.FgRed, pterm.Bold).Sprint("- remove")
+		badge = style.DiffBadgeRemove.Render("- remove")
 	default:
-		badge = pterm.NewStyle(pterm.FgYellow, pterm.Bold).Sprint("~ update")
+		badge = style.DiffBadgeUpdate.Render("~ update")
 	}
 
-	path := pterm.NewStyle(pterm.Bold).Sprint(filePath)
-	prov := pterm.NewStyle(pterm.FgGray).Sprint("(" + providerName + ")")
+	path := style.DiffPath.Render(filePath)
+	prov := style.DiffProvider.Render("(" + providerName + ")")
 
 	fmt.Println()
 	fmt.Println(rule)
 	fmt.Printf("  %s  %s  %s\n", badge, path, prov)
 	fmt.Println(rule)
+	// (All pterm styles stubbed, now using color palette)
 }
+
+
 
 // ensureTrailingNewline mirrors the behavior in pkg/diff to guarantee
 // the UI uses normalized content when generating diffs.

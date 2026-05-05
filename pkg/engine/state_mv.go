@@ -162,8 +162,8 @@ func (e *Engine) StateMv(ctx context.Context, opts StateMvOptions) (*StateMvResu
 // DisplayStateMvResult displays the result of a state move operation.
 func DisplayStateMvResult(result *StateMvResult) {
 	fmt.Println()
-	fmt.Printf("%s Successfully moved %s\n", style.IconSuccess, style.Success.Render(result.DstItem))
-	fmt.Printf("  From: %s/%s\n", style.Dim.Render(result.SrcKind), style.Dim.Render(result.SrcGroup))
-	fmt.Printf("  To:   %s/%s\n", style.Dim.Render(result.DstKind), style.Dim.Render(result.DstGroup))
+    fmt.Printf("%s Successfully moved %s\n", style.StyledIconSuccess, style.Success.Render(result.DstItem))
+	fmt.Printf("  From: %s/%s\n", style.DimStyle.Render(result.SrcKind), style.DimStyle.Render(result.SrcGroup))
+	fmt.Printf("  To:   %s/%s\n", style.DimStyle.Render(result.DstKind), style.DimStyle.Render(result.DstGroup))
 	fmt.Println()
 }

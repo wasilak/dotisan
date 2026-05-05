@@ -376,8 +376,8 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 		} else {
 			fmt.Println(style.Warning.Render("⚠ Apply completed with errors"))
 			fmt.Println()
-			fmt.Printf("%s %d succeeded\n", style.IconSuccess, successCount)
-			fmt.Printf("%s %d failed\n", style.IconError, len(failures))
+            fmt.Printf("%s %d succeeded\n", style.StyledIconSuccess, successCount)
+            fmt.Printf("%s %d failed\n", style.StyledIconError, len(failures))
 			if len(skippedGroups) > 0 {
 				fmt.Printf("%s %d skipped (dependency failed)\n", style.IconWarning, len(skippedGroups))
 			}
@@ -386,7 +386,7 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 		fmt.Println(style.Bold.Render("Failed resources:"))
 		fmt.Println()
 		for _, f := range failures {
-			fmt.Printf("  %s %s\n", style.Error.Render("•"), style.Dim.Render(f.Resource))
+			fmt.Printf("  %s %s\n", style.Error.Render("•"), style.DimStyle.Render(f.Resource))
 			errLines := strings.Split(f.Err.Error(), "\n")
 			for _, line := range errLines {
 				fmt.Printf("    %s\n", style.Error.Render(line))
@@ -399,8 +399,8 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 			for _, s := range skippedGroups {
 				fmt.Printf("  %s %s/%s — %s\n",
 					style.Warning.Render("•"),
-					style.Dim.Render(s.Kind),
-					style.Dim.Render(s.Group),
+					style.DimStyle.Render(s.Kind),
+					style.DimStyle.Render(s.Group),
 					s.Reason,
 				)
 			}
@@ -410,7 +410,7 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 		return fmt.Errorf("apply completed with %d error(s)", len(failures))
 	}
 
-	fmt.Printf("%s Apply complete! All resources synchronized\n", style.IconSuccess)
+    fmt.Printf("%s Apply complete! All resources synchronized\n", style.StyledIconSuccess)
 	return nil
 }
 

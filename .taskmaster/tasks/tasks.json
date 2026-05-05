@@ -6536,5 +6536,702 @@
         "resource-dependencies"
       ]
     }
+  },
+  "ui-overhaul": {
+    "tasks": [
+      {
+        "id": "1",
+        "title": "Setup New UI Dependencies and Remove pterm",
+        "description": "Add briandowns/spinner, aquasecurity/table, and Digital-Shane/treeview as dependencies and remove pterm from go.mod",
+        "details": "Update go.mod to include: github.com/briandowns/spinner v1.17.0, github.com/aquasecurity/table v0.0.0-20230412104424-3142a8b3c17c, github.com/Digital-Shane/treeview v0.0.0-20230412104424-3142a8b3c17c. Remove pterm from go.mod. Create initial directory structure for new UI components.",
+        "testStrategy": "Verify go.mod updates correctly, ensure all new dependencies can be imported and build successfully",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Update go.mod with New UI Dependencies",
+            "description": "Modify go.mod to add the new UI dependencies and remove pterm",
+            "dependencies": [],
+            "details": "Update go.mod file to include github.com/briandowns/spinner v1.17.0, github.com/aquasecurity/table v0.0.0-20230412104424-3142a8b3c17c, and github.com/Digital-Shane/treeview v0.0.0-20230412104424-3142a8b3c17c. Remove pterm entry from go.mod and run go mod tidy to ensure dependencies are properly resolved",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-04T19:41:14.917Z"
+          },
+          {
+            "id": 2,
+            "title": "Create Directory Structure and Verify Imports",
+            "description": "Establish initial directory structure for new UI components and verify all imports work correctly",
+            "dependencies": [
+              1
+            ],
+            "details": "Create necessary directory structure in pkg/ui/ for new components including table.go, spinner.go, and treeview.go. Verify that all new dependencies can be imported in Go code and that the build succeeds without errors. Test that each dependency's functionality can be accessed through proper import paths",
+            "status": "done",
+            "testStrategy": null,
+            "updatedAt": "2026-05-04T19:41:14.943Z",
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Verify Dependency Functionality and Build Success",
+            "description": "Test that all new dependencies work correctly and the project builds successfully",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Run comprehensive tests to verify that all new dependencies function correctly in the codebase. Execute go build to ensure the project compiles successfully with the new dependencies. Verify that the pterm dependency has been completely removed from the project and that all related code references are updated or removed",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-04T19:41:15.023Z"
+          }
+        ],
+        "complexity": 3,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Break down the dependency setup into specific steps: updating go.mod, verifying imports work, creating directory structure, and testing build success. Include verification steps for each dependency and directory creation.",
+        "updatedAt": "2026-05-04T19:41:15.023Z"
+      },
+      {
+        "id": "2",
+        "title": "Implement Centralized Color Palette System",
+        "description": "Create ColorPalette struct with named colors and getters/setters",
+        "details": "Create pkg/style/palette.go with ColorPalette struct containing Main, Text, Synced, Drift, Add, Remove, Warn, Info, Dim, Success fields. Implement DefaultPalette() function, SetColor(name string, c Color) setter, and GetColor(name string) getter. Ensure all existing color constants are migrated to use this palette.",
+        "testStrategy": "Create unit tests for palette getters/setters, verify all color references in codebase are updated to use palette system",
+        "priority": "high",
+        "dependencies": [
+          "1"
+        ],
+        "status": "in-progress",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create ColorPalette struct and core functionality",
+            "description": "Implement the ColorPalette struct with named color fields and basic getter/setter functions",
+            "dependencies": [],
+            "details": "Create pkg/style/palette.go file with ColorPalette struct containing Main, Text, Synced, Drift, Add, Remove, Warn, Info, Dim, Success fields. Implement DefaultPalette() function, SetColor(name string, c Color) setter, and GetColor(name string) getter. Ensure proper struct design with clear field naming and access patterns.",
+            "status": "in-progress",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-05-04T19:41:22.068Z"
+          },
+          {
+            "id": 2,
+            "title": "Migrate existing color constants to palette system",
+            "description": "Update all existing code to reference the new ColorPalette system instead of hard-coded color values",
+            "dependencies": [
+              1
+            ],
+            "details": "Identify and replace all existing color constant references throughout the codebase with calls to the new ColorPalette system. Ensure backward compatibility is maintained during the migration process and verify that all color references are properly updated to use the palette getters.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Write comprehensive unit tests for palette system",
+            "description": "Create thorough unit tests covering all palette functionality and edge cases",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Develop comprehensive unit tests for the ColorPalette system including testing getters/setters, default palette initialization, color retrieval by name, and error handling for invalid color names. Test all color references in the codebase to ensure they work correctly with the new palette system.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 4,
+            "title": "Verify backward compatibility and complete codebase testing",
+            "description": "Ensure all UI components work correctly with the new palette system and maintain existing functionality",
+            "dependencies": [
+              1,
+              2,
+              3
+            ],
+            "details": "Test all UI components that reference color values to ensure they work correctly with the new palette system. Verify that no background colors are used anywhere in output, confirm JSON mode remains unaffected, and ensure all color references in the codebase properly utilize the new palette system while maintaining backward compatibility.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 5,
+        "recommendedSubtasks": 4,
+        "expansionPrompt": "Expand into creating the palette struct, implementing getters/setters, migrating existing color constants, and writing comprehensive unit tests. Include steps for ensuring backward compatibility and testing all color references in the codebase.",
+        "updatedAt": "2026-05-04T19:41:22.068Z"
+      },
+      {
+        "id": "3",
+        "title": "Replace Progress Bar with Spinner Component",
+        "description": "Replace all progress bar usage with briandowns/spinner using default spinner #28",
+        "details": "Remove pkg/style/progress.go. Create spinner utility functions in pkg/ui/spinner.go that use spinner #28 (`.oO°Oo.`) with ColorPalette.Main color. Update all long-running operations to use new spinner component with dark-cute messages.",
+        "testStrategy": "Verify all existing progress bar usage replaced, spinner displays correctly with proper color, and messages are in dark-cute tone",
+        "priority": "high",
+        "dependencies": [
+          "1",
+          "2"
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Remove Progress Bar Code and Create Spinner Utility Functions",
+            "description": "Remove the old progress bar implementation and create new spinner utility functions using briandowns/spinner with spinner #28",
+            "dependencies": [
+              3
+            ],
+            "details": "Delete pkg/style/progress.go file and create pkg/ui/spinner.go with utility functions that initialize the spinner #28 (`.oO°Oo.`) using ColorPalette.Main color. Implement functions for starting, stopping, and updating spinner with dark-cute messages.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Update All Long-Running Operations to Use New Spinner Component",
+            "description": "Replace all existing progress bar usage with the new spinner component throughout the application",
+            "dependencies": [
+              1
+            ],
+            "details": "Identify and update all long-running operations that previously used progress bars to now use the new spinner utility functions. Ensure each operation displays appropriate dark-cute messages and maintains proper color consistency with the existing color palette.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Verify Spinner Component Functionality and Message Consistency",
+            "description": "Test the new spinner component to ensure proper appearance and consistent dark-cute messaging",
+            "dependencies": [
+              2
+            ],
+            "details": "Verify that the spinner displays correctly with proper color from ColorPalette.Main, test that all dark-cute messages are consistently applied, and confirm that the spinner appearance matches the existing UI design standards. Test with various terminal widths and ensure message consistency across all operations.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 4,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Detail the removal of progress bar code, creation of spinner utility functions, updating all long-running operations, and testing the new spinner component with dark-cute messages. Include verification of spinner appearance and message consistency."
+      },
+      {
+        "id": "4",
+        "title": "Implement New Table Rendering Component",
+        "description": "Replace pterm table usage with aquasecurity/table with text wrapping and color-coded rows",
+        "details": "Create pkg/ui/table.go that uses aquasecurity/table. Implement text wrapping functionality to fit any terminal width. Add color-coded row functionality mapping ResourceRow.Status to palette colors. Ensure no background colors are used.",
+        "testStrategy": "Test table rendering with various terminal widths, verify color-coded rows work correctly, confirm text wrapping functions properly",
+        "priority": "high",
+        "dependencies": [
+          "1",
+          "2",
+          "3"
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Table Component Structure",
+            "description": "Initialize the table component structure using aquasecurity/table package",
+            "dependencies": [
+              1,
+              2,
+              3
+            ],
+            "details": "Create pkg/ui/table.go file with basic table component structure. Import aquasecurity/table package and set up initial table configuration. Define ResourceRow structure that will be used for table data. Ensure the component can be instantiated and configured properly.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Implement Text Wrapping Functionality",
+            "description": "Add text wrapping functionality to fit any terminal width",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement text wrapping logic that automatically adjusts column widths based on terminal size. Handle word wrapping for long text content, ensure content fits within available terminal width. Add logic to calculate optimal column widths dynamically and handle edge cases like very long words or narrow terminals.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Add Color-Coded Row Functionality",
+            "description": "Map ResourceRow.Status to palette colors for color-coded rows",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Implement color mapping logic that maps ResourceRow.Status values to appropriate colors from the ColorPalette. Ensure each status type (Synced, Drift, Add, Remove, Warn, Info, Success) gets mapped to corresponding palette colors. Apply these colors to entire rows in the table output.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 4,
+            "title": "Ensure No Background Colors Applied",
+            "description": "Verify that no background colors are used in table rendering",
+            "dependencies": [
+              1,
+              2,
+              3
+            ],
+            "details": "Implement validation logic to ensure only foreground colors are applied to table cells. Remove any background color assignments that might be inadvertently applied. Test that all table rendering uses only text colors from the palette without background color styling.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 5,
+            "title": "Test Table Component with Various Scenarios",
+            "description": "Test table rendering with different terminal widths and edge cases",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "details": "Create comprehensive tests for table component with various terminal widths (narrow, wide, very narrow). Test edge cases like very long text, empty cells, and different status types. Verify that text wrapping works correctly across different terminal sizes and that color-coded rows display properly in all scenarios.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 6,
+        "recommendedSubtasks": 5,
+        "expansionPrompt": "Break down table implementation into creating the component, implementing text wrapping, adding color-coded rows, ensuring no background colors, and testing with various terminal widths. Include steps for handling edge cases and testing different scenarios."
+      },
+      {
+        "id": "5",
+        "title": "Implement New Tree Rendering Component",
+        "description": "Replace pterm tree usage with Digital-Shane/treeview with custom icons and per-item colors",
+        "details": "Create pkg/ui/tree.go that uses Digital-Shane/treeview. Implement custom icons per node type using existing IconAdd, IconRemove, IconEdit constants. Add per-item color mapping based on diff state using ColorPalette. Use ColorPalette.Dim for connector/branch colors.",
+        "testStrategy": "Verify tree rendering works with custom icons, per-node colors display correctly, and connector colors match palette",
+        "priority": "high",
+        "dependencies": [
+          "1",
+          "2",
+          "3"
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Tree Component Structure and Import Dependencies",
+            "description": "Set up the basic tree component structure in pkg/ui/tree.go and import required Digital-Shane/treeview dependencies",
+            "dependencies": [
+              1,
+              2,
+              3
+            ],
+            "details": "Create pkg/ui/tree.go file with basic structure using Digital-Shane/treeview library. Import required dependencies and set up initial component skeleton. Ensure all necessary imports are correctly configured and the component can be built without errors.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Implement Custom Icons Per Node Type",
+            "description": "Add custom icon mapping for different node types using existing IconAdd, IconRemove, IconEdit constants",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement icon mapping logic that uses existing IconAdd, IconRemove, and IconEdit constants based on node type. Create mapping function that determines which icon to display for each node type. Ensure icon consistency across different node states and verify all node types are covered.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Add Per-Item Color Mapping Based on Diff State",
+            "description": "Implement color mapping for nodes based on diff state using ColorPalette system",
+            "dependencies": [
+              2
+            ],
+            "details": "Create color mapping logic that applies appropriate colors from ColorPalette based on node diff state. Implement logic to map ResourceRow.Status to corresponding palette colors. Ensure all color references use the centralized ColorPalette system and maintain the no background colors constraint.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 4,
+            "title": "Implement Connector Color Handling with Dim Palette",
+            "description": "Configure connector/branch colors using ColorPalette.Dim for consistent styling",
+            "dependencies": [
+              3
+            ],
+            "details": "Set up connector color styling using ColorPalette.Dim for all tree connectors and branches. Ensure consistent styling across all tree connections and branches. Verify that connector colors match the palette system and maintain visual consistency with other UI components.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 5,
+            "title": "Test Tree Component with Various Node Types",
+            "description": "Verify tree rendering works correctly with custom icons, per-node colors, and proper connector styling",
+            "dependencies": [
+              4
+            ],
+            "details": "Create comprehensive tests for tree component with various node types including add, remove, and edit operations. Test icon display consistency, color mapping accuracy, and connector styling. Verify that the tree renders properly with different terminal widths and node configurations while maintaining all styling requirements.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 6,
+        "recommendedSubtasks": 5,
+        "expansionPrompt": "Detail component creation with custom icons, per-node color mapping, connector color handling, and testing with various node types. Include steps for ensuring icon consistency, color mapping accuracy, and proper connector styling."
+      },
+      {
+        "id": "6",
+        "title": "Rewrite User-Facing Copy in Dark-Cute Voice",
+        "description": "Replace all user-facing strings with dark-cute tone",
+        "details": "Update all UI strings in pkg/ui/ and pkg/style/ to use dark-cute voice. Create a translation map for all existing strings to new dark-cute versions. Ensure spinner texts, table headers, section headers, success/error boxes, and plan summaries are updated.",
+        "testStrategy": "Review all updated strings for consistency in tone, verify all user-facing messages are in dark-cute voice",
+        "priority": "medium",
+        "dependencies": [
+          "2"
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Translation Map for Dark-Cute Voice Strings",
+            "description": "Develop a comprehensive translation map that converts all existing UI strings to dark-cute tone versions",
+            "dependencies": [
+              6
+            ],
+            "details": "Analyze all existing strings in pkg/ui/ and pkg/style/ directories to identify user-facing messages. Create a structured translation map that maintains the semantic meaning while applying dark-cute voice tone. Include spinner texts, table headers, section headers, success/error boxes, and plan summaries in the mapping process.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Update UI Strings with Dark-Cute Voice Implementation",
+            "description": "Replace all user-facing strings in UI components with dark-cute tone versions",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement the translation map across all UI components in pkg/ui/ and pkg/style/ directories. Ensure consistency in tone across spinner texts, table headers, section headers, success/error boxes, and plan summaries. Apply the dark-cute voice transformation while maintaining proper formatting and semantic meaning of messages.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Review and Verify Dark-Cute Voice Consistency",
+            "description": "Conduct comprehensive review to ensure all user-facing messages maintain consistent dark-cute tone",
+            "dependencies": [
+              2
+            ],
+            "details": "Perform thorough review of all updated strings to verify consistency in dark-cute voice application. Check that all user-facing messages, including error messages, success boxes, table headers, and spinner texts, maintain the intended tone. Verify that the translation map was properly applied and that no inconsistencies exist across different UI components.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 4,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Expand into creating translation maps, updating all UI strings in pkg/ui/ and pkg/style/, ensuring consistency across spinner texts, table headers, section headers, and error messages. Include steps for review and consistency verification."
+      },
+      {
+        "id": "7",
+        "title": "Update UI Components to Use New Palette System",
+        "description": "Modify all UI components to reference ColorPalette instead of hard-coded pterm.Color values",
+        "details": "Update pkg/ui/table.go, pkg/ui/tree.go, pkg/ui/spinner.go, and other UI components to reference ColorPalette instead of hard-coded color values. Ensure all components respect the no background colors constraint.",
+        "testStrategy": "Verify all UI components use palette colors correctly, confirm no background colors are used anywhere in output",
+        "priority": "high",
+        "dependencies": [
+          "2",
+          "4",
+          "5"
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Update table.go to Use ColorPalette System",
+            "description": "Modify pkg/ui/table.go to reference ColorPalette instead of hard-coded color values",
+            "dependencies": [
+              2,
+              4,
+              5
+            ],
+            "details": "Replace all pterm.Color references in table.go with ColorPalette getters, ensure no background colors are used, and verify all table components render correctly with new palette system",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Update tree.go to Use ColorPalette System",
+            "description": "Modify pkg/ui/tree.go to reference ColorPalette instead of hard-coded color values",
+            "dependencies": [
+              2,
+              4,
+              5
+            ],
+            "details": "Replace all pterm.Color references in tree.go with ColorPalette getters, ensure no background colors are used, and verify all tree components render correctly with new palette system",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Update spinner.go to Use ColorPalette System",
+            "description": "Modify pkg/ui/spinner.go to reference ColorPalette instead of hard-coded color values",
+            "dependencies": [
+              2,
+              4,
+              5
+            ],
+            "details": "Replace all pterm.Color references in spinner.go with ColorPalette getters, ensure no background colors are used, and verify all spinner components render correctly with new palette system",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 4,
+            "title": "Verify All UI Components Respect No Background Colors Constraint",
+            "description": "Test all updated UI components to ensure no background colors are used anywhere in output",
+            "dependencies": [
+              2,
+              4,
+              5
+            ],
+            "details": "Run comprehensive tests across all updated UI components to verify no background colors are applied, confirm all color references work correctly, and validate no regressions in functionality",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 5,
+        "recommendedSubtasks": 4,
+        "expansionPrompt": "Detail updating each UI component (table, tree, spinner) to reference the palette system, ensuring no background colors are used, and verifying all color references work correctly. Include steps for testing each component's color usage and confirming no regressions."
+      },
+      {
+        "id": "8",
+        "title": "Validate No Changes Box Functionality",
+        "description": "Ensure existing RenderNoChanges() functionality remains intact and functional",
+        "details": "Verify pkg/ui/nochanges.go maintains existing rainbow title, purple border, and white body functionality. Ensure this component is not modified but continues to work correctly.",
+        "testStrategy": "Run existing tests for no changes functionality, confirm rainbow title, purple border, and white body are preserved",
+        "priority": "medium",
+        "dependencies": [
+          "6"
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Run Existing Tests for No Changes Component",
+            "description": "Execute all existing tests to verify RenderNoChanges() functionality remains intact",
+            "dependencies": [
+              6
+            ],
+            "details": "Create test suite that specifically targets pkg/ui/nochanges.go component, run all existing unit tests and integration tests to ensure no regressions in rainbow title, purple border, and white body functionality. Verify that the component behaves exactly as before without any unintended modifications.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Verify UI Component Visual Elements and Modifications",
+            "description": "Confirm rainbow title, purple border, and white body are preserved while checking for unintended changes",
+            "dependencies": [
+              6
+            ],
+            "details": "Manually inspect pkg/ui/nochanges.go to verify rainbow title implementation, purple border styling, and white body background are maintained. Compare against baseline code to ensure no unintended modifications were made during overall UI updates. Document any findings and create regression test cases for visual elements.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 2,
+        "recommendedSubtasks": 2,
+        "expansionPrompt": "Break down validation into running existing tests, confirming rainbow title functionality, verifying purple border, and checking white body preservation. Include steps for ensuring no unintended modifications were made to the component."
+      },
+      {
+        "id": "9",
+        "title": "Implement JSON Output Mode Preservation",
+        "description": "Ensure JSON output mode remains unaffected by new UI changes",
+        "details": "Verify that --output json flag continues to work without any styling applied. Create tests to confirm JSON mode is not affected by new UI components and maintains original functionality.",
+        "testStrategy": "Test JSON output mode with various scenarios, confirm no styling is applied to JSON output",
+        "priority": "medium",
+        "dependencies": [
+          "7"
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create JSON Output Mode Test Scenarios",
+            "description": "Develop comprehensive test cases to verify JSON output mode functionality remains intact",
+            "dependencies": [
+              7
+            ],
+            "details": "Design and implement test scenarios that cover various JSON output use cases including different command flags, terminal widths, and input data types. Ensure tests validate that no styling or formatting is applied to JSON output when --output json flag is used.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Verify JSON Output Mode with New UI Components",
+            "description": "Test JSON output mode to ensure new UI components don't interfere with JSON functionality",
+            "dependencies": [
+              7,
+              1
+            ],
+            "details": "Execute tests to confirm that newly implemented table and tree rendering components do not affect JSON output mode. Validate that JSON output remains unchanged regardless of which UI components are active and verify no styling is applied to JSON formatted output.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Validate Original JSON Functionality Integrity",
+            "description": "Confirm that original JSON output functionality remains fully intact after UI changes",
+            "dependencies": [
+              7,
+              1,
+              2
+            ],
+            "details": "Perform comprehensive validation tests to ensure all original JSON output functionality works correctly. This includes testing various command-line scenarios, verifying output format consistency, and confirming that the --output json flag continues to produce properly formatted JSON without any UI styling interference.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 3,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Detail testing JSON output mode, creating test scenarios, confirming no styling is applied, and verifying original functionality remains intact. Include steps for testing various scenarios with the JSON flag and ensuring no UI components interfere with JSON output."
+      },
+      {
+        "id": "10",
+        "title": "End-to-End Integration and Testing",
+        "description": "Integrate all components and run comprehensive tests",
+        "details": "Run integration tests across all new UI components. Verify that spinner, table, and tree components work together correctly. Test with various terminal sizes and ensure all requirements are met including text wrapping, color consistency, and no background colors.",
+        "testStrategy": "Execute full integration tests, verify all components work together, test with different terminal widths, validate no background colors used anywhere, confirm all dark-cute copy is applied",
+        "priority": "high",
+        "dependencies": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5",
+          "6",
+          "7",
+          "8",
+          "9"
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Execute Integration Tests for All UI Components",
+            "description": "Run comprehensive integration tests across all newly developed UI components including spinner, table, and tree components",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ],
+            "details": "Implement test suite that validates interaction between all UI components, ensuring they work together seamlessly without conflicts or errors. Test component dependencies and data flow between components.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Test Component Interactions and Data Flow",
+            "description": "Verify that all UI components interact correctly and maintain proper data flow between each other",
+            "dependencies": [
+              1
+            ],
+            "details": "Create test scenarios that validate component communication, ensure proper state management, and confirm that data passed between components maintains integrity and expected formatting.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Validate Terminal Size Handling Across Multiple Dimensions",
+            "description": "Test component behavior with various terminal sizes to ensure proper rendering and functionality",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement testing with different terminal widths and heights to verify text wrapping, layout adjustments, and responsive behavior of all UI components. Include edge cases like very small terminals.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 4,
+            "title": "Confirm Color Consistency and Palette Compliance",
+            "description": "Verify that all UI components use the new color palette system and maintain color consistency",
+            "dependencies": [
+              1,
+              2,
+              3,
+              7
+            ],
+            "details": "Validate that all components reference ColorPalette instead of hard-coded values, test color consistency across all components, and ensure no background colors are used anywhere in the output.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 5,
+            "title": "Verify Dark-Cute Copy Application Across All Components",
+            "description": "Ensure all dark-cute copy is properly applied and displayed in all UI components",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "details": "Test that all UI components display the correct dark-cute copy text, verify proper text rendering, and confirm that all copy strings are properly formatted and localized.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          },
+          {
+            "id": 6,
+            "title": "Execute Comprehensive Testing Scenarios and Edge Cases",
+            "description": "Run comprehensive test scenarios including edge cases to validate full integration and functionality",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "details": "Implement extensive testing including error handling, boundary conditions, and unexpected input scenarios. Test all requirements including text wrapping, color consistency, background color absence, and dark-cute copy application.",
+            "status": "pending",
+            "testStrategy": null,
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 8,
+        "recommendedSubtasks": 6,
+        "expansionPrompt": "Expand into running integration tests across all components, testing component interactions, verifying terminal size handling, validating color consistency, confirming no background colors, and ensuring all dark-cute copy is applied. Include comprehensive testing scenarios and edge cases."
+      }
+    ],
+    "metadata": {
+      "version": "1.0.0",
+      "lastModified": "2026-05-04T19:41:22.068Z",
+      "taskCount": 10,
+      "completedCount": 1,
+      "tags": [
+        "ui-overhaul"
+      ]
+    }
   }
 }

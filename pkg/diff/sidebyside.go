@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/mattn/go-runewidth"
-	"github.com/pterm/pterm"
+	// TODO: All color/styles migrated to palette/ANSI – no pterm
 )
 
 var ansiStripRe = regexp.MustCompile(`\x1b\[[0-9;]*m`)
@@ -39,7 +39,8 @@ func NewSideBySideRenderer() *SideBySideRenderer {
 // Render returns a formatted side-by-side diff string.
 // action is one of "add", "remove", "update".
 func (r *SideBySideRenderer) Render(oldContent, newContent, action string) string {
-	colWidth := (pterm.GetTerminalWidth() - 3) / 2
+	// TODO: replace with dynamic terminal width query, for now use 80 default
+	colWidth := (80 - 3) / 2
 	if colWidth < 20 {
 		colWidth = 20
 	}
@@ -68,30 +69,31 @@ func (r *SideBySideRenderer) Render(oldContent, newContent, action string) strin
 		rows = parseUnifiedDiff(diffText)
 	}
 
-	sep := pterm.NewStyle(pterm.FgGray).Sprint("│")
-	divSep := pterm.NewStyle(pterm.FgGray).Sprint("┼")
+	// TODO: with palette, use gray. Now, use plain.
+	sep := "│"
+	divSep := "┼"
 
 	var b strings.Builder
 
-	// Column header
-	leftHdr := pterm.NewStyle(pterm.Bold).Sprint(padRight("  BEFORE", colWidth))
-	rightHdr := pterm.NewStyle(pterm.Bold).Sprint(padRight("  AFTER", colWidth))
+	// TODO: Apply styling/palette once available; for now, just plain headers
+	leftHdr := padRight("  BEFORE", colWidth)
+	rightHdr := padRight("  AFTER", colWidth)
 	b.WriteString(leftHdr + sep + rightHdr + "\n")
 
 	// Divider under header
-	divLine := pterm.NewStyle(pterm.FgGray).Sprint(strings.Repeat("─", colWidth))
+	divLine := strings.Repeat("─", colWidth)
 	b.WriteString(divLine + divSep + divLine + "\n")
 
 	if len(rows) == 0 {
-		note := padRight("  (no textual differences — state checksum may be stale)", colWidth*2+1)
-		b.WriteString(pterm.NewStyle(pterm.FgGray).Sprint(note) + "\n")
+			note := padRight("  (no textual differences — state checksum may be stale)", colWidth*2+1)
+			b.WriteString(note + "\n") // TODO: style as hint/gray
+
 	} else {
 		for _, row := range rows {
 			switch row.kind {
 			case rowHunkBreak:
 				msg := padRight(fmt.Sprintf("  ···  %d unchanged lines  ···", row.skipCount), colWidth)
-				styled := pterm.NewStyle(pterm.FgGray).Sprint(msg)
-				b.WriteString(styled + sep + styled + "\n")
+				b.WriteString(msg + sep + msg + "\n") // TODO: style as gray
 			default:
 				left := applyDiffStyle(padRight(row.leftText, colWidth), row.leftType)
 				right := applyDiffStyle(padRight(row.rightText, colWidth), row.rightType)
@@ -236,12 +238,14 @@ func truncateToWidth(s string, width int) string {
 
 // applyDiffStyle colours a pre-padded raw string based on the change type.
 func applyDiffStyle(text string, ct ChangeType) string {
+	// TODO: switch to palette color functions
 	switch ct {
 	case LineDeleted:
-		return pterm.NewStyle(pterm.FgRed).Sprint(text)
+		return "\033[31m" + text + "\033[0m" // red
 	case LineAdded:
-		return pterm.NewStyle(pterm.FgGreen).Sprint(text)
+		return "\033[32m" + text + "\033[0m" // green
 	default:
-		return pterm.NewStyle(pterm.FgGray).Sprint(text)
+		return text // gray not used; would be "\033[90m"
 	}
 }
+

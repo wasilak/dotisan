@@ -67,8 +67,8 @@ func (f *PlanFormatter) FormatModification(resourceName string, diff string) str
 
 // FormatInSync formats an in-sync message.
 func (f *PlanFormatter) FormatInSync(resourceName string) string {
-	icon := style.Dim.Render(IconInSync)
-	name := style.Dim.Render(resourceName)
+	icon := style.DimStyle.Render(IconInSync)
+	name := style.DimStyle.Render(resourceName)
 	return fmt.Sprintf("%s %s", icon, name)
 }
 
@@ -114,7 +114,7 @@ func (f *PlanFormatter) formatMultilineDiff(diff, indent string) string {
 			formattedLines = append(formattedLines, indent+colored)
 		} else {
 			// Context line - dim
-			colored := style.Dim.Render(line)
+			colored := style.DimStyle.Render(line)
 			formattedLines = append(formattedLines, indent+colored)
 		}
 	}
@@ -159,7 +159,7 @@ func (f *PlanFormatter) FormatWarningsSummary(warnCount int) string {
 // FormatResourceHeader formats a resource section header.
 func (f *PlanFormatter) FormatResourceHeader(kind, name string) string {
 	kindStyle := style.Bold.Render(kind)
-	nameStyle := style.Dim.Render(name)
+	nameStyle := style.DimStyle.Render(name)
 	return fmt.Sprintf("%s/%s", kindStyle, nameStyle)
 }
 
@@ -172,35 +172,35 @@ func (f *PlanFormatter) FormatSectionHeader(title string) string {
 func (f *PlanFormatter) FormatAdditionDetailed(resourceName string) string {
 	icon := style.StyledIconAdd
 	name := style.RowSuccess.Render(resourceName)
-	action := style.Dim.Render("will be created")
+	action := style.DimStyle.Render("will be created")
 	return fmt.Sprintf("  %s %s %s", icon, name, action)
 }
 
 func (f *PlanFormatter) FormatRemovalDetailed(resourceName string) string {
 	icon := style.IconError
 	name := style.RowError.Render(resourceName)
-	action := style.Dim.Render("will be destroyed")
+	action := style.DimStyle.Render("will be destroyed")
 	return fmt.Sprintf("  %s %s %s", icon, name, action)
 }
 
 func (f *PlanFormatter) FormatModificationDetailed(resourceName string) string {
 	icon := style.Info.Render(IconModification)
 	name := style.RowWarning.Render(resourceName)
-	action := style.Dim.Render("will be updated")
+	action := style.DimStyle.Render("will be updated")
 	return fmt.Sprintf("  %s %s %s", icon, name, action)
 }
 
 func (f *PlanFormatter) FormatDriftDetailed(resourceName string) string {
 	icon := style.Warning.Render(IconDrift)
 	name := style.RowWarning.Render(resourceName)
-	action := style.Dim.Render("will be restored")
+	action := style.DimStyle.Render("will be restored")
 	return fmt.Sprintf("  %s %s %s", icon, name, action)
 }
 
 func (f *PlanFormatter) FormatInSyncDetailed(resourceName string) string {
-	icon := style.Dim.Render(IconInSync)
-	name := style.Dim.Render(resourceName)
-	action := style.Dim.Render("no changes")
+	icon := style.DimStyle.Render(IconInSync)
+	name := style.DimStyle.Render(resourceName)
+	action := style.DimStyle.Render("no changes")
 	return fmt.Sprintf("  %s %s %s", icon, name, action)
 }
 
@@ -211,10 +211,10 @@ func (f *PlanFormatter) FormatActionReason(reason string) string {
 	parts := strings.SplitN(reason, ": ", 2)
 	if len(parts) == 2 {
 		sev := style.Warning.Render(parts[0])
-		msg := style.Dim.Render(parts[1])
+		msg := style.DimStyle.Render(parts[1])
 		return fmt.Sprintf("%s: %s", sev, msg)
 	}
-	return style.Dim.Render(reason)
+	return style.DimStyle.Render(reason)
 }
 
 // FormatDiff formats a diff block
@@ -224,5 +224,5 @@ func (f *PlanFormatter) FormatDiff(diff string) string {
 
 // FormatNoChanges formats the "no changes" message
 func (f *PlanFormatter) FormatNoChanges() string {
-	return style.Dim.Render("No changes. Your dotfiles are in sync!")
+	return style.DimStyle.Render("No changes. Your dotfiles are in sync!")
 }

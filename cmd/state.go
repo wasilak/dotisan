@@ -2,14 +2,15 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
+	"os"
+	"strings"
+	"errors"
 	"io/fs"
 	"log/slog"
-	"os"
+	"encoding/json"
 
-	"github.com/pterm/pterm"
+	// pterm import removed. TODO: migrate all CLI UI calls to palette-based toolkit.
 	"github.com/wasilak/dotisan/pkg/ui"
 
 	"github.com/wasilak/dotisan/pkg/config"
@@ -159,7 +160,7 @@ func runStateImport(ctx context.Context, id, actual string) error {
 		return fmt.Errorf("failed to save state: %w", err)
 	}
 
-	fmt.Printf("%s Successfully imported %s/%s[%s]\n", style.IconSuccess, kind, group, item)
+    fmt.Printf("%s Successfully imported %s/%s[%s]\n", style.StyledIconSuccess, kind, group, item)
 	return nil
 }
 
@@ -276,13 +277,16 @@ func runStateRemoveByID(ctx context.Context, id string) error {
 		} else {
 			title = fmt.Sprintf("Remove %s/%s/%s from state?", kind, group, item)
 		}
-		confirm, err := pterm.DefaultInteractiveConfirm.Show(title)
-		if err != nil {
+		// TODO: Replace with palette-based confirm prompt
+		fmt.Printf("%s [y/N]: ", title)
+		var resp string
+		_, err := fmt.Scanln(&resp)
+		if err != nil && err.Error() != "unexpected newline" { // user just hit enter
 			return fmt.Errorf("confirmation prompt error: %w", err)
 		}
-		if !confirm {
+		if strings.ToLower(resp) != "y" && strings.ToLower(resp) != "yes" {
 			fmt.Println()
-			fmt.Println(style.Info.Render("→ Remove cancelled."))
+			fmt.Println("→ Remove cancelled.")
 			return nil
 		}
 	}
@@ -313,9 +317,9 @@ func runStateRemoveByID(ctx context.Context, id string) error {
 
 	if !removed {
 		if item == "" {
-			fmt.Printf("%s Resource %s/%s not found in state\n", style.IconError, kind, group)
+            fmt.Printf("%s Resource %s/%s not found in state\n", style.StyledIconError, kind, group)
 		} else {
-			fmt.Printf("%s Resource %s/%s/%s not found in state\n", style.IconError, kind, group, item)
+            fmt.Printf("%s Resource %s/%s/%s not found in state\n", style.StyledIconError, kind, group, item)
 		}
 		return nil
 	}
@@ -325,9 +329,9 @@ func runStateRemoveByID(ctx context.Context, id string) error {
 	}
 
 	if item == "" {
-		fmt.Printf("%s Removed %s/%s from state\n", style.IconSuccess, kind, group)
+        fmt.Printf("%s Removed %s/%s from state\n", style.StyledIconSuccess, kind, group)
 	} else {
-		fmt.Printf("%s Removed %s/%s/%s from state\n", style.IconSuccess, kind, group, item)
+        fmt.Printf("%s Removed %s/%s/%s from state\n", style.StyledIconSuccess, kind, group, item)
 	}
 	return nil
 }
@@ -363,16 +367,16 @@ func runStateList(ctx context.Context) error {
 	var currentState *state.State
 	var loadErr error
 	// Use provided context so signal cancellation propagates to spinner and backend.Load
-	err := style.RunWithSpinner(ctx, "Loading state...", func(ctx context.Context) error {
-		currentState, loadErr = backend.Load(ctx)
-		return loadErr
-	})
-	if err != nil {
-		if os.IsNotExist(err) {
+	// TODO: Replace with spinner from toolkit; for now, print and wait.
+	fmt.Print("Loading state...")
+	currentState, loadErr = backend.Load(ctx)
+	fmt.Println()
+	if loadErr != nil {
+		if os.IsNotExist(loadErr) {
 			fmt.Println("No state file found. Run 'dotisan apply' first.")
 			return nil
 		}
-		return fmt.Errorf("cannot load state: %w", err)
+		return fmt.Errorf("cannot load state: %w", loadErr)
 	}
 
 	if len(currentState.Resources) == 0 {
