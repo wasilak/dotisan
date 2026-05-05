@@ -3,8 +3,8 @@ package diff
 import (
 	"context"
 	"fmt"
-	"strings"
 
+	"charm.land/lipgloss/v2"
 	"github.com/Digital-Shane/treeview/v2"
 	"github.com/wasilak/dotisan/pkg/provider"
 	"github.com/wasilak/dotisan/pkg/style"
@@ -240,30 +240,19 @@ func (tr *TreeRenderer) RenderTree(root *treeview.Node[string]) error {
 	// sibling position; ensuring nodes are expanded is sufficient to produce
 	// the vertical lines and branches.
 
+	// Build a DefaultNodeProvider so that prefixes and branch glyphs inherit
+	// our Border color. The provider's default style will be applied to the
+	// full line; inner ANSI sequences from item labels will override it where
+	// necessary (so names keep their distinct colors).
+	prov := treeview.NewDefaultNodeProvider[string]()
+	prov.SetDefaultStyle(lipgloss.NewStyle().Foreground(lipgloss.Color("#663399")))
+
+	// Recreate the tree with the provider so prefixes are colored correctly
+	tree = treeview.NewTree[string]([]*treeview.Node[string]{root}, treeview.WithProvider(prov), treeview.WithExpandAll[string]())
 	out, err := tree.Render(context.Background())
 	if err != nil {
 		return err
 	}
-	// Dim the branch glyph prefixes for visual contrast. We wrap only the
-	// leading branch/indent characters (e.g. "├── ", "│   ", "└── ") with
-	// the DimStyle so node text (already styled) remains unchanged.
-	var outLines []string
-	for _, ln := range strings.Split(out, "\n") {
-		if ln == "" {
-			outLines = append(outLines, ln)
-			continue
-		}
-		var b strings.Builder
-		for _, r := range ln {
-			switch r {
-			case '─', '│', '├', '└', '┘', '┌', '┐', '┤', '┬', '┴', '┼', '╭', '╮', '╯', '╰', '┝', '┥', '┯', '┷', '┿', '┠', '┨':
-				b.WriteString(style.Border.Render(string(r)))
-			default:
-				b.WriteRune(r)
-			}
-		}
-		outLines = append(outLines, b.String())
-	}
-	fmt.Println(strings.Join(outLines, "\n"))
+	fmt.Println(out)
 	return nil
 }
