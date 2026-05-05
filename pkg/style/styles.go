@@ -67,6 +67,9 @@ var (
 
 	// No changes
 	NoChangesBorder = NewStyle(DefaultColors.NoChangesBorder)
+	// Generic border style (re-uses NoChangesBorder by default). Exported so
+	// tables and other structural elements can use a consistent border color.
+	Border = NewStyle(DefaultColors.NoChangesBorder)
 )
 
 // RefreshStyles reapplies DefaultColors to the exported Style wrappers. Call
@@ -121,6 +124,7 @@ func RefreshStyles() {
 	HeaderKindUpdate = NewStyle(DefaultColors.HeaderKindUpdate)
 
 	NoChangesBorder = NewStyle(DefaultColors.NoChangesBorder)
+	Border = NewStyle(DefaultColors.NoChangesBorder)
 }
 
 // ApplyPalette replaces the global DefaultColors palette and refreshes the

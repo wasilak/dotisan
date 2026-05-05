@@ -18,6 +18,10 @@ func NewTable(w io.Writer) *Table {
 		w = os.Stdout
 	}
 	tbl := table.New(w)
+	// Use bright magenta for table lines — approximate the NoChangesBorder
+	// purple. aquasecurity/table uses numeric SGR codes for line styling, so
+	// pick the closest available constant.
+	tbl.SetLineStyle(table.StyleBrightMagenta)
 	return &Table{t: tbl}
 }
 

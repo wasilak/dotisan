@@ -272,7 +272,8 @@ func (tr *TreeRenderer) RenderTree(root *treeview.Node[string]) error {
 		}
 		prefix := ln[:i]
 		rest := ln[i:]
-		outLines = append(outLines, style.DimStyle.Render(prefix)+rest)
+		// color branch glyphs using the shared Border style (dark purple)
+		outLines = append(outLines, style.Border.Render(prefix)+rest)
 	}
 	fmt.Println(strings.Join(outLines, "\n"))
 	return nil
