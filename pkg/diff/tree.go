@@ -3,6 +3,8 @@ package diff
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/Digital-Shane/treeview/v2"
 	"github.com/wasilak/dotisan/pkg/provider"
 	"github.com/wasilak/dotisan/pkg/style"
@@ -242,6 +244,36 @@ func (tr *TreeRenderer) RenderTree(root *treeview.Node[string]) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(out)
+	// Dim the branch glyph prefixes for visual contrast. We wrap only the
+	// leading branch/indent characters (e.g. "├── ", "│   ", "└── ") with
+	// the DimStyle so node text (already styled) remains unchanged.
+	var outLines []string
+	for _, ln := range strings.Split(out, "\n") {
+		if ln == "" {
+			outLines = append(outLines, ln)
+			continue
+		}
+		// determine prefix run consisting of branch glyphs and spaces
+		i := 0
+		for _, r := range ln {
+			// common tree glyphs and spaces
+			switch r {
+			case ' ', '│', '├', '└', '─', '┬', '┼', '┐', '┤', '╭', '╮', '╯', '╰':
+				i += len(string(r))
+				continue
+			default:
+				// stop on first non-branch rune
+				break
+			}
+		}
+		if i == 0 {
+			outLines = append(outLines, ln)
+			continue
+		}
+		prefix := ln[:i]
+		rest := ln[i:]
+		outLines = append(outLines, style.DimStyle.Render(prefix)+rest)
+	}
+	fmt.Println(strings.Join(outLines, "\n"))
 	return nil
 }
