@@ -138,7 +138,7 @@ func RenderResourceTable(rows []ResourceRow, showHeader bool) error {
 					style.NewStyle(style.DefaultColors.HeaderKindAdd).Render(r.Kind),
 					style.NewStyle(style.DefaultColors.GroupLabel).Render(r.Group),
 					style.NewStyle(style.DefaultColors.TableCell).Render(r.Name),
-					style.NewStyle(style.DefaultColors.VersionColor).Render(info),
+					style.VersionColor.Render(info),
 				)
 			} else {
 				tbl.AddRow(

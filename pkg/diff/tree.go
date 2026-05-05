@@ -187,8 +187,8 @@ func (f *TreeFormatter) FormatStateAsTree(resources []StateResource) error {
 				// name + optional info (version) styled the same (TableCell)
 				itemText := f.itemStyle.Render(item.Name)
 				if item.Info != "" {
-					// render version with dedicated VersionColor
-					itemText = itemText + " " + style.NewStyle(style.DefaultColors.VersionColor).Render(item.Info)
+					// render version with dedicated VersionColor (use exported wrapper)
+					itemText = itemText + " " + style.VersionColor.Render(item.Info)
 				}
 				// append status (e.g. managed) in action style (dim/gray)
 				if group.Status != "" {
