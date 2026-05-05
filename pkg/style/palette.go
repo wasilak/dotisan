@@ -118,8 +118,10 @@ func DefaultPalette() ColorPalette {
 		DiffProvider:        Gray,
 		DiffPath:            BoldSeq,
 		// NoChanges specifics
-		// Use bright magenta for structural borders to match other UI accents.
-		NoChangesBorder:  "\033[95m",
+		// Dark purple border for structural elements. Use a 24-bit ANSI
+		// foreground color for a deeper, richer purple that matches the
+		// provided reference image.
+		NoChangesBorder:  "\033[38;2;50;0;75m",
 		NoChangesRainbow: []string{"\033[31m", "\033[33m", "\033[32m", "\033[36m", "\033[34m", "\033[35m"},
 	}
 }
