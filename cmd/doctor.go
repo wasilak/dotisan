@@ -12,6 +12,7 @@ import (
 	"github.com/wasilak/dotisan/pkg/resource"
 	"github.com/wasilak/dotisan/pkg/state"
 	"github.com/wasilak/dotisan/pkg/style"
+	"github.com/wasilak/dotisan/pkg/ui"
 
 	"github.com/spf13/cobra"
 )
@@ -157,17 +158,23 @@ func runDoctor(ctx context.Context) error {
 	// 4. Validate Resources (if requested)
 	if doctorValidateFlag {
 		// Use provided context so cancellation from signals propagates here
-		// TODO: Add progress spinner/bar using new UI toolkit
-		fmt.Print("Validating resource files...")
-		validationErrors, err := validateResources(ctx, configDir, valuesPath)
-		fmt.Println()
-		if err != nil {
-			fmt.Printf("  %s Resource validation failed: %v\n", style.IconError, err)
+		// Use the spinner for validation
+		var validationErrors []string
+		validationErr := ui.RunWithSpinner(ctx, style.Info, "Validating resource files...", "validation cancelled", func(ctx context.Context, publish func(ui.MessageLevel, string)) error {
+			// validateResources walks files and respects ctx; no per-file
+			// publish calls currently, but publish is available for future
+			// enhancements.
+			var innerErr error
+			validationErrors, innerErr = validateResources(ctx, configDir, valuesPath)
+			return innerErr
+		})
+		if validationErr != nil {
+			fmt.Printf("  %s Resource validation failed: %v\n", style.IconError, validationErr)
 		} else if len(validationErrors) > 0 {
 			hasErrors = true
-			for _, err := range validationErrors {
-				fmt.Printf("  %s %s\n", style.IconError, err)
-				issues = append(issues, err)
+			for _, v := range validationErrors {
+				fmt.Printf("  %s %s\n", style.IconError, v)
+				issues = append(issues, v)
 			}
 		} else {
 			fmt.Printf("  %s All resource files valid\n", style.StyledIconSuccess)

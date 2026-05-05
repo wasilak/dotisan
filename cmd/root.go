@@ -14,6 +14,7 @@ import (
 	"github.com/wasilak/dotisan/pkg/config"
 
 	"github.com/spf13/cobra"
+	"github.com/wasilak/dotisan/cmd/middleware"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -73,6 +74,10 @@ func init() {
 		if cfgErr != nil && !errors.Is(cfgErr, fs.ErrNotExist) {
 			slog.Warn("failed to load config", "err", cfgErr)
 		}
+
+		// Install spinner middleware so commands can opt-in to publish helpers
+		// via the command context. This keeps wiring minimal and non-invasive.
+		rootCmd.PersistentPreRunE = middleware.SpinnerMiddleware()
 
 		chosen := "info"
 		if strings.TrimSpace(lvlFlag) != "" {

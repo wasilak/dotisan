@@ -29,14 +29,14 @@ type Styles struct {
 // DefaultStyles returns the default color scheme for diffs.
 // Uses color constants from pkg/style for consistency.
 func DefaultStyles() Styles {
-    return Styles{
-        // Use style wrappers defined in pkg/style/styles.go for consistency.
-        Addition:     style.DiffBadgeAdd,
-        Deletion:     style.DiffBadgeRemove,
-        Modification: style.DiffBadgeUpdate,
-        Unchanged:    style.DiffProvider,
-        Header:       style.DiffPath,
-    }
+	return Styles{
+		// Use style wrappers defined in pkg/style/styles.go for consistency.
+		Addition:     style.DiffBadgeAdd,
+		Deletion:     style.DiffBadgeRemove,
+		Modification: style.DiffBadgeUpdate,
+		Unchanged:    style.DiffProvider,
+		Header:       style.DiffPath,
+	}
 }
 
 // StyledDiffEngine extends Engine with styling capabilities.

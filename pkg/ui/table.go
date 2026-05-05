@@ -1,10 +1,10 @@
 package ui
 
 import (
-    "github.com/aquasecurity/table"
-    "io"
-    "os"
-    "github.com/wasilak/dotisan/pkg/style"
+	"github.com/aquasecurity/table"
+	"github.com/wasilak/dotisan/pkg/style"
+	"io"
+	"os"
 )
 
 // Table is a wrapper for aquasecurity/table.Table.
@@ -23,13 +23,13 @@ func NewTable(w io.Writer) *Table {
 
 // SetHeaders sets the headers for the table (variadic, not slice).
 func (t *Table) SetHeaders(headers ...string) {
-    // Ensure headers are rendered with the palette's TableHeader style so
-    // callers don't need to remember to apply styling.
-    styled := make([]string, 0, len(headers))
-    for _, h := range headers {
-        styled = append(styled, style.TableHeader.Render(h))
-    }
-    t.t.SetHeaders(styled...)
+	// Ensure headers are rendered with the palette's TableHeader style so
+	// callers don't need to remember to apply styling.
+	styled := make([]string, 0, len(headers))
+	for _, h := range headers {
+		styled = append(styled, style.TableHeader.Render(h))
+	}
+	t.t.SetHeaders(styled...)
 }
 
 // AddRow adds a row to the table (variadic, not slice).

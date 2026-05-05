@@ -18,6 +18,8 @@ const (
 
 // ColorPalette centralizes all color/style mappings for the UI.
 type ColorPalette struct {
+	// Primary/main color for prominent UI elements (spinner, headers)
+	Main        string
 	Success     string
 	Error       string
 	Warning     string
@@ -27,14 +29,14 @@ type ColorPalette struct {
 	RowError    string
 	RowWarning  string
 	Header      string
-    TableHeader string
-    TableRow    string
-    TableCell   string
+	TableHeader string
+	TableRow    string
+	TableCell   string
 
-    // Combined roles for common pairings
-    HeaderKindAdd string
-    HeaderKindRemove string
-    HeaderKindUpdate string
+	// Combined roles for common pairings
+	HeaderKindAdd    string
+	HeaderKindRemove string
+	HeaderKindUpdate string
 
 	// Box wrappers for banner/info output
 	SuccessBox string
@@ -64,12 +66,13 @@ type ColorPalette struct {
 
 	// No changes (kudos card)
 	NoChangesBorder  string
-    NoChangesRainbow []string // ANSI codes for per-letter rainbow, palette order
+	NoChangesRainbow []string // ANSI codes for per-letter rainbow, palette order
 }
 
 // DefaultPalette returns a ColorPalette populated with current ANSI codes.
 func DefaultPalette() ColorPalette {
 	return ColorPalette{
+		Main:        Green,
 		Success:     Green,
 		Error:       Red,
 		Warning:     Orange,
@@ -84,8 +87,8 @@ func DefaultPalette() ColorPalette {
 		HeaderKindAdd:    BoldSeq + Green,
 		HeaderKindRemove: BoldSeq + Red,
 		HeaderKindUpdate: BoldSeq + Orange,
-		SuccessBox:  "\033[1;42m", // Bold + green bg
-		InfoBox:     "\033[1;44m", // Bold + blue bg
+		SuccessBox:       "\033[1;42m", // Bold + green bg
+		InfoBox:          "\033[1;44m", // Bold + blue bg
 
 		TableRow:  "",
 		TableCell: "",
@@ -106,8 +109,8 @@ func DefaultPalette() ColorPalette {
 		TableStatusAddBg:    "\033[1m" + Green + "\033[40m",
 		TableStatusRemoveBg: "\033[1m" + Red + "\033[40m",
 		TableStatusUpdateBg: "\033[1m" + Orange + "\033[40m",
-		DiffProvider:       Gray,
-		DiffPath:           BoldSeq,
+		DiffProvider:        Gray,
+		DiffPath:            BoldSeq,
 		// NoChanges specifics
 		NoChangesBorder:  "\033[38;5;97m", // purple
 		NoChangesRainbow: []string{"\033[31m", "\033[33m", "\033[32m", "\033[36m", "\033[34m", "\033[35m"},
@@ -174,4 +177,131 @@ func (p ColorPalette) GetRainbow(i int) string {
 		return ""
 	}
 	return p.NoChangesRainbow[i%len(p.NoChangesRainbow)]
+}
+
+// GetColor returns the ANSI sequence for a named role. Prefer using the
+// Style wrappers in pkg/style/styles.go (they wrap these values and provide
+// Render helpers), but this is useful for dynamic access or tests.
+func (p ColorPalette) GetColor(name string) string {
+	return p.Get(name)
+}
+
+// SetColor sets the ANSI sequence for a named role on the palette. It does
+// nothing if the role is unknown. Use a pointer receiver to mutate the
+// palette in-place.
+func (p *ColorPalette) SetColor(name, seq string) {
+	switch name {
+	case "success":
+		p.Success = seq
+	case "error":
+		p.Error = seq
+	case "warning":
+		p.Warning = seq
+	case "info":
+		p.Info = seq
+	case "dim":
+		p.Dim = seq
+	case "row_success":
+		p.RowSuccess = seq
+	case "row_error":
+		p.RowError = seq
+	case "row_warning":
+		p.RowWarning = seq
+	case "header":
+		p.Header = seq
+	case "table_header":
+		p.TableHeader = seq
+	case "table_row":
+		p.TableRow = seq
+	case "table_cell":
+		p.TableCell = seq
+	case "success_box":
+		p.SuccessBox = seq
+	case "info_box":
+		p.InfoBox = seq
+	case "table_status_add":
+		p.TableStatusAdd = seq
+	case "table_status_remove":
+		p.TableStatusRemove = seq
+	case "table_status_update":
+		p.TableStatusUpdate = seq
+	case "table_status_drift":
+		p.TableStatusDrift = seq
+	case "table_status_cleanup":
+		p.TableStatusCleanup = seq
+	case "diff_badge_add":
+		p.DiffBadgeAdd = seq
+	case "diff_badge_remove":
+		p.DiffBadgeRemove = seq
+	case "diff_badge_update":
+		p.DiffBadgeUpdate = seq
+	case "diff_provider":
+		p.DiffProvider = seq
+	case "diff_path":
+		p.DiffPath = seq
+	case "nochanges_border":
+		p.NoChangesBorder = seq
+	default:
+		// Unknown role — no-op
+	}
+}
+
+// ApplyToDefaults merges this palette into the global DefaultColors and
+// refreshes exported styles. This is a convenience for tests and runtime
+// configuration where you want to update the palette in-place.
+func (p *ColorPalette) ApplyToDefaults() {
+	// merge fields selectively so zero-values don't overwrite existing
+	// defaults when omitted
+	q := DefaultPalette()
+	// copy all fields from p that are non-empty
+	if p.Success != "" {
+		q.Success = p.Success
+	}
+	if p.Error != "" {
+		q.Error = p.Error
+	}
+	if p.Warning != "" {
+		q.Warning = p.Warning
+	}
+	if p.Info != "" {
+		q.Info = p.Info
+	}
+	if p.Dim != "" {
+		q.Dim = p.Dim
+	}
+	if p.RowSuccess != "" {
+		q.RowSuccess = p.RowSuccess
+	}
+	if p.RowError != "" {
+		q.RowError = p.RowError
+	}
+	if p.RowWarning != "" {
+		q.RowWarning = p.RowWarning
+	}
+	if p.Header != "" {
+		q.Header = p.Header
+	}
+	if p.TableHeader != "" {
+		q.TableHeader = p.TableHeader
+	}
+	if p.HeaderKindAdd != "" {
+		q.HeaderKindAdd = p.HeaderKindAdd
+	}
+	if p.HeaderKindRemove != "" {
+		q.HeaderKindRemove = p.HeaderKindRemove
+	}
+	if p.HeaderKindUpdate != "" {
+		q.HeaderKindUpdate = p.HeaderKindUpdate
+	}
+	if p.SuccessBox != "" {
+		q.SuccessBox = p.SuccessBox
+	}
+	if p.InfoBox != "" {
+		q.InfoBox = p.InfoBox
+	}
+	if len(p.NoChangesRainbow) > 0 {
+		q.NoChangesRainbow = p.NoChangesRainbow
+	}
+	// replace global DefaultColors and refresh styles
+	ApplyPalette(q)
 }

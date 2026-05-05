@@ -99,9 +99,9 @@ func RenderNoChanges() {
 	title := b.String()
 	// (Palette rainbow logic applied)
 
-    // Use centralized box formatter from the palette so borders/styles are
-    // consistently applied and easier to change.
-    card := style.FormatKudosCard(title, entry.body, 42)
-    fmt.Print(card)
+	// Use centralized box formatter from the palette so borders/styles are
+	// consistently applied and easier to change.
+	card := style.FormatKudosCard(title, entry.body, 42)
+	fmt.Print(card)
 
 }

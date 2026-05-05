@@ -100,7 +100,17 @@ func runStateImport(ctx context.Context, id, actual string) error {
 	// fall back to creating a minimal ResourceState with the provided item
 	// so the CLI can still record it in state. This is a transitional
 	// compatibility behavior; callers should prefer explicit import handling.
-	resourceState, err := p.Import(ctx, rid.Group)
+	// Use spinner while performing provider Import (may invoke external commands)
+	var resourceState provider.ResourceState
+	importErr := ui.RunWithSpinner(ctx, style.Info, "Discovering installed resources...", "import cancelled", func(ctx context.Context, publish func(ui.MessageLevel, string)) error {
+		var err error
+		// provider.Import may perform its own output; we do not publish per-item
+		// updates here, but publish is available if needed in the future.
+		resourceState, err = p.Import(ctx, rid.Group)
+		return err
+	})
+	// normalize err variable for fallback logic below
+	err = importErr
 	if err != nil {
 		// Fall back to minimal state with the requested item only
 		resourceState = provider.ResourceState{
@@ -160,7 +170,7 @@ func runStateImport(ctx context.Context, id, actual string) error {
 		return fmt.Errorf("failed to save state: %w", err)
 	}
 
-    fmt.Println(style.Iconf(style.StyledIconSuccess, style.Success, "Successfully imported %s/%s[%s]", kind, group, item))
+	fmt.Println(style.Iconf(style.StyledIconSuccess, style.Success, "Successfully imported %s/%s[%s]", kind, group, item))
 	return nil
 }
 
@@ -217,11 +227,17 @@ func runStateMv(ctx context.Context, source, destination string) error {
 		return fmt.Errorf("failed to initialize: %w", err)
 	}
 
-	// Run state mv
-	result, err := eng.StateMv(ctx, engine.StateMvOptions{
-		Source:      source,
-		Destination: destination,
+	// Run state mv (may load resources); show spinner while running
+	var result *engine.StateMvResult
+	mvErr := ui.RunWithSpinner(ctx, style.Info, "Moving item in state...", "move cancelled", func(ctx context.Context, publish func(ui.MessageLevel, string)) error {
+		var err error
+		result, err = eng.StateMv(ctx, engine.StateMvOptions{
+			Source:      source,
+			Destination: destination,
+		})
+		return err
 	})
+	err = mvErr
 	if err != nil {
 		fmt.Println()
 		fmt.Println(style.Error.Render("✖ Move failed"))
@@ -278,7 +294,7 @@ func runStateRemoveByID(ctx context.Context, id string) error {
 			title = fmt.Sprintf("Remove %s/%s/%s from state?", kind, group, item)
 		}
 		// TODO: Replace with palette-based confirm prompt
-        fmt.Print(style.PromptPrefix(title))
+		fmt.Print(style.PromptPrefix(title))
 		var resp string
 		_, err := fmt.Scanln(&resp)
 		if err != nil && err.Error() != "unexpected newline" { // user just hit enter
@@ -317,9 +333,9 @@ func runStateRemoveByID(ctx context.Context, id string) error {
 
 	if !removed {
 		if item == "" {
-            fmt.Println(style.Iconf(style.StyledIconError, style.Error, "Resource %s/%s not found in state", kind, group))
+			fmt.Println(style.Iconf(style.StyledIconError, style.Error, "Resource %s/%s not found in state", kind, group))
 		} else {
-            fmt.Println(style.Iconf(style.StyledIconError, style.Error, "Resource %s/%s/%s not found in state", kind, group, item))
+			fmt.Println(style.Iconf(style.StyledIconError, style.Error, "Resource %s/%s/%s not found in state", kind, group, item))
 		}
 		return nil
 	}
@@ -329,9 +345,9 @@ func runStateRemoveByID(ctx context.Context, id string) error {
 	}
 
 	if item == "" {
-        fmt.Println(style.Iconf(style.StyledIconSuccess, style.Success, "Removed %s/%s from state", kind, group))
+		fmt.Println(style.Iconf(style.StyledIconSuccess, style.Success, "Removed %s/%s from state", kind, group))
 	} else {
-        fmt.Println(style.Iconf(style.StyledIconSuccess, style.Success, "Removed %s/%s/%s from state", kind, group, item))
+		fmt.Println(style.Iconf(style.StyledIconSuccess, style.Success, "Removed %s/%s/%s from state", kind, group, item))
 	}
 	return nil
 }
@@ -367,10 +383,12 @@ func runStateList(ctx context.Context) error {
 	var currentState *state.State
 	var loadErr error
 	// Use provided context so signal cancellation propagates to spinner and backend.Load
-	// TODO: Replace with spinner from toolkit; for now, print and wait.
-	fmt.Print("Loading state...")
-	currentState, loadErr = backend.Load(ctx)
-	fmt.Println()
+	// Use spinner while loading state
+	loadErr = ui.RunWithSpinner(ctx, style.Info, "Loading state...", "state load cancelled", func(ctx context.Context, publish func(ui.MessageLevel, string)) error {
+		var err error
+		currentState, err = backend.Load(ctx)
+		return err
+	})
 	if loadErr != nil {
 		if os.IsNotExist(loadErr) {
 			fmt.Println("No state file found. Run 'dotisan apply' first.")

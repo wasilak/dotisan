@@ -49,8 +49,8 @@ var (
 	TableStatusAddBg    = NewStyle(DefaultColors.TableStatusAddBg)
 	TableStatusRemoveBg = NewStyle(DefaultColors.TableStatusRemoveBg)
 	TableStatusUpdateBg = NewStyle(DefaultColors.TableStatusUpdateBg)
-	DiffPath        = NewStyle(DefaultColors.DiffPath)
-	DiffProvider    = NewStyle(DefaultColors.DiffProvider)
+	DiffPath            = NewStyle(DefaultColors.DiffPath)
+	DiffProvider        = NewStyle(DefaultColors.DiffProvider)
 
 	// Combined header-kind styles
 	HeaderKindAdd    = NewStyle(DefaultColors.HeaderKindAdd)
@@ -60,6 +60,58 @@ var (
 	// No changes
 	NoChangesBorder = NewStyle(DefaultColors.NoChangesBorder)
 )
+
+// RefreshStyles reapplies DefaultColors to the exported Style wrappers. Call
+// this after mutating DefaultColors (e.g., via ApplyPalette) so styles will
+// reflect the updated palette values at render time.
+func RefreshStyles() {
+	Error = NewStyle(DefaultColors.Error)
+	Warning = NewStyle(DefaultColors.Warning)
+	Info = NewStyle(DefaultColors.Info)
+	DimStyle = NewStyle(DefaultColors.Dim)
+	RowSuccess = NewStyle(DefaultColors.RowSuccess)
+	RowError = NewStyle(DefaultColors.RowError)
+	RowWarning = NewStyle(DefaultColors.RowWarning)
+	Success = NewStyle(DefaultColors.Success)
+	Header = NewStyle(DefaultColors.Header)
+	TableHeader = NewStyle(DefaultColors.TableHeader)
+
+	SuccessBox = NewStyle(DefaultColors.SuccessBox)
+	InfoBox = NewStyle(DefaultColors.InfoBox)
+
+	TableStatusAdd = NewStyle(DefaultColors.TableStatusAdd)
+	TableStatusRemove = NewStyle(DefaultColors.TableStatusRemove)
+	TableStatusUpdate = NewStyle(DefaultColors.TableStatusUpdate)
+	TableStatusCleanup = NewStyle(DefaultColors.TableStatusCleanup)
+	TableStatusDrift = NewStyle(DefaultColors.TableStatusDrift)
+
+	DiffBadgeAdd = NewStyle(DefaultColors.DiffBadgeAdd)
+	DiffBadgeRemove = NewStyle(DefaultColors.DiffBadgeRemove)
+	DiffBadgeUpdate = NewStyle(DefaultColors.DiffBadgeUpdate)
+
+	DiffBadgeAddBg = NewStyle(DefaultColors.DiffBadgeAddBg)
+	DiffBadgeRemoveBg = NewStyle(DefaultColors.DiffBadgeRemoveBg)
+	DiffBadgeUpdateBg = NewStyle(DefaultColors.DiffBadgeUpdateBg)
+
+	TableStatusAddBg = NewStyle(DefaultColors.TableStatusAddBg)
+	TableStatusRemoveBg = NewStyle(DefaultColors.TableStatusRemoveBg)
+	TableStatusUpdateBg = NewStyle(DefaultColors.TableStatusUpdateBg)
+	DiffPath = NewStyle(DefaultColors.DiffPath)
+	DiffProvider = NewStyle(DefaultColors.DiffProvider)
+
+	HeaderKindAdd = NewStyle(DefaultColors.HeaderKindAdd)
+	HeaderKindRemove = NewStyle(DefaultColors.HeaderKindRemove)
+	HeaderKindUpdate = NewStyle(DefaultColors.HeaderKindUpdate)
+
+	NoChangesBorder = NewStyle(DefaultColors.NoChangesBorder)
+}
+
+// ApplyPalette replaces the global DefaultColors palette and refreshes the
+// package-level style wrappers so subsequent Render calls use the new palette.
+func ApplyPalette(p ColorPalette) {
+	DefaultColors = p
+	RefreshStyles()
+}
 
 // Extra bg/fg for legacy compatibility
 const (

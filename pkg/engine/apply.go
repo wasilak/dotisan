@@ -368,49 +368,70 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 	if len(failures) > 0 {
 		successCount := len(succeededGroups)
 
-		fmt.Println()
-		if successCount == 0 {
-			fmt.Println(style.Error.Render("✖ Apply failed"))
-			fmt.Println()
-			fmt.Printf("All %d resources failed to apply\n", len(failures))
+		// If caller provided OnMessage, publish a concise summary message so
+		// the UI can show it via spinner; otherwise fall back to the existing
+		// multi-line output behavior.
+		if opts.OnMessage != nil {
+			if successCount == 0 {
+				opts.OnMessage(MessageLevelError, fmt.Sprintf("Apply failed: %d failed", len(failures)))
+			} else {
+				msg := fmt.Sprintf("Apply completed with %d succeeded, %d failed", successCount, len(failures))
+				if len(skippedGroups) > 0 {
+					msg = fmt.Sprintf("%s, %d skipped", msg, len(skippedGroups))
+				}
+				opts.OnMessage(MessageLevelWarning, msg)
+			}
 		} else {
-			fmt.Println(style.Warning.Render("⚠ Apply completed with errors"))
 			fmt.Println()
-            fmt.Println(style.Iconf(style.StyledIconSuccess, style.Success, "%d succeeded", successCount))
-            fmt.Println(style.Iconf(style.StyledIconError, style.Error, "%d failed", len(failures)))
+			if successCount == 0 {
+				fmt.Println(style.Error.Render("✖ Apply failed"))
+				fmt.Println()
+				fmt.Printf("All %d resources failed to apply\n", len(failures))
+			} else {
+				fmt.Println(style.Warning.Render("⚠ Apply completed with errors"))
+				fmt.Println()
+				fmt.Println(style.Iconf(style.StyledIconSuccess, style.Success, "%d succeeded", successCount))
+				fmt.Println(style.Iconf(style.StyledIconError, style.Error, "%d failed", len(failures)))
+				if len(skippedGroups) > 0 {
+					fmt.Println(style.Iconf(style.IconWarning, style.Warning, "%d skipped (dependency failed)", len(skippedGroups)))
+				}
+			}
+			fmt.Println()
+			fmt.Println(style.Bold.Render("Failed resources:"))
+			fmt.Println()
+			for _, f := range failures {
+				fmt.Printf("  %s %s\n", style.Error.Render("•"), style.DimStyle.Render(f.Resource))
+				errLines := strings.Split(f.Err.Error(), "\n")
+				for _, line := range errLines {
+					fmt.Printf("    %s\n", style.Error.Render(line))
+				}
+				fmt.Println()
+			}
 			if len(skippedGroups) > 0 {
-                fmt.Println(style.Iconf(style.IconWarning, style.Warning, "%d skipped (dependency failed)", len(skippedGroups)))
+				fmt.Println(style.Bold.Render("Skipped resources:"))
+				fmt.Println()
+				for _, s := range skippedGroups {
+					fmt.Printf("  %s %s/%s — %s\n",
+						style.Warning.Render("•"),
+						style.DimStyle.Render(s.Kind),
+						style.DimStyle.Render(s.Group),
+						s.Reason,
+					)
+				}
+				fmt.Println()
 			}
-		}
-		fmt.Println()
-		fmt.Println(style.Bold.Render("Failed resources:"))
-		fmt.Println()
-		for _, f := range failures {
-			fmt.Printf("  %s %s\n", style.Error.Render("•"), style.DimStyle.Render(f.Resource))
-			errLines := strings.Split(f.Err.Error(), "\n")
-			for _, line := range errLines {
-				fmt.Printf("    %s\n", style.Error.Render(line))
-			}
-			fmt.Println()
-		}
-		if len(skippedGroups) > 0 {
-			fmt.Println(style.Bold.Render("Skipped resources:"))
-			fmt.Println()
-			for _, s := range skippedGroups {
-				fmt.Printf("  %s %s/%s — %s\n",
-					style.Warning.Render("•"),
-					style.DimStyle.Render(s.Kind),
-					style.DimStyle.Render(s.Group),
-					s.Reason,
-				)
-			}
-			fmt.Println()
 		}
 		// Return simple error indicator - details already shown
 		return fmt.Errorf("apply completed with %d error(s)", len(failures))
 	}
 
-    fmt.Println(style.Iconf(style.StyledIconSuccess, style.Success, "Apply complete! All resources synchronized"))
+	// Success path: notify via OnMessage when available for spinner UI.
+	if opts.OnMessage != nil {
+		opts.OnMessage(MessageLevelSuccess, "Apply complete! All resources synchronized")
+		return nil
+	}
+
+	fmt.Println(style.Iconf(style.StyledIconSuccess, style.Success, "Apply complete! All resources synchronized"))
 	return nil
 }
 
