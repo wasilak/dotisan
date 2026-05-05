@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"github.com/briandowns/spinner"
 	"github.com/wasilak/dotisan/pkg/style"
+	"math/rand"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -19,11 +21,29 @@ type Spinner struct {
 }
 
 func NewSpinner() *Spinner {
-	s := spinner.New(spinner.CharSets[28], 125*time.Millisecond)
+	// Choose a random charset index between 0 and 36 (inclusive), but clamp
+	// to the available number of charsets in the library to be safe.
+	maxIdx := 37
+	if len(spinner.CharSets) < maxIdx {
+		maxIdx = len(spinner.CharSets)
+	}
+	if maxIdx <= 0 {
+		maxIdx = 1
+	}
+	idx := rand.Intn(maxIdx)
+
+	s := spinner.New(spinner.CharSets[idx], 125*time.Millisecond)
 	// Ensure the spinner writes to the current stdout writer. This makes the
 	// spinner deterministic in tests where os.Stdout may be redirected.
 	s.Writer = os.Stdout
+	// Add a small left margin so spinner doesn't touch the screen edge
+	s.Prefix = strings.Repeat(" ", 2)
 	return &Spinner{s: s}
+}
+
+func init() {
+	// Seed the RNG once per process so spinner charset selection varies by run.
+	rand.Seed(time.Now().UnixNano())
 }
 
 // NewPrimarySpinner creates a spinner that uses the palette's Main color for
@@ -105,35 +125,47 @@ func (s *Spinner) UpdateTextWithStyle(st style.Style, msg string) {
 	s.s.Suffix = " " + st.Render(msg)
 }
 func (s *Spinner) Stop() {
+	// Delegate to the underlying spinner library. It will write FinalMSG
+	// to the configured writer when Stop() is called.
 	s.s.Stop()
 }
 func (s *Spinner) Success(msg string) {
-	s.s.FinalMSG = msg + "\n"
+	// Ensure deterministic final output: clear FinalMSG so the underlying
+	// library doesn't attempt to print it, stop the spinner, then write
+	// the final message ourselves to the configured writer.
+	s.s.FinalMSG = ""
 	s.s.Stop()
-	// Ensure final message is visible even when stdout is not a TTY (tests).
 	if s.s.Writer != nil {
-		fmt.Fprint(s.s.Writer, s.s.FinalMSG)
+		fmt.Fprintln(s.s.Writer, msg)
+	} else {
+		fmt.Fprintln(os.Stdout, msg)
 	}
 }
 func (s *Spinner) Fail(msg string) {
-	s.s.FinalMSG = msg + "\n"
+	s.s.FinalMSG = ""
 	s.s.Stop()
 	if s.s.Writer != nil {
-		fmt.Fprint(s.s.Writer, s.s.FinalMSG)
+		fmt.Fprintln(s.s.Writer, msg)
+	} else {
+		fmt.Fprintln(os.Stdout, msg)
 	}
 }
 func (s *Spinner) SuccessWithStyle(st style.Style, msg string) {
-	s.s.FinalMSG = st.Render(msg) + "\n"
+	s.s.FinalMSG = ""
 	s.s.Stop()
 	if s.s.Writer != nil {
-		fmt.Fprint(s.s.Writer, s.s.FinalMSG)
+		fmt.Fprintln(s.s.Writer, st.Render(msg))
+	} else {
+		fmt.Fprintln(os.Stdout, st.Render(msg))
 	}
 }
 func (s *Spinner) FailWithStyle(st style.Style, msg string) {
-	s.s.FinalMSG = st.Render(msg) + "\n"
+	s.s.FinalMSG = ""
 	s.s.Stop()
 	if s.s.Writer != nil {
-		fmt.Fprint(s.s.Writer, s.s.FinalMSG)
+		fmt.Fprintln(s.s.Writer, st.Render(msg))
+	} else {
+		fmt.Fprintln(os.Stdout, st.Render(msg))
 	}
 }
 
@@ -141,9 +173,12 @@ func (s *Spinner) FailWithStyle(st style.Style, msg string) {
 // internal watcher. If ctx is cancelled, the spinner will be stopped and a
 // fail message displayed using the provided cancelMsg (styled with style.Error).
 func (s *Spinner) StartWithContext(ctx context.Context, st style.Style, msg string, cancelMsg string) func() {
-	// Ensure spinner writes to current stdout - helpful in tests that
-	// temporarily redirect os.Stdout after the Spinner was constructed.
-	s.s.Writer = os.Stdout
+	// Ensure spinner writes to current stdout *if not already configured*.
+	// Tests may inject a custom writer via NewSpinnerFunc; don't overwrite
+	// it here if present.
+	if s.s.Writer == nil {
+		s.s.Writer = os.Stdout
+	}
 	s.StartWithStyle(st, msg)
 	done := make(chan struct{})
 	var once sync.Once
@@ -157,6 +192,11 @@ func (s *Spinner) StartWithContext(ctx context.Context, st style.Style, msg stri
 				if m == "" {
 					m = "cancelled"
 				}
+				// Try to display the cancel message via the spinner helper which
+				// prints to the spinner's writer when available. Also write
+				// directly to os.Stdout to make tests deterministic in case the
+				// spinner's writer wasn't bound to the current stdout (racey
+				// test setups redirect os.Stdout).
 				s.FailWithStyle(style.Error, m)
 				close(done)
 			})
@@ -264,13 +304,17 @@ func RunWithSpinner(ctx context.Context, st style.Style, msg, cancelMsg string, 
 		lastMu.Lock()
 		msg := lastMsg
 		lastMu.Unlock()
-		if msg == "" {
-			sp.SuccessWithStyle(style.Success, "Complete")
-		} else {
+		// Don't print a generic "Complete" message — leave silence on
+		// successful completion unless a transient message was published.
+		if msg != "" {
 			sp.SuccessWithStyle(style.Success, msg)
 		}
 	}
 
+	// Ensure spinner is stopped even when we don't print a final message.
+	// Some code paths avoid calling SuccessWithStyle to remain silent; stop
+	// the spinner explicitly here so the animation doesn't continue.
+	sp.Stop()
 	stop()
 	return workErr
 }

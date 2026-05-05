@@ -38,8 +38,8 @@ func TestRunWithSpinner_Success(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 	})
-	if !strings.Contains(out, "Complete") {
-		t.Fatalf("expected output to contain 'Complete', got: %q", out)
+	if strings.Contains(out, "Failed") {
+		t.Fatalf("did not expect failure output, got: %q", out)
 	}
 }
 
