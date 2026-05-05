@@ -80,6 +80,25 @@ func (p *FileProvider) Reconcile(ctx context.Context,
 				Group: group.Name,
 				Items: group.Items,
 			})
+
+			// For any addition where a destination already exists on disk, emit a
+			// PlanWarning so the user is informed and can choose to import the
+			// existing resource into state instead of blindly overwriting.
+			for _, it := range group.Items {
+				dest, _ := it.Extra["destination"].(string)
+				if dest == "" {
+					dest = it.Name
+				}
+				if _, err := os.Stat(dest); err == nil {
+					plan.Warnings = append(plan.Warnings, provider.PlanWarning{
+						GroupID:    group.Kind + "/" + group.Name,
+						ItemID:     it.Name,
+						Severity:   "warning",
+						Message:    fmt.Sprintf("Destination file already exists at %s", dest),
+						Suggestion: fmt.Sprintf("dotisan state import %s %s %s", group.Kind, group.Name, dest),
+					})
+				}
+			}
 		} else {
 			// Existing group - compare items
 			additions, removals, modifications, inSync := p.compareGroupItems(group, stateGroup)
