@@ -55,12 +55,10 @@ func (f *TreeFormatter) FormatGroupPlanAsTree(info GroupPlanInfo) error {
 		root.AddChild(c)
 	}
 
-	tree := treeview.NewTree[string]([]*treeview.Node[string]{root})
-	out, err := tree.Render(context.Background())
-	if err != nil {
+	tr := NewTreeRenderer()
+	if err := tr.RenderTree(root); err != nil {
 		return err
 	}
-	fmt.Println(out)
 	return nil
 }
 
@@ -158,12 +156,20 @@ type StateResource struct {
 
 // FormatStateAsTree renders state list as a 3-level tree using pterm.DefaultTree
 func (f *TreeFormatter) FormatStateAsTree(resources []StateResource) error {
+	// Build a treeview Node hierarchy to get branch glyphs and vertical lines
 	root := treeview.NewNode[string]("root", style.Header.Render("Managed Resources"), "")
+
+	if len(resources) == 0 {
+		// still render header-only tree
+		tr := NewTreeRenderer()
+		return tr.RenderTree(root)
+	}
 
 	byKind := make(map[string][]StateResource)
 	for _, res := range resources {
 		byKind[res.Kind] = append(byKind[res.Kind], res)
 	}
+
 	for kind, groups := range byKind {
 		kindNode := treeview.NewNode[string]("kind-"+kind, f.kindStyle.Render(kind), "")
 		for _, group := range groups {
@@ -178,7 +184,44 @@ func (f *TreeFormatter) FormatStateAsTree(resources []StateResource) error {
 		root.AddChild(kindNode)
 	}
 
+	tr := NewTreeRenderer()
+	return tr.RenderTree(root)
+}
+
+// TreeRenderer is a small adapter that renders treeview nodes using the
+// project's palette styles. It avoids importing pkg/ui to prevent cycles.
+type TreeRenderer struct {
+	kindStyle   style.Style
+	groupStyle  style.Style
+	itemStyle   style.Style
+	actionStyle style.Style
+}
+
+func NewTreeRenderer() *TreeRenderer {
+	return &TreeRenderer{
+		kindStyle:   style.Header,
+		groupStyle:  style.TableHeader,
+		itemStyle:   style.TableStatusAdd,
+		actionStyle: style.DiffProvider,
+	}
+}
+
+func (tr *TreeRenderer) RenderTree(root *treeview.Node[string]) error {
 	tree := treeview.NewTree[string]([]*treeview.Node[string]{root})
+	// Ensure all nodes are expanded so Render includes the full hierarchy.
+	// treeview renders only "visible" nodes (expanded), and nodes default to
+	// collapsed, which produced output containing only the root.
+	if err := tree.ExpandAll(context.Background()); err != nil {
+		return err
+	}
+
+	// Configure provider to show connector lines for deeper nodes by using
+	// default node provider; this prints the vertical branch glyphs as in the
+	// example.
+	// Note: treeview's renderer builds prefixes based on node depth and
+	// sibling position; ensuring nodes are expanded is sufficient to produce
+	// the vertical lines and branches.
+
 	out, err := tree.Render(context.Background())
 	if err != nil {
 		return err
