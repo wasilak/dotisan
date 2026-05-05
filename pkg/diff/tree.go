@@ -253,27 +253,16 @@ func (tr *TreeRenderer) RenderTree(root *treeview.Node[string]) error {
 			outLines = append(outLines, ln)
 			continue
 		}
-		// determine prefix run consisting of branch glyphs and spaces
-		i := 0
+		var b strings.Builder
 		for _, r := range ln {
-			// common tree glyphs and spaces
 			switch r {
-			case ' ', '│', '├', '└', '─', '┬', '┼', '┐', '┤', '╭', '╮', '╯', '╰':
-				i += len(string(r))
-				continue
+			case '─', '│', '├', '└', '┘', '┌', '┐', '┤', '┬', '┴', '┼', '╭', '╮', '╯', '╰', '┝', '┥', '┯', '┷', '┿', '┠', '┨':
+				b.WriteString(style.Border.Render(string(r)))
 			default:
-				// stop on first non-branch rune
-				break
+				b.WriteRune(r)
 			}
 		}
-		if i == 0 {
-			outLines = append(outLines, ln)
-			continue
-		}
-		prefix := ln[:i]
-		rest := ln[i:]
-		// color branch glyphs using the shared Border style (dark purple)
-		outLines = append(outLines, style.Border.Render(prefix)+rest)
+		outLines = append(outLines, b.String())
 	}
 	fmt.Println(strings.Join(outLines, "\n"))
 	return nil
