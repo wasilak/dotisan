@@ -244,8 +244,10 @@ func (tr *TreeRenderer) RenderTree(root *treeview.Node[string]) error {
 	// our Border color. The provider's default style will be applied to the
 	// full line; inner ANSI sequences from item labels will override it where
 	// necessary (so names keep their distinct colors).
+	// Use the table line color (SGR 34) so tree glyphs visually match the
+	// aquasecurity/table borders which are configured with StyleBlue.
 	prov := treeview.NewDefaultNodeProvider[string]()
-	prov.SetDefaultStyle(lipgloss.NewStyle().Foreground(lipgloss.Color("#663399")))
+	prov.SetDefaultStyle(lipgloss.NewStyle().Foreground(lipgloss.Color("34")))
 
 	// Recreate the tree with the provider so prefixes are colored correctly
 	tree = treeview.NewTree[string]([]*treeview.Node[string]{root}, treeview.WithProvider(prov), treeview.WithExpandAll[string]())

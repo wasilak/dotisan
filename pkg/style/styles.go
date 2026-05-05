@@ -27,6 +27,11 @@ var (
 	Header      = NewStyle(DefaultColors.Header)
 	TableHeader = NewStyle(DefaultColors.TableHeader)
 
+	// Table line color (used for box-drawing glyphs to match aquasecurity/table
+	// StyleBlue which is SGR 34). Exported so tree glyphs can use the exact
+	// same blue used by tables.
+	TableLine = NewStyle("\033[34m")
+
 	// Banner/info boxes
 	SuccessBox = NewStyle(DefaultColors.SuccessBox)
 	InfoBox    = NewStyle(DefaultColors.InfoBox)
