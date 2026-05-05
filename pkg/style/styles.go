@@ -75,6 +75,10 @@ var (
 	// TableLine alias of the palette border role so callers can refer to the
 	// table-specific name if preferred.
 	TableLine = NewStyle(DefaultColors.NoChangesBorder)
+
+	// Extra bg/fg convenience styles (wrap palette values for callers)
+	BgBlack = NewStyle(DefaultColors.BgBlack)
+	White   = NewStyle(DefaultColors.White)
 )
 
 // RefreshStyles reapplies DefaultColors to the exported Style wrappers. Call
@@ -144,11 +148,7 @@ func ApplyPalette(p ColorPalette) {
 	RefreshStyles()
 }
 
-// Extra bg/fg for legacy compatibility
-const (
-	BgBlack = "\033[40m"
-	White   = "\033[97m"
-)
+// (legacy ANSI constants removed — use style.BgBlack and style.White wrappers)
 
 // Emoji/icon constants
 const (

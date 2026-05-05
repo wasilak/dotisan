@@ -68,6 +68,10 @@ type ColorPalette struct {
 	TableStatusRemoveBg string
 	TableStatusUpdateBg string
 
+	// Extra bg/fg convenience roles
+	BgBlack string
+	White   string
+
 	// No changes (kudos card)
 	NoChangesBorder  string
 	NoChangesRainbow []string // ANSI codes for per-letter rainbow, palette order
@@ -120,6 +124,8 @@ func DefaultPalette() ColorPalette {
 		// NoChanges specifics
 		// Use the table border blue (SGR 34) for structural borders so UI
 		// elements remain visually consistent.
+		BgBlack:          "\033[40m",
+		White:            "\033[97m",
 		NoChangesBorder:  "\033[34m",
 		NoChangesRainbow: []string{"\033[31m", "\033[33m", "\033[32m", "\033[36m", "\033[34m", "\033[35m"},
 	}
@@ -178,6 +184,10 @@ func (p ColorPalette) Get(role string) string {
 		return p.DiffPath
 	case "nochanges_border":
 		return p.NoChangesBorder
+	case "bg_black":
+		return p.BgBlack
+	case "white":
+		return p.White
 	default:
 		return ""
 	}
@@ -257,6 +267,10 @@ func (p *ColorPalette) SetColor(name, seq string) {
 		p.DiffPath = seq
 	case "nochanges_border":
 		p.NoChangesBorder = seq
+	case "bg_black":
+		p.BgBlack = seq
+	case "white":
+		p.White = seq
 	default:
 		// Unknown role — no-op
 	}
