@@ -36,3 +36,11 @@ func Iconf(icon string, s Style, format string, a ...interface{}) string {
     txt := fmt.Sprintf(format, a...)
     return fmt.Sprintf("%s %s", icon, s.Render(txt))
 }
+
+// PromptPrefix formats a prompt title with an inline hint of [y/N]: and returns
+// the ready-to-print prompt string. Use fmt.Print(style.PromptPrefix("Message"))
+// when prompting the user for confirmation.
+func PromptPrefix(title string) string {
+    // Use DimStyle for the bracketed hint and Header for the title.
+    return Header.Render(title) + " " + DimStyle.Render("[y/N]: ")
+}

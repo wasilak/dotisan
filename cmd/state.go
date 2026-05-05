@@ -278,7 +278,7 @@ func runStateRemoveByID(ctx context.Context, id string) error {
 			title = fmt.Sprintf("Remove %s/%s/%s from state?", kind, group, item)
 		}
 		// TODO: Replace with palette-based confirm prompt
-		fmt.Printf("%s [y/N]: ", title)
+        fmt.Print(style.PromptPrefix(title))
 		var resp string
 		_, err := fmt.Scanln(&resp)
 		if err != nil && err.Error() != "unexpected newline" { // user just hit enter

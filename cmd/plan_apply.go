@@ -89,7 +89,7 @@ func runPlanApply(ctx context.Context, opts PlanApplyOptions) error {
 		}
 		var confirmErr error
 		// TODO: Replace with palette-based confirm prompt
-		fmt.Printf("%s [y/N]: ", changeSummary)
+        fmt.Print(style.PromptPrefix(changeSummary))
 		var resp string
 		_, confirmErr = fmt.Scanln(&resp)
 		if confirmErr != nil && confirmErr.Error() != "unexpected newline" {

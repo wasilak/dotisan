@@ -53,6 +53,15 @@ type ColorPalette struct {
 	DiffProvider    string
 	DiffPath        string
 
+	// Badge + background (common paired roles)
+	DiffBadgeAddBg    string
+	DiffBadgeRemoveBg string
+	DiffBadgeUpdateBg string
+
+	TableStatusAddBg    string
+	TableStatusRemoveBg string
+	TableStatusUpdateBg string
+
 	// No changes (kudos card)
 	NoChangesBorder  string
     NoChangesRainbow []string // ANSI codes for per-letter rainbow, palette order
@@ -89,6 +98,14 @@ func DefaultPalette() ColorPalette {
 		DiffBadgeAdd:       Green,
 		DiffBadgeRemove:    Red,
 		DiffBadgeUpdate:    Orange,
+		// paired badge + background combos (bold fg + black bg for now)
+		DiffBadgeAddBg:    "\033[1m" + Green + "\033[40m",
+		DiffBadgeRemoveBg: "\033[1m" + Red + "\033[40m",
+		DiffBadgeUpdateBg: "\033[1m" + Orange + "\033[40m",
+
+		TableStatusAddBg:    "\033[1m" + Green + "\033[40m",
+		TableStatusRemoveBg: "\033[1m" + Red + "\033[40m",
+		TableStatusUpdateBg: "\033[1m" + Orange + "\033[40m",
 		DiffProvider:       Gray,
 		DiffPath:           BoldSeq,
 		// NoChanges specifics

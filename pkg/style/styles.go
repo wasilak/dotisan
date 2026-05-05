@@ -41,6 +41,14 @@ var (
 	DiffBadgeAdd    = NewStyle(DefaultColors.DiffBadgeAdd)
 	DiffBadgeRemove = NewStyle(DefaultColors.DiffBadgeRemove)
 	DiffBadgeUpdate = NewStyle(DefaultColors.DiffBadgeUpdate)
+
+	DiffBadgeAddBg    = NewStyle(DefaultColors.DiffBadgeAddBg)
+	DiffBadgeRemoveBg = NewStyle(DefaultColors.DiffBadgeRemoveBg)
+	DiffBadgeUpdateBg = NewStyle(DefaultColors.DiffBadgeUpdateBg)
+
+	TableStatusAddBg    = NewStyle(DefaultColors.TableStatusAddBg)
+	TableStatusRemoveBg = NewStyle(DefaultColors.TableStatusRemoveBg)
+	TableStatusUpdateBg = NewStyle(DefaultColors.TableStatusUpdateBg)
 	DiffPath        = NewStyle(DefaultColors.DiffPath)
 	DiffProvider    = NewStyle(DefaultColors.DiffProvider)
 
