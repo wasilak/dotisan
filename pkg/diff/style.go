@@ -30,12 +30,15 @@ type Styles struct {
 // Uses color constants from pkg/style for consistency.
 func DefaultStyles() Styles {
 	return Styles{
-		Addition:     style.NewStyle(style.Green + style.BgBlack),
-		Deletion:     style.NewStyle(style.Red + style.BgBlack),
-		Modification: style.NewStyle(style.Yellow + style.BgBlack),
-		Unchanged:    style.NewStyle(style.Gray),
-		Header:       style.NewStyle(style.BoldSeq + style.White),
-	}
+		// Use palette roles from DefaultColors so colors are centralized.
+        // Use palette roles directly; background pairing (BgBlack) can be
+        // restored later if necessary from the palette values.
+        Addition:     style.NewStyle(style.DefaultColors.DiffBadgeAdd),
+        Deletion:     style.NewStyle(style.DefaultColors.DiffBadgeRemove),
+        Modification: style.NewStyle(style.DefaultColors.DiffBadgeUpdate),
+        Unchanged:    style.NewStyle(style.DefaultColors.DiffProvider),
+        Header:       style.NewStyle(style.DefaultColors.DiffPath),
+    }
 }
 
 // StyledDiffEngine extends Engine with styling capabilities.

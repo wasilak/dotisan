@@ -21,13 +21,13 @@ type TreeFormatter struct {
 
 // NewTreeFormatter creates a new TreeFormatter with default colors
 func NewTreeFormatter() *TreeFormatter {
-	return &TreeFormatter{
-		enumeratorStyle: style.NewStyle(style.BoldSeq),
-		kindStyle:       style.NewStyle(style.BoldSeq + style.Green),
-		nameStyle:       style.NewStyle(style.Yellow),
-		itemStyle:       style.NewStyle(style.Magenta),
-		actionStyle:     style.NewStyle(style.Gray),
-	}
+    return &TreeFormatter{
+        enumeratorStyle: style.NewStyle(style.DefaultColors.Header),
+        kindStyle:       style.NewStyle(style.DefaultColors.HeaderKindAdd),
+        nameStyle:       style.NewStyle(style.DefaultColors.TableStatusUpdate),
+        itemStyle:       style.NewStyle(style.DefaultColors.TableStatusDrift),
+        actionStyle:     style.NewStyle(style.DefaultColors.DiffProvider),
+    }
 }
 
 // GroupPlanInfo holds the plan for tree rendering
@@ -65,7 +65,7 @@ func (f *TreeFormatter) FormatGroupPlanAsTree(info GroupPlanInfo) error {
 }
 
 func (f *TreeFormatter) formatAdditions(additions []provider.GroupAddition) *treeview.Node[string] {
-	node := treeview.NewNode[string]("add", style.Success.Render("Resources to be created"), "")
+    node := treeview.NewNode[string]("add", style.Success.Render("Resources to be created"), "")
 	byKind := make(map[string][]provider.GroupAddition)
 	for _, addition := range additions {
 		byKind[addition.Kind] = append(byKind[addition.Kind], addition)
@@ -87,7 +87,7 @@ func (f *TreeFormatter) formatAdditions(additions []provider.GroupAddition) *tre
 }
 
 func (f *TreeFormatter) formatRemovals(removals []provider.GroupRemoval) *treeview.Node[string] {
-	node := treeview.NewNode[string]("rem", style.Error.Render("Resources to be removed"), "")
+    node := treeview.NewNode[string]("rem", style.Error.Render("Resources to be removed"), "")
 	byKind := make(map[string][]provider.GroupRemoval)
 	for _, removal := range removals {
 		byKind[removal.Kind] = append(byKind[removal.Kind], removal)
@@ -109,7 +109,7 @@ func (f *TreeFormatter) formatRemovals(removals []provider.GroupRemoval) *treevi
 }
 
 func (f *TreeFormatter) formatModifications(modifications []provider.GroupModification) *treeview.Node[string] {
-	node := treeview.NewNode[string]("mod", style.Warning.Render("Resources to be modified"), "")
+    node := treeview.NewNode[string]("mod", style.Warning.Render("Resources to be modified"), "")
 	byKind := make(map[string][]provider.GroupModification)
 	for _, mod := range modifications {
 		byKind[mod.Kind] = append(byKind[mod.Kind], mod)
@@ -131,7 +131,7 @@ func (f *TreeFormatter) formatModifications(modifications []provider.GroupModifi
 }
 
 func (f *TreeFormatter) formatDrifted(drifted []provider.ItemDrift) *treeview.Node[string] {
-	node := treeview.NewNode[string]("drift", style.Warning.Render("Drifted resources (will be restored)"), "")
+    node := treeview.NewNode[string]("drift", style.Warning.Render("Drifted resources (will be restored)"), "")
 	byKind := make(map[string][]provider.ItemDrift)
 	for _, drift := range drifted {
 		byKind[drift.Kind] = append(byKind[drift.Kind], drift)

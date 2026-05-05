@@ -70,37 +70,37 @@ func (r *SideBySideRenderer) Render(oldContent, newContent, action string) strin
 		rows = parseUnifiedDiff(diffText)
 	}
 
-	// TODO: with palette, use gray. Now, use plain.
-	sep := "│"
-	divSep := "┼"
+    // separator characters; render them with the DiffProvider role for consistency
+    sep := style.DiffProvider.Render("│")
+    divSep := style.DiffProvider.Render("┼")
 
 	var b strings.Builder
 
-	// Render headers with palette style
-	leftHdr := style.Header.Render(padRight("  BEFORE", colWidth))
-	rightHdr := style.Header.Render(padRight("  AFTER", colWidth))
-	b.WriteString(leftHdr + sep + rightHdr + "\n")
+    // Render headers with palette style
+    leftHdr := style.DiffPath.Render(padRight("  BEFORE", colWidth))
+    rightHdr := style.DiffPath.Render(padRight("  AFTER", colWidth))
+    b.WriteString(leftHdr + sep + rightHdr + "\n")
 
-	// Divider under header
-	divLine := strings.Repeat("─", colWidth)
-	b.WriteString(divLine + divSep + divLine + "\n")
+    // Divider under header (styled)
+    divLine := style.NoChangesBorder.Render(strings.Repeat("─", colWidth))
+    b.WriteString(divLine + divSep + divLine + "\n")
 
 	if len(rows) == 0 {
 		note := padRight("  (no textual differences — state checksum may be stale)", colWidth*2+1)
 		b.WriteString(style.DimStyle.Render(note) + "\n") // hint/gray
 
 	} else {
-		for _, row := range rows {
-			switch row.kind {
-			case rowHunkBreak:
-				msg := padRight(fmt.Sprintf("  ···  %d unchanged lines  ···", row.skipCount), colWidth)
-				b.WriteString(style.DimStyle.Render(msg) + sep + style.DimStyle.Render(msg) + "\n")
-			default:
-				left := applyDiffStyle(padRight(row.leftText, colWidth), row.leftType)
-				right := applyDiffStyle(padRight(row.rightText, colWidth), row.rightType)
-				b.WriteString(left + sep + right + "\n")
-			}
-		}
+        for _, row := range rows {
+            switch row.kind {
+            case rowHunkBreak:
+                msg := padRight(fmt.Sprintf("  ···  %d unchanged lines  ···", row.skipCount), colWidth)
+                b.WriteString(style.DimStyle.Render(msg) + sep + style.DimStyle.Render(msg) + "\n")
+            default:
+                left := applyDiffStyle(padRight(row.leftText, colWidth), row.leftType)
+                right := applyDiffStyle(padRight(row.rightText, colWidth), row.rightType)
+                b.WriteString(left + sep + right + "\n")
+            }
+        }
 	}
 
 	return b.String()
@@ -239,13 +239,15 @@ func truncateToWidth(s string, width int) string {
 
 // applyDiffStyle colours a pre-padded raw string based on the change type.
 func applyDiffStyle(text string, ct ChangeType) string {
-	// Use the palette styles where possible.
-	switch ct {
-	case LineDeleted:
-		return style.Error.Render(text)
-	case LineAdded:
-		return style.Success.Render(text)
-	default:
-		return text // no change styling for unchanged lines
-	}
+    // Use the palette styles where possible.
+    switch ct {
+    case LineDeleted:
+        // use diff badge remove style for deleted lines
+        return style.DiffBadgeRemove.Render(text)
+    case LineAdded:
+        // use diff badge add style for added lines
+        return style.DiffBadgeAdd.Render(text)
+    default:
+        return text // no change styling for unchanged lines
+    }
 }

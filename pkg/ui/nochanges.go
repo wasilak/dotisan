@@ -99,19 +99,9 @@ func RenderNoChanges() {
 	title := b.String()
 	// (Palette rainbow logic applied)
 
-	// Single-color dark purple border and white body text.
-	// We build pre-colored border characters using RGB and keep BoxStyle empty
-	// so the box printer doesn't re-wrap them (which would mangle RGB escapes).
-	// TODO: Replace with new border print logic from color palette
-	fmt.Println()
-	fmt.Printf("%s\n", title)
-	border := style.NoChangesBorder.Render(strings.Repeat("─", 42))
-	fmt.Println(border)
-	fmt.Println(entry.body)
-	fmt.Println(border)
-
-	fmt.Println()
-	// fmt.Println(box) // replaced above with direct print for now
-	fmt.Println()
+    // Use centralized box formatter from the palette so borders/styles are
+    // consistently applied and easier to change.
+    card := style.FormatKudosCard(title, entry.body, 42)
+    fmt.Print(card)
 
 }

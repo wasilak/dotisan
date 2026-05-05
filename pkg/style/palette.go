@@ -27,9 +27,14 @@ type ColorPalette struct {
 	RowError    string
 	RowWarning  string
 	Header      string
-	TableHeader string
-	TableRow    string
-	TableCell   string
+    TableHeader string
+    TableRow    string
+    TableCell   string
+
+    // Combined roles for common pairings
+    HeaderKindAdd string
+    HeaderKindRemove string
+    HeaderKindUpdate string
 
 	// Box wrappers for banner/info output
 	SuccessBox string
@@ -50,7 +55,7 @@ type ColorPalette struct {
 
 	// No changes (kudos card)
 	NoChangesBorder  string
-	NoChangesRainbow []string // ANSI codes for per-letter rainbow, palette order
+    NoChangesRainbow []string // ANSI codes for per-letter rainbow, palette order
 }
 
 // DefaultPalette returns a ColorPalette populated with current ANSI codes.
@@ -66,6 +71,10 @@ func DefaultPalette() ColorPalette {
 		RowWarning:  RowYellow,
 		Header:      BoldSeq,
 		TableHeader: BoldSeq,
+		// Combined header+status styles
+		HeaderKindAdd:    BoldSeq + Green,
+		HeaderKindRemove: BoldSeq + Red,
+		HeaderKindUpdate: BoldSeq + Orange,
 		SuccessBox:  "\033[1;42m", // Bold + green bg
 		InfoBox:     "\033[1;44m", // Bold + blue bg
 
