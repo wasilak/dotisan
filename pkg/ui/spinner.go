@@ -141,6 +141,9 @@ func (s *Spinner) FailWithStyle(st style.Style, msg string) {
 // internal watcher. If ctx is cancelled, the spinner will be stopped and a
 // fail message displayed using the provided cancelMsg (styled with style.Error).
 func (s *Spinner) StartWithContext(ctx context.Context, st style.Style, msg string, cancelMsg string) func() {
+	// Ensure spinner writes to current stdout - helpful in tests that
+	// temporarily redirect os.Stdout after the Spinner was constructed.
+	s.s.Writer = os.Stdout
 	s.StartWithStyle(st, msg)
 	done := make(chan struct{})
 	var once sync.Once

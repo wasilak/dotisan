@@ -29,7 +29,8 @@ var (
 
 	// Table line color (used for box-drawing glyphs to match aquasecurity/table
 	// StyleBlue which is SGR 34). Exported so tree glyphs can use the exact
-	// same blue used by tables.
+	// same blue used by tables. This is also defined later for RefreshStyles
+	// compatibility; keep this declaration here for package-level exports.
 	TableLine = NewStyle("\033[34m")
 
 	// Banner/info boxes
@@ -72,9 +73,9 @@ var (
 
 	// No changes
 	NoChangesBorder = NewStyle(DefaultColors.NoChangesBorder)
-	// Generic border style (re-uses NoChangesBorder by default). Exported so
-	// tables and other structural elements can use a consistent border color.
+	// Generic border style (re-uses NoChangesBorder by default).
 	Border = NewStyle(DefaultColors.NoChangesBorder)
+	// Note: TableLine is refreshed in RefreshStyles via DefaultColors.NoChangesBorder
 )
 
 // RefreshStyles reapplies DefaultColors to the exported Style wrappers. Call

@@ -3,8 +3,8 @@ package diff
 import (
 	"context"
 	"fmt"
+	"strings"
 
-	"charm.land/lipgloss/v2"
 	"github.com/Digital-Shane/treeview/v2"
 	"github.com/wasilak/dotisan/pkg/provider"
 	"github.com/wasilak/dotisan/pkg/style"
@@ -247,14 +247,25 @@ func (tr *TreeRenderer) RenderTree(root *treeview.Node[string]) error {
 	// Use the table line color (SGR 34) so tree glyphs visually match the
 	// aquasecurity/table borders which are configured with StyleBlue.
 	prov := treeview.NewDefaultNodeProvider[string]()
-	prov.SetDefaultStyle(lipgloss.NewStyle().Foreground(lipgloss.Color("34")))
 
-	// Recreate the tree with the provider so prefixes are colored correctly
+	// Recreate the tree with the provider so prefixes/glyph layout is correct.
 	tree = treeview.NewTree[string]([]*treeview.Node[string]{root}, treeview.WithProvider(prov), treeview.WithExpandAll[string]())
 	out, err := tree.Render(context.Background())
 	if err != nil {
 		return err
 	}
-	fmt.Println(out)
+
+	// Post-process rendered output to color box-drawing glyphs with the
+	// aquasecurity/table SGR 34 blue so the tree lines visually match tables.
+	var b strings.Builder
+	for _, r := range out {
+		switch r {
+		case '─', '│', '├', '└', '┘', '┌', '┐', '┤', '┬', '┴', '┼':
+			b.WriteString(style.TableLine.Render(string(r)))
+		default:
+			b.WriteRune(r)
+		}
+	}
+	fmt.Println(b.String())
 	return nil
 }
