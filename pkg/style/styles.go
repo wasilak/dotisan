@@ -133,12 +133,14 @@ func RefreshStyles() {
 	HeaderKindUpdate = NewStyle(DefaultColors.HeaderKindUpdate)
 
 	NoChangesBorder = NewStyle(DefaultColors.NoChangesBorder)
+	// Border remains the same as NoChangesBorder (used for banners).
 	Border = NewStyle(DefaultColors.NoChangesBorder)
-	// Keep TableLine consistent with the palette border role so callers can
-	// use either TableLine or Border interchangeably for structural glyphs.
-	// TableLine is an alias of the palette border role so callers can refer
-	// to TableLine for explicit table-line semantics if preferred.
-	TableLine = NewStyle(DefaultColors.NoChangesBorder)
+	// TableLine should remain the canonical table/box border SGR 34 so that
+	// table rendering and tree outputs maintain a consistent structural
+	// appearance across the UI and tests that assert on SGR 34 continue to
+	// pass. Keep TableLine pinned to SGR 34 (blue) regardless of the
+	// NoChangesBorder accent used for the decorative banner.
+	TableLine = NewStyle("\033[34m")
 }
 
 // ApplyPalette replaces the global DefaultColors palette and refreshes the

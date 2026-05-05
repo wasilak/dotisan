@@ -75,6 +75,8 @@ type ColorPalette struct {
 	// No changes (kudos card)
 	NoChangesBorder  string
 	NoChangesRainbow []string // ANSI codes for per-letter rainbow, palette order
+	// Accent used for decorative no-changes banner (separate from border)
+	NoChangesAccent string
 	// Spinner color name (spinner library color/attribute string)
 	SpinnerColor string
 }
@@ -82,54 +84,66 @@ type ColorPalette struct {
 // DefaultPalette returns a ColorPalette populated with current ANSI codes.
 func DefaultPalette() ColorPalette {
 	return ColorPalette{
-		Main:        Green,
-		Success:     Green,
-		Error:       Red,
-		Warning:     Orange,
-		Info:        Yellow,
-		Dim:         Dim,
-		RowSuccess:  RowGreen,
-		RowError:    RowRed,
-		RowWarning:  RowYellow,
-		Header:      BoldSeq,
-		TableHeader: BoldSeq,
+		// Charm-inspired palette
+		// Main: Soft Purple
+		Main: "\033[38;5;141m",
+		// Success: Mint/Cyan
+		Success: "\033[38;5;86m",
+		// Error: Soft Pink
+		Error: "\033[38;5;204m",
+		// Warning: Peachy Coral
+		Warning: "\033[38;5;209m",
+		// Info: Hot Pink
+		Info:       "\033[38;5;205m",
+		Dim:        Dim,
+		RowSuccess: RowGreen,
+		RowError:   RowRed,
+		RowWarning: RowYellow,
+		Header:     BoldSeq,
+		// Table header: bold + purple tint
+		TableHeader: BoldSeq + "\033[38;5;183m",
 		// Combined header+status styles
-		HeaderKindAdd:    BoldSeq + Green,
-		HeaderKindRemove: BoldSeq + Red,
-		HeaderKindUpdate: BoldSeq + Orange,
-		SuccessBox:       "\033[1;42m", // Bold + green bg
-		InfoBox:          "\033[1;44m", // Bold + blue bg
+		HeaderKindAdd:    BoldSeq + "\033[38;5;86m",
+		HeaderKindRemove: BoldSeq + "\033[38;5;204m",
+		HeaderKindUpdate: BoldSeq + "\033[38;5;209m",
+		SuccessBox:       "\033[1;48;5;86m",  // Bold + mint bg
+		InfoBox:          "\033[1;48;5;205m", // Bold + hot-pink bg
 
-		TableRow:     "",
-		TableCell:    Magenta,
-		GroupLabel:   Orange,
-		VersionColor: Yellow,
+		TableRow: "",
+		// Soft lavender table cells
+		TableCell: "\033[38;5;183m",
+		// Group labels use peachy coral
+		GroupLabel:   "\033[38;5;209m",
+		VersionColor: "\033[38;5;205m",
 		// Specific status and badge roles
-		TableStatusAdd:     Green,
-		TableStatusRemove:  Red,
-		TableStatusUpdate:  Orange,
-		TableStatusDrift:   Magenta,
+		TableStatusAdd:     "\033[38;5;86m",
+		TableStatusRemove:  "\033[38;5;204m",
+		TableStatusUpdate:  "\033[38;5;209m",
+		TableStatusDrift:   "\033[38;5;183m",
 		TableStatusCleanup: Dim,
-		DiffBadgeAdd:       Green,
-		DiffBadgeRemove:    Red,
-		DiffBadgeUpdate:    Orange,
+		DiffBadgeAdd:       "\033[38;5;86m",
+		DiffBadgeRemove:    "\033[38;5;204m",
+		DiffBadgeUpdate:    "\033[38;5;209m",
 		// paired badge + background combos (bold fg + black bg for now)
-		DiffBadgeAddBg:    "\033[1m" + Green + "\033[40m",
-		DiffBadgeRemoveBg: "\033[1m" + Red + "\033[40m",
-		DiffBadgeUpdateBg: "\033[1m" + Orange + "\033[40m",
+		DiffBadgeAddBg:    "\033[1m" + "\033[38;5;86m" + "\033[40m",
+		DiffBadgeRemoveBg: "\033[1m" + "\033[38;5;204m" + "\033[40m",
+		DiffBadgeUpdateBg: "\033[1m" + "\033[38;5;209m" + "\033[40m",
 
-		TableStatusAddBg:    "\033[1m" + Green + "\033[40m",
-		TableStatusRemoveBg: "\033[1m" + Red + "\033[40m",
-		TableStatusUpdateBg: "\033[1m" + Orange + "\033[40m",
+		TableStatusAddBg:    "\033[1m" + "\033[38;5;86m" + "\033[40m",
+		TableStatusRemoveBg: "\033[1m" + "\033[38;5;204m" + "\033[40m",
+		TableStatusUpdateBg: "\033[1m" + "\033[38;5;209m" + "\033[40m",
 		DiffProvider:        Gray,
 		DiffPath:            BoldSeq,
 		// NoChanges specifics
-		// Use the table border blue (SGR 34) for structural borders so UI
-		// elements remain visually consistent.
-		BgBlack:          "\033[40m",
-		White:            "\033[97m",
-		NoChangesBorder:  "\033[34m",
-		NoChangesRainbow: []string{"\033[31m", "\033[33m", "\033[32m", "\033[36m", "\033[34m", "\033[35m"},
+		// Palette convenience
+		BgBlack: "\033[40m",
+		White:   "\033[97m",
+		// Keep table border blue for structural elements; use a separate
+		// decorative accent role for the no-changes banner.
+		NoChangesBorder: "\033[34m",
+		NoChangesAccent: "\033[38;5;213m",
+		// Charm rainbow: Hot Pink, Soft Pink, Lavender, Mint, Cyan, Purple
+		NoChangesRainbow: []string{"\033[38;5;205m", "\033[38;5;204m", "\033[38;5;183m", "\033[38;5;86m", "\033[38;5;81m", "\033[38;5;141m"},
 		SpinnerColor:     "fgHiMagenta",
 	}
 }
