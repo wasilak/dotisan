@@ -27,11 +27,8 @@ var (
 	Header      = NewStyle(DefaultColors.Header)
 	TableHeader = NewStyle(DefaultColors.TableHeader)
 
-	// Table line color (used for box-drawing glyphs to match aquasecurity/table
-	// StyleBlue which is SGR 34). Exported so tree glyphs can use the exact
-	// same blue used by tables. This is also defined later for RefreshStyles
-	// compatibility; keep this declaration here for package-level exports.
-	TableLine = NewStyle("\033[34m")
+	// (TableLine declared below after NoChangesBorder so it aliases the
+	// current palette value. This avoids duplicated definitions.)
 
 	// Banner/info boxes
 	SuccessBox = NewStyle(DefaultColors.SuccessBox)
@@ -73,9 +70,11 @@ var (
 
 	// No changes
 	NoChangesBorder = NewStyle(DefaultColors.NoChangesBorder)
-	// Generic border style (re-uses NoChangesBorder by default).
-	Border = NewStyle(DefaultColors.NoChangesBorder)
-	// Note: TableLine is refreshed in RefreshStyles via DefaultColors.NoChangesBorder
+	// Generic border style (alias of NoChangesBorder).
+	Border = NoChangesBorder
+	// TableLine alias of the palette border role so callers can refer to the
+	// table-specific name if preferred.
+	TableLine = NewStyle(DefaultColors.NoChangesBorder)
 )
 
 // RefreshStyles reapplies DefaultColors to the exported Style wrappers. Call
@@ -131,6 +130,11 @@ func RefreshStyles() {
 
 	NoChangesBorder = NewStyle(DefaultColors.NoChangesBorder)
 	Border = NewStyle(DefaultColors.NoChangesBorder)
+	// Keep TableLine consistent with the palette border role so callers can
+	// use either TableLine or Border interchangeably for structural glyphs.
+	// TableLine is an alias of the palette border role so callers can refer
+	// to TableLine for explicit table-line semantics if preferred.
+	TableLine = NewStyle(DefaultColors.NoChangesBorder)
 }
 
 // ApplyPalette replaces the global DefaultColors palette and refreshes the
