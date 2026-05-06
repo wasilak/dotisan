@@ -19,7 +19,6 @@ func TestSetAndGetColor(t *testing.T) {
 }
 
 func TestApplyPaletteAndRefresh(t *testing.T) {
-	t.Parallel()
 
 	// Keep original to restore later
 	orig := DefaultColors
@@ -45,7 +44,6 @@ func TestApplyPaletteAndRefresh(t *testing.T) {
 }
 
 func TestApplyToDefaultsMerge(t *testing.T) {
-	t.Parallel()
 
 	orig := DefaultColors
 	defer ApplyPalette(orig)
