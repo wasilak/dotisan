@@ -293,14 +293,18 @@ func runStateRemoveByID(ctx context.Context, id string) error {
 		} else {
 			title = fmt.Sprintf("Remove %s/%s/%s from state?", kind, group, item)
 		}
-		// TODO: Replace with palette-based confirm prompt
+		// Prompt for a single keypress; fallback to Scanln if needed.
 		fmt.Print(style.PromptPrefix(title))
-		var resp string
-		_, err := fmt.Scanln(&resp)
-		if err != nil && err.Error() != "unexpected newline" { // user just hit enter
-			return fmt.Errorf("confirmation prompt error: %w", err)
+		key, readErr := ui.ReadSingleKey()
+		if readErr != nil {
+			var resp string
+			_, err := fmt.Scanln(&resp)
+			if err != nil && err.Error() != "unexpected newline" { // user just hit enter
+				return fmt.Errorf("confirmation prompt error: %w", err)
+			}
+			key = strings.ToLower(resp)
 		}
-		if strings.ToLower(resp) != "y" && strings.ToLower(resp) != "yes" {
+		if key != "y" && key != "yes" {
 			fmt.Println()
 			fmt.Println("→ Remove cancelled.")
 			return nil

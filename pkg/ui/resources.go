@@ -7,6 +7,25 @@ import (
 	"strings"
 )
 
+// ReadSingleKey reads a single keypress from stdin without echoing it.
+// It returns the lowercased string of the byte read. If the terminal can't
+// be put into raw mode, an error is returned so callers may fall back to a
+// line-oriented read.
+func ReadSingleKey() (string, error) {
+	fd := int(os.Stdin.Fd())
+	oldState, err := term.MakeRaw(fd)
+	if err != nil {
+		return "", err
+	}
+	defer term.Restore(fd, oldState)
+
+	b := make([]byte, 1)
+	if _, err := os.Stdin.Read(b); err != nil {
+		return "", err
+	}
+	return strings.ToLower(string(b)), nil
+}
+
 // ResourceRow is the canonical input format for the human-facing resource table.
 type ResourceRow struct {
 	Status string // add/remove/update/drift/sync/warn/info

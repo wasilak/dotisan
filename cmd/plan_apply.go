@@ -90,14 +90,20 @@ func runPlanApply(ctx context.Context, opts PlanApplyOptions) error {
 			changeSummary = fmt.Sprintf("Apply %d changes?", totalChanges)
 		}
 		var confirmErr error
-		// TODO: Replace with palette-based confirm prompt
+		// Prompt for a single keypress. If terminal raw mode isn't available
+		// (e.g., input redirected), fall back to line-oriented Scanln.
 		fmt.Print(style.PromptPrefix(changeSummary))
-		var resp string
-		_, confirmErr = fmt.Scanln(&resp)
-		if confirmErr != nil && confirmErr.Error() != "unexpected newline" {
-			return fmt.Errorf("confirmation prompt error: %w", confirmErr)
+		key, err := ui.ReadSingleKey()
+		if err != nil {
+			// fallback to Scanln
+			var resp string
+			_, confirmErr = fmt.Scanln(&resp)
+			if confirmErr != nil && confirmErr.Error() != "unexpected newline" {
+				return fmt.Errorf("confirmation prompt error: %w", confirmErr)
+			}
+			key = strings.ToLower(resp)
 		}
-		if strings.ToLower(resp) != "y" && strings.ToLower(resp) != "yes" {
+		if key != "y" && key != "yes" {
 			fmt.Println()
 			fmt.Println("→ Apply cancelled.")
 			return nil
