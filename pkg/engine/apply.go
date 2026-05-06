@@ -427,11 +427,15 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 
 	// Success path: notify via OnMessage when available for spinner UI.
 	if opts.OnMessage != nil {
+		// Use OnMessage to surface success to the spinner UI. The spinner
+		// run loop will avoid printing duplicate success messages when the
+		// last transient message is already a success-level summary.
 		opts.OnMessage(MessageLevelSuccess, "Apply complete! All resources synchronized")
 		return nil
 	}
 
-	fmt.Println(style.Iconf(style.StyledIconSuccess, style.Success, "Apply complete! All resources synchronized"))
+	// If no OnMessage was provided, print a concise success line once.
+	fmt.Println(style.Iconf(style.StyledIconSuccess, style.Success, "Changes applied successfully."))
 	return nil
 }
 

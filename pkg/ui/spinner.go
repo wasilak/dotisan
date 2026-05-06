@@ -276,6 +276,7 @@ func RunWithSpinner(ctx context.Context, st style.Style, msg, cancelMsg string, 
 	// most recent transient message.
 	var lastMu sync.Mutex
 	var lastMsg string
+	var lastLevel MessageLevel = LevelInfo
 	publish := func(level MessageLevel, m string) {
 		select {
 		case msgs <- msgEntry{level: level, msg: m}:
@@ -284,6 +285,7 @@ func RunWithSpinner(ctx context.Context, st style.Style, msg, cancelMsg string, 
 		}
 		lastMu.Lock()
 		lastMsg = m
+		lastLevel = level
 		lastMu.Unlock()
 	}
 
@@ -313,10 +315,16 @@ func RunWithSpinner(ctx context.Context, st style.Style, msg, cancelMsg string, 
 	} else {
 		lastMu.Lock()
 		msg := lastMsg
+		lvl := lastLevel
 		lastMu.Unlock()
 		// Don't print a generic "Complete" message — leave silence on
 		// successful completion unless a transient message was published.
-		if msg != "" {
+		// If the last transient message is itself a success-level summary from
+		// the work (e.g. "Apply complete! All resources synchronized"), we
+		// avoid printing it here to prevent duplicating the final success
+		// message that the caller may print. Only print the final message if
+		// the last transient message was not a success-level summary.
+		if msg != "" && lvl != LevelSuccess {
 			sp.SuccessWithStyle(style.Success, msg)
 		}
 	}
