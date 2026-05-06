@@ -266,7 +266,7 @@ func DisplayPlanResult(result *engine.PlanResult, outputFormat output.Format, sh
                         if ch.OldContent != "" || ch.NewContent != "" {
                             filePath := ch.ItemName
                             if mod.Kind != "" && mod.Group != "" {
-                                filePath = mod.Kind + "/" + mod.Group + "/" + ch.ItemName
+                                filePath = fmt.Sprintf("%s/%s[%s]", mod.Kind, mod.Group, ch.ItemName)
                             }
                             printDiffHeader("update", filePath, providerName)
                             diffText, err := styled.GenerateUnifiedDiff("before", "after", ensureTrailingNewline(ch.OldContent), ensureTrailingNewline(ch.NewContent))
@@ -291,7 +291,7 @@ func DisplayPlanResult(result *engine.PlanResult, outputFormat output.Format, sh
                 for _, add := range plan.Additions {
                     for _, item := range add.Items {
                         if add.Contents != nil && add.Contents[item.Name] != "" {
-                            filePath := add.Kind + "/" + add.Group + "/" + item.Name
+                            filePath := fmt.Sprintf("%s/%s[%s]", add.Kind, add.Group, item.Name)
                             printDiffHeader("add", filePath, providerName)
                             diffText, err := styled.GenerateUnifiedDiff("/dev/null", filePath, "", ensureTrailingNewline(add.Contents[item.Name]))
                             if err != nil {
@@ -307,7 +307,7 @@ func DisplayPlanResult(result *engine.PlanResult, outputFormat output.Format, sh
                 for _, rem := range plan.Removals {
                     for _, item := range rem.Items {
                         if rem.Contents != nil && rem.Contents[item.Name] != "" {
-                            filePath := rem.Kind + "/" + rem.Group + "/" + item.Name
+                            filePath := fmt.Sprintf("%s/%s[%s]", rem.Kind, rem.Group, item.Name)
                             printDiffHeader("remove", filePath, providerName)
                             diffText, err := styled.GenerateUnifiedDiff(filePath, "/dev/null", ensureTrailingNewline(rem.Contents[item.Name]), "")
                             if err != nil {
