@@ -26,10 +26,12 @@ jobs:
         run: curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=/usr/local/bin sh
 
       - name: Run pipeline
+        env:
+          DAGGER_NO_NAG: "1"
         run: |
           VERSION="${{ github.ref_name }}"
           [ -z "$VERSION" ] && VERSION="dev"
-          cd ci && dagger run go run . -- --ci --version="$VERSION"
+          cd ci && dagger run go run . --ci --version="$VERSION"
 
       - name: Upload binaries
         if: startsWith(github.ref, 'refs/tags/v')
