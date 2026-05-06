@@ -17,9 +17,13 @@ import (
 	"github.com/wasilak/dotisan/cmd/middleware"
 )
 
+// Version is set at build time via -ldflags "-X github.com/wasilak/dotisan/cmd.Version=vX.Y.Z".
+var Version = "dev"
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "dotisan",
+	Use:     "dotisan",
+	Version: Version,
 	Short: "Declarative dotfiles management CLI",
 	Long: `dotisan is a declarative dotfiles management CLI tool written in Go.
 

@@ -36,7 +36,7 @@ func runInit() error {
 
 	welcomeBanner := style.SuccessBox.Render(
 		style.Bold.Render("dotisan") + " - Your Dotfiles Manager\n\n" +
-			style.DimStyle.Render("Version: 0.1.0") + " | " + style.DimStyle.Render("Manage your dotfiles with ease"),
+			style.DimStyle.Render("Version: "+Version) + " | " + style.DimStyle.Render("Manage your dotfiles with ease"),
 	)
 	fmt.Println(welcomeBanner)
 	fmt.Println("Initializing...")

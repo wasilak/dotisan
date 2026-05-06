@@ -25,6 +25,9 @@ node_modules/
 .DS_Store
 
 dotisan
+dist/
+ci/ci
+.claude/settings.local.json
 
 # Taskmaster state (machine-specific) - keep out of git
 .taskmaster/state.json
