@@ -21,7 +21,7 @@ func (r CargoPackages) Validate() error {
 }
 
 // ToGroup implements Resource.ToGroup.
-func (r CargoPackages) ToGroup() ResourceGroup {
+func (r CargoPackages) ToGroup() ResourceGroup[any] {
 	items := make([]ResourceItem, 0, len(r.Spec.Packages))
 
 	for _, p := range r.Spec.Packages {
@@ -31,7 +31,7 @@ func (r CargoPackages) ToGroup() ResourceGroup {
 		})
 	}
 
-	return ResourceGroup{
+	return ResourceGroup[any]{
 		Kind:    r.Kind,
 		Name:    r.Metadata.Name,
 		Items:   items,

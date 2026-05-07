@@ -46,7 +46,7 @@ func TestBrewProvider_Reconcile_Empty(t *testing.T) {
 	p := NewBrewProvider()
 
 	// Reconcile with no desired resources
-	desired := []resource.ResourceGroup{}
+	desired := []resource.ResourceGroup[any]{}
 	state := []provider.ResourceState{}
 	plan := p.Reconcile(context.Background(), desired, state)
 
@@ -62,7 +62,7 @@ func TestBrewProvider_Reconcile_Additions(t *testing.T) {
 	p := NewBrewProvider()
 
 	// Reconcile with desired resources
-	desired := []resource.ResourceGroup{
+	desired := []resource.ResourceGroup[any]{
 		{
 			Kind:  resource.KindHomeBrewPackages,
 			Name:  "core-tools",
@@ -81,12 +81,11 @@ func TestBrewProvider_Reconcile_Additions(t *testing.T) {
 func TestBrewProvider_Reconcile_Taps(t *testing.T) {
 	p := NewBrewProvider()
 
-	desired := []resource.ResourceGroup{
+	desired := []resource.ResourceGroup[any]{
 		{
-			Kind: resource.KindHomeBrewTaps,
-			Name: "my-taps",
-			// RawSpec used by provider.Reconcile for taps when Items is empty
-			RawSpec: resource.HomeBrewTapsSpec{Taps: []resource.Tap{{Name: "homebrew/cask-fonts"}}},
+			Kind:  resource.KindHomeBrewTaps,
+			Name:  "my-taps",
+			Items: []resource.ResourceItem{{Name: "homebrew/cask-fonts"}},
 		},
 	}
 	state := []provider.ResourceState{}

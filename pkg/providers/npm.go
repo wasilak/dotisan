@@ -2,9 +2,9 @@ package providers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
-	"strings"
 
 	"github.com/wasilak/dotisan/pkg/cmdutil"
 	"github.com/wasilak/dotisan/pkg/provider"
@@ -34,7 +34,7 @@ func (p *NpmProvider) Available() (bool, string) {
 
 // Reconcile compares the desired resource groups with the current system state.
 func (p *NpmProvider) Reconcile(ctx context.Context,
-	desired []resource.ResourceGroup,
+	desired []resource.ResourceGroup[any],
 	state []provider.ResourceState,
 ) provider.GroupPlan {
 	return provider.BaseReconcile(resource.KindNpmPackages, desired, state, p.getInstalledPackages(ctx), nil)
@@ -51,18 +51,19 @@ func (p *NpmProvider) getInstalledPackages(ctx context.Context) map[string]strin
 		return make(map[string]string)
 	}
 
-	// Simple parsing - look for package names
+	// Parse via JSON — handles scoped packages like @babel/core correctly.
+	var parsed struct {
+		Dependencies map[string]struct {
+			Version string `json:"version"`
+		} `json:"dependencies"`
+	}
 	installed := make(map[string]string)
-	lines := strings.Split(stdout, "\n")
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, "\"") && strings.Contains(line, "\": {") {
-			// Extract package name
-			parts := strings.Split(line, "\"")
-			if len(parts) >= 2 && parts[1] != "dependencies" && parts[1] != "name" {
-				installed[parts[1]] = ""
-			}
-		}
+	if err := json.Unmarshal([]byte(stdout), &parsed); err != nil {
+		slog.Warn("npm getInstalledPackages: failed to parse json", "err", err)
+		return installed
+	}
+	for name, dep := range parsed.Dependencies {
+		installed[name] = dep.Version
 	}
 	return installed
 }

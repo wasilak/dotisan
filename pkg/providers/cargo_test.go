@@ -39,7 +39,7 @@ func TestCargoProvider_Available(t *testing.T) {
 func TestCargoProvider_Reconcile_Empty(t *testing.T) {
 	p := NewCargoProvider()
 
-	desired := []resource.ResourceGroup{}
+	desired := []resource.ResourceGroup[any]{}
 	state := []provider.ResourceState{}
 	plan := p.Reconcile(context.Background(), desired, state)
 
@@ -54,7 +54,7 @@ func TestCargoProvider_Reconcile_Empty(t *testing.T) {
 func TestCargoProvider_Reconcile_Additions(t *testing.T) {
 	p := NewCargoProvider()
 
-	desired := []resource.ResourceGroup{
+	desired := []resource.ResourceGroup[any]{
 		{
 			Kind:  "CargoPackages",
 			Name:  "dev-tools",

@@ -81,10 +81,11 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 	// skips to dependents.
 	failedNodes := make(map[graph.NodeID]bool)
 
-	// succeededGroups tracks (kind, group) pairs that applied without error;
-	// only those groups get their state updated in STEP 3.
+	// succeededItems tracks individual items that applied without error.
+	// Keyed by "kind/group/itemName" so that a single failure in a group
+	// does not prevent state from being saved for the other items that succeeded.
 	type kindGroup struct{ kind, group string }
-	succeededGroups := make(map[kindGroup]bool)
+	succeededItems := make(map[string]bool)
 
 	// parseNodeID splits a NodeID of the form "Kind/Group" into its two parts.
 	parseNodeID := func(id graph.NodeID) (kind, group string) {
@@ -133,6 +134,8 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 				if err != nil {
 					failures = append(failures, failureEntry{Resource: fmt.Sprintf("%s/%s/%s", kind, group, it.Name), Err: fmt.Errorf("failed to add: %w", err)})
 					ok = false
+				} else {
+					succeededItems[fmt.Sprintf("%s/%s/%s", kind, group, it.Name)] = true
 				}
 			}
 		}
@@ -154,6 +157,8 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 				if err != nil {
 					failures = append(failures, failureEntry{Resource: fmt.Sprintf("%s/%s/%s", kind, group, c.ItemName), Err: fmt.Errorf("failed to modify: %w", err)})
 					ok = false
+				} else {
+					succeededItems[fmt.Sprintf("%s/%s/%s", kind, group, c.ItemName)] = true
 				}
 			}
 		}
@@ -175,6 +180,8 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 				if err != nil {
 					failures = append(failures, failureEntry{Resource: fmt.Sprintf("%s/%s/%s", kind, group, it.Name), Err: fmt.Errorf("failed to remove: %w", err)})
 					ok = false
+				} else {
+					succeededItems[fmt.Sprintf("%s/%s/%s", kind, group, it.Name)] = true
 				}
 			}
 		}
@@ -220,9 +227,7 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 			continue
 		}
 
-		if applyGroup(provName, kind, group) {
-			succeededGroups[kg] = true
-		} else {
+		if !applyGroup(provName, kind, group) {
 			failedNodes[nodeID] = true
 		}
 	}
@@ -245,9 +250,7 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 				continue
 			}
 			processedGroups[kg] = true
-			if applyGroup(provName, kg.kind, kg.group) {
-				succeededGroups[kg] = true
-			}
+			applyGroup(provName, kg.kind, kg.group)
 		}
 	}
 
@@ -271,15 +274,20 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 			})
 		}
 
-		// Additions: only persist state for groups that succeeded.
+		// Additions: persist state for each item that succeeded individually.
 		for _, addition := range plan.Additions {
-			if !succeededGroups[kindGroup{addition.Kind, addition.Group}] {
-				continue
-			}
-			items := make([]resource.ItemState, 0, len(addition.Items))
+			var items []resource.ItemState
 			for _, item := range addition.Items {
+				if !succeededItems[fmt.Sprintf("%s/%s/%s", addition.Kind, addition.Group, item.Name)] {
+					continue
+				}
 				checksum := ""
-				if dest, ok := item.Extra["destination"].(string); ok && dest != "" {
+				if dest := func() string {
+				if item.FileExtra != nil {
+					return item.FileExtra.Destination
+				}
+				return ""
+			}(); dest != "" {
 					if data, err := readFileMaybe(dest); err == nil {
 						h := sha256.Sum256(data)
 						checksum = hex.EncodeToString(h[:])
@@ -292,21 +300,28 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 					Checksum: checksum,
 				})
 			}
-			stateToSave.SetResourceGroup(provider.ResourceState{
-				Kind:  addition.Kind,
-				Group: addition.Group,
-				Items: items,
-			})
+			if len(items) > 0 {
+				stateToSave.SetResourceGroup(provider.ResourceState{
+					Kind:  addition.Kind,
+					Group: addition.Group,
+					Items: items,
+				})
+			}
 		}
 
-		// Modifications: only persist state for groups that succeeded.
+		// Modifications: persist state for each item that succeeded individually.
 		for _, modification := range plan.Modifications {
-			if !succeededGroups[kindGroup{modification.Kind, modification.Group}] {
-				continue
-			}
 			for _, change := range modification.Changes {
+				if !succeededItems[fmt.Sprintf("%s/%s/%s", modification.Kind, modification.Group, change.ItemName)] {
+					continue
+				}
 				checksum := ""
-				if dest, ok := change.NewState.Extra["destination"].(string); ok && dest != "" {
+				if dest := func() string {
+					if change.NewState.FileExtra != nil {
+						return change.NewState.FileExtra.Destination
+					}
+					return ""
+				}(); dest != "" {
 					if data, err := readFileMaybe(dest); err == nil {
 						h := sha256.Sum256(data)
 						checksum = hex.EncodeToString(h[:])
@@ -342,12 +357,12 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 			}
 		}
 
-		// Removals: only update state for groups that succeeded.
+		// Removals: persist state removal for each item that succeeded individually.
 		for _, removal := range plan.Removals {
-			if !succeededGroups[kindGroup{removal.Kind, removal.Group}] {
-				continue
-			}
 			for _, it := range removal.Items {
+				if !succeededItems[fmt.Sprintf("%s/%s/%s", removal.Kind, removal.Group, it.Name)] {
+					continue
+				}
 				stateToSave.RemoveResourceItem(removal.Kind, removal.Group, it.Name)
 			}
 		}
@@ -366,7 +381,7 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 	// Display results
 	fmt.Println()
 	if len(failures) > 0 {
-		successCount := len(succeededGroups)
+		successCount := len(succeededItems)
 
 		// If caller provided OnMessage, publish a concise summary message so
 		// the UI can show it via spinner; otherwise fall back to the existing

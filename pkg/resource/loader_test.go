@@ -157,8 +157,8 @@ spec:
 	}
 
 	ctx := config.NewTemplateContext()
-	ctx.Values = map[string]interface{}{
-		"skills": []interface{}{"bash", "python", "go"},
+	ctx.Values = map[string]any{
+		"skills": []any{"bash", "python", "go"},
 	}
 
 	loader := NewLoader(tmpDir, ctx)
@@ -232,10 +232,10 @@ spec:
 	}
 
 	ctx := config.NewTemplateContext()
-	ctx.Values = map[string]interface{}{
-		"agents": []interface{}{
-			map[string]interface{}{"name": "coder", "desc": "writes code"},
-			map[string]interface{}{"name": "reviewer", "desc": "reviews code"},
+	ctx.Values = map[string]any{
+		"agents": []any{
+			map[string]any{"name": "coder", "desc": "writes code"},
+			map[string]any{"name": "reviewer", "desc": "reviews code"},
 		},
 	}
 
@@ -279,8 +279,8 @@ spec:
 	}
 
 	ctx := config.NewTemplateContext()
-	ctx.Values = map[string]interface{}{
-		"empty": []interface{}{},
+	ctx.Values = map[string]any{
+		"empty": []any{},
 	}
 
 	loader := NewLoader(tmpDir, ctx)

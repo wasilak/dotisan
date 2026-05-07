@@ -32,7 +32,7 @@ func StyledIconText(icon string, s Style, text string) string {
 }
 
 // Iconf formats text using format and args, then styles it with s and prefixes with icon.
-func Iconf(icon string, s Style, format string, a ...interface{}) string {
+func Iconf(icon string, s Style, format string, a ...any) string {
 	txt := fmt.Sprintf(format, a...)
 	return fmt.Sprintf("%s %s", icon, s.Render(txt))
 }

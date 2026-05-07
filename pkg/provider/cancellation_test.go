@@ -13,7 +13,7 @@ type blockingProvider struct{}
 
 func (b *blockingProvider) Name() string              { return "blocking" }
 func (b *blockingProvider) Available() (bool, string) { return true, "ok" }
-func (b *blockingProvider) Reconcile(ctx context.Context, desired []resource.ResourceGroup, state []ResourceState) GroupPlan {
+func (b *blockingProvider) Reconcile(ctx context.Context, desired []resource.ResourceGroup[any], state []ResourceState) GroupPlan {
 	// Block until canceled, then return an empty plan.
 	select {
 	case <-ctx.Done():
@@ -72,7 +72,7 @@ func TestBlockingProvider_ReconcileReturnsOnCancel(t *testing.T) {
 	}()
 
 	start := time.Now()
-	plan := p.Reconcile(ctx, []resource.ResourceGroup{}, []ResourceState{})
+	plan := p.Reconcile(ctx, []resource.ResourceGroup[any]{}, []ResourceState{})
 	dur := time.Since(start)
 
 	_ = plan // just ensure we returned

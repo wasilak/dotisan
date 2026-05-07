@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/wasilak/dotisan/pkg/planctx"
 	"github.com/wasilak/dotisan/pkg/provider"
@@ -42,7 +43,7 @@ func (p *FileProvider) Available() (bool, string) {
 
 // Reconcile compares the desired resource groups with the current system state.
 func (p *FileProvider) Reconcile(ctx context.Context,
-	desired []resource.ResourceGroup,
+	desired []resource.ResourceGroup[any],
 	state []provider.ResourceState,
 ) provider.GroupPlan {
 	plan := provider.GroupPlan{}
@@ -85,7 +86,10 @@ func (p *FileProvider) Reconcile(ctx context.Context,
 			// PlanWarning so the user is informed and can choose to import the
 			// existing resource into state instead of blindly overwriting.
 			for _, it := range group.Items {
-				dest, _ := it.Extra["destination"].(string)
+				dest := ""
+				if it.FileExtra != nil {
+					dest = it.FileExtra.Destination
+				}
 				if dest == "" {
 					dest = it.Name
 				}
@@ -168,13 +172,15 @@ func (p *FileProvider) Reconcile(ctx context.Context,
 	if showDiff {
 		for ai := range plan.Additions {
 			for _, item := range plan.Additions[ai].Items {
-				source, _ := item.Extra["source"].(string)
-				inline, _ := item.Extra["inline"].(string)
+				if item.FileExtra == nil {
+					continue
+				}
+				extra := item.FileExtra
 				var content []byte
-				if source != "" && source != "(inline)" {
-					content, _ = os.ReadFile(p.resolveSource(source))
-				} else if inline != "" {
-					content = []byte(inline)
+				if extra.Source != "" && extra.Source != "(inline)" {
+					content, _ = os.ReadFile(p.resolveSource(extra.Source))
+				} else if extra.Inline != "" {
+					content = []byte(extra.Inline)
 				}
 				if len(content) > 0 {
 					if plan.Additions[ai].Contents == nil {
@@ -186,9 +192,9 @@ func (p *FileProvider) Reconcile(ctx context.Context,
 		}
 		for ri := range plan.Removals {
 			for _, item := range plan.Removals[ri].Items {
-				dest, _ := item.Extra["destination"].(string)
-				if dest == "" {
-					dest = item.Name
+				dest := item.Name
+				if item.FileExtra != nil && item.FileExtra.Destination != "" {
+					dest = p.resolveDest(item.FileExtra.Destination)
 				}
 				content, _ := os.ReadFile(dest)
 				if len(content) > 0 {
@@ -201,18 +207,16 @@ func (p *FileProvider) Reconcile(ctx context.Context,
 		}
 		for mi := range plan.Modifications {
 			for ci, change := range plan.Modifications[mi].Changes {
-				dest, _ := change.NewState.Extra["destination"].(string)
-				source, _ := change.NewState.Extra["source"].(string)
-				// If inline content was provided in resource, it may be in Extra["inline"].
-				inline, _ := change.NewState.Extra["inline"].(string)
 				oldContent, newContent := []byte{}, []byte{}
-				if dest != "" {
-					oldContent, _ = os.ReadFile(dest)
-				}
-				if source != "" && source != "(inline)" {
-					newContent, _ = os.ReadFile(p.resolveSource(source))
-				} else if inline != "" {
-					newContent = []byte(inline)
+				if fe := change.NewState.FileExtra; fe != nil {
+					if fe.Destination != "" {
+						oldContent, _ = os.ReadFile(p.resolveDest(fe.Destination))
+					}
+					if fe.Source != "" && fe.Source != "(inline)" {
+						newContent, _ = os.ReadFile(p.resolveSource(fe.Source))
+					} else if fe.Inline != "" {
+						newContent = []byte(fe.Inline)
+					}
 				}
 				plan.Modifications[mi].Changes[ci].OldContent = string(oldContent)
 				plan.Modifications[mi].Changes[ci].NewContent = string(newContent)
@@ -222,9 +226,22 @@ func (p *FileProvider) Reconcile(ctx context.Context,
 	return plan
 }
 
+// expandPath expands a leading `~` to the user's home directory.
+func expandPath(p string) string {
+	if !strings.HasPrefix(p, "~/") && p != "~" {
+		return p
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return p
+	}
+	return filepath.Join(home, p[1:])
+}
+
 // resolveSource returns the full path for a source value. Absolute paths are
 // used as-is; relative paths are joined with the dotfiles root.
 func (p *FileProvider) resolveSource(source string) string {
+	source = expandPath(source)
 	if filepath.IsAbs(source) {
 		return source
 	}
@@ -232,9 +249,14 @@ func (p *FileProvider) resolveSource(source string) string {
 	return filepath.Join(p.dotfilesRoot, source)
 }
 
+// resolveDest expands `~` in a destination path.
+func (p *FileProvider) resolveDest(dest string) string {
+	return expandPath(dest)
+}
+
 // compareGroupItems compares desired group items with state
 func (p *FileProvider) compareGroupItems(
-	group resource.ResourceGroup,
+	group resource.ResourceGroup[any],
 	stateGroup provider.ResourceState,
 ) (additions, removals []resource.ResourceItem, modifications []provider.ItemChange, inSync []resource.ItemState) {
 	stateItems := make(map[string]resource.ItemState)
@@ -244,24 +266,25 @@ func (p *FileProvider) compareGroupItems(
 
 	for _, desiredItem := range group.Items {
 		name := desiredItem.Name
-		dest, _ := desiredItem.Extra["destination"].(string)
+		fe := desiredItem.FileExtra // always set for ManagedFile items
 
 		stateItem, inState := stateItems[name]
 
 		destExists := false
-		if dest != "" {
-			_, err := os.Stat(dest)
+		if fe != nil && fe.Destination != "" {
+			_, err := os.Stat(p.resolveDest(fe.Destination))
 			destExists = !os.IsNotExist(err)
 		}
 
 		// Compute desired content checksum (from inline or source)
 		desiredHash := ""
-		if inline, ok := desiredItem.Extra["inline"].(string); ok && inline != "" {
-			h := sha256.Sum256([]byte(inline))
-			desiredHash = hex.EncodeToString(h[:])
-		} else if source, ok := desiredItem.Extra["source"].(string); ok && source != "" && source != "(inline)" {
-			sourcePath := p.resolveSource(source)
-			desiredHash = p.hashFile(sourcePath)
+		if fe != nil {
+			if fe.Inline != "" {
+				h := sha256.Sum256([]byte(fe.Inline))
+				desiredHash = hex.EncodeToString(h[:])
+			} else if fe.Source != "" && fe.Source != "(inline)" {
+				desiredHash = p.hashFile(p.resolveSource(fe.Source))
+			}
 		}
 
 		if !destExists {
@@ -270,7 +293,10 @@ func (p *FileProvider) compareGroupItems(
 		}
 
 		// Destination exists; compute current hash
-		currentHash := p.hashFile(dest)
+		currentHash := ""
+		if fe != nil {
+			currentHash = p.hashFile(p.resolveDest(fe.Destination))
+		}
 
 		if inState {
 			if desiredHash != "" {
@@ -282,7 +308,7 @@ func (p *FileProvider) compareGroupItems(
 							Name:     name,
 							Checksum: desiredHash,
 							Status:   "present",
-							Extra:    desiredItem.Extra,
+							FileExtra: desiredItem.FileExtra,
 						},
 						Diff: "content changed",
 					})
@@ -299,7 +325,7 @@ func (p *FileProvider) compareGroupItems(
 							Name:     name,
 							Checksum: currentHash,
 							Status:   "present",
-							Extra:    desiredItem.Extra,
+							FileExtra: desiredItem.FileExtra,
 						},
 						Diff: "content changed",
 					})
@@ -366,27 +392,25 @@ func (p *FileProvider) Apply(ctx context.Context, plan provider.GroupPlan) error
 // applyGroupAddition handles file/directory creation
 func (p *FileProvider) applyGroupAddition(ctx context.Context, addition provider.GroupAddition) error {
 	for _, item := range addition.Items {
-		dest, _ := item.Extra["destination"].(string)
-		source, _ := item.Extra["source"].(string)
-
-		if dest == "" {
+		fe := item.FileExtra
+		if fe == nil || fe.Destination == "" {
 			continue
 		}
 
+		dest := p.resolveDest(fe.Destination)
 		// Ensure parent directory exists
 		parent := filepath.Dir(dest)
 		if err := os.MkdirAll(parent, 0755); err != nil {
 			return fmt.Errorf("failed to create parent directory for %s: %w", dest, err)
 		}
 
-		if source != "" && source != "(inline)" {
-			sourcePath := p.resolveSource(source)
+		if fe.Source != "" && fe.Source != "(inline)" {
+			sourcePath := p.resolveSource(fe.Source)
 			if err := p.copyFile(sourcePath, dest); err != nil {
 				return fmt.Errorf("failed to copy %s to %s: %w", sourcePath, dest, err)
 			}
 		} else {
-			inline, _ := item.Extra["inline"].(string)
-			if err := os.WriteFile(dest, []byte(inline), 0644); err != nil {
+			if err := os.WriteFile(dest, []byte(fe.Inline), 0644); err != nil {
 				return fmt.Errorf("failed to create %s: %w", dest, err)
 			}
 		}
@@ -397,9 +421,9 @@ func (p *FileProvider) applyGroupAddition(ctx context.Context, addition provider
 // applyGroupRemoval handles file/directory removal
 func (p *FileProvider) applyGroupRemoval(ctx context.Context, removal provider.GroupRemoval) error {
 	for _, item := range removal.Items {
-		dest, _ := item.Extra["destination"].(string)
-		if dest == "" {
-			dest = item.Name
+		dest := item.Name
+		if item.FileExtra != nil && item.FileExtra.Destination != "" {
+			dest = p.resolveDest(item.FileExtra.Destination)
 		}
 
 		if err := os.RemoveAll(dest); err != nil {
@@ -419,8 +443,8 @@ func (p *FileProvider) applyGroupModification(ctx context.Context, modification 
 			var items []resource.ResourceItem
 			for _, change := range modification.Changes {
 				items = append(items, resource.ResourceItem{
-					Name:  change.ItemName,
-					Extra: change.NewState.Extra,
+					Name:      change.ItemName,
+					FileExtra: change.NewState.FileExtra,
 				})
 			}
 			return items

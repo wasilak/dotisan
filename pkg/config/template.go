@@ -20,8 +20,9 @@ type OSInfo struct {
 // TemplateContext provides the data available during Go template rendering.
 // It supports Helm-style templating with values, environment variables, and OS info.
 type TemplateContext struct {
-	// Values holds the parsed values.yaml content (populated after first-pass render)
-	Values map[string]interface{} `yaml:"values"`
+	// Values holds the parsed values.yaml content (populated after first-pass render).
+	// map[string]any is intentional: values.yaml is user-defined and schema-less at compile time.
+	Values map[string]any `yaml:"values"`
 
 	// Env holds environment variables from os.Environ()
 	Env map[string]string `yaml:"env"`
@@ -34,7 +35,7 @@ type TemplateContext struct {
 // This is used for the first-pass render of values.yaml.
 func NewTemplateContext() *TemplateContext {
 	return &TemplateContext{
-		Values: make(map[string]interface{}),
+		Values: make(map[string]any),
 		Env:    loadEnv(),
 		OS:     loadOSInfo(),
 	}

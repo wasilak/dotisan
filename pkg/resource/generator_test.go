@@ -37,17 +37,17 @@ func TestExpandTilde(t *testing.T) {
 }
 
 func TestResolveSourceKey(t *testing.T) {
-	values := map[string]interface{}{
-		"skills": []interface{}{"bash", "python", "go"},
-		"agents": map[string]interface{}{
-			"list": []interface{}{
-				map[string]interface{}{"name": "coder"},
-				map[string]interface{}{"name": "reviewer"},
+	values := map[string]any{
+		"skills": []any{"bash", "python", "go"},
+		"agents": map[string]any{
+			"list": []any{
+				map[string]any{"name": "coder"},
+				map[string]any{"name": "reviewer"},
 			},
 		},
-		"meta": map[string]interface{}{
-			"nested": map[string]interface{}{
-				"items": []interface{}{"a", "b"},
+		"meta": map[string]any{
+			"nested": map[string]any{
+				"items": []any{"a", "b"},
 			},
 		},
 		"notAList": "just a string",
@@ -140,11 +140,11 @@ func TestResolveSourceKey(t *testing.T) {
 
 func TestExpandGenerator(t *testing.T) {
 	ctx := &config.TemplateContext{
-		Values: map[string]interface{}{
-			"skills": []interface{}{"bash", "python"},
-			"agents": []interface{}{
-				map[string]interface{}{"name": "coder", "desc": "writes code"},
-				map[string]interface{}{"name": "reviewer", "desc": "reviews code"},
+		Values: map[string]any{
+			"skills": []any{"bash", "python"},
+			"agents": []any{
+				map[string]any{"name": "coder", "desc": "writes code"},
+				map[string]any{"name": "reviewer", "desc": "reviews code"},
 			},
 		},
 		Env: map[string]string{"HOME": "/home/user"},
@@ -358,7 +358,7 @@ func TestRenderGeneratorTemplate_ReadFile(t *testing.T) {
 	if err := os.WriteFile(dir+"/skill.md", []byte("skill body content"), 0644); err != nil {
 		t.Fatal(err)
 	}
-	ctx := generatorContext{Item: "bash", Index: 0, Values: map[string]interface{}{}, Env: map[string]string{}, OS: config.OSInfo{}}
+	ctx := generatorContext{Item: "bash", Index: 0, Values: map[string]any{}, Env: map[string]string{}, OS: config.OSInfo{}}
 
 	t.Run("relative path reads file", func(t *testing.T) {
 		got, err := renderGeneratorTemplate("test", `{{ readFile "skill.md" }}`, ctx, dir)
@@ -408,7 +408,7 @@ func TestRenderGeneratorTemplate(t *testing.T) {
 	baseCtx := generatorContext{
 		Item:   "bash",
 		Index:  0,
-		Values: map[string]interface{}{"repo": "dotfiles"},
+		Values: map[string]any{"repo": "dotfiles"},
 		Env:    map[string]string{"HOME": "/home/user"},
 		OS:     config.OSInfo{GOOS: "linux"},
 	}
@@ -436,7 +436,7 @@ func TestRenderGeneratorTemplate(t *testing.T) {
 		{
 			name: "non-zero index",
 			tmpl: "index={{ .Index }}",
-			ctx:  generatorContext{Item: "x", Index: 3, Values: map[string]interface{}{}, Env: map[string]string{}, OS: config.OSInfo{}},
+			ctx:  generatorContext{Item: "x", Index: 3, Values: map[string]any{}, Env: map[string]string{}, OS: config.OSInfo{}},
 			want: "index=3",
 		},
 		{
@@ -461,9 +461,9 @@ func TestRenderGeneratorTemplate(t *testing.T) {
 			name: "map item field access",
 			tmpl: "name={{ .Item.name }}",
 			ctx: generatorContext{
-				Item:   map[string]interface{}{"name": "coder"},
+				Item:   map[string]any{"name": "coder"},
 				Index:  0,
-				Values: map[string]interface{}{},
+				Values: map[string]any{},
 				Env:    map[string]string{},
 				OS:     config.OSInfo{},
 			},

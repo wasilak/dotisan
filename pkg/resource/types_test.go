@@ -370,30 +370,29 @@ func TestManagedFile_GeneratorExpanded_ToGroup(t *testing.T) {
 
 	// Both items should have inline content, no external source.
 	for i, item := range group.Items {
-		source, _ := item.Extra["source"].(string)
-		inline, _ := item.Extra["inline"].(string)
-		dest, _ := item.Extra["destination"].(string)
-		mode, _ := item.Extra["mode"].(string)
-
-		if source != "(inline)" {
-			t.Errorf("item[%d].Extra[source] = %q, want \"(inline)\"", i, source)
+		if item.FileExtra == nil {
+			t.Fatalf("item[%d].FileExtra is nil", i)
 		}
-		if inline == "" {
-			t.Errorf("item[%d].Extra[inline] is empty", i)
+		fe := item.FileExtra
+		if fe.Source != "(inline)" {
+			t.Errorf("item[%d].FileExtra.Source = %q, want \"(inline)\"", i, fe.Source)
 		}
-		if dest == "" {
-			t.Errorf("item[%d].Extra[destination] is empty", i)
+		if fe.Inline == "" {
+			t.Errorf("item[%d].FileExtra.Inline is empty", i)
 		}
-		if mode != "0644" {
-			t.Errorf("item[%d].Extra[mode] = %q, want \"0644\"", i, mode)
+		if fe.Destination == "" {
+			t.Errorf("item[%d].FileExtra.Destination is empty", i)
+		}
+		if fe.Mode != "0644" {
+			t.Errorf("item[%d].FileExtra.Mode = %q, want \"0644\"", i, fe.Mode)
 		}
 	}
 
-	if inline, _ := group.Items[0].Extra["inline"].(string); inline != "skill: bash\nindex: 0" {
-		t.Errorf("item[0].Extra[inline] = %q", inline)
+	if group.Items[0].FileExtra.Inline != "skill: bash\nindex: 0" {
+		t.Errorf("item[0].FileExtra.Inline = %q", group.Items[0].FileExtra.Inline)
 	}
-	if dest, _ := group.Items[1].Extra["destination"].(string); dest != "/tmp/skills/python.md" {
-		t.Errorf("item[1].Extra[destination] = %q", dest)
+	if group.Items[1].FileExtra.Destination != "/tmp/skills/python.md" {
+		t.Errorf("item[1].FileExtra.Destination = %q", group.Items[1].FileExtra.Destination)
 	}
 }
 

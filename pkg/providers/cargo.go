@@ -34,10 +34,15 @@ func (p *CargoProvider) Available() (bool, string) {
 
 // Reconcile compares the desired resource groups with the current system state.
 func (p *CargoProvider) Reconcile(ctx context.Context,
-	desired []resource.ResourceGroup,
+	desired []resource.ResourceGroup[any],
 	state []provider.ResourceState,
 ) provider.GroupPlan {
-	return provider.BaseReconcile(resource.KindCargoPackages, desired, state, p.getInstalledPackages(ctx), nil)
+	// Cargo stores crate names with underscores (e.g. fd_find) even when the
+	// source crate uses hyphens (fd-find). Normalize to underscores for lookup.
+	normalize := func(name string) string {
+		return strings.ReplaceAll(name, "-", "_")
+	}
+	return provider.BaseReconcile(resource.KindCargoPackages, desired, state, p.getInstalledPackages(ctx), normalize)
 }
 
 func (p *CargoProvider) getInstalledPackages(ctx context.Context) map[string]string {

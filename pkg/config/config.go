@@ -103,12 +103,12 @@ func LoadConfigFromDefaultPath() (*Config, error) {
 }
 
 // LoadValues loads values from a YAML file (like ~/.config/dotisan/values.yaml).
-// It returns the parsed values as a map[string]interface{}.
-func LoadValues(path string) (map[string]interface{}, error) {
+// It returns the parsed values as a map[string]any.
+func LoadValues(path string) (map[string]any, error) {
 	// Check if file exists
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		// No values file, return empty map
-		return make(map[string]interface{}), nil
+		return make(map[string]any), nil
 	}
 
 	// Read values file
@@ -118,7 +118,7 @@ func LoadValues(path string) (map[string]interface{}, error) {
 	}
 
 	// Parse YAML
-	var values map[string]interface{}
+	var values map[string]any
 	if err := yaml.Unmarshal(data, &values); err != nil {
 		return nil, fmt.Errorf("failed to parse values file %s: %w", path, err)
 	}

@@ -24,7 +24,7 @@ func (r HomeBrewCasks) Validate() error {
 }
 
 // ToGroup implements Resource.ToGroup.
-func (r HomeBrewCasks) ToGroup() ResourceGroup {
+func (r HomeBrewCasks) ToGroup() ResourceGroup[any] {
 	items := make([]ResourceItem, 0)
 
 	slog.Debug("HomeBrewCasks.ToGroup",
@@ -40,7 +40,7 @@ func (r HomeBrewCasks) ToGroup() ResourceGroup {
 		})
 	}
 
-	return ResourceGroup{
+	return ResourceGroup[any]{
 		Kind:    r.Kind,
 		Name:    r.Metadata.Name,
 		Items:   items,

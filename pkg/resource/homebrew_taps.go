@@ -20,13 +20,14 @@ func (r HomeBrewTaps) Validate() error {
 }
 
 // ToGroup implements Resource.ToGroup.
-// Taps are not represented as items; they are considered group-level infra.
-func (r HomeBrewTaps) ToGroup() ResourceGroup {
-	// No items for taps — providers will read RawSpec to act on taps
-	return ResourceGroup{
-		Kind:    r.Kind,
-		Name:    r.Metadata.Name,
-		Items:   []ResourceItem{},
-		RawSpec: r.Spec,
+func (r HomeBrewTaps) ToGroup() ResourceGroup[any] {
+	items := make([]ResourceItem, 0, len(r.Spec.Taps))
+	for _, t := range r.Spec.Taps {
+		items = append(items, ResourceItem{Name: t.Name})
+	}
+	return ResourceGroup[any]{
+		Kind:  r.Kind,
+		Name:  r.Metadata.Name,
+		Items: items,
 	}
 }

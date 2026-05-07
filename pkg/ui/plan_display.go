@@ -15,65 +15,50 @@ import (
 func DisplayPlanResult(result *engine.PlanResult, outputFormat output.Format, showDiff bool) error {
 	switch outputFormat {
 	case output.FormatJSON:
-		output := map[string]interface{}{
-			"summary": map[string]int{
-				"additions":     result.TotalAdditions,
-				"modifications": result.TotalModifications,
-				"removals":      result.TotalRemovals,
-				"cleanup":       result.TotalCleanup,
-				"in_sync":       result.TotalInSync,
-				"drifted":       result.TotalDrifted,
+		out := PlanOutput{
+			Summary: SummaryStats{
+				Additions:     result.TotalAdditions,
+				Modifications: result.TotalModifications,
+				Removals:      result.TotalRemovals,
+				Cleanup:       result.TotalCleanup,
+				InSync:        result.TotalInSync,
+				Drifted:       result.TotalDrifted,
 			},
-			"has_changes": result.HasChanges,
-			"providers":   map[string]interface{}{},
-			// top-level aggregated warnings for machine consumption
-			"warnings": []map[string]interface{}{},
+			HasChanges: result.HasChanges,
+			Providers:  make(map[string]ProviderPlan),
 		}
-		providers := make(map[string]interface{})
-		allWarnings := make([]map[string]interface{}, 0)
 		for name, plan := range result.ProviderPlans {
-			prov := map[string]interface{}{
-				"additions":     plan.Additions,
-				"modifications": plan.Modifications,
-				"removals":      plan.Removals,
-				"cleanup":       plan.Cleanup,
-				"in_sync":       plan.InSync,
-				"drifted":       plan.Drifted,
+			prov := ProviderPlan{
+				Additions:     plan.Additions,
+				Modifications: plan.Modifications,
+				Removals:      plan.Removals,
+				Cleanup:       plan.Cleanup,
+				InSync:        plan.InSync,
+				Drifted:       plan.Drifted,
 			}
-			// include per-provider warnings in the aggregated list and embed per-provider
-			// warnings into the provider object for easier machine consumption.
-			if len(plan.Warnings) > 0 {
-				pw := make([]map[string]interface{}, 0, len(plan.Warnings))
-				for _, w := range plan.Warnings {
-					entry := map[string]interface{}{
-						"group_id":   w.GroupID,
-						"item_id":    w.ItemID,
-						"severity":   w.Severity,
-						"message":    w.Message,
-						"suggestion": w.Suggestion,
-					}
-					pw = append(pw, entry)
-					allWarnings = append(allWarnings, map[string]interface{}{
-						"provider":   name,
-						"group_id":   w.GroupID,
-						"item_id":    w.ItemID,
-						"severity":   w.Severity,
-						"message":    w.Message,
-						"suggestion": w.Suggestion,
-					})
-				}
-				prov["warnings"] = pw
+			// include per-provider warnings in the provider object and the top-level list.
+			for _, w := range plan.Warnings {
+				prov.Warnings = append(prov.Warnings, Warning{
+					GroupID:    w.GroupID,
+					ItemID:     w.ItemID,
+					Severity:   w.Severity,
+					Message:    w.Message,
+					Suggestion: w.Suggestion,
+				})
+				out.Warnings = append(out.Warnings, AggregatedWarning{
+					Provider:   name,
+					GroupID:    w.GroupID,
+					ItemID:     w.ItemID,
+					Severity:   w.Severity,
+					Message:    w.Message,
+					Suggestion: w.Suggestion,
+				})
 			}
-
-			providers[name] = prov
-		}
-		output["providers"] = providers
-		if len(allWarnings) > 0 {
-			output["warnings"] = allWarnings
+			out.Providers[name] = prov
 		}
 		encoder := json.NewEncoder(os.Stdout)
 		encoder.SetIndent("", "  ")
-		return encoder.Encode(output)
+		return encoder.Encode(out)
 	case output.FormatTree:
 		treeFormatter := diff.NewTreeFormatter()
 		// Render provider warnings first so they are visible in tree output as well.

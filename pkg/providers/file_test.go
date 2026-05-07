@@ -25,13 +25,10 @@ func TestFileProvider_Reconcile_EmitsWarningForExistingDestination(t *testing.T)
 
 	// Build desired resource group with one ManagedFile item pointing to dest
 	item := resource.ResourceItem{
-		Name: "zshrc",
-		Extra: map[string]interface{}{
-			"destination": dest,
-			"inline":      "",
-		},
+		Name:      "zshrc",
+		FileExtra: &resource.FileItemExtra{Destination: dest},
 	}
-	group := resource.ResourceGroup{
+	group := resource.ResourceGroup[any]{
 		Kind:  "ManagedFile",
 		Name:  "myfiles",
 		Items: []resource.ResourceItem{item},
@@ -40,7 +37,7 @@ func TestFileProvider_Reconcile_EmitsWarningForExistingDestination(t *testing.T)
 	// empty state (resource not tracked)
 	// pass nil state (no saved state) to indicate resource is not tracked
 	p := NewFileProvider("")
-	plan := p.Reconcile(context.Background(), []resource.ResourceGroup{group}, nil)
+	plan := p.Reconcile(context.Background(), []resource.ResourceGroup[any]{group}, nil)
 
 	// Expect an addition
 	if len(plan.Additions) == 0 {

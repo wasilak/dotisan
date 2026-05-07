@@ -109,7 +109,7 @@ user:
 	}
 
 	// Check that values were parsed
-	userMap, ok := ctx.Values["user"].(map[string]interface{})
+	userMap, ok := ctx.Values["user"].(map[string]any)
 	if !ok {
 		t.Fatal("Values.user is not a map")
 	}

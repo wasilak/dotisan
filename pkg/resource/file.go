@@ -2,6 +2,16 @@ package resource
 
 import "fmt"
 
+// FileItemExtra holds the file-provider-specific metadata for a ResourceItem.
+// FileProvider is the only provider that populates ResourceItem.FileExtra.
+type FileItemExtra struct {
+	Source      string `json:"source,omitempty"`
+	Inline      string `json:"inline,omitempty"`
+	Template    bool   `json:"template,omitempty"`
+	Mode        string `json:"mode,omitempty"`
+	Destination string `json:"destination,omitempty"`
+}
+
 // ManagedFile defines a single file to manage.
 // The file can be templated or static, with content from inline source or external file.
 type ManagedFile struct {
@@ -164,7 +174,7 @@ func (r ManagedFile) GetFiles() []FileSpec {
 }
 
 // ToGroup implements Resource.ToGroup.
-func (r ManagedFile) ToGroup() ResourceGroup {
+func (r ManagedFile) ToGroup() ResourceGroup[any] {
 	files := r.GetFiles()
 	items := make([]ResourceItem, 0, len(files))
 
@@ -184,17 +194,17 @@ func (r ManagedFile) ToGroup() ResourceGroup {
 
 		items = append(items, ResourceItem{
 			Name: itemName,
-			Extra: map[string]interface{}{
-				"source":      source,
-				"inline":      inline,
-				"template":    f.Template,
-				"mode":        f.Mode,
-				"destination": f.Destination,
+			FileExtra: &FileItemExtra{
+				Source:      source,
+				Inline:      inline,
+				Template:    f.Template,
+				Mode:        f.Mode,
+				Destination: f.Destination,
 			},
 		})
 	}
 
-	return ResourceGroup{
+	return ResourceGroup[any]{
 		Kind:    r.Kind,
 		Name:    r.Metadata.Name,
 		Items:   items,

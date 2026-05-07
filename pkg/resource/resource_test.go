@@ -89,7 +89,7 @@ func TestIsSupportedAPIVersion(t *testing.T) {
 func TestValidateStruct(t *testing.T) {
 	tests := []struct {
 		name    string
-		struct_ interface{}
+		struct_ any
 		wantErr bool
 	}{
 		{

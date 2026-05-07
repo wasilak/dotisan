@@ -92,32 +92,31 @@ func TestDisplayPlanResult_JSONIncludesWarnings(t *testing.T) {
 	_, _ = buf.ReadFrom(r)
 	os.Stdout = old
 
-	var out map[string]interface{}
+	var out PlanOutput
 	if err := json.Unmarshal(buf.Bytes(), &out); err != nil {
 		t.Fatalf("invalid json output: %v; raw: %s", err, buf.String())
 	}
 
 	// top-level warnings should be present
-	warnings, ok := out["warnings"].([]interface{})
-	if !ok || len(warnings) == 0 {
-		t.Fatalf("expected warnings array in json output, got: %v", out["warnings"])
+	if len(out.Warnings) == 0 {
+		t.Fatalf("expected warnings array in json output, got none")
 	}
 
 	// check first warning fields
-	first, _ := warnings[0].(map[string]interface{})
-	if first["provider"] != "file" {
-		t.Fatalf("expected provider 'file', got: %v", first["provider"])
+	first := out.Warnings[0]
+	if first.Provider != "file" {
+		t.Fatalf("expected provider 'file', got: %v", first.Provider)
 	}
-	if first["group_id"] != "ManagedFile/myfiles" {
-		t.Fatalf("expected group_id, got: %v", first["group_id"])
+	if first.GroupID != "ManagedFile/myfiles" {
+		t.Fatalf("expected group_id, got: %v", first.GroupID)
 	}
-	if first["item_id"] != "zshrc" {
-		t.Fatalf("expected item_id zshrc, got: %v", first["item_id"])
+	if first.ItemID != "zshrc" {
+		t.Fatalf("expected item_id zshrc, got: %v", first.ItemID)
 	}
-	if first["message"] == "" {
+	if first.Message == "" {
 		t.Fatalf("expected message to be present")
 	}
-	if first["suggestion"] == "" {
+	if first.Suggestion == "" {
 		t.Fatalf("expected suggestion to be present")
 	}
 }

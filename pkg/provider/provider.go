@@ -157,9 +157,6 @@ type ResourceState struct {
 
 	// Items are the individual items within this group
 	Items []resource.ItemState `json:"items"`
-
-	// Extra contains provider-specific state data
-	Extra map[string]interface{} `json:"extra,omitempty"`
 }
 
 // Provider is the interface implemented by all resource providers.
@@ -178,7 +175,7 @@ type Provider interface {
 	// Reconcile now accepts a context so providers can perform cancellable
 	// operations (running external commands, I/O) and observe cancellation from
 	// the caller.
-	Reconcile(ctx context.Context, desired []resource.ResourceGroup, state []ResourceState) GroupPlan
+	Reconcile(ctx context.Context, desired []resource.ResourceGroup[any], state []ResourceState) GroupPlan
 
 	// Apply executes the given plan, making actual changes to the system.
 	// Returns an error if any operation fails.

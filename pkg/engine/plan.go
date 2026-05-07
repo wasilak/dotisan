@@ -137,7 +137,7 @@ func (e *Engine) Plan(ctx context.Context, opts PlanOptions) (*PlanResult, error
 						}
 					}
 					if !existsInDesired {
-						resourceGroups = append(resourceGroups, resource.ResourceGroup{
+						resourceGroups = append(resourceGroups, resource.ResourceGroup[any]{
 							Kind:  s.Kind,
 							Name:  s.Group,
 							Items: []resource.ResourceItem{},
@@ -229,8 +229,8 @@ func (e *Engine) loadResources() ([]resource.Resource, error) {
 }
 
 // resourcesToGroups converts Resources to ResourceGroups
-func (e *Engine) resourcesToGroups(resources []resource.Resource) []resource.ResourceGroup {
-	var groups []resource.ResourceGroup
+func (e *Engine) resourcesToGroups(resources []resource.Resource) []resource.ResourceGroup[any] {
+	var groups []resource.ResourceGroup[any]
 	for _, res := range resources {
 		groups = append(groups, res.ToGroup())
 	}
@@ -238,8 +238,8 @@ func (e *Engine) resourcesToGroups(resources []resource.Resource) []resource.Res
 }
 
 // groupResourcesByProvider groups resource groups by their provider type.
-func (e *Engine) groupResourcesByProvider(groups []resource.ResourceGroup) map[string][]resource.ResourceGroup {
-	grouped := make(map[string][]resource.ResourceGroup)
+func (e *Engine) groupResourcesByProvider(groups []resource.ResourceGroup[any]) map[string][]resource.ResourceGroup[any] {
+	grouped := make(map[string][]resource.ResourceGroup[any])
 
 	for _, group := range groups {
 		// Look up provider by kind from the registry. If not registered, skip.

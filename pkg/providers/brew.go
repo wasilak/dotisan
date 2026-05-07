@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
 	"path"
 	"strings"
 	"time"
@@ -45,7 +46,7 @@ func (p *BrewProvider) Available() (bool, string) {
 
 // Reconcile compares the desired resource groups with the current system state.
 func (p *BrewProvider) Reconcile(ctx context.Context,
-	desired []resource.ResourceGroup,
+	desired []resource.ResourceGroup[any],
 	state []provider.ResourceState,
 ) provider.GroupPlan {
 	plan := provider.GroupPlan{}
@@ -61,33 +62,58 @@ func (p *BrewProvider) Reconcile(ctx context.Context,
 		}
 	}
 
-	// Build the set of names we need to query from brew: union of desired items and state-tracked items.
-	// Taps are excluded — brew info only understands formulae and casks, not tap identifiers.
-	neededNamesSet := make(map[string]bool)
+	// Build separate formula/cask name sets — queried with --formula/--cask to avoid
+	// ambiguity when a name exists as both (e.g. oh-my-posh).
+	// Taps are excluded — brew info only understands formulae and casks.
+	formulaNamesSet := make(map[string]bool)
+	caskNamesSet := make(map[string]bool)
 	for _, group := range desired {
-		if !resource.IsBrewKind(group.Kind) || group.Kind == resource.KindHomeBrewTaps {
-			continue
-		}
-		for _, item := range group.Items {
-			neededNamesSet[item.Name] = true
+		switch group.Kind {
+		case resource.KindHomeBrewPackages:
+			for _, item := range group.Items {
+				formulaNamesSet[item.Name] = true
+			}
+		case resource.KindHomeBrewCasks:
+			for _, item := range group.Items {
+				caskNamesSet[item.Name] = true
+			}
 		}
 	}
 	for _, s := range state {
-		if resource.IsBrewKind(s.Kind) && s.Kind != resource.KindHomeBrewTaps {
+		switch s.Kind {
+		case resource.KindHomeBrewPackages:
 			for _, it := range s.Items {
-				neededNamesSet[it.Name] = true
+				formulaNamesSet[it.Name] = true
+			}
+		case resource.KindHomeBrewCasks:
+			for _, it := range s.Items {
+				caskNamesSet[it.Name] = true
 			}
 		}
 	}
 
-	neededNames := make([]string, 0, len(neededNamesSet))
-	for n := range neededNamesSet {
-		neededNames = append(neededNames, n)
+	formulaNames := make([]string, 0, len(formulaNamesSet))
+	for n := range formulaNamesSet {
+		formulaNames = append(formulaNames, n)
+	}
+	caskNames := make([]string, 0, len(caskNamesSet))
+	for n := range caskNamesSet {
+		caskNames = append(caskNames, n)
 	}
 
 	// Query brew only for the targeted set of names. If discovery fails, fall back to
 	// the old behavior: treat all desired items as additions.
-	installed, err := p.getInstalledPackagesFor(ctx, neededNames)
+	installed, err := p.getInstalledPackagesFor(ctx, formulaNames, caskNames)
+	// Add installed taps so compareGroupItems can detect them as in-sync.
+	// Homebrew strips the "homebrew-" prefix from repo names in its output:
+	// "brew tap stigoleg/homebrew-tap" registers as "stigoleg/tap".
+	// Register both forms so lookups against user-specified names succeed.
+	for _, t := range p.listInstalledTaps(ctx) {
+		installed[t] = ""
+		if parts := strings.SplitN(t, "/", 2); len(parts) == 2 {
+			installed[parts[0]+"/homebrew-"+parts[1]] = ""
+		}
+	}
 	if err != nil {
 		slog.Warn("brew targeted discovery failed; falling back to additions-only", "err", err)
 		for _, group := range desired {
@@ -114,28 +140,16 @@ func (p *BrewProvider) Reconcile(ctx context.Context,
 			// New group - check which items are already installed vs need installation
 			var toInstall, toImport []resource.ResourceItem
 
-			// Special-case taps: they are represented as items (created by ToGroup) but
-			// some resource kinds (HomeBrewTaps) might have no items and instead store
-			// taps in RawSpec. Handle both.
-			if len(group.Items) == 0 && group.Kind == resource.KindHomeBrewTaps {
-				// Extract taps from RawSpec if present
-				if spec, ok := group.RawSpec.(resource.HomeBrewTapsSpec); ok {
-					for _, t := range spec.Taps {
-						toInstall = append(toInstall, resource.ResourceItem{Name: t.Name})
-					}
-				}
-			} else {
-				for _, item := range group.Items {
-					name := item.Name
-					// For casks we rely on the resource.Kind to indicate cask vs formula.
-					lookupName := name
-					if _, isInstalled := installed[lookupName]; isInstalled {
-						// Already installed - needs to be imported
-						toImport = append(toImport, item)
-					} else {
-						// Not installed - needs installation
-						toInstall = append(toInstall, item)
-					}
+			for _, item := range group.Items {
+				name := item.Name
+				// For casks we rely on the resource.Kind to indicate cask vs formula.
+				lookupName := name
+				if _, isInstalled := installed[lookupName]; isInstalled {
+					// Already installed - needs to be imported
+					toImport = append(toImport, item)
+				} else {
+					// Not installed - needs installation
+					toInstall = append(toInstall, item)
 				}
 			}
 
@@ -337,7 +351,7 @@ func (p *BrewProvider) Reconcile(ctx context.Context,
 // Returns additions, removals (installed items to uninstall), cleanup (not installed - state only),
 // modifications, and inSync items.
 func (p *BrewProvider) compareGroupItems(
-	group resource.ResourceGroup,
+	group resource.ResourceGroup[any],
 	stateGroup provider.ResourceState,
 	installed map[string]string,
 ) (additions, removals, cleanup []resource.ResourceItem, modifications []provider.ItemChange, inSync []resource.ItemState) {
@@ -514,54 +528,164 @@ func (p *BrewProvider) getInstalledPackages(ctx context.Context) (map[string]str
 	return packages, nil
 }
 
-// getInstalledPackagesFor queries Homebrew for the provided list of package/tap names
-// and returns a map[name]version for those that are present. If names is empty,
-// return an empty map.
-func (p *BrewProvider) getInstalledPackagesFor(ctx context.Context, names []string) (map[string]string, error) {
+// getInstalledPackagesFor returns a map[name]version for the requested formulae and casks.
+//
+// Casks are detected via `brew list --cask --versions`, which reads installed files without
+// loading API metadata — immune to the Homebrew `to_sym` API bug that plagues `brew info --cask`.
+//
+// Formulae are queried with `brew info --formula` (needed for alias resolution, e.g. kubectl →
+// kubernetes-cli). Tap-qualified formula names (containing "/") are queried without a type flag
+// because brew rejects --formula for that format.
+func (p *BrewProvider) getInstalledPackagesFor(ctx context.Context, formulaNames, caskNames []string) (map[string]string, error) {
 	packages := make(map[string]string)
 	if ctx == nil {
 		slog.Warn("brew getInstalledPackagesFor called with nil context; returning empty set")
 		return packages, nil
 	}
-	if len(names) == 0 {
-		return packages, nil
+
+	// Casks: use brew list to avoid the API metadata bug.
+	if len(caskNames) > 0 {
+		p.mergeCasksFromList(ctx, caskNames, packages)
 	}
 
-	// Use `brew info --json=v2 <names...>` to get structured info about requested items.
-	args := append([]string{"info", "--json=v2"}, names...)
-	stdout, stderr, err := cmdutil.RunSimpleFn(ctx, "brew", args...)
+	// Formulae: use brew info for alias resolution.
+	// Split into simple names (use --formula flag) and tap-qualified (no flag).
+	var simpleFormulae, tapFormulae []string
+	for _, n := range formulaNames {
+		if strings.Contains(n, "/") {
+			tapFormulae = append(tapFormulae, n)
+		} else {
+			simpleFormulae = append(simpleFormulae, n)
+		}
+	}
+	p.mergeFormulaeFromInfo(ctx, simpleFormulae, "--formula", packages)
+	p.mergeFormulaeFromInfo(ctx, tapFormulae, "", packages)
+
+	return packages, nil
+}
+
+// mergeCasksFromList uses `brew list --cask` + Caskroom directory reads to populate dst.
+// `brew list --cask --versions` also loads API metadata (triggering a Homebrew Ruby bug),
+// so versions are read directly from subdirectory names under Caskroom/<token>/.
+func (p *BrewProvider) mergeCasksFromList(ctx context.Context, wantedCasks []string, dst map[string]string) {
+	stdout, _, err := cmdutil.RunSimpleFn(ctx, "brew", "list", "--cask")
 	if err != nil {
-		// Some names may not exist; surface stderr for debugging
-		return nil, fmt.Errorf("brew info failed: %s: %w", stderr, err)
+		slog.Warn("brew list --cask failed", "err", err)
+		return
 	}
 
-	// Brew's JSON structure for --json=v2 contains 'formulae' and 'casks' keys.
-	var parsed brewInfoOutput
-
-	if err := json.Unmarshal([]byte(stdout), &parsed); err != nil {
-		return nil, fmt.Errorf("failed to parse brew info json: %w", err)
+	// Installed token set from brew list.
+	installed := make(map[string]bool)
+	for _, line := range strings.Split(stdout, "\n") {
+		t := strings.TrimSpace(line)
+		if t != "" {
+			installed[strings.ToLower(t)] = true
+		}
 	}
 
+	// Resolve brew prefix for Caskroom path.
+	prefix, _, err := cmdutil.RunSimpleFn(ctx, "brew", "--prefix")
+	if err != nil {
+		prefix = "/opt/homebrew"
+	}
+	prefix = strings.TrimSpace(prefix)
+	caskroomBase := prefix + "/Caskroom"
+
+	wanted := make(map[string]bool, len(wantedCasks))
+	for _, n := range wantedCasks {
+		wanted[strings.ToLower(n)] = true
+	}
+
+	for _, n := range wantedCasks {
+		token := strings.ToLower(n)
+		if !installed[token] {
+			continue
+		}
+		// Read version from Caskroom/<token>/<version>/ directory name.
+		ver := p.caskroomVersion(caskroomBase, n)
+		dst[n] = ver
+		if token != n {
+			dst[token] = ver
+		}
+	}
+	_ = wanted
+}
+
+// caskroomVersion returns the installed version for a cask by reading its Caskroom directory.
+func (p *BrewProvider) caskroomVersion(caskroomBase, token string) string {
+	entries, err := os.ReadDir(caskroomBase + "/" + token)
+	if err != nil {
+		return ""
+	}
+	for _, e := range entries {
+		if e.IsDir() && e.Name() != ".metadata" {
+			return e.Name()
+		}
+	}
+	return ""
+}
+
+// mergeFormulaeFromInfo uses `brew info --json=v2 [flag] <names>` to populate dst.
+// Retries individually if the batch fails.
+func (p *BrewProvider) mergeFormulaeFromInfo(ctx context.Context, names []string, flag string, dst map[string]string) {
+	if len(names) == 0 {
+		return
+	}
+	parsed, err := p.brewInfoBatch(ctx, names, flag)
+	if err != nil {
+		slog.Warn("brew info batch failed; retrying individually", "flag", flag, "err", err)
+		for _, name := range names {
+			single, singleErr := p.brewInfoBatch(ctx, []string{name}, flag)
+			if singleErr != nil {
+				slog.Warn("brew info failed for formula; skipping", "name", name, "err", singleErr)
+				continue
+			}
+			mergeBrewInfoIntoMap(single, dst)
+		}
+		return
+	}
+	mergeBrewInfoIntoMap(parsed, dst)
+}
+
+// mergeBrewInfoIntoMap copies formulae and cask entries from parsed brew info into dst.
+func mergeBrewInfoIntoMap(parsed *brewInfoOutput, dst map[string]string) {
 	for _, f := range parsed.Formulae {
 		ver := f.InstalledVersion()
 		if f.Name != "" {
-			packages[f.Name] = ver
+			dst[f.Name] = ver
 		}
 		// Index by aliases too so user-facing names like "kubectl" resolve to
 		// their canonical formula (e.g. "kubernetes-cli").
 		for _, alias := range f.Aliases {
 			if alias != "" {
-				packages[alias] = ver
+				dst[alias] = ver
 			}
 		}
 	}
 	for _, c := range parsed.Casks {
 		if c.Token != "" {
-			packages[c.Token] = c.InstalledVersion()
+			dst[c.Token] = c.InstalledVersion()
 		}
 	}
+}
 
-	return packages, nil
+// brewInfoBatch runs `brew info --json=v2 [flag] <names...>` and returns the parsed output.
+// flag should be "--formula", "--cask", or "" (no type flag, for tap-qualified names).
+func (p *BrewProvider) brewInfoBatch(ctx context.Context, names []string, flag string) (*brewInfoOutput, error) {
+	base := []string{"info", "--json=v2"}
+	if flag != "" {
+		base = append(base, flag)
+	}
+	args := append(base, names...)
+	stdout, stderr, err := cmdutil.RunSimpleFn(ctx, "brew", args...)
+	if err != nil {
+		return nil, fmt.Errorf("brew info failed: %s: %w", stderr, err)
+	}
+	var parsed brewInfoOutput
+	if err := json.Unmarshal([]byte(stdout), &parsed); err != nil {
+		return nil, fmt.Errorf("failed to parse brew info json: %w", err)
+	}
+	return &parsed, nil
 }
 
 // Apply executes the given GroupPlan
@@ -592,20 +716,33 @@ func (p *BrewProvider) Apply(ctx context.Context, plan provider.GroupPlan) error
 
 // applyGroupAddition installs items in a group
 func (p *BrewProvider) applyGroupAddition(ctx context.Context, addition provider.GroupAddition) error {
+	// For casks, build the installed set once upfront so we can skip already-present casks.
+	// `brew install --cask` loads API metadata (triggering a Homebrew Ruby bug on some casks),
+	// so we skip it when the cask is already installed and just let state saving handle it.
+	var installedCasks map[string]bool
+	if addition.Kind == resource.KindHomeBrewCasks {
+		installedCasks = p.listInstalledCasks(ctx)
+	}
+
 	for _, item := range addition.Items {
 		name := item.Name
 		isCask := addition.Kind == resource.KindHomeBrewCasks
 
 		// Handle taps
 		if addition.Kind == resource.KindHomeBrewTaps {
-			// For taps, item.Name holds the tap name (e.g., "homebrew/cask-fonts")
-			if _, stderr, err := cmdutil.RunSimpleFn(ctx, "brew", "tap", name); err != nil {
+			// item.Name may be "tap/name" or "tap/name https://url" (space-separated).
+			// brew tap accepts both forms: `brew tap <name>` and `brew tap <name> <url>`.
+			tapArgs := append([]string{"tap"}, strings.Fields(name)...)
+			if _, stderr, err := cmdutil.RunSimpleFn(ctx, "brew", tapArgs...); err != nil {
 				return fmt.Errorf("failed to tap %s: %s: %w", name, stderr, err)
 			}
 			continue
 		}
 
 		if isCask {
+			if installedCasks[strings.ToLower(name)] {
+				continue // already installed; skip reinstall, state save handles it
+			}
 			if _, stderr, err := cmdutil.RunSimpleFn(ctx, "brew", "install", "--cask", name); err != nil {
 				return fmt.Errorf("failed to install cask %s: %s: %w", name, stderr, err)
 			}
@@ -616,6 +753,41 @@ func (p *BrewProvider) applyGroupAddition(ctx context.Context, addition provider
 		}
 	}
 	return nil
+}
+
+// listInstalledCasks returns a lowercase-keyed set of installed cask tokens via `brew list --cask`.
+// Does not load API metadata, so it is safe from the Homebrew `to_sym` Ruby bug.
+func (p *BrewProvider) listInstalledCasks(ctx context.Context) map[string]bool {
+	installed := make(map[string]bool)
+	stdout, _, err := cmdutil.RunSimpleFn(ctx, "brew", "list", "--cask")
+	if err != nil {
+		slog.Warn("brew list --cask failed in listInstalledCasks", "err", err)
+		return installed
+	}
+	for _, line := range strings.Split(stdout, "\n") {
+		t := strings.TrimSpace(line)
+		if t != "" {
+			installed[strings.ToLower(t)] = true
+		}
+	}
+	return installed
+}
+
+// listInstalledTaps returns the list of currently tapped repo names via `brew tap`.
+func (p *BrewProvider) listInstalledTaps(ctx context.Context) []string {
+	stdout, _, err := cmdutil.RunSimpleFn(ctx, "brew", "tap")
+	if err != nil {
+		slog.Warn("brew tap (list) failed", "err", err)
+		return nil
+	}
+	var taps []string
+	for _, line := range strings.Split(stdout, "\n") {
+		t := strings.TrimSpace(line)
+		if t != "" {
+			taps = append(taps, t)
+		}
+	}
+	return taps
 }
 
 // applyGroupRemoval uninstalls items from a group

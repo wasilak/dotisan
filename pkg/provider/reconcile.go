@@ -23,7 +23,7 @@ func IndexStateByGroup(state []ResourceState, kind string) map[string]ResourceSt
 // normalizeName converts a desired item name to the lookup key used in installed;
 // pass nil for identity.
 func CompareGroupItems(
-	group resource.ResourceGroup,
+	group resource.ResourceGroup[any],
 	stateGroup ResourceState,
 	installed map[string]string,
 	normalizeName func(string) string,
@@ -83,7 +83,7 @@ func CompareGroupItems(
 // lookup key used in the installed map; pass nil for identity (name unchanged).
 func BaseReconcile(
 	kind string,
-	desired []resource.ResourceGroup,
+	desired []resource.ResourceGroup[any],
 	stateResources []ResourceState,
 	installed map[string]string,
 	normalizeName func(string) string,

@@ -41,7 +41,7 @@ func (p *GoProvider) Available() (bool, string) {
 
 // Reconcile compares the desired resource groups with the current system state.
 func (p *GoProvider) Reconcile(ctx context.Context,
-	desired []resource.ResourceGroup,
+	desired []resource.ResourceGroup[any],
 	state []provider.ResourceState,
 ) provider.GroupPlan {
 	// Go module paths (e.g. golang.org/x/tools/cmd/goimports) install as the

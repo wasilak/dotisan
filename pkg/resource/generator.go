@@ -15,9 +15,10 @@ import (
 // generatorContext is the template data available when rendering generator templates.
 // Fields use PascalCase so they are accessible in templates as .Item, .Index, etc.
 type generatorContext struct {
-	Item   interface{}
+	Item   any
 	Index  int
-	Values map[string]interface{}
+	// map[string]any is intentional: Values comes from user-defined values.yaml, schema-less at compile time.
+	Values map[string]any
 	Env    map[string]string
 	OS     config.OSInfo
 }
@@ -156,16 +157,16 @@ func expandTilde(path string) string {
 // resolveSourceKey resolves a dot-notation path into values and returns the list it points to.
 // Only simple dot-notation is supported (e.g. "skills" or "agents.skills"); array indexing is not.
 // Returns an error if the path is missing, intermediate nodes are not maps, or the final value is not a list.
-func resolveSourceKey(key string, values map[string]interface{}) ([]interface{}, error) {
+func resolveSourceKey(key string, values map[string]any) ([]any, error) {
 	if key == "" {
 		return nil, fmt.Errorf("sourceKey must not be empty")
 	}
 
 	parts := strings.Split(key, ".")
-	var current interface{} = values
+	var current any = values
 
 	for i, part := range parts {
-		m, ok := current.(map[string]interface{})
+		m, ok := current.(map[string]any)
 		if !ok {
 			path := strings.Join(parts[:i], ".")
 			return nil, fmt.Errorf("sourceKey %q: %q is not a map", key, path)
@@ -179,7 +180,7 @@ func resolveSourceKey(key string, values map[string]interface{}) ([]interface{},
 		current = val
 	}
 
-	slice, ok := current.([]interface{})
+	slice, ok := current.([]any)
 	if !ok {
 		return nil, fmt.Errorf("sourceKey %q: value is not a list (got %T)", key, current)
 	}
@@ -206,18 +207,18 @@ func shieldGeneratorTemplates(data []byte) (shielded []byte, raw *rawGeneratorTe
 		return data, nil, nil
 	}
 
-	var doc map[string]interface{}
+	var doc map[string]any
 	if err := yaml.Unmarshal(data, &doc); err != nil {
 		// Let the normal render path surface the parse error.
 		return data, nil, nil
 	}
 
-	spec, _ := doc["spec"].(map[string]interface{})
+	spec, _ := doc["spec"].(map[string]any)
 	if spec == nil {
 		return data, nil, nil
 	}
 
-	gen, _ := spec["generator"].(map[string]interface{})
+	gen, _ := spec["generator"].(map[string]any)
 	if gen == nil {
 		return data, nil, nil
 	}

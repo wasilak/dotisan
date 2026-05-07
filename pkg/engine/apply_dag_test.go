@@ -28,7 +28,7 @@ func (f *fakeProvider) Available() (bool, string) { return true, "" }
 func (f *fakeProvider) Import(_ context.Context, _ string) (provider.ResourceState, error) {
 	return provider.ResourceState{}, nil
 }
-func (f *fakeProvider) Reconcile(_ context.Context, _ []resource.ResourceGroup, _ []provider.ResourceState) provider.GroupPlan {
+func (f *fakeProvider) Reconcile(_ context.Context, _ []resource.ResourceGroup[any], _ []provider.ResourceState) provider.GroupPlan {
 	return provider.GroupPlan{}
 }
 

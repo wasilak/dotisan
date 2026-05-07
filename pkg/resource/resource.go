@@ -58,7 +58,7 @@ type Resource interface {
 
 	// ToGroup converts this resource to a ResourceGroup representation
 	// This extracts items from the spec and creates the 3-level hierarchy
-	ToGroup() ResourceGroup
+	ToGroup() ResourceGroup[any]
 }
 
 // Metadata contains common metadata for all resources.
@@ -120,7 +120,7 @@ var validate = validator.New()
 
 // ValidateStruct validates a struct using go-playground/validator.
 // This is a helper for resource implementations to use in their Validate() method.
-func ValidateStruct(s interface{}) error {
+func ValidateStruct(s any) error {
 	if err := validate.Struct(s); err != nil {
 		if validationErrors, ok := err.(validator.ValidationErrors); ok {
 			return fmt.Errorf("validation failed: %v", validationErrors)

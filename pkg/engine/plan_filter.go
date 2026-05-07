@@ -8,8 +8,8 @@ import (
 )
 
 // filterResourceGroupsByTargets filters resource groups and their items according to targets.
-func filterResourceGroupsByTargets(groups []resource.ResourceGroup, targets []TargetMatch) []resource.ResourceGroup {
-	var out []resource.ResourceGroup
+func filterResourceGroupsByTargets(groups []resource.ResourceGroup[any], targets []TargetMatch) []resource.ResourceGroup[any] {
+	var out []resource.ResourceGroup[any]
 	for _, g := range groups {
 		matched := false
 		// Check kind/group/item match for group-level and item-level targeting
