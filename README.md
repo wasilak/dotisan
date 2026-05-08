@@ -2,7 +2,7 @@
 
 > **Declarative dotfiles management for developers who treat their environment like infrastructure.**
 
-[![Go Version](https://img.shields.io/badge/go-1.21+-00ADD8?style=flat&logo=go)](https://golang.org/)
+[![Go Version](https://img.shields.io/badge/go-1.26+-00ADD8?style=flat&logo=go)](https://golang.org/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 Dotisan brings Terraform-inspired workflows to your dotfiles. Declare your desired state in YAML, compute diffs, and apply changes—including clean removals when you uninstall tools.
@@ -36,7 +36,7 @@ $ dotisan apply --confirm
 ### 1. Install Dotisan
 
 ```bash
-# From source (requires Go 1.21+)
+# From source (requires Go 1.26+)
 go install github.com/wasilak/dotisan@latest
 
 # Or download a release
@@ -156,6 +156,25 @@ spec:
     - name: homebrew/cask-fonts
 ```
 
+#### AI Skill Packages
+
+Installs AI agent skill packages from GitHub repositories using the `skills` CLI (requires Node.js / `npx`).
+
+```yaml
+---
+apiVersion: github.com/wasilak/dotisan/v1
+kind: AISkillPackages
+metadata:
+  name: my-skills
+spec:
+  packages:
+    - source: "Ar9av/obsidian-wiki"   # GitHub repo slug or full URL
+      targets:                          # Optional: limit to specific agents
+        - claude
+        - opencode
+    - source: "some-org/another-skill" # Installs for all detected agents
+```
+
 #### NPM Global Packages
 
 ```yaml
@@ -184,11 +203,10 @@ Note: The previous `ManagedDirectory` resource kind has been removed. Use `Manag
 | `HomeBrewPackages` | Homebrew formulae (preferred) | `brew` |
 | `HomeBrewCasks` | Homebrew casks (preferred) | `brew` |
 | `HomeBrewTaps` | Homebrew taps (preferred) | `brew` |
-| `HomeBrewCasks` | Homebrew casks (preferred) | `brew` |
-| `HomeBrewTaps` | Homebrew taps (preferred) | `brew` |
 | `NpmPackages` | Global npm packages | `npm` |
 | `GoPackages` | Go CLI tools (`go install`) | `go` |
 | `CargoPackages` | Rust CLI tools (`cargo install`) | `cargo` |
+| `AISkillPackages` | AI skill packages via `npx skills` | `npx` |
 
 ---
 
@@ -204,27 +222,24 @@ dotisan doctor            # Check system prerequisites
 ### Core Workflow
 
 ```bash
-dotisan plan              # Show what would change
-dotisan apply             # Dry-run (default)
-dotisan apply --confirm   # Actually apply changes
-dotisan apply --backup    # Create backups before modifying
+dotisan plan                    # Show what would change
+dotisan plan --diff             # Show inline file diffs
+dotisan plan --target KIND/name # Limit to a specific resource
+dotisan apply                   # Dry-run (default)
+dotisan apply --confirm         # Actually apply changes
+dotisan apply --diff            # Show diffs during apply
 ```
 
 ### State Management
 
 ```bash
-dotisan state list                   # Show all managed resources
-dotisan state import homebrew core-tools ripgrep     # Import existing package
-dotisan state import homebrew apps another-redis-desktop-manager  # Import cask
-dotisan state remove homebrew core-tools             # Remove from state
-dotisan state pull                   # Download from S3 backend
-dotisan state push                   # Upload to S3 backend
-```
-
-### Maintenance
-
-```bash
-dotisan eject KIND NAME   # Stop managing a resource
+dotisan state list                                         # Show all managed resources
+dotisan state list --output json                           # JSON output
+dotisan state import HomeBrewPackages/core-tools[ripgrep]  # Import existing resource into state
+dotisan state move  HomeBrewPackages/old[pkg] HomeBrewPackages/new[pkg]  # Move item between groups
+dotisan state remove HomeBrewPackages/core-tools[ripgrep]  # Remove from state (aliases: rm)
+dotisan state pull                                         # Download from S3 backend
+dotisan state push                                         # Upload to S3 backend
 ```
 
 ---
@@ -426,7 +441,7 @@ MIT License - see [LICENSE](LICENSE) for details.
 ## Acknowledgments
 
 - Inspired by Terraform, Kubernetes, and chezmoi
-- Built with [Cobra](https://github.com/spf13/cobra), [Sprig](https://github.com/Masterminds/sprig), and [Lipgloss](https://github.com/charmbracelet/lipgloss)
+- Built with [Cobra](https://github.com/spf13/cobra), [Sprig](https://github.com/Masterminds/sprig), [briandowns/spinner](https://github.com/briandowns/spinner), [aquasecurity/table](https://github.com/aquasecurity/table), and [minio-go](https://github.com/minio/minio-go)
 
 ---
 
