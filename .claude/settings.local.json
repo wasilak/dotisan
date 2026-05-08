@@ -11,7 +11,18 @@
       "Bash(go mod *)",
       "Bash(go run *)",
       "Bash(gofmt -w pkg/diff/diff.go)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(dagger version *)",
+      "Bash(git restore *)",
+      "Bash(git reset *)",
+      "Bash(git rm *)",
+      "mcp__spec-workflow__spec-workflow-guide",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); [print\\(r['kind'], r['group'], [i['name'] for i in r.get\\('items',[]\\)]\\) for r in d.get\\('resources',[]\\) if 'surge' in str\\(r\\).lower\\(\\)]\")",
+      "Bash(brew list *)",
+      "Bash(echo \"---exit:$?\")",
+      "Bash(brew *)",
+      "Bash(python3 *)",
+      "Bash(echo \"exit:$?\")"
     ]
   }
 }

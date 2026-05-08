@@ -61,6 +61,11 @@ func NewEngine() (*Engine, error) {
 	providerMap[providerCargo] = cargoProvider
 	provider.Register(providerCargo, cargoProvider, resource.KindCargoPackages)
 
+	// AISkillProvider
+	aiSkillProvider := providers.NewAISkillProvider()
+	providerMap[providerAISkill] = aiSkillProvider
+	provider.Register(providerAISkill, aiSkillProvider, resource.KindAISkillPackages)
+
 	return &Engine{
 		Config:          cfg,
 		TemplateContext: ctx,

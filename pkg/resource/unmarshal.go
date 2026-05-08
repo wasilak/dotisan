@@ -43,6 +43,8 @@ func UnmarshalYAML(data []byte) (Resource, error) {
 		resource = &CargoPackages{}
 	case KindManagedFile:
 		resource = &ManagedFile{}
+	case KindAISkillPackages:
+		resource = &AISkillPackages{}
 	default:
 		return nil, fmt.Errorf("unknown resource kind: %s", typeInfo.Kind)
 	}
@@ -65,5 +67,6 @@ func ValidResourceKinds() []string {
 		KindGoPackages,
 		KindCargoPackages,
 		KindManagedFile,
+		KindAISkillPackages,
 	}
 }

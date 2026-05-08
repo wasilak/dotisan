@@ -506,6 +506,7 @@ func TestValidResourceKinds(t *testing.T) {
 		"GoPackages",
 		"CargoPackages",
 		"ManagedFile",
+		"AISkillPackages",
 	}
 
 	if len(kinds) != len(expected) {

@@ -6,4 +6,5 @@ const (
 	providerNpm      = "npm"
 	providerGo       = "go"
 	providerCargo    = "cargo"
+	providerAISkill  = "aiskill"
 )
