@@ -6,7 +6,6 @@ import (
 	"os"
 	"strings"
 
-	// pterm import removed. TODO: migrate all CLI UI calls to palette-based toolkit.
 	"github.com/wasilak/dotisan/pkg/engine"
 	"github.com/wasilak/dotisan/pkg/output"
 	"github.com/wasilak/dotisan/pkg/style"

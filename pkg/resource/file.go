@@ -53,6 +53,11 @@ type ManagedFileSpec struct {
 	// Generator expands a values list into multiple files at load time.
 	// Mutually exclusive with Source, SourceFile, and Files.
 	Generator *GeneratorSpec `yaml:"generator,omitempty"`
+
+	// Vars holds manifest-level variables that extend the template context as .Vars.*
+	// when template: true is set. Values here take precedence over nothing — they are
+	// additive alongside .Values, .Env, and .OS.
+	Vars map[string]any `yaml:"vars,omitempty"`
 }
 
 // GeneratorSpec defines how to generate multiple files from a values list.
@@ -98,6 +103,10 @@ type FileSpec struct {
 
 	// DependsOn lists resource names this file depends on.
 	DependsOn []string `yaml:"dependsOn,omitempty"`
+
+	// Vars holds per-file variables that extend the template context as .Vars.*
+	// when template: true is set.
+	Vars map[string]any `yaml:"vars,omitempty"`
 }
 
 // Validate implements Resource.Validate.

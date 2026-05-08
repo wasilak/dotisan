@@ -50,6 +50,41 @@ func (e *TemplateEngine) RenderTemplate(name, content string) (string, error) {
 	return buf.String(), nil
 }
 
+// templateContextWithVars extends TemplateContext with manifest-level variables
+// accessible as .Vars.* in templates. Used only during per-file rendering.
+type templateContextWithVars struct {
+	Values map[string]any
+	Env    map[string]string
+	OS     OSInfo
+	Vars   map[string]any
+}
+
+// RenderTemplateWithVars renders a template with the engine's context extended by
+// manifest-level vars accessible as .Vars.*. Use this when a ManagedFile spec
+// defines vars: to override or augment the global template context.
+func (e *TemplateEngine) RenderTemplateWithVars(name, content string, vars map[string]any) (string, error) {
+	ctx := templateContextWithVars{
+		Values: e.ctx.Values,
+		Env:    e.ctx.Env,
+		OS:     e.ctx.OS,
+		Vars:   vars,
+	}
+
+	tmpl, err := template.New(name).
+		Funcs(sprig.TxtFuncMap()).
+		Parse(content)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse template %s: %w", name, err)
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, ctx); err != nil {
+		return "", fmt.Errorf("failed to execute template %s: %w", name, err)
+	}
+
+	return buf.String(), nil
+}
+
 // LoadAndRenderValues loads values.yaml from the given path, renders it as a template
 // using the current context (Env and OS), and parses the result into ctx.Values.
 // This is the first-pass templating step.

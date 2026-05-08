@@ -12,9 +12,9 @@ require (
 	github.com/martinohmann/go-difflib v1.1.0
 	github.com/mattn/go-runewidth v0.0.23
 	github.com/minio/minio-go/v7 v7.0.100
-	github.com/pterm/pterm v0.12.40
 	github.com/sergi/go-diff v1.4.0
 	github.com/spf13/cobra v1.10.2
+	golang.org/x/term v0.42.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -23,10 +23,8 @@ require (
 	charm.land/bubbletea/v2 v2.0.6 // indirect
 	charm.land/lipgloss/v2 v2.0.3 // indirect
 	dario.cat/mergo v1.0.1 // indirect
-	github.com/MarvinJWendt/testza v0.4.2 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.3.0 // indirect
-	github.com/atomicgo/cursor v0.0.1 // indirect
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
 	github.com/charmbracelet/ultraviolet v0.0.0-20260422141423-a0f1f21775f7 // indirect
 	github.com/charmbracelet/x/ansi v0.11.7 // indirect
@@ -43,7 +41,6 @@ require (
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/gookit/color v1.6.0 // indirect
 	github.com/huandu/xstrings v1.5.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/klauspost/compress v1.18.2 // indirect
@@ -71,6 +68,5 @@ require (
 	golang.org/x/net v0.51.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/sys v0.43.0 // indirect
-	golang.org/x/term v0.42.0 // indirect
 	golang.org/x/text v0.35.0 // indirect
 )

@@ -153,7 +153,7 @@ func (l *Loader) resolveSourceFiles(res Resource, dir string) error {
 		return nil
 	}
 
-	rendered, err := l.renderSourceFile(mf.Spec.SourceFile, mf.Spec.Template, dir)
+	rendered, err := l.renderSourceFile(mf.Spec.SourceFile, mf.Spec.Template, dir, mf.Spec.Vars)
 	if err != nil {
 		return err
 	}
@@ -165,7 +165,7 @@ func (l *Loader) resolveSourceFiles(res Resource, dir string) error {
 	}
 
 	for i, f := range mf.Spec.Files {
-		rendered, err := l.renderSourceFile(f.SourceFile, f.Template, dir)
+		rendered, err := l.renderSourceFile(f.SourceFile, f.Template, dir, f.Vars)
 		if err != nil {
 			return err
 		}
@@ -183,7 +183,8 @@ func (l *Loader) resolveSourceFiles(res Resource, dir string) error {
 // renderSourceFile reads and optionally renders a sourceFile as a template.
 // Returns nil when sourceFile is empty or template is false (no rendering needed).
 // Returns a pointer to the rendered string when template rendering was performed.
-func (l *Loader) renderSourceFile(sourceFile string, isTemplate bool, dir string) (*string, error) {
+// When vars is non-empty, templates can access manifest-level variables as .Vars.*.
+func (l *Loader) renderSourceFile(sourceFile string, isTemplate bool, dir string, vars map[string]any) (*string, error) {
 	if sourceFile == "" || !isTemplate {
 		return nil, nil
 	}
@@ -198,7 +199,12 @@ func (l *Loader) renderSourceFile(sourceFile string, isTemplate bool, dir string
 		return nil, fmt.Errorf("failed to read source file %s: %w", path, err)
 	}
 
-	result, err := l.engine.RenderTemplate(path, string(data))
+	var result string
+	if len(vars) > 0 {
+		result, err = l.engine.RenderTemplateWithVars(path, string(data), vars)
+	} else {
+		result, err = l.engine.RenderTemplate(path, string(data))
+	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to render template %s: %w", path, err)
 	}
