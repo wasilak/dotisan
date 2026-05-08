@@ -70,8 +70,16 @@ func (p *AISkillProvider) Apply(ctx context.Context, plan provider.GroupPlan) er
 
 func (p *AISkillProvider) applyGroupAddition(ctx context.Context, addition provider.GroupAddition) error {
 	for _, item := range addition.Items {
+		args := []string{"--yes", "skills", "add", item.Name, "--global", "--yes"}
+		if targets, ok := item.Metadata["targets"]; ok && targets != "" {
+			for _, t := range strings.Split(targets, ",") {
+				args = append(args, "--agent", t)
+			}
+		} else {
+			args = append(args, "--all")
+		}
 		slog.Info("installing AI skill package", "source", item.Name)
-		if _, stderr, err := cmdutil.RunSimpleFn(ctx, "npx", "--yes", "skills", "add", item.Name, "--global", "--yes", "--all"); err != nil {
+		if _, stderr, err := cmdutil.RunSimpleFn(ctx, "npx", args...); err != nil {
 			return fmt.Errorf("failed to install %s: %s: %w", item.Name, stderr, err)
 		}
 	}

@@ -15,7 +15,8 @@ type ResourceItem struct {
 	Name      string
 	Version   string
 	Checksum  string
-	FileExtra *FileItemExtra // non-nil only for ManagedFile items
+	FileExtra *FileItemExtra    // non-nil only for ManagedFile items
+	Metadata  map[string]string // provider-specific item metadata
 }
 
 // ItemState represents the state of an individual item

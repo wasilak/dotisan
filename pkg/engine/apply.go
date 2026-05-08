@@ -411,30 +411,31 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 					fmt.Println(style.Iconf(style.IconWarning, style.Warning, "%d skipped (dependency failed)", len(skippedGroups)))
 				}
 			}
-			fmt.Println()
-			fmt.Println(style.Bold.Render("Failed resources:"))
-			fmt.Println()
-			for _, f := range failures {
-				fmt.Printf("  %s %s\n", style.Error.Render("•"), style.DimStyle.Render(f.Resource))
-				errLines := strings.Split(f.Err.Error(), "\n")
-				for _, line := range errLines {
-					fmt.Printf("    %s\n", style.Error.Render(line))
-				}
-				fmt.Println()
+		}
+
+		fmt.Println()
+		fmt.Println(style.Bold.Render("Failed resources:"))
+		fmt.Println()
+		for _, f := range failures {
+			fmt.Printf("  %s %s\n", style.Error.Render("•"), style.DimStyle.Render(f.Resource))
+			errLines := strings.Split(f.Err.Error(), "\n")
+			for _, line := range errLines {
+				fmt.Printf("    %s\n", style.Error.Render(line))
 			}
-			if len(skippedGroups) > 0 {
-				fmt.Println(style.Bold.Render("Skipped resources:"))
-				fmt.Println()
-				for _, s := range skippedGroups {
-					fmt.Printf("  %s %s/%s — %s\n",
-						style.Warning.Render("•"),
-						style.DimStyle.Render(s.Kind),
-						style.DimStyle.Render(s.Group),
-						s.Reason,
-					)
-				}
-				fmt.Println()
+			fmt.Println()
+		}
+		if len(skippedGroups) > 0 {
+			fmt.Println(style.Bold.Render("Skipped resources:"))
+			fmt.Println()
+			for _, s := range skippedGroups {
+				fmt.Printf("  %s %s/%s — %s\n",
+					style.Warning.Render("•"),
+					style.DimStyle.Render(s.Kind),
+					style.DimStyle.Render(s.Group),
+					s.Reason,
+				)
 			}
+			fmt.Println()
 		}
 		// Return simple error indicator - details already shown
 		return fmt.Errorf("apply completed with %d error(s)", len(failures))

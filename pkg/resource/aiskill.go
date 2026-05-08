@@ -1,5 +1,7 @@
 package resource
 
+import "strings"
+
 // AISkillPackages defines AI skill packages to install via the `skills` CLI.
 type AISkillPackages struct {
 	BaseResource `yaml:",inline"`
@@ -35,9 +37,13 @@ func (r AISkillPackages) ToGroup() ResourceGroup[any] {
 	items := make([]ResourceItem, 0, len(r.Spec.Packages))
 
 	for _, p := range r.Spec.Packages {
-		items = append(items, ResourceItem{
-			Name: p.Source,
-		})
+		item := ResourceItem{Name: p.Source}
+		if len(p.Targets) > 0 {
+			item.Metadata = map[string]string{
+				"targets": strings.Join(p.Targets, ","),
+			}
+		}
+		items = append(items, item)
 	}
 
 	return ResourceGroup[any]{
