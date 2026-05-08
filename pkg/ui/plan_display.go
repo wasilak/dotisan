@@ -3,10 +3,10 @@ package ui
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/wasilak/dotisan/pkg/diff"
-	"github.com/wasilak/dotisan/pkg/engine"
-	"github.com/wasilak/dotisan/pkg/output"
-	"github.com/wasilak/dotisan/pkg/style"
+	"github.com/wasilak/nim/pkg/diff"
+	"github.com/wasilak/nim/pkg/engine"
+	"github.com/wasilak/nim/pkg/output"
+	"github.com/wasilak/nim/pkg/style"
 	"os"
 	"strings"
 )

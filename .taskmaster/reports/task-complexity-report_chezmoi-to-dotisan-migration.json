@@ -14,7 +14,7 @@
 			"taskTitle": "Initialize Dotisan Repository and Structure",
 			"complexityScore": 3,
 			"recommendedSubtasks": 0,
-			"expansionPrompt": "Break down the repository initialization into specific steps: repository creation, git initialization, directory structure setup, dotisan initialization, and file creation. Consider potential edge cases like existing repository or permission issues.",
+			"expansionPrompt": "Break down the repository initialization into specific steps: repository creation, git initialization, directory structure setup, nim initialization, and file creation. Consider potential edge cases like existing repository or permission issues.",
 			"reasoning": "This is a straightforward setup task that involves basic file operations and command execution. The steps are well-defined and don't require complex logic or integration with external systems. The main challenges are ensuring proper permissions and handling edge cases like existing repositories."
 		},
 		{

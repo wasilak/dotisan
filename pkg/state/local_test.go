@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/wasilak/dotisan/pkg/provider"
-	"github.com/wasilak/dotisan/pkg/resource"
+	"github.com/wasilak/nim/pkg/provider"
+	"github.com/wasilak/nim/pkg/resource"
 )
 
 func TestLocalBackendLoadNormalizesMissingStatus(t *testing.T) {

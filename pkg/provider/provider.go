@@ -1,6 +1,6 @@
-// Package provider defines the Provider interface and registry for dotisan.
+// Package provider defines the Provider interface and registry for nim.
 //
-// Providers are the core abstraction that enables dotisan to manage different
+// Providers are the core abstraction that enables nim to manage different
 // types of resources (files, packages, etc.). Each provider implements the
 // Provider interface and registers itself with the global registry.
 //
@@ -15,7 +15,7 @@ package provider
 import (
 	"context"
 
-	"github.com/wasilak/dotisan/pkg/resource"
+	"github.com/wasilak/nim/pkg/resource"
 )
 
 // ItemStatus represents the apply-time outcome for a single item.
@@ -49,7 +49,7 @@ type GroupPlan struct {
 	// InSync are groups that match desired state
 	InSync []GroupState
 
-	// Drifted are items that have changed outside of dotisan's management
+	// Drifted are items that have changed outside of nim's management
 	Drifted []ItemDrift
 
 	// Warnings are provider-generated advisory messages that do not block apply
@@ -146,7 +146,7 @@ type PlanWarning struct {
 	Suggestion string
 }
 
-// ResourceState represents the state of a resource group as tracked by dotisan.
+// ResourceState represents the state of a resource group as tracked by nim.
 // Uses 3-level hierarchy: Kind -> Group -> Items
 type ResourceState struct {
 	// Kind is the resource type (e.g., "HomeBrewPackages")
@@ -183,7 +183,7 @@ type Provider interface {
 
 	// Import discovers an existing resource on the system and returns its state.
 	// This is used by the `state import` command to bring unmanaged resources
-	// under dotisan's control. NOTE: provider-level ImportItem was removed —
+	// under nim's control. NOTE: provider-level ImportItem was removed —
 	// CLI import functionality (and provider-level import helpers) are no
 	// longer supported; providers should expose only Reconcile/Apply.
 	Import(ctx context.Context, group string) (ResourceState, error)

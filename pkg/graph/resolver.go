@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/wasilak/dotisan/pkg/resource"
+	"github.com/wasilak/nim/pkg/resource"
 )
 
 // ResourceNodeID builds a NodeID for a resource group (no item).

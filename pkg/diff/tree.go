@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/Digital-Shane/treeview/v2"
-	"github.com/wasilak/dotisan/pkg/provider"
-	"github.com/wasilak/dotisan/pkg/style"
+	"github.com/wasilak/nim/pkg/provider"
+	"github.com/wasilak/nim/pkg/style"
 )
 
 // pterm fully removed from tree rendering!

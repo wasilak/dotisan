@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/wasilak/dotisan/pkg/style"
+	"github.com/wasilak/nim/pkg/style"
 
 	"github.com/spf13/cobra"
 )
@@ -16,8 +16,8 @@ var initForceFlag bool
 var initCmd = &cobra.Command{
 	Use:          "init",
 	SilenceUsage: true,
-	Short:        "Initialize dotisan configuration",
-	Long:         "Create default configuration and example files under ~/.config/dotisan/ (config.yaml, values.yaml, resources/)",
+	Short:        "Initialize nim configuration",
+	Long:         "Create default configuration and example files under ~/.config/nim/ (config.yaml, values.yaml, resources/)",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runInit()
 	},
@@ -29,13 +29,13 @@ func runInit() error {
 		return fmt.Errorf("failed to get home directory: %w", err)
 	}
 
-	configDir := filepath.Join(homeDir, ".config", "dotisan")
+	configDir := filepath.Join(homeDir, ".config", "nim")
 	resourcesDir := filepath.Join(configDir, "resources")
 	configPath := filepath.Join(configDir, "config.yaml")
 	valuesPath := filepath.Join(configDir, "values.yaml")
 
 	welcomeBanner := style.SuccessBox.Render(
-		style.Bold.Render("dotisan") + " - Your Dotfiles Manager\n\n" +
+		style.Bold.Render("nim") + " - Your Dotfiles Manager\n\n" +
 			style.DimStyle.Render("Version: "+Version) + " | " + style.DimStyle.Render("Manage your dotfiles with ease"),
 	)
 	fmt.Println(welcomeBanner)
@@ -61,18 +61,18 @@ func runInit() error {
 # This is the tool-level configuration file.
 # For resource definitions, create YAML files in the resources/ subdirectory.
 
-# Dotfiles/resources location (default: ~/.config/dotisan)
-# dotfiles_root: ~/.config/dotisan
+# Dotfiles/resources location (default: ~/.config/nim)
+# dotfiles_root: ~/.config/nim
 
 # State backend configuration
 state:
   backend: local  # Options: local, s3
-  path: ~/.config/dotisan/state.json
+  path: ~/.config/nim/state.json
 
   # For S3 backend, uncomment and configure:
   # s3:
   #   endpoint: s3.amazonaws.com
-  #   bucket: my-dotisan-state
+  #   bucket: my-nim-state
   #   key: state.json
   #   region: us-east-1
   #   access_key_id: ${AWS_ACCESS_KEY_ID}
@@ -99,7 +99,7 @@ state:
 
 # Custom paths
 # projects_dir: "{{ .Env.HOME }}/Projects"
-# dotfiles_dir: "{{ .Env.HOME }}/.config/dotisan"
+# dotfiles_dir: "{{ .Env.HOME }}/.config/nim"
 
 # Machine-specific settings
 # editor: "nvim"
@@ -122,7 +122,7 @@ state:
 
 # Example 1: Inline source (good for small configs)
 # ---
-# apiVersion: github.com/wasilak/dotisan/v1
+# apiVersion: github.com/wasilak/nim/v1
 # kind: ManagedFile
 # metadata:
 #   name: zshrc
@@ -138,7 +138,7 @@ state:
 # Example 2: External file source (better for IDE support)
 # Create shell/zshrc.sh with your content, then:
 # ---
-# apiVersion: github.com/wasilak/dotisan/v1
+# apiVersion: github.com/wasilak/nim/v1
 # kind: ManagedFile
 # metadata:
 #   name: zshrc
@@ -150,7 +150,7 @@ state:
 
     # Example 3: Install packages with Homebrew
     # ---
-    # apiVersion: github.com/wasilak/dotisan/v1
+    # apiVersion: github.com/wasilak/nim/v1
     # kind: HomeBrewPackages
     # metadata:
     #   name: cli-tools
@@ -168,7 +168,7 @@ state:
 
 	fmt.Println()
 	fmt.Println(style.Header.Render("Directory structure:"))
-	fmt.Println("  " + style.DimStyle.Render("~/.config/dotisan/"))
+	fmt.Println("  " + style.DimStyle.Render("~/.config/nim/"))
 	fmt.Println("  " + style.DimStyle.Render("├── config.yaml"))
 	fmt.Println("  " + style.DimStyle.Render("├── values.yaml"))
 	fmt.Println("  " + style.DimStyle.Render("└── resources/"))
@@ -179,8 +179,8 @@ state:
 		style.Bold.Render("Next Steps") + "\n\n" +
 			style.Success.Render("1. ") + "Edit values.yaml with your settings\n" +
 			style.Success.Render("2. ") + "Create resources in resources/\n" +
-			style.Success.Render("3. ") + "Run " + style.Info.Render("dotisan doctor") + " to verify\n" +
-			style.Success.Render("4. ") + "Run " + style.Info.Render("dotisan plan") + " to preview",
+			style.Success.Render("3. ") + "Run " + style.Info.Render("nim doctor") + " to verify\n" +
+			style.Success.Render("4. ") + "Run " + style.Info.Render("nim plan") + " to preview",
 	)
 	fmt.Println(nextStepsBox)
 	fmt.Println()

@@ -14,7 +14,7 @@ func TestHomeBrewPackages_Validate(t *testing.T) {
 			name: "valid with formulae",
 			pkg: HomeBrewPackages{
 				BaseResource: BaseResource{
-					APIVersion: "github.com/wasilak/dotisan/v1",
+					APIVersion: "github.com/wasilak/nim/v1",
 					Kind:       "HomeBrewPackages",
 					Metadata:   Metadata{Name: "core-tools"},
 				},
@@ -28,7 +28,7 @@ func TestHomeBrewPackages_Validate(t *testing.T) {
 			name: "valid with taps only",
 			pkg: HomeBrewPackages{
 				BaseResource: BaseResource{
-					APIVersion: "github.com/wasilak/dotisan/v1",
+					APIVersion: "github.com/wasilak/nim/v1",
 					Kind:       "HomeBrewPackages",
 					Metadata:   Metadata{Name: "fonts"},
 				},
@@ -43,7 +43,7 @@ func TestHomeBrewPackages_Validate(t *testing.T) {
 			name: "missing metadata.name",
 			pkg: HomeBrewPackages{
 				BaseResource: BaseResource{
-					APIVersion: "github.com/wasilak/dotisan/v1",
+					APIVersion: "github.com/wasilak/nim/v1",
 					Kind:       "HomeBrewPackages",
 					Metadata:   Metadata{},
 				},
@@ -55,7 +55,7 @@ func TestHomeBrewPackages_Validate(t *testing.T) {
 			name: "empty spec allowed",
 			pkg: HomeBrewPackages{
 				BaseResource: BaseResource{
-					APIVersion: "github.com/wasilak/dotisan/v1",
+					APIVersion: "github.com/wasilak/nim/v1",
 					Kind:       "HomeBrewPackages",
 					Metadata:   Metadata{Name: "empty"},
 				},
@@ -85,7 +85,7 @@ func TestNpmPackages_Validate(t *testing.T) {
 			name: "valid with packages",
 			pkg: NpmPackages{
 				BaseResource: BaseResource{
-					APIVersion: "github.com/wasilak/dotisan/v1",
+					APIVersion: "github.com/wasilak/nim/v1",
 					Kind:       "NpmPackages",
 					Metadata:   Metadata{Name: "globals"},
 				},
@@ -121,7 +121,7 @@ func TestGoPackages_Validate(t *testing.T) {
 			name: "valid with modules",
 			pkg: GoPackages{
 				BaseResource: BaseResource{
-					APIVersion: "github.com/wasilak/dotisan/v1",
+					APIVersion: "github.com/wasilak/nim/v1",
 					Kind:       "GoPackages",
 					Metadata:   Metadata{Name: "tools"},
 				},
@@ -157,7 +157,7 @@ func TestManagedFile_Validate(t *testing.T) {
 			name: "valid with mode",
 			file: ManagedFile{
 				BaseResource: BaseResource{
-					APIVersion: "github.com/wasilak/dotisan/v1",
+					APIVersion: "github.com/wasilak/nim/v1",
 					Kind:       "ManagedFile",
 					Metadata:   Metadata{Name: "zshrc"},
 				},
@@ -174,7 +174,7 @@ func TestManagedFile_Validate(t *testing.T) {
 			name: "valid without mode",
 			file: ManagedFile{
 				BaseResource: BaseResource{
-					APIVersion: "github.com/wasilak/dotisan/v1",
+					APIVersion: "github.com/wasilak/nim/v1",
 					Kind:       "ManagedFile",
 					Metadata:   Metadata{Name: "config"},
 				},
@@ -190,7 +190,7 @@ func TestManagedFile_Validate(t *testing.T) {
 			name: "invalid mode",
 			file: ManagedFile{
 				BaseResource: BaseResource{
-					APIVersion: "github.com/wasilak/dotisan/v1",
+					APIVersion: "github.com/wasilak/nim/v1",
 					Kind:       "ManagedFile",
 					Metadata:   Metadata{Name: "bad-mode"},
 				},
@@ -206,7 +206,7 @@ func TestManagedFile_Validate(t *testing.T) {
 			name: "missing source",
 			file: ManagedFile{
 				BaseResource: BaseResource{
-					APIVersion: "github.com/wasilak/dotisan/v1",
+					APIVersion: "github.com/wasilak/nim/v1",
 					Kind:       "ManagedFile",
 					Metadata:   Metadata{Name: "no-source"},
 				},
@@ -220,7 +220,7 @@ func TestManagedFile_Validate(t *testing.T) {
 			name: "valid generator",
 			file: ManagedFile{
 				BaseResource: BaseResource{
-					APIVersion: "github.com/wasilak/dotisan/v1",
+					APIVersion: "github.com/wasilak/nim/v1",
 					Kind:       "ManagedFile",
 					Metadata:   Metadata{Name: "gen"},
 				},
@@ -238,7 +238,7 @@ func TestManagedFile_Validate(t *testing.T) {
 			name: "generator with mode",
 			file: ManagedFile{
 				BaseResource: BaseResource{
-					APIVersion: "github.com/wasilak/dotisan/v1",
+					APIVersion: "github.com/wasilak/nim/v1",
 					Kind:       "ManagedFile",
 					Metadata:   Metadata{Name: "gen-mode"},
 				},
@@ -257,7 +257,7 @@ func TestManagedFile_Validate(t *testing.T) {
 			name: "generator conflicts with source",
 			file: ManagedFile{
 				BaseResource: BaseResource{
-					APIVersion: "github.com/wasilak/dotisan/v1",
+					APIVersion: "github.com/wasilak/nim/v1",
 					Kind:       "ManagedFile",
 					Metadata:   Metadata{Name: "gen-conflict-source"},
 				},
@@ -276,7 +276,7 @@ func TestManagedFile_Validate(t *testing.T) {
 			name: "generator conflicts with sourceFile",
 			file: ManagedFile{
 				BaseResource: BaseResource{
-					APIVersion: "github.com/wasilak/dotisan/v1",
+					APIVersion: "github.com/wasilak/nim/v1",
 					Kind:       "ManagedFile",
 					Metadata:   Metadata{Name: "gen-conflict-sourcefile"},
 				},
@@ -295,7 +295,7 @@ func TestManagedFile_Validate(t *testing.T) {
 			name: "generator conflicts with files",
 			file: ManagedFile{
 				BaseResource: BaseResource{
-					APIVersion: "github.com/wasilak/dotisan/v1",
+					APIVersion: "github.com/wasilak/nim/v1",
 					Kind:       "ManagedFile",
 					Metadata:   Metadata{Name: "gen-conflict-files"},
 				},
@@ -330,7 +330,7 @@ func TestManagedFile_Validate(t *testing.T) {
 func TestManagedFile_GeneratorExpanded_ToGroup(t *testing.T) {
 	mf := &ManagedFile{
 		BaseResource: BaseResource{
-			APIVersion: "github.com/wasilak/dotisan/v1",
+			APIVersion: "github.com/wasilak/nim/v1",
 			Kind:       "ManagedFile",
 			Metadata:   Metadata{Name: "gen-skills", Namespace: "files"},
 		},
@@ -398,7 +398,7 @@ func TestManagedFile_GeneratorExpanded_ToGroup(t *testing.T) {
 
 func TestValidateDependsOnAddresses(t *testing.T) {
 	base := BaseResource{
-		APIVersion: "github.com/wasilak/dotisan/v1",
+		APIVersion: "github.com/wasilak/nim/v1",
 		Kind:       "HomeBrewPackages",
 		Metadata:   Metadata{Name: "test"},
 	}
@@ -437,7 +437,7 @@ func TestValidateDependsOnAddresses(t *testing.T) {
 func TestValidateDependsOn_AllResourceTypes(t *testing.T) {
 	invalid := []string{"[bad]"}
 	meta := Metadata{Name: "test", DependsOn: invalid}
-	br := BaseResource{APIVersion: "github.com/wasilak/dotisan/v1", Kind: "K", Metadata: meta}
+	br := BaseResource{APIVersion: "github.com/wasilak/nim/v1", Kind: "K", Metadata: meta}
 
 	resources := []Resource{
 		HomeBrewPackages{BaseResource: br, Spec: HomeBrewPackagesSpec{}},

@@ -1,9 +1,9 @@
-# dotisan — Suggested Commands
+# nim — Suggested Commands
 
 ## Project Initialization
 ```bash
 # Initialize Go module (first task)
-go mod init dotisan
+go mod init nim
 
 # Install Cobra
 go get github.com/spf13/cobra
@@ -21,7 +21,7 @@ go get gopkg.in/yaml.v3
 ## Development Commands
 ```bash
 # Build the project
-go build -o dotisan .
+go build -o nim .
 
 # Run with plan command (dry-run default)
 go run main.go plan

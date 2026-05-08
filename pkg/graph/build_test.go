@@ -4,14 +4,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/wasilak/dotisan/pkg/resource"
+	"github.com/wasilak/nim/pkg/resource"
 )
 
 // makeHB constructs a minimal HomeBrewPackages resource.
 func makeHB(name string, dependsOn ...string) *resource.HomeBrewPackages {
 	return &resource.HomeBrewPackages{
 		BaseResource: resource.BaseResource{
-			APIVersion: "github.com/wasilak/dotisan/v1",
+			APIVersion: "github.com/wasilak/nim/v1",
 			Kind:       "HomeBrewPackages",
 			Metadata: resource.Metadata{
 				Name:      name,
@@ -107,7 +107,7 @@ func TestBuild_Empty(t *testing.T) {
 func TestBuild_ImplicitTapDeps_PackagesDependOnTaps(t *testing.T) {
 	taps := &resource.HomeBrewTaps{
 		BaseResource: resource.BaseResource{
-			APIVersion: "github.com/wasilak/dotisan/v1",
+			APIVersion: "github.com/wasilak/nim/v1",
 			Kind:       "HomeBrewTaps",
 			Metadata:   resource.Metadata{Name: "extra-taps"},
 		},
@@ -139,7 +139,7 @@ func TestBuild_ImplicitTapDeps_PackagesDependOnTaps(t *testing.T) {
 func TestBuild_ImplicitTapDeps_CasksAlsoDependOnTaps(t *testing.T) {
 	taps := &resource.HomeBrewTaps{
 		BaseResource: resource.BaseResource{
-			APIVersion: "github.com/wasilak/dotisan/v1",
+			APIVersion: "github.com/wasilak/nim/v1",
 			Kind:       "HomeBrewTaps",
 			Metadata:   resource.Metadata{Name: "cask-fonts"},
 		},
@@ -147,7 +147,7 @@ func TestBuild_ImplicitTapDeps_CasksAlsoDependOnTaps(t *testing.T) {
 	}
 	casks := &resource.HomeBrewCasks{
 		BaseResource: resource.BaseResource{
-			APIVersion: "github.com/wasilak/dotisan/v1",
+			APIVersion: "github.com/wasilak/nim/v1",
 			Kind:       "HomeBrewCasks",
 			Metadata:   resource.Metadata{Name: "fonts"},
 		},
@@ -178,7 +178,7 @@ func TestBuild_ImplicitTapDeps_CasksAlsoDependOnTaps(t *testing.T) {
 func TestBuild_ImplicitTapDeps_NoDuplicateWhenExplicit(t *testing.T) {
 	taps := &resource.HomeBrewTaps{
 		BaseResource: resource.BaseResource{
-			APIVersion: "github.com/wasilak/dotisan/v1",
+			APIVersion: "github.com/wasilak/nim/v1",
 			Kind:       "HomeBrewTaps",
 			Metadata:   resource.Metadata{Name: "extra-taps"},
 		},
@@ -210,7 +210,7 @@ func TestBuild_ImplicitTapDeps_GlobalInjection(t *testing.T) {
 	// Taps are injected into all packages regardless of what namespace was in YAML.
 	taps := &resource.HomeBrewTaps{
 		BaseResource: resource.BaseResource{
-			APIVersion: "github.com/wasilak/dotisan/v1",
+			APIVersion: "github.com/wasilak/nim/v1",
 			Kind:       "HomeBrewTaps",
 			Metadata:   resource.Metadata{Name: "some-taps", Namespace: "other"},
 		},
@@ -262,7 +262,7 @@ func TestBuild_MultipleKinds(t *testing.T) {
 	brew := makeHB("tools")
 	file := &resource.ManagedFile{
 		BaseResource: resource.BaseResource{
-			APIVersion: "github.com/wasilak/dotisan/v1",
+			APIVersion: "github.com/wasilak/nim/v1",
 			Kind:       "ManagedFile",
 			Metadata: resource.Metadata{
 				Name:      "dotfiles",

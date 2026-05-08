@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/wasilak/dotisan/pkg/diff"
-	"github.com/wasilak/dotisan/pkg/style"
+	"github.com/wasilak/nim/pkg/diff"
+	"github.com/wasilak/nim/pkg/style"
 )
 
 // captureOutput temporarily redirects os.Stdout to a pipe and returns the

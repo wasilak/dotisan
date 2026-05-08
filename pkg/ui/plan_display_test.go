@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"encoding/json"
-	"github.com/wasilak/dotisan/pkg/engine"
-	"github.com/wasilak/dotisan/pkg/output"
-	"github.com/wasilak/dotisan/pkg/provider"
+	"github.com/wasilak/nim/pkg/engine"
+	"github.com/wasilak/nim/pkg/output"
+	"github.com/wasilak/nim/pkg/provider"
 )
 
 // Test that DisplayPlanResult renders provider warnings into stdout
@@ -23,7 +23,7 @@ func TestDisplayPlanResult_RendersWarnings(t *testing.T) {
 						ItemID:     "zshrc",
 						Severity:   "warning",
 						Message:    "Destination file already exists at ~/.zshrc",
-						Suggestion: "dotisan state import ManagedFile myfiles ~/.zshrc",
+						Suggestion: "nim state import ManagedFile myfiles ~/.zshrc",
 					},
 				},
 			},
@@ -54,7 +54,7 @@ func TestDisplayPlanResult_RendersWarnings(t *testing.T) {
 	if !bytes.Contains([]byte(out), []byte("Destination file already exists")) {
 		t.Fatalf("expected warning message present, got:\n%s", out)
 	}
-	if !bytes.Contains([]byte(out), []byte("dotisan state import ManagedFile myfiles ~/.zshrc")) {
+	if !bytes.Contains([]byte(out), []byte("nim state import ManagedFile myfiles ~/.zshrc")) {
 		t.Fatalf("expected suggestion present, got:\n%s", out)
 	}
 }
@@ -70,7 +70,7 @@ func TestDisplayPlanResult_JSONIncludesWarnings(t *testing.T) {
 						ItemID:     "zshrc",
 						Severity:   "warning",
 						Message:    "Destination file already exists at ~/.zshrc",
-						Suggestion: "dotisan state import ManagedFile myfiles ~/.zshrc",
+						Suggestion: "nim state import ManagedFile myfiles ~/.zshrc",
 					},
 				},
 			},
@@ -132,7 +132,7 @@ func TestDisplayPlanResult_TreeIncludesWarnings(t *testing.T) {
 						ItemID:     "zshrc",
 						Severity:   "warning",
 						Message:    "Destination file already exists at ~/.zshrc",
-						Suggestion: "dotisan state import ManagedFile myfiles ~/.zshrc",
+						Suggestion: "nim state import ManagedFile myfiles ~/.zshrc",
 					},
 				},
 			},

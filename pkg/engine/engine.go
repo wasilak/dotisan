@@ -1,13 +1,13 @@
-// Package engine provides the core orchestration logic for dotisan.
+// Package engine provides the core orchestration logic for nim.
 package engine
 
 import (
 	"fmt"
-	"github.com/wasilak/dotisan/pkg/config"
-	"github.com/wasilak/dotisan/pkg/provider"
-	"github.com/wasilak/dotisan/pkg/providers"
-	"github.com/wasilak/dotisan/pkg/resource"
-	"github.com/wasilak/dotisan/pkg/state"
+	"github.com/wasilak/nim/pkg/config"
+	"github.com/wasilak/nim/pkg/provider"
+	"github.com/wasilak/nim/pkg/providers"
+	"github.com/wasilak/nim/pkg/resource"
+	"github.com/wasilak/nim/pkg/state"
 )
 
 // Engine orchestrates the plan and apply operations.

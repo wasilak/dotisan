@@ -24,7 +24,7 @@ node_modules/
 # OS specific
 .DS_Store
 
-dotisan
+nim
 dist/
 ci/ci
 .claude/settings.local.json

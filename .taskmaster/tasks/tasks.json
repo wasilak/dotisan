@@ -4,9 +4,9 @@
       {
         "id": 1,
         "title": "Project Setup and CLI Framework Integration",
-        "description": "Initialize the Go project, set up the basic directory structure, and integrate the Cobra CLI framework to handle top-level commands like 'dotisan plan', 'dotisan apply', etc. Establish the main entry point for the application.",
-        "details": "1. Initialize a new Go module: `go mod init dotisan`. 2. Install `github.com/spf13/cobra`. 3. Create `main.go` and `cmd/root.go` to define the root command. 4. Implement a basic `dotisan` command that prints a welcome message or usage. 5. Define placeholders for subcommands like `plan`, `apply`, `doctor`, `state`, `eject`. 6. Ensure proper error handling and command line argument parsing using Cobra's features.",
-        "testStrategy": "1. Run `go run main.go` to verify the root command executes without errors. 2. Run `go run main.go --help` to check if Cobra generates correct help output. 3. Create dummy subcommands and verify their execution and help messages. 4. Ensure `dotisan` can be built and run as a standalone binary.",
+        "description": "Initialize the Go project, set up the basic directory structure, and integrate the Cobra CLI framework to handle top-level commands like 'nim plan', 'nim apply', etc. Establish the main entry point for the application.",
+        "details": "1. Initialize a new Go module: `go mod init nim`. 2. Install `github.com/spf13/cobra`. 3. Create `main.go` and `cmd/root.go` to define the root command. 4. Implement a basic `nim` command that prints a welcome message or usage. 5. Define placeholders for subcommands like `plan`, `apply`, `doctor`, `state`, `eject`. 6. Ensure proper error handling and command line argument parsing using Cobra's features.",
+        "testStrategy": "1. Run `go run main.go` to verify the root command executes without errors. 2. Run `go run main.go --help` to check if Cobra generates correct help output. 3. Create dummy subcommands and verify their execution and help messages. 4. Ensure `nim` can be built and run as a standalone binary.",
         "priority": "high",
         "dependencies": [],
         "status": "done",
@@ -14,9 +14,9 @@
           {
             "id": 1,
             "title": "Initialize Go Project and Setup Cobra Root Command",
-            "description": "Initialize the Go module, install Cobra, create the main entry point and the root command structure, and implement a basic 'dotisan' command with proper error handling.",
+            "description": "Initialize the Go module, install Cobra, create the main entry point and the root command structure, and implement a basic 'nim' command with proper error handling.",
             "dependencies": [],
-            "details": "Execute `go mod init dotisan` to initialize the Go module. Install `github.com/spf13/cobra` using `go get`. Create `main.go` to call `cmd.Execute()` and `cmd/root.go` to define the `rootCmd`. Implement the `rootCmd.Run` function to print a welcome message or usage information. Ensure Cobra's default error handling and argument parsing are functional for the root command.",
+            "details": "Execute `go mod init nim` to initialize the Go module. Install `github.com/spf13/cobra` using `go get`. Create `main.go` to call `cmd.Execute()` and `cmd/root.go` to define the `rootCmd`. Implement the `rootCmd.Run` function to print a welcome message or usage information. Ensure Cobra's default error handling and argument parsing are functional for the root command.",
             "status": "done",
             "testStrategy": "Run `go run main.go` to verify the root command executes without errors and prints the expected output. Run `go run main.go --help` to check if Cobra generates correct help output for the root command. Verify basic argument parsing (e.g., unknown flags) triggers Cobra's error handling.",
             "updatedAt": "2026-04-20T07:41:32.057Z",
@@ -25,7 +25,7 @@
           {
             "id": 2,
             "title": "Define Placeholder Subcommands",
-            "description": "Create placeholder subcommands for `plan`, `apply`, `doctor`, `state`, and `eject` under the `dotisan` root command, each with minimal functionality.",
+            "description": "Create placeholder subcommands for `plan`, `apply`, `doctor`, `state`, and `eject` under the `nim` root command, each with minimal functionality.",
             "dependencies": [
               1
             ],
@@ -44,8 +44,8 @@
       {
         "id": 2,
         "title": "Configuration Loading and Templating Engine",
-        "description": "Implement the loading mechanism for `~/.dotisan/config.yaml` (tool configuration) and `~/.dotfiles/values.yaml` (dotfiles values). Develop the two-pass templating engine using Go's `text/template` and `sprig` functions, ensuring `values.yaml` is templated first.",
-        "details": "1. Define Go structs for `~/.dotisan/config.yaml` (e.g., `StateBackendConfig`, `DotfilesRoot`). 2. Implement a function to load and parse `config.yaml` using `gopkg.in/yaml.v3`. 3. Implement a function to load `~/.dotfiles/values.yaml`. 4. Create the `TemplateContext` struct including `Values`, `Env` (from `os.Environ()`), and `OS` (GOOS, arch, hostname). 5. Implement the two-pass rendering: first, render `values.yaml` using `Env` and `OS` context, then parse the result into `.Values`. Second, prepare the full `TemplateContext` for subsequent template rendering (e.g., `ManagedFile` sources). 6. Integrate `github.com/Masterminds/sprig/v3` functions into the template engine.",
+        "description": "Implement the loading mechanism for `~/.nim/config.yaml` (tool configuration) and `~/.dotfiles/values.yaml` (dotfiles values). Develop the two-pass templating engine using Go's `text/template` and `sprig` functions, ensuring `values.yaml` is templated first.",
+        "details": "1. Define Go structs for `~/.nim/config.yaml` (e.g., `StateBackendConfig`, `DotfilesRoot`). 2. Implement a function to load and parse `config.yaml` using `gopkg.in/yaml.v3`. 3. Implement a function to load `~/.dotfiles/values.yaml`. 4. Create the `TemplateContext` struct including `Values`, `Env` (from `os.Environ()`), and `OS` (GOOS, arch, hostname). 5. Implement the two-pass rendering: first, render `values.yaml` using `Env` and `OS` context, then parse the result into `.Values`. Second, prepare the full `TemplateContext` for subsequent template rendering (e.g., `ManagedFile` sources). 6. Integrate `github.com/Masterminds/sprig/v3` functions into the template engine.",
         "testStrategy": "1. Create sample `config.yaml` and `values.yaml` files with environment variable interpolations (e.g., `{{ .Env.HOME }}`, `{{ .Env.HOSTNAME }}`). 2. Write unit tests to verify `config.yaml` loads correctly. 3. Write unit tests to verify `values.yaml` is templated correctly in the first pass, including `Env` variables. 4. Verify that `sprig` functions like `default`, `trimSpace`, `env` work as expected within templates. 5. Ensure the `TemplateContext` is correctly populated.",
         "priority": "high",
         "dependencies": [
@@ -56,9 +56,9 @@
           {
             "id": 1,
             "title": "Define Configuration Structs and Load Dotisan Config",
-            "description": "Define Go structs for the `~/.dotisan/config.yaml` file and implement the loading and parsing mechanism for it using `gopkg.in/yaml.v3`.",
+            "description": "Define Go structs for the `~/.nim/config.yaml` file and implement the loading and parsing mechanism for it using `gopkg.in/yaml.v3`.",
             "dependencies": [],
-            "details": "Create Go structs (e.g., `StateBackendConfig`, `DotfilesRoot`) that accurately represent the structure of `~/.dotisan/config.yaml`. Implement a utility function to locate, read, and unmarshal this YAML file. Handle file not found and parsing errors gracefully.",
+            "details": "Create Go structs (e.g., `StateBackendConfig`, `DotfilesRoot`) that accurately represent the structure of `~/.nim/config.yaml`. Implement a utility function to locate, read, and unmarshal this YAML file. Handle file not found and parsing errors gracefully.",
             "status": "done",
             "testStrategy": "Create a sample `config.yaml` file. Write unit tests to ensure the file is loaded correctly, parsed into the defined structs, and that all fields are populated as expected. Test error cases like malformed YAML or missing files.",
             "parentId": "undefined",
@@ -197,7 +197,7 @@
         "id": 4,
         "title": "State Management Backend Implementation",
         "description": "Implement the `StateBackend` interface with `LocalBackend` (JSON file) and `S3Backend` using `minio-go/v7`. This includes loading and saving the state file according to the defined schema.",
-        "details": "1. Define the `State` Go struct matching the `state.json` schema (version, timestamps, resources array). 2. Define the `StateBackend` interface with `Load(ctx context.Context) (*State, error)` and `Save(ctx context.Context, s *State) error` methods. 3. Implement `LocalBackend`: reads/writes JSON to `~/.dotisan/state.json` (configurable path). Use `encoding/json` for serialization/deserialization. 4. Implement `S3Backend`: uses `github.com/minio/minio-go/v7` for S3-compatible storage. Configure endpoint, bucket, key, region, and credentials (env vars or explicit) from `~/.dotisan/config.yaml`. 5. Implement a factory function to select the appropriate backend based on `config.yaml` settings.",
+        "details": "1. Define the `State` Go struct matching the `state.json` schema (version, timestamps, resources array). 2. Define the `StateBackend` interface with `Load(ctx context.Context) (*State, error)` and `Save(ctx context.Context, s *State) error` methods. 3. Implement `LocalBackend`: reads/writes JSON to `~/.nim/state.json` (configurable path). Use `encoding/json` for serialization/deserialization. 4. Implement `S3Backend`: uses `github.com/minio/minio-go/v7` for S3-compatible storage. Configure endpoint, bucket, key, region, and credentials (env vars or explicit) from `~/.nim/config.yaml`. 5. Implement a factory function to select the appropriate backend based on `config.yaml` settings.",
         "testStrategy": "1. Write unit tests for `LocalBackend`: save a sample state, load it, verify content. Test edge cases like file not found. 2. Write integration tests for `S3Backend` (using a local MinIO instance or mock S3 client): save/load state, verify connectivity and data integrity. 3. Verify correct handling of `created_at` and `updated_at` timestamps. 4. Ensure `checksum` is correctly stored for resources. 5. Test state backend selection based on `config.yaml`.",
         "priority": "high",
         "dependencies": [
@@ -211,7 +211,7 @@
             "title": "Define State Schema, Backend Interface, and Local Backend",
             "description": "Create the `State` Go struct based on the `state.json` schema, define the `StateBackend` interface with Load and Save methods, and implement the `LocalBackend` for file-based state management.",
             "dependencies": [],
-            "details": "Define the `State` Go struct matching the `state.json` schema (version, timestamps, resources array). Define the `StateBackend` interface with `Load(ctx context.Context) (*State, error)` and `Save(ctx context.Context, s *State) error` methods. Implement `LocalBackend` to read/write JSON to `~/.dotisan/state.json` (configurable path) using `encoding/json` for serialization/deserialization.",
+            "details": "Define the `State` Go struct matching the `state.json` schema (version, timestamps, resources array). Define the `StateBackend` interface with `Load(ctx context.Context) (*State, error)` and `Save(ctx context.Context, s *State) error` methods. Implement `LocalBackend` to read/write JSON to `~/.nim/state.json` (configurable path) using `encoding/json` for serialization/deserialization.",
             "status": "done",
             "testStrategy": "Write unit tests for `LocalBackend`: save a sample state, load it, verify content. Test edge cases like file not found, invalid JSON, and permission issues.",
             "parentId": "undefined",
@@ -224,7 +224,7 @@
             "dependencies": [
               1
             ],
-            "details": "Implement `S3Backend` using `github.com/minio/minio-go/v7` for S3-compatible storage. Configure S3 endpoint, bucket, key, region, and credentials (from environment variables or `~/.dotisan/config.yaml`). Ensure robust error handling for network operations and S3 API calls.",
+            "details": "Implement `S3Backend` using `github.com/minio/minio-go/v7` for S3-compatible storage. Configure S3 endpoint, bucket, key, region, and credentials (from environment variables or `~/.nim/config.yaml`). Ensure robust error handling for network operations and S3 API calls.",
             "status": "done",
             "testStrategy": "Write integration tests for `S3Backend` using a local MinIO instance or mock S3 client: save/load state, verify connectivity, authentication, and data integrity. Test error scenarios like connection failures, invalid credentials, or permission issues.",
             "parentId": "undefined",
@@ -238,7 +238,7 @@
               1,
               2
             ],
-            "details": "Implement a factory function that reads `~/.dotisan/config.yaml` to determine which `StateBackend` to instantiate. The factory should return an initialized `StateBackend` instance (either `LocalBackend` or `S3Backend`). Handle cases where no backend is specified or configuration is invalid, providing clear error messages.",
+            "details": "Implement a factory function that reads `~/.nim/config.yaml` to determine which `StateBackend` to instantiate. The factory should return an initialized `StateBackend` instance (either `LocalBackend` or `S3Backend`). Handle cases where no backend is specified or configuration is invalid, providing clear error messages.",
             "status": "done",
             "testStrategy": "Write unit tests for the factory function: verify it returns `LocalBackend` when S3 configuration is absent, and `S3Backend` when S3 configuration is present and valid. Test error handling for malformed or incomplete configuration settings.",
             "parentId": "undefined",
@@ -818,7 +818,7 @@
         "title": "Fix FileProvider Reconcile Logic for Unmanaged Files",
         "description": "Modify `pkg/providers/file.go` to correctly identify unmanaged files with existing destinations as '+ to create' instead of 'in sync'.",
         "details": "Locate lines 208-229 in `pkg/providers/file.go`. Change the logic so that if `!hasSavedState`, the resource is always treated as an addition, regardless of whether `actualChecksum == checksum`. This ensures that files not in Dotisan's state are never marked 'in sync' if they exist on the destination. The `plan.InSync` append should be removed from this block.\n\n```go\n// pkg/providers/file.go (simplified for illustration)\nfunc (p *FileProvider) Reconcile(ctx context.Context, mf *ManagedFile, plan *engine.Plan) error {\n    // ... existing logic ...\n    hasSavedState := p.State.HasResource(mf.ID())\n    if !hasSavedState {\n        // Always treat as an addition if not in state.\n        // Warnings for existing destination files will be handled in a subsequent task.\n        plan.Add = append(plan.Add, mf)\n    } else {\n        // ... existing logic for InSync, Update, Delete based on saved state ...\n    }\n    // ... rest of reconcile logic ...\n    return nil\n}\n```",
-        "testStrategy": "Create a test case where a file exists at the destination (e.g., `~/.zshrc`) but is not present in Dotisan's state file. Run `dotisan plan` and assert that the file is listed under 'Resources to be created' (e.g., '✚ ManagedFile/zshrc will be created') and not hidden or marked 'in sync'.",
+        "testStrategy": "Create a test case where a file exists at the destination (e.g., `~/.zshrc`) but is not present in Dotisan's state file. Run `nim plan` and assert that the file is listed under 'Resources to be created' (e.g., '✚ ManagedFile/zshrc will be created') and not hidden or marked 'in sync'.",
         "priority": "high",
         "dependencies": [],
         "status": "pending",
@@ -839,8 +839,8 @@
         "id": 13,
         "title": "Generate Warnings for Existing Destination Files",
         "description": "Modify `FileProvider` to generate `PlanWarning` objects when a destination file exists but the resource is not in state, providing an import suggestion.",
-        "details": "In `pkg/providers/file.go`, within the `Reconcile` method, after determining that `!hasSavedState` (as per Task 11), add logic to check if the destination file actually exists on the filesystem. If it does, create a `PlanWarning` and append it to `plan.Warnings`.\n\n```go\n// pkg/providers/file.go (within Reconcile method, after Task 11's changes)\n// ...\nif !hasSavedState {\n    plan.Add = append(plan.Add, mf) // From Task 11\n\n    // Check if destination file exists\n    destinationPath := mf.Spec.Destination // Assuming mf.Spec.Destination holds the path\n    if _, err := os.Stat(destinationPath); err == nil { // File exists\n        warning := engine.PlanWarning{\n            ResourceID:   mf.ID(),\n            Severity:     \"warning\",\n            Message:      fmt.Sprintf(\"Destination file already exists at %s\", destinationPath),\n            Suggestion:   fmt.Sprintf(\"dotisan state import ManagedFile %s %s\", mf.Metadata.Name, destinationPath),\n        }\n        plan.Warnings = append(plan.Warnings, warning)\n    }\n}\n// ...\n```",
-        "testStrategy": "Extend the test case from Task 11. After running `dotisan plan` for an unmanaged existing file, assert that the `Plan` object contains a warning in its `Warnings` slice with the correct message ('Destination file already exists...') and the precise import suggestion snippet.",
+        "details": "In `pkg/providers/file.go`, within the `Reconcile` method, after determining that `!hasSavedState` (as per Task 11), add logic to check if the destination file actually exists on the filesystem. If it does, create a `PlanWarning` and append it to `plan.Warnings`.\n\n```go\n// pkg/providers/file.go (within Reconcile method, after Task 11's changes)\n// ...\nif !hasSavedState {\n    plan.Add = append(plan.Add, mf) // From Task 11\n\n    // Check if destination file exists\n    destinationPath := mf.Spec.Destination // Assuming mf.Spec.Destination holds the path\n    if _, err := os.Stat(destinationPath); err == nil { // File exists\n        warning := engine.PlanWarning{\n            ResourceID:   mf.ID(),\n            Severity:     \"warning\",\n            Message:      fmt.Sprintf(\"Destination file already exists at %s\", destinationPath),\n            Suggestion:   fmt.Sprintf(\"nim state import ManagedFile %s %s\", mf.Metadata.Name, destinationPath),\n        }\n        plan.Warnings = append(plan.Warnings, warning)\n    }\n}\n// ...\n```",
+        "testStrategy": "Extend the test case from Task 11. After running `nim plan` for an unmanaged existing file, assert that the `Plan` object contains a warning in its `Warnings` slice with the correct message ('Destination file already exists...') and the precise import suggestion snippet.",
         "priority": "high",
         "dependencies": [
           11,
@@ -854,7 +854,7 @@
         "title": "Enhance Plan Output to Display Warnings and Suggestions",
         "description": "Modify the `DisplayPlan` function to render the new `Plan.Warnings` field in a user-friendly format, including severity, message, and copy-pasteable suggestions.",
         "details": "Locate the `DisplayPlan` function (likely in `pkg/engine/engine.go` or a dedicated `pkg/ui` package). Before displaying the 'Resources to be created/updated/deleted' sections, iterate through `plan.Warnings` and print them. Also, update the summary line to include the count of warnings.\n\n```go\n// pkg/engine/engine.go (or pkg/ui/display.go)\nfunc DisplayPlan(plan *engine.Plan) {\n    if len(plan.Warnings) > 0 {\n        fmt.Println(\"Warnings:\")\n        for _, w := range plan.Warnings {\n            // Use appropriate color/icon based on w.Severity (e.g., '⚠' for warning, 'ℹ' for info)\n            fmt.Printf(\"  %s %s: %s\\n\", getSeverityIcon(w.Severity), w.ResourceID, w.Message)\n            if w.Suggestion != \"\" {\n                fmt.Printf(\"    ℹ Run: %s\\n\", w.Suggestion)\n            }\n        }\n        fmt.Println()\n    }\n    // ... existing plan output for Add, Update, Delete ...\n\n    // Update the summary line\n    fmt.Printf(\"Plan: +%d to add, %d warnings\\n\", len(plan.Add), len(plan.Warnings))\n}\n\n// Helper function (example)\nfunc getSeverityIcon(severity string) string {\n    switch severity {\n    case \"warning\": return \"⚠\"\n    case \"info\": return \"ℹ\"\n    default: return \" \"\n    }\n}\n```",
-        "testStrategy": "Run `dotisan plan` with a scenario where an unmanaged file exists at the destination. Verify that the output precisely matches the 'Expected Behavior' and 'After' sections in the PRD, showing the warning, the info snippet, and the updated summary line (e.g., 'Plan: +1 to add, 1 warning').",
+        "testStrategy": "Run `nim plan` with a scenario where an unmanaged file exists at the destination. Verify that the output precisely matches the 'Expected Behavior' and 'After' sections in the PRD, showing the warning, the info snippet, and the updated summary line (e.g., 'Plan: +1 to add, 1 warning').",
         "priority": "high",
         "dependencies": [
           12,
@@ -878,8 +878,8 @@
         "id": 16,
         "title": "Integrate Homebrew Drift Detection into BrewProvider Reconcile",
         "description": "Modify the `BrewProvider`'s `Reconcile` method to use `checkFormulaeStatus` to detect if packages managed by Dotisan have been uninstalled externally.",
-        "details": "In `pkg/providers/brew.go`, within the `Reconcile` method for `BrewProvider`:\n1. Extract the list of formulae expected to be installed from the `BrewPackages` resource in the saved state.\n2. Call `p.checkFormulaeStatus` with this list.\n3. Compare the actual installed status with the expected status. If a package expected to be installed is not found, create a `PlanWarning` for the `BrewPackages` resource and append it to `plan.Warnings`.\n\n```go\n// pkg/providers/brew.go (within Reconcile method for BrewProvider)\n// ...\n// Assuming 'bp' is the BrewPackages resource from state\nexpectedFormulae := []string{}\nfor _, pkg := range bp.Spec.Packages {\n    expectedFormulae = append(expectedFormulae, pkg.Name)\n}\n\nactualStatus, err := p.checkFormulaeStatus(expectedFormulae)\nif err != nil {\n    return fmt.Errorf(\"failed to check brew formulae status: %w\", err)\n}\n\ndriftMessages := []string{}\nfor _, pkg := range bp.Spec.Packages {\n    if !actualStatus[pkg.Name] {\n        driftMessages = append(driftMessages, fmt.Sprintf(\"Package '%s' was uninstalled outside of dotisan\", pkg.Name))\n    }\n}\n\nif len(driftMessages) > 0 {\n    warning := engine.PlanWarning{\n        ResourceID:   bp.ID(),\n        Severity:     \"warning\",\n        Message:      fmt.Sprintf(\"BrewPackages/%s has drift. %s\", bp.Metadata.Name, strings.Join(driftMessages, \". \")),\n        Suggestion:   \"Run 'dotisan apply' to restore\",\n    }\n    plan.Warnings = append(plan.Warnings, warning)\n    // Optionally, if a dedicated 'Drifted' slice is desired for top-level display:\n    // plan.Drifted = append(plan.Drifted, bp)\n}\n// ... rest of reconcile logic ...\n```",
-        "testStrategy": "Create a `BrewPackages` resource in Dotisan's state file. Manually uninstall one of the packages using `brew uninstall <package>`. Run `dotisan plan` and verify that the plan output includes a warning for the `BrewPackages` resource, indicating the uninstalled package and suggesting `dotisan apply`. Ensure the `brew info` call completes within 2 seconds.",
+        "details": "In `pkg/providers/brew.go`, within the `Reconcile` method for `BrewProvider`:\n1. Extract the list of formulae expected to be installed from the `BrewPackages` resource in the saved state.\n2. Call `p.checkFormulaeStatus` with this list.\n3. Compare the actual installed status with the expected status. If a package expected to be installed is not found, create a `PlanWarning` for the `BrewPackages` resource and append it to `plan.Warnings`.\n\n```go\n// pkg/providers/brew.go (within Reconcile method for BrewProvider)\n// ...\n// Assuming 'bp' is the BrewPackages resource from state\nexpectedFormulae := []string{}\nfor _, pkg := range bp.Spec.Packages {\n    expectedFormulae = append(expectedFormulae, pkg.Name)\n}\n\nactualStatus, err := p.checkFormulaeStatus(expectedFormulae)\nif err != nil {\n    return fmt.Errorf(\"failed to check brew formulae status: %w\", err)\n}\n\ndriftMessages := []string{}\nfor _, pkg := range bp.Spec.Packages {\n    if !actualStatus[pkg.Name] {\n        driftMessages = append(driftMessages, fmt.Sprintf(\"Package '%s' was uninstalled outside of nim\", pkg.Name))\n    }\n}\n\nif len(driftMessages) > 0 {\n    warning := engine.PlanWarning{\n        ResourceID:   bp.ID(),\n        Severity:     \"warning\",\n        Message:      fmt.Sprintf(\"BrewPackages/%s has drift. %s\", bp.Metadata.Name, strings.Join(driftMessages, \". \")),\n        Suggestion:   \"Run 'nim apply' to restore\",\n    }\n    plan.Warnings = append(plan.Warnings, warning)\n    // Optionally, if a dedicated 'Drifted' slice is desired for top-level display:\n    // plan.Drifted = append(plan.Drifted, bp)\n}\n// ... rest of reconcile logic ...\n```",
+        "testStrategy": "Create a `BrewPackages` resource in Dotisan's state file. Manually uninstall one of the packages using `brew uninstall <package>`. Run `nim plan` and verify that the plan output includes a warning for the `BrewPackages` resource, indicating the uninstalled package and suggesting `nim apply`. Ensure the `brew info` call completes within 2 seconds.",
         "priority": "medium",
         "dependencies": [
           15,
@@ -892,8 +892,8 @@
         "id": 17,
         "title": "Display Homebrew Drift Information in Plan Output",
         "description": "Enhance the `DisplayPlan` function to clearly present drift detection warnings for Homebrew packages, including the specific uninstalled packages and restoration instructions.",
-        "details": "The `PlanWarning` objects generated in Task 16 will be displayed by the `DisplayPlan` logic implemented in Task 14. This task ensures that the specific warning messages for Homebrew drift are formatted correctly and clearly visible in the plan output, matching the PRD's 'Expected Behavior' for drift detection.\n\nNo additional code changes are strictly required in `DisplayPlan` beyond what was done in Task 14, as long as the `PlanWarning` from Task 16 is well-formed. This task is primarily about verifying the end-user experience of the drift warning.\n\nExample expected output (from PRD):\n```\nDrifted resources (manual changes detected)\n  ⚠ BrewPackages/core-tools has drift\n    Package 'ripgrep' was uninstalled outside of dotisan\n    Run 'dotisan apply' to restore\n```\nThis might require a slight adjustment in `DisplayPlan` to group drift warnings under a 'Drifted resources' header if `plan.Drifted` is used, or ensure the `PlanWarning` message itself is comprehensive.",
-        "testStrategy": "Re-run the test from Task 16. Verify that the `dotisan plan` output precisely matches the 'Expected Behavior' for Homebrew drift detection in the PRD, including the 'Drifted resources' header (if implemented as a separate section, otherwise as a clear warning), the specific package name, and the `dotisan apply` suggestion.",
+        "details": "The `PlanWarning` objects generated in Task 16 will be displayed by the `DisplayPlan` logic implemented in Task 14. This task ensures that the specific warning messages for Homebrew drift are formatted correctly and clearly visible in the plan output, matching the PRD's 'Expected Behavior' for drift detection.\n\nNo additional code changes are strictly required in `DisplayPlan` beyond what was done in Task 14, as long as the `PlanWarning` from Task 16 is well-formed. This task is primarily about verifying the end-user experience of the drift warning.\n\nExample expected output (from PRD):\n```\nDrifted resources (manual changes detected)\n  ⚠ BrewPackages/core-tools has drift\n    Package 'ripgrep' was uninstalled outside of nim\n    Run 'nim apply' to restore\n```\nThis might require a slight adjustment in `DisplayPlan` to group drift warnings under a 'Drifted resources' header if `plan.Drifted` is used, or ensure the `PlanWarning` message itself is comprehensive.",
+        "testStrategy": "Re-run the test from Task 16. Verify that the `nim plan` output precisely matches the 'Expected Behavior' for Homebrew drift detection in the PRD, including the 'Drifted resources' header (if implemented as a separate section, otherwise as a clear warning), the specific package name, and the `nim apply` suggestion.",
         "priority": "medium",
         "dependencies": [
           14,
@@ -905,7 +905,7 @@
       {
         "id": 18,
         "title": "Implement CLI Parsing for Indexed Resource References",
-        "description": "Modify `cmd/state.go` to parse resource references in the format `name[index]` or `name[key]` for commands like `dotisan state import`.",
+        "description": "Modify `cmd/state.go` to parse resource references in the format `name[index]` or `name[key]` for commands like `nim state import`.",
         "details": "Create a utility function, e.g., `parseResourceRef`, that can extract the base resource name and an optional item key/index from a string. Integrate this function into the `state import` command handler to correctly interpret the resource argument.\n\n```go\n// cmd/state.go or pkg/cli/parser.go\nfunc parseResourceRef(ref string) (name string, itemKey string, hasItemKey bool) {\n    re := regexp.MustCompile(`^([^\\s\\[]+)(?:\\[([^\\]]+)\\])?$`) // Matches 'name' or 'name[key]' \n    matches := re.FindStringSubmatch(ref)\n    if len(matches) == 0 {\n        return ref, \"\", false // No match, treat entire ref as name\n    }\n    name = matches[1]\n    if len(matches) > 2 && matches[2] != \"\" {\n        itemKey = matches[2]\n        hasItemKey = true\n    }\n    return name, itemKey, hasItemKey\n}\n\n// In cmd/state.go, within the 'import' command handler:\n// ...\n// resourceArg := args[0] // e.g., \"BrewPackages/core-tools[ripgrep]\"\n// kind, ref := parseKindAndRef(resourceArg) // Existing parsing for Kind/Name\n// resourceName, itemKey, hasItemKey := parseResourceRef(ref)\n// ...\n```",
         "testStrategy": "Unit test `parseResourceRef` with various inputs: 'zshrc', 'core-tools[ripgrep]', 'core-tools[0]', 'ManagedFile/dotfiles[0]'. Verify that the function correctly extracts the resource name, item key, and sets `hasItemKey` appropriately. Also, test edge cases like malformed strings to ensure graceful handling.",
         "priority": "medium",
@@ -931,7 +931,7 @@
         "title": "Implement `ImportItem` for `BrewPackages` Resource",
         "description": "Provide a concrete implementation of the `ImportItem` method for the `BrewProvider` to handle importing individual Homebrew packages.",
         "details": "In `pkg/providers/brew.go`, implement the `ImportItem` method for `BrewProvider`. This method should:\n1. Load the `BrewPackages` resource identified by `resourceName`. If it doesn't exist, create a new one.\n2. Add the `itemValue` (which is the package name, e.g., 'ripgrep') to the `Spec.Packages` list of the `BrewPackages` resource.\n3. Ensure that duplicate package entries are not added.\n4. Save the updated resource state and return it.\n\n```go\n// pkg/providers/brew.go (within BrewProvider)\nfunc (p *BrewProvider) ImportItem(ctx context.Context, resourceName string, itemKey string, itemValue string) (engine.ResourceState, error) {\n    // itemKey and itemValue will both be the package name (e.g., \"ripgrep\") for BrewPackages\n    // Load existing BrewPackages resource or create a new one if it doesn't exist\n    // ... (logic to retrieve/initialize BrewPackages resource 'bp') ...\n\n    // Add the package to the list if not already present\n    found := false\n    for _, pkg := range bp.Spec.Packages {\n        if pkg.Name == itemValue {\n            found = true\n            break\n        }\n    }\n    if !found {\n        bp.Spec.Packages = append(bp.Spec.Packages, resource.BrewPackageSpec{Name: itemValue})\n    }\n\n    // Save the updated resource state\n    // ... (logic to save 'bp' to state file) ...\n\n    return engine.ResourceState{ /* populate with updated bp details */ }, nil\n}\n```",
-        "testStrategy": "Execute `dotisan state import BrewPackages core-tools[ripgrep] ripgrep`. Verify that a `BrewPackages` resource named 'core-tools' is created or updated in the state file, and its `Spec.Packages` list contains 'ripgrep'. Test with both name-based (`[ripgrep]`) and index-based (`[0]`) syntax for `itemKey` (though for BrewPackages, `itemValue` is the primary identifier).",
+        "testStrategy": "Execute `nim state import BrewPackages core-tools[ripgrep] ripgrep`. Verify that a `BrewPackages` resource named 'core-tools' is created or updated in the state file, and its `Spec.Packages` list contains 'ripgrep'. Test with both name-based (`[ripgrep]`) and index-based (`[0]`) syntax for `itemKey` (though for BrewPackages, `itemValue` is the primary identifier).",
         "priority": "medium",
         "dependencies": [
           19
@@ -944,7 +944,7 @@
         "title": "Implement `ImportItem` for `ManagedFile` Resource",
         "description": "Provide a concrete implementation of the `ImportItem` method for the `FileProvider` to handle importing individual files into a `ManagedFile` resource.",
         "details": "In `pkg/providers/file.go`, implement the `ImportItem` method for `FileProvider`. This method should:\n1. Load the `ManagedFile` resource identified by `resourceName`. If it doesn't exist, create a new one.\n2. Create a new `FileSpec` using the `itemValue` (destination path) and a derived `sourceFile` (e.g., `filepath.Base(itemValue)` or a convention relative to the dotfiles repo).\n3. Add this `FileSpec` to the `Spec.Files` list of the `ManagedFile` resource (assuming Task 23, which introduces `Spec.Files`, is completed or considered in parallel).\n4. Ensure uniqueness based on the destination path.\n5. Save the updated resource state and return it.\n\n```go\n// pkg/providers/file.go (within FileProvider)\nfunc (p *FileProvider) ImportItem(ctx context.Context, resourceName string, itemKey string, itemValue string) (engine.ResourceState, error) {\n    // itemValue is the destination path (e.g., \"~/.zshrc\")\n    // itemKey could be \"0\" or a custom name for the file within the list\n    // Load existing ManagedFile resource or create a new one\n    // ... (logic to retrieve/initialize ManagedFile resource 'mf') ...\n\n    // Derive sourceFile. This is a critical point for import. For now, a simple base name.\n    // A more robust solution might involve prompting or a configuration.\n    sourceFile := filepath.Base(itemValue) // Placeholder\n\n    newFileSpec := resource.FileSpec{\n        SourceFile:  sourceFile,\n        Destination: itemValue,\n    }\n\n    // Add newFileSpec to the list if not already present (check by Destination)\n    found := false\n    for _, file := range mf.Spec.Files {\n        if file.Destination == newFileSpec.Destination {\n            found = true\n            break\n        }\n    }\n    if !found {\n        mf.Spec.Files = append(mf.Spec.Files, newFileSpec)\n    }\n\n    // Save the updated resource state\n    // ... (logic to save 'mf' to state file) ...\n\n    return engine.ResourceState{ /* populate with updated mf details */ }, nil\n}\n```",
-        "testStrategy": "Create a dummy file at `~/.testfile`. Execute `dotisan state import ManagedFile myfiles[testfile] ~/.testfile`. Verify that a `ManagedFile` resource named 'myfiles' is created or updated in the state file, and its `Spec.Files` list contains a `FileSpec` for `~/.testfile`. Test with both name-based (`[testfile]`) and index-based (`[0]`) syntax for `itemKey`.",
+        "testStrategy": "Create a dummy file at `~/.testfile`. Execute `nim state import ManagedFile myfiles[testfile] ~/.testfile`. Verify that a `ManagedFile` resource named 'myfiles' is created or updated in the state file, and its `Spec.Files` list contains a `FileSpec` for `~/.testfile`. Test with both name-based (`[testfile]`) and index-based (`[0]`) syntax for `itemKey`.",
         "priority": "medium",
         "dependencies": [
           19
@@ -957,7 +957,7 @@
         "title": "Update State Tracking for Indexed Items",
         "description": "Modify the state file format (v1.1) to support tracking individual items within list-based resources, ensuring proper identification and management of imported items.",
         "details": "This task involves ensuring that when an item is imported via `ImportItem`, its specific identifier (e.g., `itemKey` from the CLI) is stored within the `ResourceState` or a sub-structure. This allows for precise reconciliation and future updates. The PRD mentions 'State file format v1.1 (add ItemIndex field)'. This suggests adding a field to `ResourceState`.\n\n```go\n// pkg/engine/types.go (or similar, for ResourceState)\ntype ResourceState struct {\n    // ... existing fields ...\n    ItemKey string `json:\"itemKey,omitempty\"` // New field to store the key/index of an imported item\n    // For list resources, this identifies the specific item within the list that this state entry refers to.\n}\n```\n\nWhen `ImportItem` is called, the returned `ResourceState` should have this `ItemKey` populated. The `Reconcile` logic for providers will need to consider this `ItemKey` when matching items within a list.",
-        "testStrategy": "Perform an indexed import (e.g., `dotisan state import BrewPackages core-tools[ripgrep] ripgrep`). Inspect the generated state file. Verify that the `BrewPackages` resource entry (or the specific item's state if `ResourceState` is per-item) correctly stores the `itemKey` (e.g., 'ripgrep') associated with the imported package. Ensure that subsequent `dotisan plan` or `dotisan apply` commands correctly identify and manage this specific item.",
+        "testStrategy": "Perform an indexed import (e.g., `nim state import BrewPackages core-tools[ripgrep] ripgrep`). Inspect the generated state file. Verify that the `BrewPackages` resource entry (or the specific item's state if `ResourceState` is per-item) correctly stores the `itemKey` (e.g., 'ripgrep') associated with the imported package. Ensure that subsequent `nim plan` or `nim apply` commands correctly identify and manage this specific item.",
         "priority": "medium",
         "dependencies": [
           19,
@@ -972,7 +972,7 @@
         "title": "Migrate `ManagedFile` to List-Based Structure",
         "description": "Modify the `ManagedFile` resource definition to support a `files:` list field for managing multiple files, while maintaining backward compatibility with the single-item syntax.",
         "details": "In `pkg/resource/managedfile.go`:\n1. Define a `FileSpec` struct if it doesn't exist, containing `SourceFile` and `Destination`.\n2. Add a `Files []FileSpec` field to the `ManagedFileSpec` struct.\n3. Implement `UnmarshalYAML` or similar logic to handle backward compatibility: if the old `SourceFile` and `Destination` fields are present but `Files` is not, convert them into a single-item `Files` list internally.\n\n```go\n// pkg/resource/managedfile.go\ntype ManagedFileSpec struct {\n    // Old fields (for backward compatibility) - will be deprecated over time\n    SourceFile  string `json:\"sourceFile,omitempty\" yaml:\"sourceFile,omitempty\"`\n    Destination string `json:\"destination,omitempty\" yaml:\"destination,omitempty\"`\n\n    // New list field for multiple files\n    Files       []FileSpec `json:\"files,omitempty\" yaml:\"files,omitempty\"`\n}\n\ntype FileSpec struct {\n    SourceFile  string `json:\"sourceFile\" yaml:\"sourceFile\"`\n    Destination string `json:\"destination\" yaml:\"destination\"`\n    // Optional: Name string `json:\"name,omitempty\" yaml:\"name,omitempty\"` for name-based indexing\n}\n\n// Example UnmarshalYAML for backward compatibility (simplified)\nfunc (s *ManagedFileSpec) UnmarshalYAML(unmarshal func(interface{}) error) error {\n    type Alias ManagedFileSpec // Avoid infinite recursion\n    aux := &struct{ *Alias }{ Alias: (*Alias)(s) }\n    if err := unmarshal(aux); err != nil { return err }\n\n    // If old fields are set and new list is empty, populate the list\n    if s.SourceFile != \"\" && s.Destination != \"\" && len(s.Files) == 0 {\n        s.Files = []FileSpec{{SourceFile: s.SourceFile, Destination: s.Destination}}\n        // Clear old fields to ensure consistency if desired, or leave for strict compatibility\n        // s.SourceFile = \"\"\n        // s.Destination = \"\"\n    }\n    return nil\n}\n```",
-        "testStrategy": "Create a `ManagedFile` YAML with the old single `sourceFile`/`destination` fields. Run `dotisan plan` and verify it's processed correctly, internally recognizing it as a list with one item. Create a `ManagedFile` YAML with the new `files:` list containing multiple entries. Run `dotisan plan` and verify all files are recognized. Create a `ManagedFile` YAML with both old fields and the new `files:` list; verify the `files:` list takes precedence.",
+        "testStrategy": "Create a `ManagedFile` YAML with the old single `sourceFile`/`destination` fields. Run `nim plan` and verify it's processed correctly, internally recognizing it as a list with one item. Create a `ManagedFile` YAML with the new `files:` list containing multiple entries. Run `nim plan` and verify all files are recognized. Create a `ManagedFile` YAML with both old fields and the new `files:` list; verify the `files:` list takes precedence.",
         "priority": "medium",
         "dependencies": [],
         "status": "pending",
@@ -983,7 +983,7 @@
         "title": "Migrate `ManagedDirectory` to List-Based Structure",
         "description": "Modify the `ManagedDirectory` resource definition to support a `directories:` list field for managing multiple directories, while maintaining backward compatibility.",
         "details": "In `pkg/resource/manageddirectory.go`:\n1. Define a `DirectorySpec` struct if it doesn't exist, containing `SourcePath` and `Destination`.\n2. Add a `Directories []DirectorySpec` field to the `ManagedDirectorySpec` struct.\n3. Implement `UnmarshalYAML` or similar logic for backward compatibility: if the old `SourcePath` and `Destination` fields are present but `Directories` is not, convert them into a single-item `Directories` list internally.\n\n```go\n// pkg/resource/manageddirectory.go\ntype ManagedDirectorySpec struct {\n    // Old fields (for backward compatibility)\n    SourcePath  string `json:\"sourcePath,omitempty\" yaml:\"sourcePath,omitempty\"`\n    Destination string `json:\"destination,omitempty\" yaml:\"destination,omitempty\"`\n\n    // New list field for multiple directories\n    Directories []DirectorySpec `json:\"directories,omitempty\" yaml:\"directories,omitempty\"`\n}\n\ntype DirectorySpec struct {\n    SourcePath  string `json:\"sourcePath\" yaml:\"sourcePath\"`\n    Destination string `json:\"destination\" yaml:\"destination\"`\n    // Optional: Name string `json:\"name,omitempty\" yaml:\"name,omitempty\"`\n}\n\n// Example UnmarshalYAML for backward compatibility (simplified)\nfunc (s *ManagedDirectorySpec) UnmarshalYAML(unmarshal func(interface{}) error) error {\n    type Alias ManagedDirectorySpec\n    aux := &struct{ *Alias }{ Alias: (*Alias)(s) }\n    if err := unmarshal(aux); err != nil { return err }\n\n    if s.SourcePath != \"\" && s.Destination != \"\" && len(s.Directories) == 0 {\n        s.Directories = []DirectorySpec{{SourcePath: s.SourcePath, Destination: s.Destination}}\n    }\n    return nil\n}\n```",
-        "testStrategy": "Create a `ManagedDirectory` YAML with the old single `sourcePath`/`destination` fields. Run `dotisan plan` and verify it's processed correctly. Create a `ManagedDirectory` YAML with the new `directories:` list containing multiple entries. Run `dotisan plan` and verify all directories are recognized. Create a `ManagedDirectory` YAML with both old fields and the new `directories:` list; verify the `directories:` list takes precedence.",
+        "testStrategy": "Create a `ManagedDirectory` YAML with the old single `sourcePath`/`destination` fields. Run `nim plan` and verify it's processed correctly. Create a `ManagedDirectory` YAML with the new `directories:` list containing multiple entries. Run `nim plan` and verify all directories are recognized. Create a `ManagedDirectory` YAML with both old fields and the new `directories:` list; verify the `directories:` list takes precedence.",
         "priority": "medium",
         "dependencies": [],
         "status": "pending",
@@ -994,7 +994,7 @@
         "title": "Adapt File and Directory Providers to Unified List Structures",
         "description": "Update the `FileProvider` and `DirectoryProvider` to process resources using their new `files:` and `directories:` list fields, ensuring consistent behavior across all resource types.",
         "details": "1. **FileProvider (`pkg/providers/file.go`):** Modify `Reconcile` and `Apply` methods to iterate over `ManagedFileSpec.Files` instead of directly using `SourceFile`/`Destination`. Ensure the backward compatibility logic (converting old single fields to a list, as implemented in Task 23) is correctly handled before processing each file item.\n2. **DirectoryProvider (`pkg/providers/directory.go`):** Modify `Reconcile` and `Apply` methods to iterate over `ManagedDirectorySpec.Directories` instead of directly using `SourcePath`/`Destination`. Ensure backward compatibility logic (from Task 24) is correctly handled.\n3. Update `ImportItem` implementations (from Task 21) to correctly add new items to the respective list fields (`mf.Spec.Files` or `md.Spec.Directories`).\n\n```go\n// pkg/providers/file.go (simplified Reconcile for illustration)\nfunc (p *FileProvider) Reconcile(ctx context.Context, mf *ManagedFile, plan *engine.Plan) error {\n    // mf.Spec.UnmarshalYAML will handle populating mf.Spec.Files from old fields\n    for _, fileSpec := range mf.Spec.Files {\n        // Perform reconciliation logic for each fileSpec (sourceFile, destination)\n        // ... (existing logic adapted to fileSpec) ...\n    }\n    return nil\n}\n```",
-        "testStrategy": "Run comprehensive integration tests for `ManagedFile` and `ManagedDirectory` using both old single-item YAMLs and new list-based YAMLs. Verify `dotisan plan` and `dotisan apply` work as expected for creation, updates, and deletions for both formats. Ensure `ImportItem` correctly adds new items to the list structure and that these newly added items are then correctly managed by `plan`/`apply`.",
+        "testStrategy": "Run comprehensive integration tests for `ManagedFile` and `ManagedDirectory` using both old single-item YAMLs and new list-based YAMLs. Verify `nim plan` and `nim apply` work as expected for creation, updates, and deletions for both formats. Ensure `ImportItem` correctly adds new items to the list structure and that these newly added items are then correctly managed by `plan`/`apply`.",
         "priority": "medium",
         "dependencies": [
           23,
@@ -1007,9 +1007,9 @@
       {
         "id": 26,
         "title": "Consolidate `eject` into `state remove` and Add `--force`",
-        "description": "Deprecate the `dotisan eject` command, add a `--force` flag to `dotisan state remove`, and update its functionality to match `eject`'s behavior.",
-        "details": "1. **Deprecate `eject`:** In `cmd/eject.go` (or the file defining the `eject` command), mark the command as deprecated. When `eject` is executed, print a warning message advising users to use `dotisan state remove --force` and then delegate to the `state remove` logic.\n2. **Add `--force` to `state remove`:** In `cmd/state.go` (or `cmd/state_remove.go`), add a boolean flag `--force` to the `state remove` command definition.\n3. **Modify `state remove` handler:** Update the command handler for `state remove`. If the `--force` flag is present, skip the interactive confirmation prompt. Ensure the command's core logic (removing the resource from the state file while leaving the actual resource untouched on the system) remains consistent with the current behavior of both `eject` and `state remove`.\n\n```go\n// cmd/eject.go (simplified)\nfunc newEjectCommand() *cobra.Command {\n    cmd := &cobra.Command{\n        Use:   \"eject KIND NAME\",\n        Short: \"Stop managing a resource (DEPRECATED: use 'state remove --force')\",\n        Long:  \"This command is deprecated. Use 'dotisan state remove KIND NAME --force' instead.\",\n        Args:  cobra.ExactArgs(2),\n        RunE: func(cmd *cobra.Command, args []string) error {\n            fmt.Fprintln(cmd.ErrOrStderr(), \"Warning: 'dotisan eject' is deprecated. Use 'dotisan state remove KIND NAME --force' instead.\")\n            // Delegate to state remove logic, passing --force implicitly\n            // This might involve calling the state remove handler directly or refactoring common logic.\n            return runStateRemove(cmd, args, true) // Pass true for force\n        },\n    }\n    // ... existing flags for eject, if any, should be migrated or removed ...\n    return cmd\n}\n\n// cmd/state.go (simplified state remove command)\nfunc newStateRemoveCommand() *cobra.Command {\n    var force bool\n    cmd := &cobra.Command{\n        Use:   \"remove KIND NAME\",\n        Short: \"Remove resource from state only\",\n        Args:  cobra.ExactArgs(2),\n        RunE: func(cmd *cobra.Command, args []string) error {\n            return runStateRemove(cmd, args, force)\n        },\n    }\n    cmd.Flags().BoolVarP(&force, \"force\", \"f\", false, \"Skip confirmation prompt\")\n    return cmd\n}\n\n// Common logic for state removal\nfunc runStateRemove(cmd *cobra.Command, args []string, force bool) error {\n    // ... parse KIND and NAME from args ...\n    if !force {\n        // ... prompt for confirmation ...\n    }\n    // ... logic to remove resource from state file ...\n    return nil\n}\n```",
-        "testStrategy": "1. Run `dotisan eject ManagedFile zshrc`. Verify that a deprecation warning is displayed, a confirmation prompt appears (if not forced), and the resource is removed from the state file. 2. Run `dotisan state remove ManagedFile zshrc` without `--force`. Verify the confirmation prompt appears and the resource is removed. 3. Run `dotisan state remove ManagedFile zshrc --force`. Verify the resource is removed from the state file without a prompt. In all cases, verify that the actual file/resource on the system remains untouched.",
+        "description": "Deprecate the `nim eject` command, add a `--force` flag to `nim state remove`, and update its functionality to match `eject`'s behavior.",
+        "details": "1. **Deprecate `eject`:** In `cmd/eject.go` (or the file defining the `eject` command), mark the command as deprecated. When `eject` is executed, print a warning message advising users to use `nim state remove --force` and then delegate to the `state remove` logic.\n2. **Add `--force` to `state remove`:** In `cmd/state.go` (or `cmd/state_remove.go`), add a boolean flag `--force` to the `state remove` command definition.\n3. **Modify `state remove` handler:** Update the command handler for `state remove`. If the `--force` flag is present, skip the interactive confirmation prompt. Ensure the command's core logic (removing the resource from the state file while leaving the actual resource untouched on the system) remains consistent with the current behavior of both `eject` and `state remove`.\n\n```go\n// cmd/eject.go (simplified)\nfunc newEjectCommand() *cobra.Command {\n    cmd := &cobra.Command{\n        Use:   \"eject KIND NAME\",\n        Short: \"Stop managing a resource (DEPRECATED: use 'state remove --force')\",\n        Long:  \"This command is deprecated. Use 'nim state remove KIND NAME --force' instead.\",\n        Args:  cobra.ExactArgs(2),\n        RunE: func(cmd *cobra.Command, args []string) error {\n            fmt.Fprintln(cmd.ErrOrStderr(), \"Warning: 'nim eject' is deprecated. Use 'nim state remove KIND NAME --force' instead.\")\n            // Delegate to state remove logic, passing --force implicitly\n            // This might involve calling the state remove handler directly or refactoring common logic.\n            return runStateRemove(cmd, args, true) // Pass true for force\n        },\n    }\n    // ... existing flags for eject, if any, should be migrated or removed ...\n    return cmd\n}\n\n// cmd/state.go (simplified state remove command)\nfunc newStateRemoveCommand() *cobra.Command {\n    var force bool\n    cmd := &cobra.Command{\n        Use:   \"remove KIND NAME\",\n        Short: \"Remove resource from state only\",\n        Args:  cobra.ExactArgs(2),\n        RunE: func(cmd *cobra.Command, args []string) error {\n            return runStateRemove(cmd, args, force)\n        },\n    }\n    cmd.Flags().BoolVarP(&force, \"force\", \"f\", false, \"Skip confirmation prompt\")\n    return cmd\n}\n\n// Common logic for state removal\nfunc runStateRemove(cmd *cobra.Command, args []string, force bool) error {\n    // ... parse KIND and NAME from args ...\n    if !force {\n        // ... prompt for confirmation ...\n    }\n    // ... logic to remove resource from state file ...\n    return nil\n}\n```",
+        "testStrategy": "1. Run `nim eject ManagedFile zshrc`. Verify that a deprecation warning is displayed, a confirmation prompt appears (if not forced), and the resource is removed from the state file. 2. Run `nim state remove ManagedFile zshrc` without `--force`. Verify the confirmation prompt appears and the resource is removed. 3. Run `nim state remove ManagedFile zshrc --force`. Verify the resource is removed from the state file without a prompt. In all cases, verify that the actual file/resource on the system remains untouched.",
         "priority": "medium",
         "dependencies": [],
         "status": "pending",
@@ -1019,8 +1019,8 @@
         "id": 27,
         "title": "Update Documentation for `state remove` and `eject` Deprecation",
         "description": "Update all relevant user documentation, CLI help messages, and examples to reflect the deprecation of `eject` and the enhanced `state remove` command.",
-        "details": "1. **User Documentation:** Update `README.md`, `docs/commands.md`, or any other user-facing documentation files. Remove mentions of `dotisan eject` and replace them with `dotisan state remove` (with `--force` where appropriate).\n2. **CLI Help Messages:** Modify the `help` output for `dotisan` (top-level commands) and `dotisan state` (subcommands) to reflect the changes. Ensure `eject` is clearly marked as deprecated.\n3. **Examples:** Update all command examples to use `dotisan state remove` exclusively for removing resources from state.",
-        "testStrategy": "Review all documentation files (Markdown, etc.) and run `dotisan --help`, `dotisan state --help`, and `dotisan state remove --help`. Verify that all information is accurate, `eject` is correctly marked as deprecated, and `state remove`'s new `--force` flag is documented with examples.",
+        "details": "1. **User Documentation:** Update `README.md`, `docs/commands.md`, or any other user-facing documentation files. Remove mentions of `nim eject` and replace them with `nim state remove` (with `--force` where appropriate).\n2. **CLI Help Messages:** Modify the `help` output for `nim` (top-level commands) and `nim state` (subcommands) to reflect the changes. Ensure `eject` is clearly marked as deprecated.\n3. **Examples:** Update all command examples to use `nim state remove` exclusively for removing resources from state.",
+        "testStrategy": "Review all documentation files (Markdown, etc.) and run `nim --help`, `nim state --help`, and `nim state remove --help`. Verify that all information is accurate, `eject` is correctly marked as deprecated, and `state remove`'s new `--force` flag is documented with examples.",
         "priority": "medium",
         "dependencies": [
           26
@@ -1042,7 +1042,7 @@
         "title": "Refactor PlanWarning Structure and Plan Output",
         "description": "Implement the `PlanWarning` struct and integrate it into the `Plan` struct. Update the plan display logic to show warnings and information messages in a user-friendly format, including suggested code snippets.",
         "details": "Modify `pkg/provider/provider.go` to add `Warnings []PlanWarning` to the `Plan` struct. Define `PlanWarning` with fields: `ResourceID`, `Severity` (e.g., 'warning', 'info'), `Message`, and `Suggestion` (for code snippets). Update `pkg/engine/engine.go` and `pkg/provider/provider.go` to format and display these warnings in the plan output, adhering to the 'After' format specified in the PRD's 'Plan Output Format' section. Ensure warnings are clearly visible and suggestions are copy-pasteable.",
-        "testStrategy": "Create unit tests for the `PlanWarning` struct and its serialization. Develop integration tests to verify that warnings are correctly generated and displayed in the `dotisan plan` output for various scenarios, including existing destination files without state. Check that the suggested `dotisan state import` command is accurate and copy-pasteable.",
+        "testStrategy": "Create unit tests for the `PlanWarning` struct and its serialization. Develop integration tests to verify that warnings are correctly generated and displayed in the `nim plan` output for various scenarios, including existing destination files without state. Check that the suggested `nim state import` command is accurate and copy-pasteable.",
         "priority": "high",
         "dependencies": [],
         "status": "done",
@@ -1081,7 +1081,7 @@
             ],
             "details": "In `pkg/engine/engine.go`, update the plan display logic to check for `plan.Warnings`. For each warning, format its `Severity`, `Message`, and `Suggestion` for clear presentation in the console output. Ensure suggestions are easily copy-pasteable and the overall output matches the 'After' format from the PRD's 'Plan Output Format' section.",
             "status": "done",
-            "testStrategy": "Create integration tests that run `dotisan plan` against configurations designed to trigger warnings. Verify that the output correctly displays warnings with the specified formatting, including severity, message, and accurate, copy-pasteable suggestions.",
+            "testStrategy": "Create integration tests that run `nim plan` against configurations designed to trigger warnings. Verify that the output correctly displays warnings with the specified formatting, including severity, message, and accurate, copy-pasteable suggestions.",
             "parentId": "undefined",
             "updatedAt": "2026-04-21T13:15:48.843Z"
           },
@@ -1094,9 +1094,9 @@
               2,
               3
             ],
-            "details": "Develop comprehensive integration tests to verify that warnings are correctly generated and displayed in the `dotisan plan` output for various scenarios, including existing destination files without state, and different resource types. Check that the suggested code snippets are accurate and copy-pasteable. Ensure unit tests cover edge cases for `PlanWarning` creation and manipulation, and that no regressions are introduced.",
+            "details": "Develop comprehensive integration tests to verify that warnings are correctly generated and displayed in the `nim plan` output for various scenarios, including existing destination files without state, and different resource types. Check that the suggested code snippets are accurate and copy-pasteable. Ensure unit tests cover edge cases for `PlanWarning` creation and manipulation, and that no regressions are introduced.",
             "status": "done",
-            "testStrategy": "Execute a full suite of integration tests covering all warning scenarios. Manually inspect `dotisan plan` output for correct formatting and suggestion usability. Review unit test coverage for `PlanWarning` related code paths.",
+            "testStrategy": "Execute a full suite of integration tests covering all warning scenarios. Manually inspect `nim plan` output for correct formatting and suggestion usability. Review unit test coverage for `PlanWarning` related code paths.",
             "parentId": "undefined",
             "updatedAt": "2026-04-21T13:19:04.788Z"
           }
@@ -1110,8 +1110,8 @@
         "id": 2,
         "title": "Fix ManagedFile Reconcile Logic for Unmanaged Files",
         "description": "Correct the `FileProvider` reconcile logic to accurately identify unmanaged files with existing destinations as '+ to create' and generate a warning, instead of incorrectly marking them 'in sync'.",
-        "details": "Locate `pkg/providers/file.go` lines 208-229. Modify the `if !hasSavedState` block. Instead of `plan.InSync = append(plan.InSync, mf)`, always treat this scenario as an addition. Generate a `PlanWarning` (using the structure from Task 1) with severity 'warning', message 'Destination file already exists at ~/.zshrc', and a suggestion like 'dotisan state import ManagedFile zshrc ~/.zshrc'. Add this warning to the `Plan` object.",
-        "testStrategy": "Create a test case where a destination file exists (e.g., `~/.zshrc`) but is not in dotisan's state. Run `dotisan plan` and verify that the file is listed as '+ to create' and the correct warning message with the import suggestion is displayed, matching AC1. Ensure `test-template-inline` also appears as '+ to create'.",
+        "details": "Locate `pkg/providers/file.go` lines 208-229. Modify the `if !hasSavedState` block. Instead of `plan.InSync = append(plan.InSync, mf)`, always treat this scenario as an addition. Generate a `PlanWarning` (using the structure from Task 1) with severity 'warning', message 'Destination file already exists at ~/.zshrc', and a suggestion like 'nim state import ManagedFile zshrc ~/.zshrc'. Add this warning to the `Plan` object.",
+        "testStrategy": "Create a test case where a destination file exists (e.g., `~/.zshrc`) but is not in nim's state. Run `nim plan` and verify that the file is listed as '+ to create' and the correct warning message with the import suggestion is displayed, matching AC1. Ensure `test-template-inline` also appears as '+ to create'.",
         "priority": "high",
         "dependencies": [
           "1"
@@ -1121,7 +1121,7 @@
           {
             "id": 1,
             "title": "Adjust FileProvider Reconcile for Unmanaged Existing Files",
-            "description": "Modify the `FileProvider`'s `Reconcile` method to correctly identify files that exist at the destination but are not managed by dotisan's state, marking them as '+ to create' instead of 'in sync'.",
+            "description": "Modify the `FileProvider`'s `Reconcile` method to correctly identify files that exist at the destination but are not managed by nim's state, marking them as '+ to create' instead of 'in sync'.",
             "dependencies": [],
             "details": "Navigate to `pkg/providers/file.go` and locate lines 208-229. Within the `if !hasSavedState` block, change the logic from appending to `plan.InSync` to instead treat the `ManagedFile` as an addition, ensuring it appears in `plan.ToCreate`.\n<info added on 2026-04-20T20:32:53.116Z>\n[IMPLEMENTATION LOG] Treated unmanaged existing destination files as additions and added PlanWarning suggestion. Files changed: pkg/provider/provider.go (added PlanWarning + Warnings field), pkg/engine/engine.go (TotalWarnings aggregation, display), pkg/diff/plan.go (warnings formatting), pkg/diff/diff.go (robust diff), pkg/providers/file.go (treat unmanaged dest as addition + PlanWarning). Ran go test ./... — all tests passed. Marking subtask complete.\n</info added on 2026-04-20T20:32:53.116Z>",
             "status": "done",
@@ -1136,7 +1136,7 @@
             "dependencies": [
               1
             ],
-            "details": "After modifying the reconcile logic in `pkg/providers/file.go` (as per subtask 1), generate a `PlanWarning` object. Set its severity to 'warning', message to 'Destination file already exists at ~/.zshrc', and suggestion to 'dotisan state import ManagedFile zshrc ~/.zshrc'. Add this `PlanWarning` to the `Plan` object. Ensure the `PlanWarning` structure aligns with Task 1.",
+            "details": "After modifying the reconcile logic in `pkg/providers/file.go` (as per subtask 1), generate a `PlanWarning` object. Set its severity to 'warning', message to 'Destination file already exists at ~/.zshrc', and suggestion to 'nim state import ManagedFile zshrc ~/.zshrc'. Add this `PlanWarning` to the `Plan` object. Ensure the `PlanWarning` structure aligns with Task 1.",
             "status": "done",
             "testStrategy": "Unit tests to verify that when an unmanaged file with an existing destination is processed, a `PlanWarning` with the correct content (severity, message, suggestion) is generated and added to the `Plan` object.",
             "parentId": "undefined",
@@ -1150,9 +1150,9 @@
               1,
               2
             ],
-            "details": "Create a new integration test. Set up a scenario where a destination file (e.g., `~/.zshrc`) exists on the filesystem but is not present in dotisan's state. Run `dotisan plan` and assert that the output correctly lists the file as '+ to create' and displays the specific `PlanWarning` message and import suggestion, matching AC1.",
+            "details": "Create a new integration test. Set up a scenario where a destination file (e.g., `~/.zshrc`) exists on the filesystem but is not present in nim's state. Run `nim plan` and assert that the output correctly lists the file as '+ to create' and displays the specific `PlanWarning` message and import suggestion, matching AC1.",
             "status": "done",
-            "testStrategy": "Execute the created integration test case and manually verify the `dotisan plan` output against the expected behavior: file listed as '+ to create' and the warning message with import suggestion is present.",
+            "testStrategy": "Execute the created integration test case and manually verify the `nim plan` output against the expected behavior: file listed as '+ to create' and the warning message with import suggestion is present.",
             "parentId": "undefined",
             "updatedAt": "2026-04-21T13:31:35.422Z"
           }
@@ -1218,7 +1218,7 @@
               2,
               3
             ],
-            "details": "Ensure `checkFormulaeStatus` returns appropriate errors for `brew` command failures (e.g., `brew` not found, non-zero exit code) and JSON unmarshalling issues. Create a `_test.go` file for `BrewProvider` and use a mocking library (e.g., `testify/mock`) to simulate `os/exec` interactions. Cover edge cases like an empty formula list, `brew` not being installed, and partial/invalid JSON output.\n<info added on 2026-04-21T13:30:32.340Z>\n[IMPLEMENTATION LOG] Implemented `checkFormulaeStatus` method in `pkg/providers/brew.go`. The method constructs and executes the `brew info --json v1 <formulae...>` command via `cmdutil.RunSimple`, parses the JSON output into a `[]brewInfoResult` struct (which was also added), and returns a `map[name]bool` indicating installation status. All `brew` specific tests and the full `go test ./...` suite pass. Verified that `dotisan plan` correctly displays `PlanWarning` messages.\n</info added on 2026-04-21T13:30:32.340Z>",
+            "details": "Ensure `checkFormulaeStatus` returns appropriate errors for `brew` command failures (e.g., `brew` not found, non-zero exit code) and JSON unmarshalling issues. Create a `_test.go` file for `BrewProvider` and use a mocking library (e.g., `testify/mock`) to simulate `os/exec` interactions. Cover edge cases like an empty formula list, `brew` not being installed, and partial/invalid JSON output.\n<info added on 2026-04-21T13:30:32.340Z>\n[IMPLEMENTATION LOG] Implemented `checkFormulaeStatus` method in `pkg/providers/brew.go`. The method constructs and executes the `brew info --json v1 <formulae...>` command via `cmdutil.RunSimple`, parses the JSON output into a `[]brewInfoResult` struct (which was also added), and returns a `map[name]bool` indicating installation status. All `brew` specific tests and the full `go test ./...` suite pass. Verified that `nim plan` correctly displays `PlanWarning` messages.\n</info added on 2026-04-21T13:30:32.340Z>",
             "status": "done",
             "testStrategy": "Write unit tests for `checkFormulaeStatus` covering cases with installed packages, uninstalled packages, and a mix. Mock `brew info --json` output for controlled testing. Verify that the returned map accurately reflects the installation status for various inputs. Test all error paths, ensuring correct error propagation and messages.",
             "parentId": "undefined",
@@ -1234,8 +1234,8 @@
         "id": 4,
         "title": "Integrate Homebrew Drift Detection into Reconcile",
         "description": "Update the `BrewProvider` reconcile logic to utilize the `checkFormulaeStatus` method, compare saved state with actual installed packages, and generate drift warnings for uninstalled packages.",
-        "details": "Modify the `Reconcile` method in `pkg/providers/brew.go`. Before determining the plan, call `checkFormulaeStatus` with the list of formulae expected to be managed by `BrewPackages`. Compare the results with the packages recorded in dotisan's state. If a package in state is not reported as installed by `brew info`, generate a `PlanWarning` (using Task 1's structure) with severity 'warning', message 'Package 'X' was uninstalled outside of dotisan', and suggestion 'Run 'dotisan apply' to restore'. Add this warning to the `Plan` object. Ensure only expected packages are checked, not all installed packages.",
-        "testStrategy": "Create integration tests for `BrewProvider` where a package managed by dotisan is manually uninstalled via `brew uninstall`. Run `dotisan plan` and verify that the drift warning is correctly displayed, matching AC2. Test with multiple packages, some installed, some uninstalled, to ensure accurate detection and reporting. Verify that `brew info` is only called for the expected packages.",
+        "details": "Modify the `Reconcile` method in `pkg/providers/brew.go`. Before determining the plan, call `checkFormulaeStatus` with the list of formulae expected to be managed by `BrewPackages`. Compare the results with the packages recorded in nim's state. If a package in state is not reported as installed by `brew info`, generate a `PlanWarning` (using Task 1's structure) with severity 'warning', message 'Package 'X' was uninstalled outside of nim', and suggestion 'Run 'nim apply' to restore'. Add this warning to the `Plan` object. Ensure only expected packages are checked, not all installed packages.",
+        "testStrategy": "Create integration tests for `BrewProvider` where a package managed by nim is manually uninstalled via `brew uninstall`. Run `nim plan` and verify that the drift warning is correctly displayed, matching AC2. Test with multiple packages, some installed, some uninstalled, to ensure accurate detection and reporting. Verify that `brew info` is only called for the expected packages.",
         "priority": "high",
         "dependencies": [
           "1",
@@ -1258,26 +1258,26 @@
           },
           {
             "id": 2,
-            "title": "Compare actual Homebrew status with dotisan's state",
-            "description": "Implement logic within `BrewProvider.Reconcile` to compare the installation status returned by `checkFormulaeStatus` with the packages recorded in dotisan's internal state for `BrewPackages`.",
+            "title": "Compare actual Homebrew status with nim's state",
+            "description": "Implement logic within `BrewProvider.Reconcile` to compare the installation status returned by `checkFormulaeStatus` with the packages recorded in nim's internal state for `BrewPackages`.",
             "dependencies": [
               1
             ],
-            "details": "After receiving the `map[string]bool` from `checkFormulaeStatus`, iterate through the `BrewPackages` defined in dotisan's desired state. For each package, check if its status in the returned map indicates it's not installed, while dotisan's state expects it to be present.",
+            "details": "After receiving the `map[string]bool` from `checkFormulaeStatus`, iterate through the `BrewPackages` defined in nim's desired state. For each package, check if its status in the returned map indicates it's not installed, while nim's state expects it to be present.",
             "status": "done",
-            "testStrategy": "Unit test the comparison logic by providing mock `checkFormulaeStatus` results and a predefined dotisan state, verifying that the correct discrepancies (uninstalled packages) are accurately identified.",
+            "testStrategy": "Unit test the comparison logic by providing mock `checkFormulaeStatus` results and a predefined nim state, verifying that the correct discrepancies (uninstalled packages) are accurately identified.",
             "parentId": "undefined",
             "updatedAt": "2026-04-21T16:25:13.014Z"
           },
           {
             "id": 3,
             "title": "Generate PlanWarning for uninstalled packages",
-            "description": "For any packages identified as uninstalled outside of dotisan's management, create a `PlanWarning` object (using Task 1's structure) and add it to the `Plan` object.",
+            "description": "For any packages identified as uninstalled outside of nim's management, create a `PlanWarning` object (using Task 1's structure) and add it to the `Plan` object.",
             "dependencies": [
               1,
               2
             ],
-            "details": "When a discrepancy is found (a package in dotisan's state is not reported as installed by `brew info`), instantiate a `PlanWarning` with `Severity: 'warning'`, `Message: 'Package 'X' was uninstalled outside of dotisan'`, and `Suggestion: 'Run 'dotisan apply' to restore'`. Add this warning to the `Plan.Warnings` slice.",
+            "details": "When a discrepancy is found (a package in nim's state is not reported as installed by `brew info`), instantiate a `PlanWarning` with `Severity: 'warning'`, `Message: 'Package 'X' was uninstalled outside of nim'`, and `Suggestion: 'Run 'nim apply' to restore'`. Add this warning to the `Plan.Warnings` slice.",
             "status": "done",
             "testStrategy": "Unit test the warning generation by feeding identified uninstalled packages into a function and asserting that the `PlanWarning` objects are correctly structured, contain the specified message and suggestion, and are added to the `Plan`.",
             "parentId": "undefined",
@@ -1286,28 +1286,28 @@
           {
             "id": 4,
             "title": "Develop integration tests for Homebrew drift detection",
-            "description": "Create comprehensive integration tests for `BrewProvider` to verify the entire drift detection mechanism, covering scenarios where packages are manually uninstalled and `dotisan plan` is run.",
+            "description": "Create comprehensive integration tests for `BrewProvider` to verify the entire drift detection mechanism, covering scenarios where packages are manually uninstalled and `nim plan` is run.",
             "dependencies": [
               1,
               2,
               3
             ],
-            "details": "Implement integration tests in `pkg/providers/brew_test.go`. Set up a test environment where `brew` commands can be simulated or executed against a controlled Homebrew installation. Define `BrewPackages` in a test configuration. Manually uninstall a managed package using `brew uninstall`. Run `dotisan plan` and assert that the generated `Plan` contains the expected `PlanWarning` with correct details, matching AC2. Test with multiple packages, some installed, some uninstalled, to ensure accurate detection.",
+            "details": "Implement integration tests in `pkg/providers/brew_test.go`. Set up a test environment where `brew` commands can be simulated or executed against a controlled Homebrew installation. Define `BrewPackages` in a test configuration. Manually uninstall a managed package using `brew uninstall`. Run `nim plan` and assert that the generated `Plan` contains the expected `PlanWarning` with correct details, matching AC2. Test with multiple packages, some installed, some uninstalled, to ensure accurate detection.",
             "status": "done",
-            "testStrategy": "The subtask itself is about testing, so the strategy is to ensure comprehensive coverage of drift scenarios, including single package drift, multiple package drift, and no drift. Verify warning content, severity, and suggestions are accurate in the `dotisan plan` output.",
+            "testStrategy": "The subtask itself is about testing, so the strategy is to ensure comprehensive coverage of drift scenarios, including single package drift, multiple package drift, and no drift. Verify warning content, severity, and suggestions are accurate in the `nim plan` output.",
             "parentId": "undefined",
             "updatedAt": "2026-04-21T17:11:13.157Z"
           }
         ],
         "complexity": 7,
         "recommendedSubtasks": 4,
-        "expansionPrompt": "Break down the integration into modifying `BrewProvider.Reconcile` to call `checkFormulaeStatus`, comparing the results with dotisan's state, generating `PlanWarning` for uninstalled packages, and developing thorough integration tests for drift scenarios.",
+        "expansionPrompt": "Break down the integration into modifying `BrewProvider.Reconcile` to call `checkFormulaeStatus`, comparing the results with nim's state, generating `PlanWarning` for uninstalled packages, and developing thorough integration tests for drift scenarios.",
         "updatedAt": "2026-04-21T17:11:13.157Z"
       },
       {
         "id": 5,
         "title": "Implement CLI Parsing for Indexed Resource References",
-        "description": "Develop the `parseResourceRef` function to parse resource references in the format `name[index]` or `name[key]` for `dotisan state import` commands.",
+        "description": "Develop the `parseResourceRef` function to parse resource references in the format `name[index]` or `name[key]` for `nim state import` commands.",
         "details": "In `cmd/state.go` or a suitable utility package, implement `func parseResourceRef(ref string) (name string, itemKey string, hasItemKey bool)`. This function should use regular expressions or string manipulation to correctly extract the resource `name` and the `itemKey` (which can be a string like 'ripgrep' or an integer index '0') if the `[key]` syntax is present. Handle cases where no index is provided (e.g., 'zshrc').",
         "testStrategy": "Write unit tests for `parseResourceRef` covering all specified formats: 'core-tools[ripgrep]', 'core-tools[0]', and 'zshrc'. Verify that the `name`, `itemKey`, and `hasItemKey` boolean are correctly extracted for each case.",
         "priority": "medium",
@@ -1427,8 +1427,8 @@
         "id": 7,
         "title": "Implement Item-Level Import for ManagedFile and BrewPackages",
         "description": "Implement the `ImportItem` method for `ManagedFile` and `BrewPackages` providers, allowing users to import specific files or packages using the new indexed syntax.",
-        "details": "For `ManagedFileProvider` and `BrewProvider`, implement the `ImportItem` method defined in Task 6. This implementation will need to: 1. Locate the resource by `resourceName`. 2. Use `itemKey` to identify the specific file or package within the resource's list. 3. Generate the `ResourceState` for that individual item. For `ManagedFile`, `itemKey` could be an index or a path. For `BrewPackages`, `itemKey` would be the package name. Update the state tracking mechanism to correctly store and retrieve indexed items. Ensure the CLI command `dotisan state import <Kind> <name>[key] <actual_value>` works as expected.",
-        "testStrategy": "Create integration tests for `dotisan state import BrewPackages core-tools[ripgrep] ripgrep` and `dotisan state import ManagedFile dotfiles[0] ~/.zshrc`. Verify that only the specified item is imported into the state, and subsequent `dotisan plan` commands correctly reflect its managed status. Test both name-based and index-based imports for list resources, matching AC3.",
+        "details": "For `ManagedFileProvider` and `BrewProvider`, implement the `ImportItem` method defined in Task 6. This implementation will need to: 1. Locate the resource by `resourceName`. 2. Use `itemKey` to identify the specific file or package within the resource's list. 3. Generate the `ResourceState` for that individual item. For `ManagedFile`, `itemKey` could be an index or a path. For `BrewPackages`, `itemKey` would be the package name. Update the state tracking mechanism to correctly store and retrieve indexed items. Ensure the CLI command `nim state import <Kind> <name>[key] <actual_value>` works as expected.",
+        "testStrategy": "Create integration tests for `nim state import BrewPackages core-tools[ripgrep] ripgrep` and `nim state import ManagedFile dotfiles[0] ~/.zshrc`. Verify that only the specified item is imported into the state, and subsequent `nim plan` commands correctly reflect its managed status. Test both name-based and index-based imports for list resources, matching AC3.",
         "priority": "medium",
         "dependencies": [
           "5",
@@ -1480,28 +1480,28 @@
           {
             "id": 4,
             "title": "Integration tests for ManagedFileProvider.ImportItem",
-            "description": "Create comprehensive integration tests to verify the correct functionality of `ManagedFileProvider.ImportItem`. This includes testing the `dotisan state import ManagedFile <name>[key] <actual_value>` CLI command for various `itemKey` types (index, path) and ensuring the state is updated correctly.",
+            "description": "Create comprehensive integration tests to verify the correct functionality of `ManagedFileProvider.ImportItem`. This includes testing the `nim state import ManagedFile <name>[key] <actual_value>` CLI command for various `itemKey` types (index, path) and ensuring the state is updated correctly.",
             "dependencies": [
               1,
               3
             ],
-            "details": "Write integration tests in `test/integration/` that simulate `dotisan state import ManagedFile dotfiles[0] ~/.zshrc` and `dotisan state import ManagedFile dotfiles[/path/to/file] /actual/path/to/file`. Verify that only the specified item is imported, `dotisan plan` reflects its managed status, and subsequent operations on the parent resource or other items are unaffected. Ensure proper cleanup of test state and files.",
+            "details": "Write integration tests in `test/integration/` that simulate `nim state import ManagedFile dotfiles[0] ~/.zshrc` and `nim state import ManagedFile dotfiles[/path/to/file] /actual/path/to/file`. Verify that only the specified item is imported, `nim plan` reflects its managed status, and subsequent operations on the parent resource or other items are unaffected. Ensure proper cleanup of test state and files.",
             "status": "done",
-            "testStrategy": "Run `dotisan state import` with various `ManagedFile` item keys (index, path). Verify state file content, `dotisan plan` output, and `dotisan apply` behavior for the imported item and other items in the same resource.",
+            "testStrategy": "Run `nim state import` with various `ManagedFile` item keys (index, path). Verify state file content, `nim plan` output, and `nim apply` behavior for the imported item and other items in the same resource.",
             "parentId": "undefined",
             "updatedAt": "2026-04-21T17:11:14.092Z"
           },
           {
             "id": 5,
             "title": "Integration tests for BrewProvider.ImportItem",
-            "description": "Create comprehensive integration tests to verify the correct functionality of `BrewProvider.ImportItem`. This includes testing the `dotisan state import BrewPackages <name>[key] <actual_value>` CLI command and ensuring the state is updated correctly.",
+            "description": "Create comprehensive integration tests to verify the correct functionality of `BrewProvider.ImportItem`. This includes testing the `nim state import BrewPackages <name>[key] <actual_value>` CLI command and ensuring the state is updated correctly.",
             "dependencies": [
               2,
               3
             ],
-            "details": "Write integration tests in `test/integration/` that simulate `dotisan state import BrewPackages core-tools[ripgrep] ripgrep`. Verify that only the specified package is imported, `dotisan plan` reflects its managed status, and subsequent operations on the parent resource or other packages are unaffected. Mock `brew` commands as necessary for controlled testing scenarios.",
+            "details": "Write integration tests in `test/integration/` that simulate `nim state import BrewPackages core-tools[ripgrep] ripgrep`. Verify that only the specified package is imported, `nim plan` reflects its managed status, and subsequent operations on the parent resource or other packages are unaffected. Mock `brew` commands as necessary for controlled testing scenarios.",
             "status": "done",
-            "testStrategy": "Run `dotisan state import` with various `BrewPackages` item keys (package names). Verify state file content, `dotisan plan` output, and `dotisan apply` behavior for the imported package and other packages in the same resource. Mock `brew` commands to simulate different installation states.",
+            "testStrategy": "Run `nim state import` with various `BrewPackages` item keys (package names). Verify state file content, `nim plan` output, and `nim apply` behavior for the imported package and other packages in the same resource. Mock `brew` commands to simulate different installation states.",
             "parentId": "undefined",
             "updatedAt": "2026-04-21T17:11:14.360Z"
           }
@@ -1516,7 +1516,7 @@
         "title": "Migrate ManagedFile to List-Based Structure",
         "description": "Refactor the `ManagedFile` resource to use a `Files []FileSpec` list field, while maintaining backward compatibility for existing single-item configurations.",
         "details": "In `pkg/resource/managedfile.go`, modify the `ManagedFile` struct to include a `Files []FileSpec` field. Define `FileSpec` to contain `sourceFile` and `destination` fields. Implement logic to handle both the new list-based structure and the old single `sourceFile`/`destination` fields. When reading old configurations, populate the `Files` list with a single `FileSpec`. When writing, prioritize the `Files` list. Ensure the `ManagedFileProvider`'s `Reconcile` and `Apply` methods correctly process the new list structure.",
-        "testStrategy": "Create unit tests to verify that `ManagedFile` resources can be defined using both the old single-item syntax and the new `files:` list syntax. Ensure that `dotisan plan` and `dotisan apply` behave identically for equivalent configurations using both syntaxes. Verify that a resource defined with the old syntax is correctly interpreted as a single-item list internally, matching AC4 and NFR (Compatibility).",
+        "testStrategy": "Create unit tests to verify that `ManagedFile` resources can be defined using both the old single-item syntax and the new `files:` list syntax. Ensure that `nim plan` and `nim apply` behave identically for equivalent configurations using both syntaxes. Verify that a resource defined with the old syntax is correctly interpreted as a single-item list internally, matching AC4 and NFR (Compatibility).",
         "priority": "medium",
         "dependencies": [],
         "status": "done",
@@ -1554,7 +1554,7 @@
             ],
             "details": "In `pkg/providers/managedfile.go`, update the `Reconcile` method to iterate through `mf.Files` instead of directly using `mf.SourceFile` and `mf.Destination`. Similarly, adjust the `Apply` method to perform file operations for each `FileSpec` in the `Files` list. Ensure state management correctly reflects the list of files.",
             "status": "done",
-            "testStrategy": "Conduct integration tests using mock file systems. Verify that `dotisan plan` and `dotisan apply` correctly identify and manage multiple files defined within a single `ManagedFile` resource using the new list syntax.",
+            "testStrategy": "Conduct integration tests using mock file systems. Verify that `nim plan` and `nim apply` correctly identify and manage multiple files defined within a single `ManagedFile` resource using the new list syntax.",
             "parentId": "undefined",
             "updatedAt": "2026-04-21T16:50:37.572Z"
           },
@@ -1565,7 +1565,7 @@
             "dependencies": [
               3
             ],
-            "details": "Write unit tests for the custom (un)marshaling logic (from subtask 2). Create integration tests that define `ManagedFile` resources using both old and new YAML syntax. Verify that `dotisan plan` and `dotisan apply` produce identical results for equivalent configurations, and that state is correctly managed. Include tests for edge cases like empty `Files` list or mixed configurations.",
+            "details": "Write unit tests for the custom (un)marshaling logic (from subtask 2). Create integration tests that define `ManagedFile` resources using both old and new YAML syntax. Verify that `nim plan` and `nim apply` produce identical results for equivalent configurations, and that state is correctly managed. Include tests for edge cases like empty `Files` list or mixed configurations.",
             "status": "done",
             "testStrategy": "Use `test-template-inline` for integration tests. Define test cases with old syntax, new syntax (single item in list), and new syntax (multiple items in list). Assert that `plan` output and `apply` results (file creation/deletion) are as expected for all scenarios.",
             "parentId": "undefined",
@@ -1582,7 +1582,7 @@
         "title": "Migrate ManagedDirectory to List-Based Structure",
         "description": "Refactor the `ManagedDirectory` resource to use a `Directories []DirectorySpec` list field, ensuring backward compatibility.",
         "details": "In `pkg/resource/manageddirectory.go`, modify the `ManagedDirectory` struct to include a `Directories []DirectorySpec` field. Define `DirectorySpec` to contain `sourceDirectory` and `destination` fields. Similar to Task 8, implement logic for backward compatibility, allowing both old single-item and new list-based definitions. Update the `ManagedDirectoryProvider`'s `Reconcile` and `Apply` methods to correctly process the new list structure.",
-        "testStrategy": "Create unit tests to verify that `ManagedDirectory` resources can be defined using both the old single-item syntax and the new `directories:` list syntax. Ensure that `dotisan plan` and `dotisan apply` behave identically for equivalent configurations using both syntaxes. Verify backward compatibility, matching AC4 and NFR (Compatibility).",
+        "testStrategy": "Create unit tests to verify that `ManagedDirectory` resources can be defined using both the old single-item syntax and the new `directories:` list syntax. Ensure that `nim plan` and `nim apply` behave identically for equivalent configurations using both syntaxes. Verify backward compatibility, matching AC4 and NFR (Compatibility).",
         "priority": "low",
         "dependencies": [
           "8"
@@ -1609,14 +1609,14 @@
             ],
             "details": "In `pkg/resource/manageddirectory.go`, implement methods or logic within `ManagedDirectory` to populate the `Directories` list from old single-item fields when reading, and prioritize the `Directories` list when writing. Update `ManagedDirectoryProvider`'s `Reconcile` and `Apply` methods to iterate over the `Directories` list for planning and applying changes, leveraging patterns established in Task 8 for `ManagedFile`.",
             "status": "done",
-            "testStrategy": "Manual testing of `dotisan plan` and `dotisan apply` with both old and new syntax configurations to observe behavior.",
+            "testStrategy": "Manual testing of `nim plan` and `nim apply` with both old and new syntax configurations to observe behavior.",
             "parentId": "undefined",
             "updatedAt": "2026-04-21T17:00:08.770Z"
           },
           {
             "id": 3,
             "title": "Create unit tests for ManagedDirectory backward compatibility",
-            "description": "Develop comprehensive unit tests to verify that `ManagedDirectory` resources can be defined and processed correctly using both the old single-item syntax and the new `directories:` list syntax. Ensure `dotisan plan` and `dotisan apply` behave identically for equivalent configurations.",
+            "description": "Develop comprehensive unit tests to verify that `ManagedDirectory` resources can be defined and processed correctly using both the old single-item syntax and the new `directories:` list syntax. Ensure `nim plan` and `nim apply` behave identically for equivalent configurations.",
             "dependencies": [
               2
             ],
@@ -1635,52 +1635,52 @@
       {
         "id": 10,
         "title": "Consolidate `eject` and `state remove` Commands",
-        "description": "Deprecate the `dotisan eject` command and enhance `dotisan state remove` with a `--force` flag to consolidate resource removal functionality under a single, more discoverable command.",
-        "details": "Modify `cmd/eject.go` to mark the `eject` command as deprecated, printing a warning message advising users to use `dotisan state remove` instead. In `cmd/state.go`, add a `--force` flag to the `state remove` command, allowing it to bypass confirmation prompts. Ensure `state remove` performs the same operation as `eject` (removing the resource from the state file without touching the actual resource on the system). Update relevant documentation to reflect this change.",
-        "testStrategy": "Verify that `dotisan eject` prints a deprecation warning. Test `dotisan state remove KIND NAME` with and without the `--force` flag, ensuring it removes the resource from state and prompts for confirmation when `--force` is absent. Confirm that the actual resource on the filesystem remains untouched. Verify that `dotisan state remove --force KIND NAME` removes the resource without a prompt.",
+        "description": "Deprecate the `nim eject` command and enhance `nim state remove` with a `--force` flag to consolidate resource removal functionality under a single, more discoverable command.",
+        "details": "Modify `cmd/eject.go` to mark the `eject` command as deprecated, printing a warning message advising users to use `nim state remove` instead. In `cmd/state.go`, add a `--force` flag to the `state remove` command, allowing it to bypass confirmation prompts. Ensure `state remove` performs the same operation as `eject` (removing the resource from the state file without touching the actual resource on the system). Update relevant documentation to reflect this change.",
+        "testStrategy": "Verify that `nim eject` prints a deprecation warning. Test `nim state remove KIND NAME` with and without the `--force` flag, ensuring it removes the resource from state and prompts for confirmation when `--force` is absent. Confirm that the actual resource on the filesystem remains untouched. Verify that `nim state remove --force KIND NAME` removes the resource without a prompt.",
         "priority": "low",
         "dependencies": [],
         "status": "done",
         "subtasks": [
           {
             "id": 1,
-            "title": "Deprecate `dotisan eject` command with warning",
-            "description": "Modify the `dotisan eject` command in `cmd/eject.go` to mark it as deprecated. When invoked, it should print a warning message advising users to use `dotisan state remove` instead, while still performing its original function.",
+            "title": "Deprecate `nim eject` command with warning",
+            "description": "Modify the `nim eject` command in `cmd/eject.go` to mark it as deprecated. When invoked, it should print a warning message advising users to use `nim state remove` instead, while still performing its original function.",
             "dependencies": [],
-            "details": "Locate `cmd/eject.go`. Implement the deprecation logic to print a clear warning message to stderr when `eject` is executed. The message should explicitly suggest `dotisan state remove` as the alternative command. Ensure the command's core functionality remains intact.",
+            "details": "Locate `cmd/eject.go`. Implement the deprecation logic to print a clear warning message to stderr when `eject` is executed. The message should explicitly suggest `nim state remove` as the alternative command. Ensure the command's core functionality remains intact.",
             "status": "done",
-            "testStrategy": "Execute `dotisan eject <resource_kind> <resource_name>`. Verify that a deprecation warning message is displayed on stderr. Confirm that the resource is still correctly removed from the state file as expected.",
+            "testStrategy": "Execute `nim eject <resource_kind> <resource_name>`. Verify that a deprecation warning message is displayed on stderr. Confirm that the resource is still correctly removed from the state file as expected.",
             "parentId": "undefined",
             "updatedAt": "2026-04-21T17:07:47.811Z"
           },
           {
             "id": 2,
-            "title": "Enhance `dotisan state remove` with `--force` flag and ensure functional parity",
-            "description": "Add a `--force` flag to the `dotisan state remove` command in `cmd/state.go`. This flag should allow the command to bypass any interactive confirmation prompts. Additionally, ensure that `state remove` performs the exact same operation as `eject` (removing the resource from the state file without touching the actual resource on the system).",
+            "title": "Enhance `nim state remove` with `--force` flag and ensure functional parity",
+            "description": "Add a `--force` flag to the `nim state remove` command in `cmd/state.go`. This flag should allow the command to bypass any interactive confirmation prompts. Additionally, ensure that `state remove` performs the exact same operation as `eject` (removing the resource from the state file without touching the actual resource on the system).",
             "dependencies": [],
             "details": "In `cmd/state.go`, define a new boolean flag `--force` for the `state remove` command. Modify the command's execution flow to check for this flag; if present, skip any user confirmation prompts. Review the existing `eject` logic and integrate or confirm that `state remove`'s resource removal from the state file is functionally identical.",
             "status": "done",
-            "testStrategy": "Test `dotisan state remove KIND NAME` without `--force` and verify it prompts for user confirmation. Test `dotisan state remove KIND NAME --force` and verify it removes the resource from the state file without any prompts. In both scenarios, confirm that the actual resource on the filesystem remains untouched.",
+            "testStrategy": "Test `nim state remove KIND NAME` without `--force` and verify it prompts for user confirmation. Test `nim state remove KIND NAME --force` and verify it removes the resource from the state file without any prompts. In both scenarios, confirm that the actual resource on the filesystem remains untouched.",
             "parentId": "undefined",
             "updatedAt": "2026-04-21T17:07:48.092Z"
           },
           {
             "id": 3,
             "title": "Update documentation for command consolidation",
-            "description": "Update all relevant documentation, including CLI help messages, man pages, and user guides, to reflect the deprecation of `dotisan eject` and the new `--force` flag for `dotisan state remove`.",
+            "description": "Update all relevant documentation, including CLI help messages, man pages, and user guides, to reflect the deprecation of `nim eject` and the new `--force` flag for `nim state remove`.",
             "dependencies": [
               1,
               2
             ],
             "details": "Identify and modify all documentation files (e.g., `docs/commands/eject.md`, `docs/commands/state.md`, `README.md`, CLI help output) that reference `eject` or `state remove`. Clearly state the deprecation of `eject` and guide users to `state remove`. Add comprehensive details about the `--force` flag to `state remove`'s documentation. Ensure CLI help messages are updated.",
             "status": "pending",
-            "testStrategy": "Review all updated documentation files for accuracy and completeness. Run `dotisan eject --help` and `dotisan state remove --help` to confirm that the CLI help messages correctly reflect the deprecation and the new `--force` flag, respectively.",
+            "testStrategy": "Review all updated documentation files for accuracy and completeness. Run `nim eject --help` and `nim state remove --help` to confirm that the CLI help messages correctly reflect the deprecation and the new `--force` flag, respectively.",
             "parentId": "undefined"
           }
         ],
         "complexity": 4,
         "recommendedSubtasks": 3,
-        "expansionPrompt": "Break down the task into deprecating `dotisan eject` with a warning, adding the `--force` flag to `dotisan state remove`, ensuring functional parity between the commands, and updating relevant documentation.",
+        "expansionPrompt": "Break down the task into deprecating `nim eject` with a warning, adding the `--force` flag to `nim state remove`, ensuring functional parity between the commands, and updating relevant documentation.",
         "updatedAt": "2026-04-21T17:07:51.702Z"
       }
     ],
@@ -1839,7 +1839,7 @@
         "title": "Modernize `state list` Command Output",
         "description": "Refactor the `state list` command to render its output as a rich, bordered table using `lipgloss`, including color-coded status and a summary footer.",
         "details": "Modify the `state list` command handler. Use `lipgloss` table rendering capabilities. Apply `style.TableHeader` for headers, `style.TableRow` and `style.TableCell` for rows and cells. Implement logic to color-code the 'STATUS' column based on resource status (e.g., `in_sync` with `style.Success`, `drift` with `style.Warning`, `orphaned` with `style.Error`). Add a summary footer displaying resource counts, e.g., '✓ 2 resources in sync', using `style.Success`.",
-        "testStrategy": "Write integration tests for `state list` to verify the table structure, header styling, cell content, and color-coding of the status column. Test with various resource states (in_sync, drift, orphaned). Verify the summary footer accurately reflects the counts. Manually run `dotisan state list` to visually confirm the proposed output format.",
+        "testStrategy": "Write integration tests for `state list` to verify the table structure, header styling, cell content, and color-coding of the status column. Test with various resource states (in_sync, drift, orphaned). Verify the summary footer accurately reflects the counts. Manually run `nim state list` to visually confirm the proposed output format.",
         "priority": "high",
         "dependencies": [
           "2"
@@ -1906,7 +1906,7 @@
         "id": 4,
         "title": "Enhance `state import` Command Messaging",
         "description": "Implement styled success and error messages for the `state import` command, providing actionable guidance for common errors.",
-        "details": "Update the `state import` command handler. For successful imports, use `style.IconSuccess` and `style.Success` to render messages like '✓ Successfully imported BrewPackages/core-tools[ripgrep]'. For errors, use `style.IconError` and `style.Error` for the main error message, and provide actionable guidance (e.g., 'Use 'dotisan state remove ...' first') using `style.Dim` or plain text for instructions. Ensure no 'Usage:' help is shown for valid commands with errors.",
+        "details": "Update the `state import` command handler. For successful imports, use `style.IconSuccess` and `style.Success` to render messages like '✓ Successfully imported BrewPackages/core-tools[ripgrep]'. For errors, use `style.IconError` and `style.Error` for the main error message, and provide actionable guidance (e.g., 'Use 'nim state remove ...' first') using `style.Dim` or plain text for instructions. Ensure no 'Usage:' help is shown for valid commands with errors.",
         "testStrategy": "Write unit/integration tests for `state import` covering successful imports and various error scenarios (e.g., resource already exists, invalid resource). Verify that success messages are green with a checkmark, error messages are red with a cross, and actionable advice is present and correctly formatted. Ensure 'Usage:' is suppressed for valid command errors.",
         "priority": "medium",
         "dependencies": [
@@ -2106,7 +2106,7 @@
         "title": "Develop `init` Command Welcome Experience",
         "description": "Implement a welcome banner, setup progress indicators, and next steps guidance for the `init` command.",
         "details": "Update the `init` command handler. Display a `lipgloss`-styled welcome banner (e.g., using `lipgloss.RoundedBorder` or `lipgloss.DoubleBorder`) with project name and version. During the setup process (creating config directory, config.yaml, values.yaml, resources directory), show individual progress indicators for each step using `style.IconOK` and `style.Success` (e.g., '✓ Created config directory'). Conclude with a 'Next steps' banner providing actionable guidance, styled similarly to the welcome banner.",
-        "testStrategy": "Execute `dotisan init` on a clean environment. Verify the welcome banner appears with correct text and styling. Confirm each setup step is indicated with a checkmark and green text. Verify the 'Next steps' banner is displayed with clear instructions and consistent styling.",
+        "testStrategy": "Execute `nim init` on a clean environment. Verify the welcome banner appears with correct text and styling. Confirm each setup step is indicated with a checkmark and green text. Verify the 'Next steps' banner is displayed with clear instructions and consistent styling.",
         "priority": "medium",
         "dependencies": [
           "2"
@@ -2161,7 +2161,7 @@
         "title": "Create `doctor` Command Diagnostic Dashboard",
         "description": "Refactor the `doctor` command to display a structured diagnostic dashboard using `lipgloss` boxes and tables for core components and providers.",
         "details": "Modify the `doctor` command handler. Structure the output into distinct sections like 'Core Components' and 'Providers'. Use `lipgloss` to draw outer and inner boxes (e.g., `lipgloss.RoundedBorder`) to create the dashboard layout. Within each section, render a table (similar to `state list`) for components/providers, showing 'Component/Provider', 'Status', and 'Details/Version'. Use `style.IconOK` for success, `style.IconError` for failures, and `style.IconWarning` for warnings, with corresponding text colors. Add a summary line for issues found.",
-        "testStrategy": "Run `dotisan doctor` in various environments (e.g., all providers installed, some missing, config issues). Verify the dashboard layout, box borders, and table formatting. Ensure status icons and colors are correct for each component/provider. Check that the summary line accurately reflects the number of issues.",
+        "testStrategy": "Run `nim doctor` in various environments (e.g., all providers installed, some missing, config issues). Verify the dashboard layout, box borders, and table formatting. Ensure status icons and colors are correct for each component/provider. Check that the summary line accurately reflects the number of issues.",
         "priority": "medium",
         "dependencies": [
           "2",
@@ -2248,7 +2248,7 @@
         "title": "Refine `plan` Command and `state pull/push` Indicators",
         "description": "Review and apply any necessary refinements to the `plan` command's styling and add status indicators to `state pull/push` commands.",
         "details": "Although `plan` is already well-styled, review its output against the new shared style system for any minor inconsistencies or opportunities for improvement (e.g., ensuring all icons and colors strictly adhere to `pkg/style`). For `state pull` and `state push`, implement simple status indicators (e.g., 'Pulling state...' with `style.Info`, 'State pushed successfully!' with `style.Success`) to provide feedback during their operations.",
-        "testStrategy": "Run `dotisan plan` and visually inspect its output for consistency with the new style guide. Execute `dotisan state pull` and `dotisan state push` (if implemented) to verify that status messages are displayed with appropriate styling and icons.",
+        "testStrategy": "Run `nim plan` and visually inspect its output for consistency with the new style guide. Execute `nim state pull` and `nim state push` (if implemented) to verify that status messages are displayed with appropriate styling and icons.",
         "priority": "low",
         "dependencies": [
           "2"
@@ -2264,7 +2264,7 @@
             ],
             "details": "Identify any instances where icons, colors, or text formatting in the plan output deviate from the strict guidelines set by pkg/style. Apply necessary minimal adjustments.",
             "status": "done",
-            "testStrategy": "Run `dotisan plan` and visually inspect its output for consistency with the new style guide.",
+            "testStrategy": "Run `nim plan` and visually inspect its output for consistency with the new style guide.",
             "parentId": "undefined",
             "updatedAt": "2026-04-22T08:46:28.179Z"
           },
@@ -2277,7 +2277,7 @@
             ],
             "details": "For 'state pull', display an initial 'Pulling state...' message using style.Info. For 'state push', display a final 'State pushed successfully!' message using style.Success. These must use styled output wrappers.",
             "status": "done",
-            "testStrategy": "Execute `dotisan state pull` and `dotisan state push` to verify that status messages are displayed with appropriate styling and icons.",
+            "testStrategy": "Execute `nim state pull` and `nim state push` to verify that status messages are displayed with appropriate styling and icons.",
             "parentId": "undefined",
             "updatedAt": "2026-04-22T08:46:28.184Z"
           }
@@ -2384,7 +2384,7 @@
         "dependencies": [],
         "priority": "high",
         "details": "Replace the current empty return with logic utilizing `go list -m all` to retrieve all installed modules. If that proves too complex across environments, fall back to checking standard Go binary path directories (GOPATH/bin, $GOBIN, etc.) using shell commands within the Go provider structure. The resulting map must map module/binary name to its version.\n\nPseudo-code focus: \n```go\nfunc (p *GoProvider) getInstalledPackages() (map[string]string, error) {\n    // Attempt go list -m all first\n    cmd := exec.Command(\"go\", \"list\", \"-m\", \"all\")\n    output, err := cmd.Output()\n    if err != nil { return nil, err }\n    // Parse output line by line to populate map[string]string\n    // ... implementation ... \n    return installedMap, nil\n}\n```",
-        "testStrategy": "Execute `dotisan plan` after manual Go module installation. Verify that known modules appear in the plan output as 'in sync' rather than 'addition'. Test on an environment with no packages installed to confirm an empty, correct state.",
+        "testStrategy": "Execute `nim plan` after manual Go module installation. Verify that known modules appear in the plan output as 'in sync' rather than 'addition'. Test on an environment with no packages installed to confirm an empty, correct state.",
         "subtasks": [
           {
             "id": 1,
@@ -2438,8 +2438,8 @@
           "1"
         ],
         "priority": "high",
-        "details": "Implement the `Import()` function for the NpmProvider. This requires executing `npm list -g --json`. The resulting JSON structure must be parsed to extract package names and their associated versions. These discovered packages must then be formatted into a standardized `ResourceState` that can be consumed by the dotisan state mechanism. Crucially, this must handle parsing npm's JSON output reliably.\n\nPseudo-code focus: \n```go\nfunc (p *NpmProvider) Import() (resourceState *ResourceState, err error) {\n    cmd := exec.Command(\"npm\", \"list\", \"-g\", \"--json\")\n    output, err := cmd.Output() // Handle error\n    // Use JSON unmarshalling here\n    // ... parsing logic ...\n    return buildResourceStateFromParsedData(parsedData)\n}\n```",
-        "testStrategy": "Run `dotisan state import npm` on a machine with known global packages installed. Verify that the generated state file/output correctly lists the package names and versions obtained from `npm list -g --json`.",
+        "details": "Implement the `Import()` function for the NpmProvider. This requires executing `npm list -g --json`. The resulting JSON structure must be parsed to extract package names and their associated versions. These discovered packages must then be formatted into a standardized `ResourceState` that can be consumed by the nim state mechanism. Crucially, this must handle parsing npm's JSON output reliably.\n\nPseudo-code focus: \n```go\nfunc (p *NpmProvider) Import() (resourceState *ResourceState, err error) {\n    cmd := exec.Command(\"npm\", \"list\", \"-g\", \"--json\")\n    output, err := cmd.Output() // Handle error\n    // Use JSON unmarshalling here\n    // ... parsing logic ...\n    return buildResourceStateFromParsedData(parsedData)\n}\n```",
+        "testStrategy": "Run `nim state import npm` on a machine with known global packages installed. Verify that the generated state file/output correctly lists the package names and versions obtained from `npm list -g --json`.",
         "subtasks": [
           {
             "id": 1,
@@ -2468,7 +2468,7 @@
           {
             "id": 3,
             "title": "Map parsed data to internal ResourceState format",
-            "description": "Take the successfully parsed data from the previous step and transform it into the standardized internal `ResourceState` object expected by the dotisan state mechanism.",
+            "description": "Take the successfully parsed data from the previous step and transform it into the standardized internal `ResourceState` object expected by the nim state mechanism.",
             "dependencies": [
               2
             ],
@@ -2494,7 +2494,7 @@
         ],
         "priority": "high",
         "details": "Implement the `Import()` function for the GoProvider. Utilize `go list -m all` (or similar reliable mechanism derived from Task 1's learnings) to query the system for all installed modules. The output must be parsed to create a `ResourceState` representing the discovered modules, adhering to the structure required for state tracking.\n\nPseudo-code focus: \n```go\nfunc (p *GoProvider) Import() (resourceState *ResourceState, err error) {\n    // Use the successful mechanism from Task 1\n    // ... execute 'go list -m all' ...\n    // Parse output to build ResourceState\n    return buildResourceStateFromGoList(parsedOutput)\n}\n```",
-        "testStrategy": "Run `dotisan state import go` on a machine where specific modules are known to be installed via `go get`. Verify that the generated state file accurately reflects these modules and their versions/paths.",
+        "testStrategy": "Run `nim state import go` on a machine where specific modules are known to be installed via `go get`. Verify that the generated state file accurately reflects these modules and their versions/paths.",
         "subtasks": [
           {
             "id": 1,
@@ -2512,7 +2512,7 @@
           {
             "id": 2,
             "title": "Map Parsed Go Data to ResourceState Structure",
-            "description": "Implement the core logic to convert the map/list structure resulting from Task 1's successful parsing into the specific ResourceState format required by the dotisan framework. [Updated: 4/22/2026]",
+            "description": "Implement the core logic to convert the map/list structure resulting from Task 1's successful parsing into the specific ResourceState format required by the nim framework. [Updated: 4/22/2026]",
             "dependencies": [
               1
             ],
@@ -2538,7 +2538,7 @@
         ],
         "complexity": 7,
         "recommendedSubtasks": 3,
-        "expansionPrompt": "Since this depends heavily on Task 1, structure the subtasks around leveraging the validated implementation from Task 1. Focus on the conversion layer: take the parsed map/list from Task 1's success, and correctly transform it into the required `ResourceState` structure required by the `dotisan` framework.",
+        "expansionPrompt": "Since this depends heavily on Task 1, structure the subtasks around leveraging the validated implementation from Task 1. Focus on the conversion layer: take the parsed map/list from Task 1's success, and correctly transform it into the required `ResourceState` structure required by the `nim` framework.",
         "updatedAt": "2026-04-22T15:26:41.427Z"
       },
       {
@@ -2552,7 +2552,7 @@
         ],
         "priority": "high",
         "details": "In the reconciliation logic, after obtaining the desired state via `npm list -g --json` (similar to Task 2), compare the resulting set of installed packages against the packages recorded in the current state file (managed state). Any package present in the state but missing from the current `npm list -g` output must trigger a 'drift' warning in the plan output. No action should be taken on drift detection alone.",
-        "testStrategy": "1. Establish a baseline state (A). 2. Manually uninstall a known package (Package X). 3. Run `dotisan plan`. The plan output MUST explicitly warn about the drift of Package X, showing it as 'missing/drifted', but should not attempt to 'apply' an installation or removal for it unless explicitly managed by another resource.",
+        "testStrategy": "1. Establish a baseline state (A). 2. Manually uninstall a known package (Package X). 3. Run `nim plan`. The plan output MUST explicitly warn about the drift of Package X, showing it as 'missing/drifted', but should not attempt to 'apply' an installation or removal for it unless explicitly managed by another resource.",
         "subtasks": [
           {
             "id": 1,
@@ -2561,7 +2561,7 @@
             "dependencies": [],
             "details": "Ensure the initial 'managed state' file accurately reflects all currently installed global npm packages for comparison.\n<info added on 2026-04-22T15:20:08.983Z>\nCompleted the initial implementation of state creation by ensuring the `Import()` function now correctly initializes the baseline state by importing all packages found in the `Extra[\"packages\"]` section of the provided context/data.\n</info added on 2026-04-22T15:20:08.983Z>",
             "status": "done",
-            "testStrategy": "Run `dotisan state import npm` on a clean environment to generate the initial, trusted state file.",
+            "testStrategy": "Run `nim state import npm` on a clean environment to generate the initial, trusted state file.",
             "parentId": "undefined",
             "updatedAt": "2026-04-22T15:26:41.429Z"
           },
@@ -2587,7 +2587,7 @@
             ],
             "details": "Identify any package present in the managed state but absent in the live JSON output. Report this as a 'drift' warning only, without triggering apply actions.\n<info added on 2026-04-22T15:20:21.160Z>\nImplemented detectNpmDrift() at pkg/providers/npm.go:142-178 compares saved vs live packages.\n</info added on 2026-04-22T15:20:21.160Z>",
             "status": "done",
-            "testStrategy": "Manually uninstall a known package (Package X) and run `dotisan plan`. The output must contain an explicit, non-actionable warning about the drift of Package X.",
+            "testStrategy": "Manually uninstall a known package (Package X) and run `nim plan`. The output must contain an explicit, non-actionable warning about the drift of Package X.",
             "parentId": "undefined",
             "updatedAt": "2026-04-22T15:26:41.434Z"
           }
@@ -2608,7 +2608,7 @@
         ],
         "priority": "high",
         "details": "Similar to npm, after querying the actual installed packages via `go list -m all`, compare the results against the state file. Any module/binary listed in the state but not found during the current execution of `go list -m all` must be flagged as drift. This requires robust binary path checking for verification.",
-        "testStrategy": "1. Establish a baseline state (B) with a known module (Module Y). 2. Manually delete the binary/module associated with Module Y (e.g., `go clean -modcache` or system removal). 3. Run `dotisan plan`. The plan output MUST clearly warn about the drift of Module Y.",
+        "testStrategy": "1. Establish a baseline state (B) with a known module (Module Y). 2. Manually delete the binary/module associated with Module Y (e.g., `go clean -modcache` or system removal). 3. Run `nim plan`. The plan output MUST clearly warn about the drift of Module Y.",
         "subtasks": [
           {
             "id": 1,
@@ -2619,7 +2619,7 @@
             ],
             "details": "The implementation must correctly handle the stdout parsing, mapping module paths/names to their corresponding versions, mimicking successful state capture.\n<info added on 2026-04-22T15:20:47.459Z>\nCompleted the implementation by updating getInstalledPackages() to successfully capture the system state using the go list -m all command.\n</info added on 2026-04-22T15:20:47.459Z>",
             "status": "done",
-            "testStrategy": "Run 'dotisan plan' after manually installing several known modules using 'go get' to ensure all are captured correctly.",
+            "testStrategy": "Run 'nim plan' after manually installing several known modules using 'go get' to ensure all are captured correctly.",
             "parentId": "undefined",
             "updatedAt": "2026-04-22T15:26:41.436Z"
           },
@@ -2645,7 +2645,7 @@
             ],
             "details": "Ensure that the plan output formats the identified drifted resources according to the standardized output structure, without attempting to apply remediation actions for drift.\n<info added on 2026-04-22T15:21:05.491Z>\nDrift detection integrated into reconcileGoPackages() call flow.\n</info added on 2026-04-22T15:21:05.491Z>",
             "status": "done",
-            "testStrategy": "Execute the full cycle: 1. Establish clean state (B). 2. Simulate drift (delete module). 3. Run 'dotisan plan' and confirm the drift warning is visible and accurate.",
+            "testStrategy": "Execute the full cycle: 1. Establish clean state (B). 2. Simulate drift (delete module). 3. Run 'nim plan' and confirm the drift warning is visible and accurate.",
             "parentId": "undefined",
             "updatedAt": "2026-04-22T15:26:41.441Z"
           }
@@ -2968,7 +2968,7 @@
         "dependencies": [],
         "priority": "high",
         "details": "Modify `pkg/engine/engine.go` at lines 442-456. The implementation must follow these steps: 1. Attempt to load the existing state using `e.StateBackend.Load(ctx)`. 2. If loading fails or no state exists, initialize a new state. 3. If an existing state is loaded, iterate over its resources to preserve them. 4. Iterate over the current run's successful items (`results[i].success == true`) and merge them into the existing or new state object, rather than creating a brand new state from scratch. 5. Ensure the final state is saved correctly via `e.StateBackend.Save(ctx, newState)`.\n\n**Pseudo-code Concept:**\n```go\n// Load state first\nexistingState, err := e.StateBackend.Load(ctx)\nif err != nil && !errors.Is(err, state.ErrNotFound) { /* handle error */ }\n\nvar stateToSave *state.State\nif existingState != nil { \n    stateToSave = existingState // Use existing state\n} else {\n    stateToSave = state.NewState() // Create new if none exists\n}\n\n// Merge logic\nfor i, item := range workItems {\n    if results[i].success {\n        // Merge item into stateToSave instead of creating newState\n        stateToSave.SetResourceGroup(...) \n    }\n}\n\n// Save the merged state\ne.StateBackend.Save(ctx, stateToSave)\n```",
-        "testStrategy": "Execute Test Scenario 3 (State Persistence). Run `dotisan apply --confirm` with 3 packages. Confirm state is saved. Then, run `dotisan apply --confirm` again with the *same* 3 packages. Verify that `dotisan plan` shows all 3 packages as '✓ in-sync' and that the state list shows all 3 packages tracked, confirming no loss of history.",
+        "testStrategy": "Execute Test Scenario 3 (State Persistence). Run `nim apply --confirm` with 3 packages. Confirm state is saved. Then, run `nim apply --confirm` again with the *same* 3 packages. Verify that `nim plan` shows all 3 packages as '✓ in-sync' and that the state list shows all 3 packages tracked, confirming no loss of history.",
         "subtasks": [
           {
             "id": 1,
@@ -2977,7 +2977,7 @@
             "dependencies": [],
             "details": "Modify `pkg/engine/engine.go` to handle state loading and fallback. Use `e.StateBackend.Load(ctx)` to attempt loading the state. If an error occurs or the state is not found, initialize a new state using `state.NewState()`.",
             "status": "done",
-            "testStrategy": "Test by running `dotisan apply --confirm` with an existing state file and verify that the state is loaded correctly. Then, test with a missing state file to ensure a new state is initialized.",
+            "testStrategy": "Test by running `nim apply --confirm` with an existing state file and verify that the state is loaded correctly. Then, test with a missing state file to ensure a new state is initialized.",
             "parentId": "undefined",
             "updatedAt": "2026-04-24T17:52:37.684Z"
           },
@@ -2990,7 +2990,7 @@
             ],
             "details": "Iterate over the current run's successful items (`results[i].success == true`) and merge them into the existing or new state object using `stateToSave.SetResourceGroup(...)`. Ensure that this logic is idempotent and does not overwrite existing resources.",
             "status": "done",
-            "testStrategy": "Test by running `dotisan apply --confirm` with a mix of new and existing resources. Verify that only new or updated resources are merged into the state without affecting existing entries.",
+            "testStrategy": "Test by running `nim apply --confirm` with a mix of new and existing resources. Verify that only new or updated resources are merged into the state without affecting existing entries.",
             "parentId": "undefined",
             "updatedAt": "2026-04-24T17:52:37.689Z"
           },
@@ -3016,7 +3016,7 @@
             ],
             "details": "Ensure that the final merged state is saved correctly using `e.StateBackend.Save(ctx, stateToSave)`. Add error handling for state save operations to ensure robustness and reliability.",
             "status": "done",
-            "testStrategy": "Test by running `dotisan apply --confirm` and verifying that the merged state is saved correctly. Then, test with corrupted state files to ensure that the save operation fails gracefully and provides actionable error messages.",
+            "testStrategy": "Test by running `nim apply --confirm` and verifying that the merged state is saved correctly. Then, test with corrupted state files to ensure that the save operation fails gracefully and provides actionable error messages.",
             "parentId": "undefined",
             "updatedAt": "2026-04-24T17:52:37.697Z"
           }
@@ -3034,7 +3034,7 @@
         "dependencies": [],
         "priority": "high",
         "details": "Modify `pkg/engine/engine.go` at line 127. The calculation must change from summing group counts to summing the item counts within each addition group. This fix must be applied identically to `TotalModifications`, `TotalRemovals`, and `TotalInSync` for consistency.\n\n**Required Change:**\n```go\n// Old: result.TotalAdditions += len(plan.Additions) \n// New Logic:\nfor _, additionGroup := range plan.Additions {\n    result.TotalAdditions += len(additionGroup.Items) // Sum individual item counts\n}\n// Repeat for TotalModifications, TotalRemovals, etc.\n```",
-        "testStrategy": "Execute Test Scenario 1 (Fresh Apply). Set up a test case where 4 distinct packages are added across two different groups. Run `dotisan plan`. Verify that the footer correctly reports '4 to add' (or the expected total count), confirming the summation logic works for all plan summary metrics.",
+        "testStrategy": "Execute Test Scenario 1 (Fresh Apply). Set up a test case where 4 distinct packages are added across two different groups. Run `nim plan`. Verify that the footer correctly reports '4 to add' (or the expected total count), confirming the summation logic works for all plan summary metrics.",
         "subtasks": [
           {
             "id": 1,
@@ -3076,7 +3076,7 @@
         ],
         "priority": "high",
         "details": "Requires changes in `pkg/providers/brew.go` and `pkg/engine/engine.go`. The provider's reconcile logic must be updated to check the loaded state (via the engine context) to determine if a resource exists. If it exists in state and matches the current desired state, the result should be marked 'InSync' rather than being ignored or flagged as 'Added'.\n\n**Implementation Focus:** Enhance the resource reconciliation loop to consult the state object loaded during the apply phase to determine the operational status (Created, Modified, Deleted, or InSync).",
-        "testStrategy": "Execute Test Scenario 1 (Fresh Apply) and immediately follow up with running `dotisan plan` (without any actual changes). Verify that all 4 packages shown in the state list are marked with '✓ in-sync' in the plan output, confirming Task 1's state persistence facilitated correct InSync detection.",
+        "testStrategy": "Execute Test Scenario 1 (Fresh Apply) and immediately follow up with running `nim plan` (without any actual changes). Verify that all 4 packages shown in the state list are marked with '✓ in-sync' in the plan output, confirming Task 1's state persistence facilitated correct InSync detection.",
         "subtasks": [
           {
             "id": 1,
@@ -3127,7 +3127,7 @@
         "dependencies": [],
         "priority": "medium",
         "details": "Modify `cmd/state.go` at line 340. Instead of joining all item names with a comma and rendering one row, the code must loop through every item name found in `res.Items`. For each item, it must call `t.Row()` once, duplicating the Kind, Group, and Status information to ensure the UI remains consistent across multiple rows. Handle cases where `res.Items` might be empty gracefully by skipping row creation.",
-        "testStrategy": "Execute Test Scenario 3 (State Persistence) and then run `dotisan state list`. Verify that for a group containing 'ripgrep, htop, podman', there are exactly three distinct rows rendered in the terminal output, one for each package.",
+        "testStrategy": "Execute Test Scenario 3 (State Persistence) and then run `nim state list`. Verify that for a group containing 'ripgrep, htop, podman', there are exactly three distinct rows rendered in the terminal output, one for each package.",
         "subtasks": [
           {
             "id": 1,
@@ -3200,7 +3200,7 @@
         ],
         "priority": "low",
         "details": "Update `pkg/engine/engine.go` and `pkg/state/state.go`:\n1. On loading state: Log the successful load, including the resource count and source path.\n2. On saving state: Log the action taken and the final count of resources being persisted.\n3. Implement a runtime flag (e.g., `--debug-state`) that enables these verbose logs when the CLI is run.",
-        "testStrategy": "Run `dotisan apply --debug-state --confirm`. Check the terminal output to confirm that detailed logging messages appear confirming both the load operation details and the subsequent save operation details.",
+        "testStrategy": "Run `nim apply --debug-state --confirm`. Check the terminal output to confirm that detailed logging messages appear confirming both the load operation details and the subsequent save operation details.",
         "subtasks": [
           {
             "id": 1,
@@ -3368,14 +3368,14 @@
       {
         "id": 10,
         "title": "Review and Update Initial Plan Assumptions",
-        "description": "Final cleanup task to review the `dotisan plan` command logic to ensure it accurately reflects the desired state if no state file exists and no changes are found, providing helpful user feedback.",
+        "description": "Final cleanup task to review the `nim plan` command logic to ensure it accurately reflects the desired state if no state file exists and no changes are found, providing helpful user feedback.",
         "status": "done",
         "dependencies": [
           "3"
         ],
         "priority": "low",
         "details": "Review `cmd/plan.go`. If the plan calculation results in zero differences (no Additions, Modifications, or Removals found), and the state is loaded correctly, ensure the output clearly states something like: 'System is up-to-date. No changes required.' rather than just being silent or confusing the user.",
-        "testStrategy": "Run `dotisan plan` when the system is known to be in a desired, stable state (i.e., after a successful apply run where no changes were detected). Confirm the user receives a clear, actionable 'Success/No Changes' message.",
+        "testStrategy": "Run `nim plan` when the system is known to be in a desired, stable state (i.e., after a successful apply run where no changes were detected). Confirm the user receives a clear, actionable 'Success/No Changes' message.",
         "subtasks": [
           {
             "id": 1,
@@ -3386,7 +3386,7 @@
             ],
             "details": "Update the `cmd/plan.go` file to check for zero differences (no Additions, Modifications, or Removals) and ensure the state is loaded correctly. If both conditions are met, display the 'System is up-to-date. No changes required.' message. Create a test case that forces zero differences and verifies the output string exactly matches the expected message.",
             "status": "done",
-            "testStrategy": "Run `dotisan plan` in a scenario where the system is in a desired, stable state (e.g., after a successful apply run with no changes detected). Confirm the output displays the 'System is up-to-date. No changes required.' message and that all preceding steps (e.g., state loading) support this outcome.",
+            "testStrategy": "Run `nim plan` in a scenario where the system is in a desired, stable state (e.g., after a successful apply run with no changes detected). Confirm the output displays the 'System is up-to-date. No changes required.' message and that all preceding steps (e.g., state loading) support this outcome.",
             "parentId": "undefined",
             "updatedAt": "2026-04-24T17:52:37.733Z"
           }
@@ -3410,14 +3410,14 @@
       "updated": "2026-04-28T18:01:18.481Z"
     }
   },
-  "chezmoi-to-dotisan-migration": {
+  "chezmoi-to-nim-migration": {
     "tasks": [
       {
         "id": "1",
         "title": "Initialize Dotisan Repository and Structure",
-        "description": "Set up the new dotisan dotfiles repository with proper directory structure and initialize dotisan",
-        "details": "1. Create new repository at ~/git/dotisan-dotfiles\n2. Initialize git repository\n3. Create directory structure: resources/{00-packages,10-shell,20-terminals,30-tools,40-ai-tools,50-agents,99-generated}\n4. Initialize dotisan with 'dotisan init'\n5. Add .gitignore and README.md",
-        "testStrategy": "Verify repository structure, check that dotisan init command succeeds, confirm all directories exist",
+        "description": "Set up the new nim dotfiles repository with proper directory structure and initialize nim",
+        "details": "1. Create new repository at ~/git/nim-dotfiles\n2. Initialize git repository\n3. Create directory structure: resources/{00-packages,10-shell,20-terminals,30-tools,40-ai-tools,50-agents,99-generated}\n4. Initialize nim with 'nim init'\n5. Add .gitignore and README.md",
+        "testStrategy": "Verify repository structure, check that nim init command succeeds, confirm all directories exist",
         "priority": "high",
         "dependencies": [],
         "status": "done",
@@ -3425,7 +3425,7 @@
           {
             "id": 1,
             "title": "Create Dotisan Repository Directory",
-            "description": "Create the main repository directory at ~/git/dotisan-dotfiles with proper permissions",
+            "description": "Create the main repository directory at ~/git/nim-dotfiles with proper permissions",
             "dependencies": [],
             "details": "Implement directory creation with proper error handling for existing directories and permission issues. Use mkdir -p with appropriate permissions and check if directory already exists before creating.",
             "status": "done",
@@ -3436,7 +3436,7 @@
           {
             "id": 2,
             "title": "Initialize Git Repository",
-            "description": "Initialize a new git repository in the dotisan-dotfiles directory",
+            "description": "Initialize a new git repository in the nim-dotfiles directory",
             "dependencies": [
               1
             ],
@@ -3449,7 +3449,7 @@
           {
             "id": 3,
             "title": "Setup Directory Structure",
-            "description": "Create the required directory structure for dotisan resources",
+            "description": "Create the required directory structure for nim resources",
             "dependencies": [
               2
             ],
@@ -3462,11 +3462,11 @@
           {
             "id": 4,
             "title": "Initialize Dotisan Framework",
-            "description": "Initialize dotisan framework in the repository with proper configuration",
+            "description": "Initialize nim framework in the repository with proper configuration",
             "dependencies": [
               3
             ],
-            "details": "Execute 'dotisan init' command and verify successful initialization. Handle potential errors and ensure proper dotisan configuration files are created. Validate that dotisan is properly installed and accessible.",
+            "details": "Execute 'nim init' command and verify successful initialization. Handle potential errors and ensure proper nim configuration files are created. Validate that nim is properly installed and accessible.",
             "status": "done",
             "testStrategy": null,
             "parentId": "undefined",
@@ -3488,15 +3488,15 @@
         ],
         "complexity": 3,
         "recommendedSubtasks": 0,
-        "expansionPrompt": "Break down the repository initialization into specific steps: repository creation, git initialization, directory structure setup, dotisan initialization, and file creation. Consider potential edge cases like existing repository or permission issues.",
+        "expansionPrompt": "Break down the repository initialization into specific steps: repository creation, git initialization, directory structure setup, nim initialization, and file creation. Consider potential edge cases like existing repository or permission issues.",
         "updatedAt": "2026-04-29T13:10:36.382Z"
       },
       {
         "id": "2",
         "title": "Create Consolidated values.yaml File",
         "description": "Consolidate all chezmoi data files into a single values.yaml file",
-        "details": "1. Extract data from all .chezmoidata/*.yaml files\n2. Merge into single values.yaml with proper structure\n3. Map chezmoi variables to dotisan equivalents:\n   - {{ .chezmoi.homeDir }} -> {{ .Env.HOME }}\n   - {{ .chezmoi.sourceDir }} -> {{ .Values.dotfiles_root }}\n   - {{ .chezmoi.os }} -> {{ .OS.GOOS }}\n   - {{ .chezmoi.arch }} -> {{ .OS.GOARCH }}\n   - {{ env \"VAR\" }} -> {{ .Env.VAR }}\n4. Validate YAML structure and syntax",
-        "testStrategy": "Run 'dotisan plan' to verify template rendering works without errors, check that all data is correctly mapped",
+        "details": "1. Extract data from all .chezmoidata/*.yaml files\n2. Merge into single values.yaml with proper structure\n3. Map chezmoi variables to nim equivalents:\n   - {{ .chezmoi.homeDir }} -> {{ .Env.HOME }}\n   - {{ .chezmoi.sourceDir }} -> {{ .Values.dotfiles_root }}\n   - {{ .chezmoi.os }} -> {{ .OS.GOOS }}\n   - {{ .chezmoi.arch }} -> {{ .OS.GOARCH }}\n   - {{ env \"VAR\" }} -> {{ .Env.VAR }}\n4. Validate YAML structure and syntax",
+        "testStrategy": "Run 'nim plan' to verify template rendering works without errors, check that all data is correctly mapped",
         "priority": "high",
         "dependencies": [
           "1"
@@ -3517,11 +3517,11 @@
           {
             "id": 2,
             "title": "Map Chezmoi Variables to Dotisan Equivalents",
-            "description": "Transform chezmoi variable references to dotisan equivalents with proper mapping",
+            "description": "Transform chezmoi variable references to nim equivalents with proper mapping",
             "dependencies": [
               1
             ],
-            "details": "Create variable mapping logic to convert chezmoi template variables to dotisan equivalents: {{ .chezmoi.homeDir }} to {{ .Env.HOME }}, {{ .chezmoi.sourceDir }} to {{ .Values.dotfiles_root }}, {{ .chezmoi.os }} to {{ .OS.GOOS }}, {{ .chezmoi.arch }} to {{ .OS.GOARCH }}, and {{ env \"VAR\" }} to {{ .Env.VAR }}. Implement recursive search and replace across all merged data to ensure complete variable conversion.",
+            "details": "Create variable mapping logic to convert chezmoi template variables to nim equivalents: {{ .chezmoi.homeDir }} to {{ .Env.HOME }}, {{ .chezmoi.sourceDir }} to {{ .Values.dotfiles_root }}, {{ .chezmoi.os }} to {{ .OS.GOOS }}, {{ .chezmoi.arch }} to {{ .OS.GOARCH }}, and {{ env \"VAR\" }} to {{ .Env.VAR }}. Implement recursive search and replace across all merged data to ensure complete variable conversion.",
             "status": "done",
             "testStrategy": null,
             "parentId": "undefined",
@@ -3535,7 +3535,7 @@
               1,
               2
             ],
-            "details": "Implement comprehensive YAML validation to check structure and syntax correctness. Include tests for proper indentation, valid YAML formatting, and complete data mapping. Verify that the final values.yaml file can be successfully processed by dotisan without errors. Test with 'dotisan plan' command to ensure template rendering works correctly.",
+            "details": "Implement comprehensive YAML validation to check structure and syntax correctness. Include tests for proper indentation, valid YAML formatting, and complete data mapping. Verify that the final values.yaml file can be successfully processed by nim without errors. Test with 'nim plan' command to ensure template rendering works correctly.",
             "status": "done",
             "testStrategy": null,
             "parentId": "undefined",
@@ -3550,9 +3550,9 @@
       {
         "id": "3",
         "title": "Migrate Homebrew Package Management",
-        "description": "Create dotisan resources for managing homebrew packages, formulas, casks and taps",
+        "description": "Create nim resources for managing homebrew packages, formulas, casks and taps",
         "details": "1. Create resources/00-packages/homebrew.yaml with BrewPackages resource\n2. Map .Values.packages.brew.taps to taps\n3. Map .Values.packages.brew.formulas to formulae\n4. Map .Values.packages.brew.casks to casks\n5. Use Go templates with range loops to iterate over values\n6. Set proper API version and metadata",
-        "testStrategy": "Run 'dotisan plan' and verify package management resources are correctly rendered, apply with --confirm and verify brew packages are installed",
+        "testStrategy": "Run 'nim plan' and verify package management resources are correctly rendered, apply with --confirm and verify brew packages are installed",
         "priority": "high",
         "dependencies": [
           "2"
@@ -3590,7 +3590,7 @@
             "dependencies": [
               2
             ],
-            "details": "Run 'dotisan plan' to verify package management resources are correctly rendered, apply with --confirm flag to test actual package installation behavior, verify brew packages are properly installed, and ensure proper handling of dependencies between different package types including tap dependencies for formulas and casks.",
+            "details": "Run 'nim plan' to verify package management resources are correctly rendered, apply with --confirm flag to test actual package installation behavior, verify brew packages are properly installed, and ensure proper handling of dependencies between different package types including tap dependencies for formulas and casks.",
             "status": "done",
             "testStrategy": null,
             "parentId": "undefined",
@@ -3618,9 +3618,9 @@
       {
         "id": "4",
         "title": "Migrate Go Package Management",
-        "description": "Create dotisan resources for managing Go packages",
+        "description": "Create nim resources for managing Go packages",
         "details": "1. Create resources/00-packages/go-tools.yaml with GoPackages resource\n2. Map .Values.packages.go to packages\n3. Set version to 'latest' for all packages\n4. Use Go templates with range loops\n5. Set proper API version and metadata",
-        "testStrategy": "Run 'dotisan plan' and verify Go packages resource is correctly rendered, apply with --confirm and verify go packages are installed",
+        "testStrategy": "Run 'nim plan' and verify Go packages resource is correctly rendered, apply with --confirm and verify go packages are installed",
         "priority": "high",
         "dependencies": [
           "2"
@@ -3659,7 +3659,7 @@
               1,
               2
             ],
-            "details": "Run 'dotisan plan' to verify Go packages resource is correctly rendered with proper API version and metadata. Apply changes with --confirm flag and verify that go packages are properly installed. Test different package structures and ensure template rendering handles edge cases correctly.",
+            "details": "Run 'nim plan' to verify Go packages resource is correctly rendered with proper API version and metadata. Apply changes with --confirm flag and verify that go packages are properly installed. Test different package structures and ensure template rendering handles edge cases correctly.",
             "status": "done",
             "testStrategy": null,
             "parentId": "undefined",
@@ -3674,9 +3674,9 @@
       {
         "id": "5",
         "title": "Migrate NPM Package Management",
-        "description": "Create dotisan resources for managing NPM packages",
+        "description": "Create nim resources for managing NPM packages",
         "details": "1. Create resources/00-packages/npm-tools.yaml with NpmPackages resource\n2. Map .Values.packages.npm to packages\n3. Use Go templates with range loops\n4. Set proper API version and metadata",
-        "testStrategy": "Run 'dotisan plan' and verify NPM packages resource is correctly rendered, apply with --confirm and verify npm packages are installed",
+        "testStrategy": "Run 'nim plan' and verify NPM packages resource is correctly rendered, apply with --confirm and verify npm packages are installed",
         "priority": "high",
         "dependencies": [
           "2"
@@ -3716,7 +3716,7 @@
             "dependencies": [
               5
             ],
-            "details": "Create validation tests to verify npm package installation works correctly with the dotisan resources. Test handling of different npm package types, version specifications, and dependency resolution. Implement testing for package structure validation and ensure proper template rendering for various npm package configurations including scoped packages and custom registries.",
+            "details": "Create validation tests to verify npm package installation works correctly with the nim resources. Test handling of different npm package types, version specifications, and dependency resolution. Implement testing for package structure validation and ensure proper template rendering for various npm package configurations including scoped packages and custom registries.",
             "status": "done",
             "testStrategy": null,
             "parentId": "undefined",
@@ -3731,9 +3731,9 @@
       {
         "id": "6",
         "title": "Migrate Shell Configuration Files",
-        "description": "Migrate zsh and fish shell configurations to dotisan managed files",
-        "details": "1. Create resources/10-shell/zsh.yaml with ManagedFile resource for zshrc\n2. Create resources/10-shell/fish.yaml with ManagedFile resource for fish config\n3. Migrate content from dot_zshrc.tmpl and private_dot_config/fish/config.fish\n4. Replace chezmoi variables with dotisan equivalents\n5. Set proper sourceFile, destination, mode and template flags",
-        "testStrategy": "Run 'dotisan plan' and verify shell configuration resources are correctly rendered, apply with --confirm and verify shell configurations are applied",
+        "description": "Migrate zsh and fish shell configurations to nim managed files",
+        "details": "1. Create resources/10-shell/zsh.yaml with ManagedFile resource for zshrc\n2. Create resources/10-shell/fish.yaml with ManagedFile resource for fish config\n3. Migrate content from dot_zshrc.tmpl and private_dot_config/fish/config.fish\n4. Replace chezmoi variables with nim equivalents\n5. Set proper sourceFile, destination, mode and template flags",
+        "testStrategy": "Run 'nim plan' and verify shell configuration resources are correctly rendered, apply with --confirm and verify shell configurations are applied",
         "priority": "medium",
         "dependencies": [
           "2"
@@ -3745,7 +3745,7 @@
             "title": "Create Shell Configuration File Resources",
             "description": "Create ManagedFile resources for zsh and fish shell configurations with proper directory structure",
             "dependencies": [],
-            "details": "Create resources/10-shell/zsh.yaml and resources/10-shell/fish.yaml files with ManagedFile resources. Define sourceFile, destination, mode and template flags for each shell configuration. Ensure proper directory structure and file permissions are set according to dotisan conventions.",
+            "details": "Create resources/10-shell/zsh.yaml and resources/10-shell/fish.yaml files with ManagedFile resources. Define sourceFile, destination, mode and template flags for each shell configuration. Ensure proper directory structure and file permissions are set according to nim conventions.",
             "status": "done",
             "testStrategy": null,
             "parentId": "undefined",
@@ -3754,11 +3754,11 @@
           {
             "id": 2,
             "title": "Migrate Shell Configuration Content",
-            "description": "Migrate content from existing template and configuration files to dotisan managed resources",
+            "description": "Migrate content from existing template and configuration files to nim managed resources",
             "dependencies": [
               1
             ],
-            "details": "Copy content from dot_zshrc.tmpl and private_dot_config/fish/config.fish files to the new dotisan managed files. Ensure all shell configuration content is properly migrated while maintaining backward compatibility. Handle complex shell configurations and ensure proper variable replacement.",
+            "details": "Copy content from dot_zshrc.tmpl and private_dot_config/fish/config.fish files to the new nim managed files. Ensure all shell configuration content is properly migrated while maintaining backward compatibility. Handle complex shell configurations and ensure proper variable replacement.",
             "status": "done",
             "testStrategy": null,
             "parentId": "undefined",
@@ -3767,11 +3767,11 @@
           {
             "id": 3,
             "title": "Replace Variables and Template Logic",
-            "description": "Replace chezmoi variables with dotisan equivalents and implement proper template handling",
+            "description": "Replace chezmoi variables with nim equivalents and implement proper template handling",
             "dependencies": [
               2
             ],
-            "details": "Replace all chezmoi variables with dotisan equivalents in shell configuration files. Implement proper Go template logic including range loops, conditional statements, and variable references. Ensure complex shell configurations are properly handled with appropriate template functions and syntax.",
+            "details": "Replace all chezmoi variables with nim equivalents in shell configuration files. Implement proper Go template logic including range loops, conditional statements, and variable references. Ensure complex shell configurations are properly handled with appropriate template functions and syntax.",
             "status": "done",
             "testStrategy": null,
             "parentId": "undefined",
@@ -3780,11 +3780,11 @@
           {
             "id": 4,
             "title": "Validate and Test Shell Configuration Migration",
-            "description": "Verify shell configuration files are correctly rendered and applied with dotisan",
+            "description": "Verify shell configuration files are correctly rendered and applied with nim",
             "dependencies": [
               3
             ],
-            "details": "Run 'dotisan plan' to verify shell configuration resources are correctly rendered. Apply changes with --confirm flag and verify that shell configurations are properly applied. Test configuration integrity and ensure backward compatibility is maintained. Validate proper file permissions and directory structures are preserved.",
+            "details": "Run 'nim plan' to verify shell configuration resources are correctly rendered. Apply changes with --confirm flag and verify that shell configurations are properly applied. Test configuration integrity and ensure backward compatibility is maintained. Validate proper file permissions and directory structures are preserved.",
             "status": "done",
             "testStrategy": null,
             "parentId": "undefined",
@@ -3799,9 +3799,9 @@
       {
         "id": "7",
         "title": "Migrate Terminal Emulator Configurations",
-        "description": "Migrate WezTerm and Ghostty terminal configurations to dotisan managed files",
+        "description": "Migrate WezTerm and Ghostty terminal configurations to nim managed files",
         "details": "1. Create resources/20-terminals/wezterm.yaml with ManagedFile resource for wezterm.lua\n2. Create resources/20-terminals/ghostty.yaml with ManagedFile resource for ghostty config\n3. Migrate content from private_dot_config/wezterm/wezterm.lua and Library/Application Support/com.mitchellh.ghostty/config\n4. Set proper sourceFile, destination, mode and template flags",
-        "testStrategy": "Run 'dotisan plan' and verify terminal configuration resources are correctly rendered, apply with --confirm and verify terminal configurations are applied",
+        "testStrategy": "Run 'nim plan' and verify terminal configuration resources are correctly rendered, apply with --confirm and verify terminal configurations are applied",
         "priority": "medium",
         "dependencies": [
           "2"
@@ -3822,7 +3822,7 @@
           {
             "id": 2,
             "title": "Migrate Terminal Configuration Content",
-            "description": "Migrate configuration content from private directories to dotisan managed files",
+            "description": "Migrate configuration content from private directories to nim managed files",
             "dependencies": [
               1
             ],
@@ -3855,7 +3855,7 @@
               2,
               3
             ],
-            "details": "Run 'dotisan plan' to verify terminal configuration resources are correctly rendered, apply with --confirm flag, and verify that terminal configurations are properly applied to the system while maintaining proper file structures and handling complex terminal configurations",
+            "details": "Run 'nim plan' to verify terminal configuration resources are correctly rendered, apply with --confirm flag, and verify that terminal configurations are properly applied to the system while maintaining proper file structures and handling complex terminal configurations",
             "status": "done",
             "testStrategy": null,
             "parentId": "undefined",
@@ -3870,9 +3870,9 @@
       {
         "id": "8",
         "title": "Migrate AI Tool Configurations",
-        "description": "Migrate MCP server configurations for OpenCode, Claude Code and VS Code to dotisan managed files",
+        "description": "Migrate MCP server configurations for OpenCode, Claude Code and VS Code to nim managed files",
         "details": "1. Create resources/40-ai-tools/opencode.yaml with ManagedFile resource for OpenCode config\n2. Create resources/40-ai-tools/claude-code.yaml with ManagedFile resource for Claude Code config\n3. Create resources/40-ai-tools/vscode-mcp.yaml with ManagedFile resource for VS Code MCP config\n4. Migrate content from various .tmpl files and static files\n5. Use Go templates with complex logic including range, if, hasKey, keys, sortAlpha functions\n6. Map MCP server configurations and permissions properly",
-        "testStrategy": "Run 'dotisan plan' and verify AI tool configuration resources are correctly rendered, apply with --confirm and verify configurations are applied",
+        "testStrategy": "Run 'nim plan' and verify AI tool configuration resources are correctly rendered, apply with --confirm and verify configurations are applied",
         "priority": "medium",
         "dependencies": [
           "2"
@@ -3938,7 +3938,7 @@
             "dependencies": [
               8
             ],
-            "details": "Run 'dotisan plan' to validate AI tool configuration resources are correctly rendered, then apply with --confirm to verify configurations are properly applied and all complex AI tool setups are correctly implemented",
+            "details": "Run 'nim plan' to validate AI tool configuration resources are correctly rendered, then apply with --confirm to verify configurations are properly applied and all complex AI tool setups are correctly implemented",
             "status": "done",
             "testStrategy": null,
             "parentId": "undefined",
@@ -3953,9 +3953,9 @@
       {
         "id": "9",
         "title": "Migrate AI Agent Skills Directory",
-        "description": "Migrate AI agent skills directory to dotisan managed directory",
+        "description": "Migrate AI agent skills directory to nim managed directory",
         "details": "1. Create resources/50-agents/agents.yaml with ManagedDirectory resource\n2. Copy all skill files from dotfiles/dot_agents/skills/ to resources/50-agents/skills/\n3. Set proper sourceDir, destination, recursive and clean flags\n4. Configure directory structure to match original",
-        "testStrategy": "Run 'dotisan plan' and verify agent skills directory resource is correctly rendered, apply with --confirm and verify agent skills are properly placed",
+        "testStrategy": "Run 'nim plan' and verify agent skills directory resource is correctly rendered, apply with --confirm and verify agent skills are properly placed",
         "priority": "medium",
         "dependencies": [
           "2"
@@ -3993,7 +3993,7 @@
             "dependencies": [
               2
             ],
-            "details": "Run 'dotisan plan' to verify agent skills directory resource is correctly rendered, apply with --confirm and verify agent skills are properly placed, ensuring directory permissions are correct and recursive copying worked as expected",
+            "details": "Run 'nim plan' to verify agent skills directory resource is correctly rendered, apply with --confirm and verify agent skills are properly placed, ensuring directory permissions are correct and recursive copying worked as expected",
             "status": "done",
             "testStrategy": null,
             "parentId": "undefined",
@@ -4008,9 +4008,9 @@
       {
         "id": "10",
         "title": "Migrate Generated Command Files",
-        "description": "Migrate command generation from Python scripts to dotisan managed files",
+        "description": "Migrate command generation from Python scripts to nim managed files",
         "details": "1. Create resources/99-generated/opencode-commands.yaml with ManagedFile resource for OpenCode commands\n2. Create resources/99-generated/claude-commands.yaml with ManagedFile resource for Claude commands\n3. Migrate command content from commands.yaml data\n4. Use Go templates with range loops to iterate over commands\n5. Set proper source, destination, mode and template flags\n6. Handle multi-file generation as needed",
-        "testStrategy": "Run 'dotisan plan' and verify generated command resources are correctly rendered, apply with --confirm and verify command files are properly generated",
+        "testStrategy": "Run 'nim plan' and verify generated command resources are correctly rendered, apply with --confirm and verify command files are properly generated",
         "priority": "medium",
         "dependencies": [
           "2"
@@ -4061,7 +4061,7 @@
             "dependencies": [
               3
             ],
-            "details": "Run 'dotisan plan' to verify generated command resources are correctly rendered, apply with --confirm flag and verify command files are properly generated, ensuring all command files are correctly created with proper permissions and content",
+            "details": "Run 'nim plan' to verify generated command resources are correctly rendered, apply with --confirm flag and verify command files are properly generated, ensuring all command files are correctly created with proper permissions and content",
             "status": "done",
             "testStrategy": null,
             "parentId": "undefined",
@@ -4080,7 +4080,7 @@
       "taskCount": 10,
       "completedCount": 10,
       "tags": [
-        "chezmoi-to-dotisan-migration"
+        "chezmoi-to-nim-migration"
       ]
     }
   },
@@ -4224,7 +4224,7 @@
         "title": "Fix Error Handling",
         "description": "Improve error handling by eliminating silent error swallowing and adding proper logging.",
         "details": "Update pkg/providers/go.go, pkg/providers/npm.go, pkg/providers/cargo.go to use slog.Warn for getInstalledPackages() errors and return errors instead of empty maps. Fix cmd/root.go to handle config load errors explicitly. Add nil checks in cmd/state.go and capture CheckAvailable() errors in cmd/doctor.go. Use slog consistently throughout.",
-        "testStrategy": "Run 'go build ./...' and 'go test ./...'. Verify that 'dotisan doctor' with missing provider shows error instead of silent skip.",
+        "testStrategy": "Run 'go build ./...' and 'go test ./...'. Verify that 'nim doctor' with missing provider shows error instead of silent skip.",
         "priority": "medium",
         "dependencies": [],
         "status": "done",
@@ -4284,7 +4284,7 @@
         "title": "Extract Provider Base Reconciliation Pattern",
         "description": "Extract shared reconciliation logic into a base provider file to eliminate code duplication.",
         "details": "Create pkg/provider/reconcile.go with IndexStateByGroup, CompareGroupItems, and BaseReconcile functions. Update pkg/providers/npm.go, pkg/providers/cargo.go, pkg/providers/go.go, and pkg/providers/brew.go to implement only provider-specific parts. Ensure all existing tests pass and no behavioral changes occur.",
-        "testStrategy": "Run 'go build ./...' and 'go test ./...'. Verify that 'dotisan plan' produces identical output before/after.",
+        "testStrategy": "Run 'go build ./...' and 'go test ./...'. Verify that 'nim plan' produces identical output before/after.",
         "priority": "high",
         "dependencies": [],
         "status": "done",
@@ -4333,7 +4333,7 @@
             "dependencies": [
               3
             ],
-            "details": "Execute 'go build ./...' and 'go test ./...' to verify all tests pass. Run 'dotisan plan' and compare output before/after the refactoring to ensure identical behavior. Validate that all existing functionality remains intact and no regressions were introduced.",
+            "details": "Execute 'go build ./...' and 'go test ./...' to verify all tests pass. Run 'nim plan' and compare output before/after the refactoring to ensure identical behavior. Validate that all existing functionality remains intact and no regressions were introduced.",
             "status": "done",
             "testStrategy": null,
             "parentId": "undefined",
@@ -4363,7 +4363,7 @@
         "title": "Decompose engine.go",
         "description": "Split the monolithic engine.go into focused, single-responsibility files.",
         "details": "Create pkg/engine/plan.go, pkg/engine/cleanup.go, and pkg/engine/progress.go files. Move Plan() logic, cleanup detection, and bubbletea TUI code respectively. Keep pkg/engine/engine.go as thin coordinator with Engine struct, NewEngine(), and public method routing only. Reconcile ApplyWithProgress() and Apply() implementations.",
-        "testStrategy": "Run 'go build ./...' and 'go test ./...'. Verify that 'dotisan plan' and 'dotisan apply --confirm' work identically.",
+        "testStrategy": "Run 'go build ./...' and 'go test ./...'. Verify that 'nim plan' and 'nim apply --confirm' work identically.",
         "priority": "high",
         "dependencies": [
           "4"
@@ -4437,7 +4437,7 @@
             "dependencies": [
               5
             ],
-            "details": "Write comprehensive tests for all new files including plan.go, cleanup.go, and progress.go. Ensure that go build ./... and go test ./... commands pass and that dotisan plan and dotisan apply --confirm work identically.",
+            "details": "Write comprehensive tests for all new files including plan.go, cleanup.go, and progress.go. Ensure that go build ./... and go test ./... commands pass and that nim plan and nim apply --confirm work identically.",
             "status": "pending",
             "testStrategy": null,
             "parentId": "undefined"
@@ -4453,7 +4453,7 @@
         "title": "Add huh for Confirmation Prompts",
         "description": "Replace custom terminal reader with Charm's huh library for confirmation prompts.",
         "details": "Add github.com/charmbracelet/huh as dependency. Create pkg/style/confirm.go with Confirm function using huh.NewConfirm(). Replace all call sites in cmd/apply.go and cmd/state.go to use new function. Remove ReadSingleKey() and old ConfirmBox helper if no longer used. Handle Ctrl+C gracefully as 'no'.",
-        "testStrategy": "Run 'go build ./...' and 'go test ./...'. Verify that 'dotisan apply' shows huh confirm prompt and Ctrl+C cancels cleanly.",
+        "testStrategy": "Run 'go build ./...' and 'go test ./...'. Verify that 'nim apply' shows huh confirm prompt and Ctrl+C cancels cleanly.",
         "priority": "medium",
         "dependencies": [],
         "status": "in-progress",
@@ -4516,7 +4516,7 @@
         "title": "Add Bubbles Spinner for Long-Running Operations",
         "description": "Add spinner indicators for long-running operations like doctor and init commands.",
         "details": "Create pkg/style/spinner.go with RunWithSpinner helper function. Wrap provider checks in cmd/doctor.go with spinner. Add spinner during template copy/directory creation steps in cmd/init.go. Use spinner.MiniDot or spinner.Dot with lipgloss styling matching app theme. Do NOT show spinner when --output json or stdout is not a TTY.",
-        "testStrategy": "Run 'go build ./...' and 'go test ./...'. Verify that 'dotisan doctor' shows animated spinner per provider and 'dotisan init' shows spinner during setup.",
+        "testStrategy": "Run 'go build ./...' and 'go test ./...'. Verify that 'nim doctor' shows animated spinner per provider and 'nim init' shows spinner during setup.",
         "priority": "medium",
         "dependencies": [
           "6"
@@ -4630,7 +4630,7 @@
         "title": "Enhance Apply Progress Display",
         "description": "Improve the apply progress display with task names, elapsed time, and visual separation.",
         "details": "Enhance View() in pkg/engine/progress.go to show large styled header, progress bar with gradient, current task label, elapsed time counter, rolling log of last 5 completed items with ✓/✗ icons, and footer summary with success/error counts. Use time.Since(startTime) and lipgloss styling.",
-        "testStrategy": "Run 'go build ./...' and 'go test ./...'. Verify that 'dotisan apply' with real changes shows enhanced progress and completion shows summary box with counts.",
+        "testStrategy": "Run 'go build ./...' and 'go test ./...'. Verify that 'nim apply' with real changes shows enhanced progress and completion shows summary box with counts.",
         "priority": "medium",
         "dependencies": [
           "5",
@@ -4696,7 +4696,7 @@
             "dependencies": [
               4
             ],
-            "details": "Run 'go build ./...' and 'go test ./...' to ensure compilation and testing pass, verify 'dotisan apply' shows enhanced progress display with proper counts, and validate visual output meets design specifications",
+            "details": "Run 'go build ./...' and 'go test ./...' to ensure compilation and testing pass, verify 'nim apply' shows enhanced progress display with proper counts, and validate visual output meets design specifications",
             "status": "pending",
             "testStrategy": null,
             "parentId": "undefined"
@@ -4711,7 +4711,7 @@
         "title": "Plan Output Enhancement",
         "description": "Improve visual presentation of plan output with styled sections and color-coded changes.",
         "details": "Enhance pkg/diff/plan.go and pkg/diff/tree.go with styled section dividers, colored summary boxes, different icons for drift items, and improved tree format with bold provider names and change counts. Add NoPendingChanges() styled message for when plan shows 0 changes. Ensure JSON output paths remain clean.",
-        "testStrategy": "Run 'go build ./...' and 'go test ./...'. Verify that 'dotisan plan' shows enhanced plain output and 'dotisan plan -o tree' shows enhanced tree with identical clean JSON output.",
+        "testStrategy": "Run 'go build ./...' and 'go test ./...'. Verify that 'nim plan' shows enhanced plain output and 'nim plan -o tree' shows enhanced tree with identical clean JSON output.",
         "priority": "medium",
         "dependencies": [
           "5"
@@ -4761,7 +4761,7 @@
             "dependencies": [
               10
             ],
-            "details": "Validate that all JSON output paths remain clean and unaffected by the visual formatting changes. Test that 'dotisan plan' and 'dotisan plan -o tree' produce identical clean JSON output regardless of the enhanced plain output formatting.",
+            "details": "Validate that all JSON output paths remain clean and unaffected by the visual formatting changes. Test that 'nim plan' and 'nim plan -o tree' produce identical clean JSON output regardless of the enhanced plain output formatting.",
             "status": "pending",
             "testStrategy": null,
             "parentId": "undefined"
@@ -4868,7 +4868,7 @@
         "title": "Replace custom spinner with pterm.DefaultSpinner",
         "description": "Replace custom ASCII spinner implementation with pterm.DefaultSpinner",
         "details": "Modify pkg/style/spinner.go to use pterm.DefaultSpinner.Start() and pterm.DefaultSpinner.Success()/Fail() methods. Preserve the public API RunWithSpinner(ctx, msg, fn) with same signature. Remove manual TTY detection as pterm handles it internally.",
-        "testStrategy": "Verify that dotisan plan, apply, state remove, and doctor commands show animated spinner. Test that spinner succeeds/fails correctly and handles cancellation properly.",
+        "testStrategy": "Verify that nim plan, apply, state remove, and doctor commands show animated spinner. Test that spinner succeeds/fails correctly and handles cancellation properly.",
         "priority": "high",
         "dependencies": [
           "1"
@@ -4908,7 +4908,7 @@
         "title": "Replace huh confirm in cmd/apply.go",
         "description": "Replace huh.NewConfirm with pterm.DefaultInteractiveConfirm in apply command",
         "details": "Find the huh.NewConfirm() block in cmd/apply.go around line 240. Replace with pterm.DefaultInteractiveConfirm.Show(title) and remove the manual TTY detection branch. Remove 'charm.land/huh/v2' import and blank import if no longer needed.",
-        "testStrategy": "Run dotisan apply and verify that pterm confirm prompt appears correctly with Y/n functionality. Test that Ctrl+C cancels properly.",
+        "testStrategy": "Run nim apply and verify that pterm confirm prompt appears correctly with Y/n functionality. Test that Ctrl+C cancels properly.",
         "priority": "high",
         "dependencies": [
           "1"
@@ -4948,7 +4948,7 @@
         "title": "Replace huh confirm in cmd/state.go",
         "description": "Replace huh.NewConfirm with pterm.DefaultInteractiveConfirm in state command",
         "details": "Find the huh.NewConfirm() in runStateRemoveByID() function in cmd/state.go. Replace with pterm.DefaultInteractiveConfirm.Show() and remove 'charm.land/huh/v2' import.",
-        "testStrategy": "Run dotisan state remove and verify that pterm confirm prompt appears correctly. Test that Ctrl+C cancels properly.",
+        "testStrategy": "Run nim state remove and verify that pterm confirm prompt appears correctly. Test that Ctrl+C cancels properly.",
         "priority": "high",
         "dependencies": [
           "1"
@@ -4971,7 +4971,7 @@
             "title": "Remove huh/v2 import and verify confirm prompt functionality",
             "description": "Remove the 'charm.land/huh/v2' import from cmd/state.go and test that the pterm confirm prompt works correctly",
             "dependencies": [],
-            "details": "After replacing the confirm logic, remove the 'charm.land/huh/v2' import statement from the imports section of cmd/state.go. Then test that the confirm prompt appears correctly when running dotisan state remove and verify that Ctrl+C cancellation works properly",
+            "details": "After replacing the confirm logic, remove the 'charm.land/huh/v2' import statement from the imports section of cmd/state.go. Then test that the confirm prompt appears correctly when running nim state remove and verify that Ctrl+C cancellation works properly",
             "status": "done",
             "testStrategy": null,
             "parentId": "undefined",
@@ -5029,7 +5029,7 @@
               1,
               2
             ],
-            "details": "Run comprehensive tests on all CLI commands that use the styles to ensure consistent color and formatting. Test dotisan plan, apply, state remove, and doctor commands. Verify that all exported styles work correctly in various contexts and that visual output remains consistent with previous lipgloss implementation.",
+            "details": "Run comprehensive tests on all CLI commands that use the styles to ensure consistent color and formatting. Test nim plan, apply, state remove, and doctor commands. Verify that all exported styles work correctly in various contexts and that visual output remains consistent with previous lipgloss implementation.",
             "status": "done",
             "testStrategy": null,
             "parentId": "undefined",
@@ -5147,7 +5147,7 @@
         "title": "Replace pkg/ui/resources.go table building with pterm.TableData",
         "description": "Update resource table building to use pterm.TableData",
         "details": "Modify pkg/ui/resources.go to build pterm.TableData where first row is header. Pre-color status icon cells with pterm.FgGreen.Sprint() etc. Call pterm.DefaultTable.WithHasHeader().WithData(data).Srender() and return the string. Keep same signature RenderResourceTable(width int, rows []ResourceRow, showHeader bool) string.",
-        "testStrategy": "Run dotisan state list and verify that table renders correctly with colored status icons. Test that header shows properly when showHeader=true.",
+        "testStrategy": "Run nim state list and verify that table renders correctly with colored status icons. Test that header shows properly when showHeader=true.",
         "priority": "medium",
         "dependencies": [
           "7"
@@ -5242,7 +5242,7 @@
         "title": "Replace pkg/diff/tree.go with pterm.DefaultTree",
         "description": "Replace lipgloss tree implementation with pterm.DefaultTree",
         "details": "Replace current lipgloss/tree implementation in pkg/diff/tree.go with pterm.DefaultTree.WithRoot(pterm.NewTreeNode(...).AddChildren(...)). Keep same public method signatures FormatGroupPlanAsTree(info GroupPlanInfo) string and FormatStateAsTree(resources []StateResource) string.",
-        "testStrategy": "Run dotisan plan -o tree and verify that tree renders correctly with pterm tree formatting. Test that all tree outputs work as expected.",
+        "testStrategy": "Run nim plan -o tree and verify that tree renders correctly with pterm tree formatting. Test that all tree outputs work as expected.",
         "priority": "medium",
         "dependencies": [
           "5",
@@ -5283,7 +5283,7 @@
               1,
               2
             ],
-            "details": "Run dotisan plan -o tree command and verify that tree renders correctly with pterm tree formatting. Test that all tree outputs work as expected and verify that the public method signatures FormatGroupPlanAsTree(info GroupPlanInfo) string and FormatStateAsTree(resources []StateResource) string remain unchanged and functional.",
+            "details": "Run nim plan -o tree command and verify that tree renders correctly with pterm tree formatting. Test that all tree outputs work as expected and verify that the public method signatures FormatGroupPlanAsTree(info GroupPlanInfo) string and FormatStateAsTree(resources []StateResource) string remain unchanged and functional.",
             "status": "pending",
             "testStrategy": null,
             "parentId": "undefined"

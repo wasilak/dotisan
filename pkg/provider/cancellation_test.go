@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/wasilak/dotisan/pkg/resource"
+	"github.com/wasilak/nim/pkg/resource"
 )
 
 // blockingProvider simulates a provider that blocks until context cancellation.

@@ -31,7 +31,7 @@ func TestDefaultConfig(t *testing.T) {
 
 func TestLoadConfig_FileNotExists(t *testing.T) {
 	// Use a path that doesn't exist
-	nonExistentPath := "/tmp/dotisan_config_does_not_exist.yaml"
+	nonExistentPath := "/tmp/nim_config_does_not_exist.yaml"
 
 	cfg, err := LoadConfig(nonExistentPath)
 	if err != nil {

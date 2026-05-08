@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/wasilak/dotisan/pkg/resource"
+	"github.com/wasilak/nim/pkg/resource"
 )
 
 // minimalStateMock implements the subset of state interface used by FileProvider
@@ -52,7 +52,7 @@ func TestFileProvider_Reconcile_EmitsWarningForExistingDestination(t *testing.T)
 	if !strings.Contains(w.Message, "Destination file already exists") {
 		t.Fatalf("unexpected warning message: %v", w.Message)
 	}
-	if !strings.Contains(w.Suggestion, "dotisan state import") {
+	if !strings.Contains(w.Suggestion, "nim state import") {
 		t.Fatalf("unexpected suggestion: %v", w.Suggestion)
 	}
 }

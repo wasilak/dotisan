@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/wasilak/dotisan/pkg/style"
+	"github.com/wasilak/nim/pkg/style"
 )
 
 // This integration-style test runs runDoctor in-process and asserts the
@@ -16,7 +16,7 @@ import (
 // palette's Success role. Running in-process avoids flakiness of spawning
 // subprocesses while still exercising the CLI output with integration tag.
 func TestDoctorEmitsColoredCheckmark(t *testing.T) {
-	tmpHome, err := os.MkdirTemp("", "dotisan-test-home")
+	tmpHome, err := os.MkdirTemp("", "nim-test-home")
 	if err != nil {
 		t.Fatalf("mkdir temp home: %v", err)
 	}

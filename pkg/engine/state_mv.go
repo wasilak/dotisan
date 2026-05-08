@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/wasilak/dotisan/pkg/resource"
-	"github.com/wasilak/dotisan/pkg/style"
+	"github.com/wasilak/nim/pkg/resource"
+	"github.com/wasilak/nim/pkg/style"
 )
 
 // StateMvOptions contains options for the StateMv operation.

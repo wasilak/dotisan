@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/wasilak/dotisan/pkg/config"
+	"github.com/wasilak/nim/pkg/config"
 )
 
 // Loader handles loading resources from YAML files in the dotfiles directory.

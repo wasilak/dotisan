@@ -18,7 +18,7 @@ import (
 // command (test-block) and then sends an interrupt to ensure the process
 // cancels and prints the configured cancel message.
 func TestApplyCancellation(t *testing.T) {
-	tmpHome, err := os.MkdirTemp("", "dotisan-test-home")
+	tmpHome, err := os.MkdirTemp("", "nim-test-home")
 	if err != nil {
 		t.Fatalf("mkdir temp home: %v", err)
 	}
@@ -50,7 +50,7 @@ func TestApplyCancellation(t *testing.T) {
 
 	// Build the cmd package first with the integration tag to fetch modules
 	// and include the test-only command.
-	tmpBin := filepath.Join(os.TempDir(), "dotisan-test-bin-apply-cancel")
+	tmpBin := filepath.Join(os.TempDir(), "nim-test-bin-apply-cancel")
 	buildCmd := exec.CommandContext(ctx, "go", "build", "-tags=integration", "-o", tmpBin, "./cmd")
 	buildCmd.Env = env
 	buildCmd.Dir = repoRoot

@@ -28,7 +28,7 @@
 			"taskTitle": "Implement Go Provider Import Capability (FR3)",
 			"complexityScore": 7,
 			"recommendedSubtasks": 3,
-			"expansionPrompt": "Since this depends heavily on Task 1, structure the subtasks around leveraging the validated implementation from Task 1. Focus on the conversion layer: take the parsed map/list from Task 1's success, and correctly transform it into the required `ResourceState` structure required by the `dotisan` framework.",
+			"expansionPrompt": "Since this depends heavily on Task 1, structure the subtasks around leveraging the validated implementation from Task 1. Focus on the conversion layer: take the parsed map/list from Task 1's success, and correctly transform it into the required `ResourceState` structure required by the `nim` framework.",
 			"reasoning": "High. It's coupled with Task 1, meaning the success hinges on resolving those OS interaction complexities first. The core challenge here is the state transformation: converting the raw findings from the OS into the standardized, structured state model the system expects."
 		},
 		{

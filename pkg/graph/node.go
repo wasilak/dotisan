@@ -1,4 +1,4 @@
-// Package graph provides a dependency graph (DAG) for dotisan resources.
+// Package graph provides a dependency graph (DAG) for nim resources.
 package graph
 
 // NodeID is the unique identifier for a node in the dependency graph.

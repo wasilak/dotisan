@@ -1,4 +1,4 @@
-// Package config provides configuration loading and management for dotisan.
+// Package config provides configuration loading and management for nim.
 //
 // This file contains the TemplateContext for Go template rendering,
 // supporting two-pass templating where values.yaml is rendered first

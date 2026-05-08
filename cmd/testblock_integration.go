@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/wasilak/dotisan/pkg/style"
-	"github.com/wasilak/dotisan/pkg/ui"
+	"github.com/wasilak/nim/pkg/style"
+	"github.com/wasilak/nim/pkg/ui"
 )
 
 // test-block is an integration-only command that starts a spinner and blocks

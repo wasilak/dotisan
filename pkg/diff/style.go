@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/sergi/go-diff/diffmatchpatch"
-	"github.com/wasilak/dotisan/pkg/style"
+	"github.com/wasilak/nim/pkg/style"
 )
 
 // Styles holds styles for diff output.

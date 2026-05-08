@@ -2,7 +2,7 @@ package ui
 
 import (
 	"fmt"
-	"github.com/wasilak/dotisan/pkg/style"
+	"github.com/wasilak/nim/pkg/style"
 	"math/rand"
 	"strings"
 	"unicode/utf8"

@@ -1,4 +1,4 @@
-module github.com/wasilak/dotisan/ci
+module github.com/wasilak/nim/ci
 
 go 1.26.2
 

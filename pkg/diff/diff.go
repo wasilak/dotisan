@@ -1,4 +1,4 @@
-// Package diff provides diff generation and formatting for dotisan.
+// Package diff provides diff generation and formatting for nim.
 //
 // This package integrates multiple diff libraries:
 //   - github.com/martinohmann/go-difflib: Line-level unified diffs

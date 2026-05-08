@@ -1,7 +1,7 @@
-// Package state provides the StateBackend interface and implementations for dotisan.
+// Package state provides the StateBackend interface and implementations for nim.
 //
-// State represents the current state of all managed resources as tracked by dotisan.
-// The state file is stored at ~/.config/dotisan/state.json (local) or in S3-compatible storage.
+// State represents the current state of all managed resources as tracked by nim.
+// The state file is stored at ~/.config/nim/state.json (local) or in S3-compatible storage.
 //
 // Example state.json (hierarchical 3-level structure):
 //
@@ -27,8 +27,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/wasilak/dotisan/pkg/provider"
-	"github.com/wasilak/dotisan/pkg/resource"
+	"github.com/wasilak/nim/pkg/provider"
+	"github.com/wasilak/nim/pkg/resource"
 )
 
 // State represents the complete state of managed resources.

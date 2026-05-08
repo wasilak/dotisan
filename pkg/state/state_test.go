@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/wasilak/dotisan/pkg/provider"
-	"github.com/wasilak/dotisan/pkg/resource"
+	"github.com/wasilak/nim/pkg/provider"
+	"github.com/wasilak/nim/pkg/resource"
 )
 
 func TestNewState(t *testing.T) {
@@ -222,9 +222,9 @@ func TestLocalBackendWithDefaultPath(t *testing.T) {
 		t.Error("Path() returned empty string")
 	}
 
-	// Should contain .config/dotisan/state.json
-	if !contains(path, ".config/dotisan") || !contains(path, "state.json") {
-		t.Errorf("Path() = %q, should contain .config/dotisan and state.json", path)
+	// Should contain .config/nim/state.json
+	if !contains(path, ".config/nim") || !contains(path, "state.json") {
+		t.Errorf("Path() = %q, should contain .config/nim and state.json", path)
 	}
 }
 

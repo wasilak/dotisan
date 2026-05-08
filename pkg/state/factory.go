@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/wasilak/dotisan/pkg/config"
+	"github.com/wasilak/nim/pkg/config"
 )
 
 // BackendType represents the type of state backend.
@@ -48,7 +48,7 @@ func NewBackend(cfg *config.Config) (StateBackend, error) {
 	}
 }
 
-// BackendFromConfig is a convenience function that loads the dotisan config
+// BackendFromConfig is a convenience function that loads the nim config
 // and creates the appropriate backend.
 func BackendFromConfig() (StateBackend, error) {
 	cfg, err := config.LoadConfigFromDefaultPath()

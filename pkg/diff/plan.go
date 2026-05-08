@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/wasilak/dotisan/pkg/style"
+	"github.com/wasilak/nim/pkg/style"
 )
 
 // PlanFormatter provides helper functions for formatting plan output.

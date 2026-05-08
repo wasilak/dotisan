@@ -7,9 +7,9 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/wasilak/dotisan/pkg/cmdutil"
-	"github.com/wasilak/dotisan/pkg/provider"
-	"github.com/wasilak/dotisan/pkg/resource"
+	"github.com/wasilak/nim/pkg/cmdutil"
+	"github.com/wasilak/nim/pkg/provider"
+	"github.com/wasilak/nim/pkg/resource"
 )
 
 // AISkillProvider installs AI skill packages from GitHub using the `skills` CLI.
@@ -34,7 +34,7 @@ func (p *AISkillProvider) Available() (bool, string) {
 }
 
 // Reconcile compares the desired resource groups with the current system state.
-// State is tracked via dotisan's state backend since the skills CLI does not
+// State is tracked via nim's state backend since the skills CLI does not
 // expose which source repo each installed skill originated from.
 func (p *AISkillProvider) Reconcile(
 	ctx context.Context,
@@ -46,7 +46,7 @@ func (p *AISkillProvider) Reconcile(
 
 // getInstalledSources returns a map of source → version for globally installed skill packages.
 // Since the skills CLI list output does not include source repos, we return an empty map
-// and rely entirely on dotisan's state backend for tracking.
+// and rely entirely on nim's state backend for tracking.
 func (p *AISkillProvider) getInstalledSources(_ context.Context) map[string]string {
 	return make(map[string]string)
 }

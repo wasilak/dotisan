@@ -1,23 +1,23 @@
-# Dotisan 🏠⚡
+# Nim 🏠⚡
 
 > **Declarative dotfiles management for developers who treat their environment like infrastructure.**
 
 [![Go Version](https://img.shields.io/badge/go-1.26+-00ADD8?style=flat&logo=go)](https://golang.org/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Dotisan brings Terraform-inspired workflows to your dotfiles. Declare your desired state in YAML, compute diffs, and apply changes—including clean removals when you uninstall tools.
+Nim brings Terraform-inspired workflows to your dotfiles. Declare your desired state in YAML, compute diffs, and apply changes—including clean removals when you uninstall tools.
 
 ```bash
 # See what would change
-$ dotisan plan
+$ nim plan
 
 # Apply with confidence
-$ dotisan apply --confirm
+$ nim apply --confirm
 ```
 
-## Why Dotisan?
+## Why Nim?
 
-| Feature | Chezmoi | Dotisan |
+| Feature | Chezmoi | Nim |
 |---------|---------|---------|
 | Forward sync | ✅ | ✅ |
 | **Clean removals** | ❌ | ✅ |
@@ -27,36 +27,36 @@ $ dotisan apply --confirm
 
 **The problem:** Traditional dotfile managers (chezmoi, stow, etc.) apply changes forward but never clean up. Install a tool, add it to your config, and it stays forever—even after you stop using it.
 
-**The solution:** Dotisan tracks every managed resource with explicit state. When you remove something from your config, dotisan *removes* it from your system.
+**The solution:** Nim tracks every managed resource with explicit state. When you remove something from your config, nim *removes* it from your system.
 
 ---
 
 ## Quickstart 🚀
 
-### 1. Install Dotisan
+### 1. Install Nim
 
 ```bash
 # From source (requires Go 1.26+)
-go install github.com/wasilak/dotisan@latest
+go install github.com/wasilak/nim@latest
 
 # Or download a release
-curl -fsSL https://github.com/wasilak/dotisan/releases/latest/download/dotisan-$(uname -s)-$(uname -m) \
-  -o /usr/local/bin/dotisan && chmod +x /usr/local/bin/dotisan
+curl -fsSL https://github.com/wasilak/nim/releases/latest/download/nim-$(uname -s)-$(uname -m) \
+  -o /usr/local/bin/nim && chmod +x /usr/local/bin/nim
 ```
 
 ### 2. Initialize Your Configuration
 
 ```bash
 # Create the default configuration directory and files
-dotisan init
+nim init
 
 # Edit your personal values
-code ~/.config/dotisan/values.yaml
+code ~/.config/nim/values.yaml
 ```
 
 This creates:
 ```
-~/.config/dotisan/
+~/.config/nim/
 ├── config.yaml          # Tool configuration
 ├── values.yaml          # Your personal variables
 └── resources/           # Resource YAML files
@@ -65,11 +65,11 @@ This creates:
 
 ### 3. Define Your First Resource
 
-Create `~/.config/dotisan/resources/shell.yaml`:
+Create `~/.config/nim/resources/shell.yaml`:
 
 ```yaml
 ---
-apiVersion: github.com/wasilak/dotisan/v1
+apiVersion: github.com/wasilak/nim/v1
 kind: ManagedFile
 metadata:
   name: zshrc
@@ -95,7 +95,7 @@ spec:
 
 ```bash
 # Preview changes (dry-run)
-$ dotisan plan
+$ nim plan
 
   ManagedFile/shell/zshrc
   + destination: ~/.zshrc
@@ -104,7 +104,7 @@ $ dotisan plan
   Plan: 1 to add, 0 to change, 0 to remove
 
 # Apply the changes
-$ dotisan apply --confirm
+$ nim apply --confirm
 
   ✓ Created ManagedFile/shell/zshrc
   ✓ State updated
@@ -127,8 +127,8 @@ document. Create separate files for `HomeBrewPackages`, `HomeBrewCasks`, and
 Example migration (YAML):
 
 ```yaml
-# ~/.config/dotisan/resources/homebrew-formulae.yaml
-apiVersion: github.com/wasilak/dotisan/v1
+# ~/.config/nim/resources/homebrew-formulae.yaml
+apiVersion: github.com/wasilak/nim/v1
 kind: HomeBrewPackages
 metadata:
   name: core-tools
@@ -137,8 +137,8 @@ spec:
     - name: ripgrep
     - name: fzf
 
-# ~/.config/dotisan/resources/homebrew-casks.yaml
-apiVersion: github.com/wasilak/dotisan/v1
+# ~/.config/nim/resources/homebrew-casks.yaml
+apiVersion: github.com/wasilak/nim/v1
 kind: HomeBrewCasks
 metadata:
   name: apps
@@ -146,8 +146,8 @@ spec:
   casks:
     - name: raycast
 
-# ~/.config/dotisan/resources/homebrew-taps.yaml
-apiVersion: github.com/wasilak/dotisan/v1
+# ~/.config/nim/resources/homebrew-taps.yaml
+apiVersion: github.com/wasilak/nim/v1
 kind: HomeBrewTaps
 metadata:
   name: taps
@@ -162,7 +162,7 @@ Installs AI agent skill packages from GitHub repositories using the `skills` CLI
 
 ```yaml
 ---
-apiVersion: github.com/wasilak/dotisan/v1
+apiVersion: github.com/wasilak/nim/v1
 kind: AISkillPackages
 metadata:
   name: my-skills
@@ -179,7 +179,7 @@ spec:
 
 ```yaml
 ---
-apiVersion: dotisan.io/v1
+apiVersion: nim.io/v1
 kind: NpmPackages
 metadata:
   name: global-cli
@@ -215,41 +215,41 @@ Note: The previous `ManagedDirectory` resource kind has been removed. Use `Manag
 ### Setup
 
 ```bash
-dotisan init              # Initialize configuration directory
-dotisan doctor            # Check system prerequisites
+nim init              # Initialize configuration directory
+nim doctor            # Check system prerequisites
 ```
 
 ### Core Workflow
 
 ```bash
-dotisan plan                    # Show what would change
-dotisan plan --diff             # Show inline file diffs
-dotisan plan --target KIND/name # Limit to a specific resource
-dotisan apply                   # Dry-run (default)
-dotisan apply --confirm         # Actually apply changes
-dotisan apply --diff            # Show diffs during apply
+nim plan                    # Show what would change
+nim plan --diff             # Show inline file diffs
+nim plan --target KIND/name # Limit to a specific resource
+nim apply                   # Dry-run (default)
+nim apply --confirm         # Actually apply changes
+nim apply --diff            # Show diffs during apply
 ```
 
 ### State Management
 
 ```bash
-dotisan state list                                         # Show all managed resources
-dotisan state list --output json                           # JSON output
-dotisan state import HomeBrewPackages/core-tools[ripgrep]  # Import existing resource into state
-dotisan state move  HomeBrewPackages/old[pkg] HomeBrewPackages/new[pkg]  # Move item between groups
-dotisan state remove HomeBrewPackages/core-tools[ripgrep]  # Remove from state (aliases: rm)
-dotisan state pull                                         # Download from S3 backend
-dotisan state push                                         # Upload to S3 backend
+nim state list                                         # Show all managed resources
+nim state list --output json                           # JSON output
+nim state import HomeBrewPackages/core-tools[ripgrep]  # Import existing resource into state
+nim state move  HomeBrewPackages/old[pkg] HomeBrewPackages/new[pkg]  # Move item between groups
+nim state remove HomeBrewPackages/core-tools[ripgrep]  # Remove from state (aliases: rm)
+nim state pull                                         # Download from S3 backend
+nim state push                                         # Upload to S3 backend
 ```
 
 ---
 
 ## Configuration
 
-### `~/.dotisan/config.yaml`
+### `~/.nim/config.yaml`
 
 ```yaml
-# Dotfiles location (default: ~/.config/dotisan)
+# Dotfiles location (default: ~/.config/nim)
 dotfiles_root: ~/projects/dotfiles
 
 # State backend (local or S3)
@@ -257,7 +257,7 @@ state:
   backend: s3
   s3:
     endpoint: s3.amazonaws.com
-    bucket: my-dotisan-state
+    bucket: my-nim-state
     key: state.json
     region: us-east-1
     access_key_id: ${AWS_ACCESS_KEY_ID}
@@ -266,7 +266,7 @@ state:
 
 ### Templating
 
-Dotisan uses Go templates with [Sprig functions](https://masterminds.github.io/sprig/):
+Nim uses Go templates with [Sprig functions](https://masterminds.github.io/sprig/):
 
 ```yaml
 # In values.yaml
@@ -293,9 +293,9 @@ Available context:
 A complete macOS development environment:
 
 ```yaml
-# ~/.config/dotisan/resources/macos.yaml
+# ~/.config/nim/resources/macos.yaml
 ---
-apiVersion: dotisan.io/v1
+apiVersion: nim.io/v1
 kind: HomeBrewPackages
 metadata:
   name: dev-tools
@@ -307,7 +307,7 @@ spec:
     - name: neovim
     - name: starship
 ---
-apiVersion: dotisan.io/v1
+apiVersion: nim.io/v1
 kind: HomeBrewCasks
 metadata:
   name: dev-casks
@@ -317,7 +317,7 @@ spec:
     - name: warp
     - name: rectangle
 ---
-apiVersion: dotisan.io/v1
+apiVersion: nim.io/v1
 kind: HomeBrewTaps
 metadata:
   name: taps
@@ -325,7 +325,7 @@ spec:
   taps:
     - name: homebrew/cask-fonts
 ---
-apiVersion: dotisan.io/v1
+apiVersion: nim.io/v1
 kind: ManagedFile
 metadata:
   name: gitconfig
@@ -343,7 +343,7 @@ spec:
   mode: "0644"
   template: true
 ---
-apiVersion: dotisan.io/v1
+apiVersion: nim.io/v1
 kind: NpmPackages
 metadata:
   name: js-tools
@@ -389,7 +389,7 @@ spec:
 
 | Tool | Philosophy | State Tracking | Package Mgmt | Drift Detection |
 |------|-----------|----------------|--------------|-----------------|
-| **Dotisan** | Declarative | ✅ Yes | ✅ Yes | ✅ Yes |
+| **Nim** | Declarative | ✅ Yes | ✅ Yes | ✅ Yes |
 | Chezmoi | Imperative | ❌ No | ❌ No | ❌ No |
 | Stow | Symlinks | ❌ No | ❌ No | ❌ No |
 | Ansible | Push-based | ✅ Yes | ✅ Yes | ⚠️ Complex |
@@ -402,11 +402,11 @@ spec:
 
 ```bash
 # Clone the repo
-git clone https://github.com/wasilak/dotisan.git
-cd dotisan
+git clone https://github.com/wasilak/nim.git
+cd nim
 
 # Build
-go build -o dotisan .
+go build -o nim .
 
 # Run tests
 go test ./...

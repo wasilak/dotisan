@@ -1,11 +1,11 @@
-// Package resource provides the core resource types and interfaces for dotisan.
+// Package resource provides the core resource types and interfaces for nim.
 //
 // Resources follow a Kubernetes-style declarative model where each resource
 // has apiVersion, kind, metadata, and a kind-specific spec.
 //
 // Example resource YAML:
 //
-//	apiVersion: dotisan/v1
+//	apiVersion: nim/v1
 //	kind: BrewPackages
 //	metadata:
 //	  name: core-tools
@@ -44,7 +44,7 @@ func validateFileMode(fl validator.FieldLevel) bool {
 // Resource is the interface implemented by all resource types.
 // It provides common access to resource metadata and validation.
 type Resource interface {
-	// GetAPIVersion returns the API version (e.g., "github.com/wasilak/dotisan/v1")
+	// GetAPIVersion returns the API version (e.g., "github.com/wasilak/nim/v1")
 	GetAPIVersion() string
 
 	// GetKind returns the resource kind (e.g., "HomeBrewPackages")
@@ -143,7 +143,7 @@ func validateDependsOnAddresses(deps []string) error {
 }
 
 // SupportedAPIVersion is the current supported API version.
-const SupportedAPIVersion = "github.com/wasilak/dotisan/v1"
+const SupportedAPIVersion = "github.com/wasilak/nim/v1"
 
 // IsSupportedAPIVersion checks if the given API version is supported.
 func IsSupportedAPIVersion(version string) bool {

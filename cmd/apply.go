@@ -3,7 +3,7 @@ package cmd
 import (
 	"context"
 	"github.com/spf13/cobra"
-	"github.com/wasilak/dotisan/pkg/output"
+	"github.com/wasilak/nim/pkg/output"
 )
 
 var (

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/wasilak/dotisan/pkg/resource"
+	"github.com/wasilak/nim/pkg/resource"
 )
 
 func TestNewEngine(t *testing.T) {

@@ -1,9 +1,9 @@
-# dotisan — Project Overview
+# nim — Project Overview
 
 ## Purpose
-`dotisan` is a declarative dotisan management CLI tool written in Go. It treats a local developer environment like Terraform treats cloud infrastructure: declare desired state in version-controlled config files, compute a diff against current state, and apply changes — including **removals**.
+`nim` is a declarative nim management CLI tool written in Go. It treats a local developer environment like Terraform treats cloud infrastructure: declare desired state in version-controlled config files, compute a diff against current state, and apply changes — including **removals**.
 
-Unlike `chezmoi` which applies changes forward but never cleans up, dotisan tracks managed resources explicitly and handles removals as first-class operations.
+Unlike `chezmoi` which applies changes forward but never cleans up, nim tracks managed resources explicitly and handles removals as first-class operations.
 
 ## Tech Stack
 - **Language**: Go
@@ -35,13 +35,13 @@ CLI (cobra) → Engine (plan/apply/diff) → Provider Registry
 
 ### State Management
 Two backends:
-- **LocalBackend** — JSON file at `~/.dotisan/state.json`
+- **LocalBackend** — JSON file at `~/.nim/state.json`
 - **S3Backend** — S3-compatible storage via minio-go
 
 ### Config Files
-- `~/.dotisan/config.yaml` — Tool configuration (backend, paths)
-- `~/.dotisan/values.yaml` — Templated values (user vars, paths)
-- `~/.dotisan/*.yaml` — Resource declarations (Kubernetes-style)
+- `~/.nim/config.yaml` — Tool configuration (backend, paths)
+- `~/.nim/values.yaml` — Templated values (user vars, paths)
+- `~/.nim/*.yaml` — Resource declarations (Kubernetes-style)
 
 ## Key Design Principles
 1. **Declarative over imperative** — describe what should exist
@@ -64,11 +64,11 @@ Two backends:
 - `ManagedDirectory` — Directory sync with recursive/clean options
 
 ## CLI Commands
-- `dotisan plan` — Show what would change
-- `dotisan apply` — Apply changes (dry-run unless `--confirm`)
-- `dotisan doctor` — Check system prerequisites
-- `dotisan state import/remove/list/pull/push` — State management
-- `dotisan eject` — Stop managing a resource
+- `nim plan` — Show what would change
+- `nim apply` — Apply changes (dry-run unless `--confirm`)
+- `nim doctor` — Check system prerequisites
+- `nim state import/remove/list/pull/push` — State management
+- `nim eject` — Stop managing a resource
 
 ## Development Environment
 - **OS**: Darwin (macOS primary, Linux secondary)

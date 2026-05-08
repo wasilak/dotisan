@@ -2,7 +2,7 @@ package ui
 
 import (
 	"context"
-	"github.com/wasilak/dotisan/pkg/style"
+	"github.com/wasilak/nim/pkg/style"
 	"testing"
 	"time"
 )

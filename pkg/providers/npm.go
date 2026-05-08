@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/wasilak/dotisan/pkg/cmdutil"
-	"github.com/wasilak/dotisan/pkg/provider"
-	"github.com/wasilak/dotisan/pkg/resource"
+	"github.com/wasilak/nim/pkg/cmdutil"
+	"github.com/wasilak/nim/pkg/provider"
+	"github.com/wasilak/nim/pkg/resource"
 )
 
 // NpmProvider implements the Provider interface for npm packages

@@ -26,12 +26,12 @@ func TestNewLoader(t *testing.T) {
 	}
 
 	// Verify paths contain expected components
-	if !contains(loader.DotisanConfigPath, ".dotisan") {
-		t.Errorf("DotisanConfigPath %q does not contain '.dotisan'", loader.DotisanConfigPath)
+	if !contains(loader.DotisanConfigPath, ".nim") {
+		t.Errorf("DotisanConfigPath %q does not contain '.nim'", loader.DotisanConfigPath)
 	}
 
-	if !contains(loader.DotfilesRoot, ".config/dotisan") {
-		t.Errorf("DotfilesRoot %q does not contain '.config/dotisan'", loader.DotfilesRoot)
+	if !contains(loader.DotfilesRoot, ".config/nim") {
+		t.Errorf("DotfilesRoot %q does not contain '.config/nim'", loader.DotfilesRoot)
 	}
 }
 
@@ -50,11 +50,11 @@ func TestNewLoaderWithPaths(t *testing.T) {
 func TestLoader_Load(t *testing.T) {
 	// Create temporary directories and files
 	tmpDir := t.TempDir()
-	dotisanDir := filepath.Join(tmpDir, ".dotisan")
-	dotfilesDir := filepath.Join(tmpDir, ".config/dotisan")
+	nimDir := filepath.Join(tmpDir, ".nim")
+	dotfilesDir := filepath.Join(tmpDir, ".config/nim")
 
-	if err := os.MkdirAll(dotisanDir, 0755); err != nil {
-		t.Fatalf("Failed to create dotisan dir: %v", err)
+	if err := os.MkdirAll(nimDir, 0755); err != nil {
+		t.Fatalf("Failed to create nim dir: %v", err)
 	}
 	if err := os.MkdirAll(dotfilesDir, 0755); err != nil {
 		t.Fatalf("Failed to create dotfiles dir: %v", err)
@@ -67,7 +67,7 @@ state:
   backend: local
   path: /tmp/test-state.json
 `
-	configPath := filepath.Join(dotisanDir, "config.yaml")
+	configPath := filepath.Join(nimDir, "config.yaml")
 	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
 		t.Fatalf("Failed to write config: %v", err)
 	}
@@ -140,11 +140,11 @@ user:
 func TestLoader_Load_NoValuesFile(t *testing.T) {
 	// Create temporary directories without values.yaml
 	tmpDir := t.TempDir()
-	dotisanDir := filepath.Join(tmpDir, ".dotisan")
-	dotfilesDir := filepath.Join(tmpDir, ".config/dotisan")
+	nimDir := filepath.Join(tmpDir, ".nim")
+	dotfilesDir := filepath.Join(tmpDir, ".config/nim")
 
-	if err := os.MkdirAll(dotisanDir, 0755); err != nil {
-		t.Fatalf("Failed to create dotisan dir: %v", err)
+	if err := os.MkdirAll(nimDir, 0755); err != nil {
+		t.Fatalf("Failed to create nim dir: %v", err)
 	}
 	if err := os.MkdirAll(dotfilesDir, 0755); err != nil {
 		t.Fatalf("Failed to create dotfiles dir: %v", err)
@@ -154,7 +154,7 @@ func TestLoader_Load_NoValuesFile(t *testing.T) {
 	configContent := `state:
   backend: local
 `
-	configPath := filepath.Join(dotisanDir, "config.yaml")
+	configPath := filepath.Join(nimDir, "config.yaml")
 	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
 		t.Fatalf("Failed to write config: %v", err)
 	}

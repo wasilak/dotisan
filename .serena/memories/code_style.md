@@ -1,4 +1,4 @@
-# dotisan — Code Style & Conventions
+# nim — Code Style & Conventions
 
 ## Language
 - **Go** — All implementation in Go
@@ -8,7 +8,7 @@
 
 ### Directory Structure (Planned)
 ```
-dotisan/
+nim/
 ├── cmd/                    # Cobra command implementations
 │   ├── root.go
 │   ├── plan.go

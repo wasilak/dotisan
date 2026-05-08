@@ -14,7 +14,7 @@ func TestUnmarshalYAML(t *testing.T) {
 		{
 			name: "valid HomeBrewPackages",
 			yaml: `
-apiVersion: github.com/wasilak/dotisan/v1
+apiVersion: github.com/wasilak/nim/v1
 kind: HomeBrewPackages
 metadata:
   name: core-tools
@@ -41,7 +41,7 @@ spec:
 		{
 			name: "valid ManagedFile",
 			yaml: `
-apiVersion: github.com/wasilak/dotisan/v1
+apiVersion: github.com/wasilak/nim/v1
 kind: ManagedFile
 metadata:
   name: zshrc
@@ -76,7 +76,7 @@ spec:
 		{
 			name: "invalid ManagedDirectory (removed)",
 			yaml: `
-apiVersion: github.com/wasilak/dotisan/v1
+apiVersion: github.com/wasilak/nim/v1
 kind: ManagedDirectory
 metadata:
   name: skills
@@ -92,7 +92,7 @@ spec:
 		{
 			name: "valid NpmPackages",
 			yaml: `
-apiVersion: github.com/wasilak/dotisan/v1
+apiVersion: github.com/wasilak/nim/v1
 kind: NpmPackages
 metadata:
   name: globals
@@ -120,7 +120,7 @@ spec:
 		{
 			name: "valid GoPackages",
 			yaml: `
-apiVersion: github.com/wasilak/dotisan/v1
+apiVersion: github.com/wasilak/nim/v1
 kind: GoPackages
 metadata:
   name: tools
@@ -144,7 +144,7 @@ spec:
 		{
 			name: "valid CargoPackages",
 			yaml: `
-apiVersion: github.com/wasilak/dotisan/v1
+apiVersion: github.com/wasilak/nim/v1
 kind: CargoPackages
 metadata:
   name: rust-tools
@@ -168,7 +168,7 @@ spec:
 		{
 			name: "valid HomeBrewPackages",
 			yaml: `
-apiVersion: github.com/wasilak/dotisan/v1
+apiVersion: github.com/wasilak/nim/v1
 kind: HomeBrewPackages
 metadata:
   name: core-tools
@@ -195,7 +195,7 @@ spec:
 		{
 			name: "valid HomeBrewCasks",
 			yaml: `
-apiVersion: github.com/wasilak/dotisan/v1
+apiVersion: github.com/wasilak/nim/v1
 kind: HomeBrewCasks
 metadata:
   name: apps
@@ -222,7 +222,7 @@ spec:
 		{
 			name: "valid HomeBrewTaps",
 			yaml: `
-apiVersion: github.com/wasilak/dotisan/v1
+apiVersion: github.com/wasilak/nim/v1
 kind: HomeBrewTaps
 metadata:
   name: taps
@@ -248,7 +248,7 @@ spec:
 		{
 			name: "resource-level dependsOn in metadata",
 			yaml: `
-apiVersion: github.com/wasilak/dotisan/v1
+apiVersion: github.com/wasilak/nim/v1
 kind: HomeBrewPackages
 metadata:
   name: core-tools
@@ -273,7 +273,7 @@ spec:
 		{
 			name: "resource-level dependsOn absent when not set",
 			yaml: `
-apiVersion: github.com/wasilak/dotisan/v1
+apiVersion: github.com/wasilak/nim/v1
 kind: GoPackages
 metadata:
   name: tools
@@ -292,7 +292,7 @@ spec:
 		{
 			name: "unsupported apiVersion",
 			yaml: `
-apiVersion: dotisan/v2
+apiVersion: nim/v2
 kind: HomeBrewPackages
 metadata:
   name: test
@@ -304,7 +304,7 @@ spec: {}
 		{
 			name: "HomeBrewPackages formulae with dependsOn",
 			yaml: `
-apiVersion: github.com/wasilak/dotisan/v1
+apiVersion: github.com/wasilak/nim/v1
 kind: HomeBrewPackages
 metadata:
   name: core-tools
@@ -337,7 +337,7 @@ spec:
 		{
 			name: "HomeBrewTaps with version and dependsOn",
 			yaml: `
-apiVersion: github.com/wasilak/dotisan/v1
+apiVersion: github.com/wasilak/nim/v1
 kind: HomeBrewTaps
 metadata:
   name: taps
@@ -366,7 +366,7 @@ spec:
 		{
 			name: "GoPackages with dependsOn",
 			yaml: `
-apiVersion: github.com/wasilak/dotisan/v1
+apiVersion: github.com/wasilak/nim/v1
 kind: GoPackages
 metadata:
   name: tools
@@ -392,7 +392,7 @@ spec:
 		{
 			name: "ManagedFile FileSpec with dependsOn",
 			yaml: `
-apiVersion: github.com/wasilak/dotisan/v1
+apiVersion: github.com/wasilak/nim/v1
 kind: ManagedFile
 metadata:
   name: configs
@@ -422,7 +422,7 @@ spec:
 		{
 			name: "ManagedFile GeneratorSpec with dependsOn",
 			yaml: `
-apiVersion: github.com/wasilak/dotisan/v1
+apiVersion: github.com/wasilak/nim/v1
 kind: ManagedFile
 metadata:
   name: gen-skills
@@ -449,7 +449,7 @@ spec:
 		{
 			name: "unknown kind",
 			yaml: `
-apiVersion: github.com/wasilak/dotisan/v1
+apiVersion: github.com/wasilak/nim/v1
 kind: UnknownResource
 metadata:
   name: test

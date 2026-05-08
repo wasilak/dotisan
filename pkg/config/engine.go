@@ -1,4 +1,4 @@
-// Package config provides configuration loading and management for dotisan.
+// Package config provides configuration loading and management for nim.
 //
 // This file contains the template engine for two-pass rendering.
 // First pass: render values.yaml using Env/OS context.

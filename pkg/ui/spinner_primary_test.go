@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/wasilak/dotisan/pkg/style"
+	"github.com/wasilak/nim/pkg/style"
 )
 
 func TestNewPrimarySpinnerUsesHeader(t *testing.T) {

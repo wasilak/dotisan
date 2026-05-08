@@ -61,7 +61,7 @@ jobs:
       - name: Zip binaries
         run: |
           cd dist
-          for f in dotisan-*; do
+          for f in nim-*; do
             chmod +x "$f"
             zip "${f}.zip" "$f"
           done

@@ -11,31 +11,31 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/wasilak/dotisan/pkg/config"
+	"github.com/wasilak/nim/pkg/config"
 
 	"github.com/spf13/cobra"
-	"github.com/wasilak/dotisan/cmd/middleware"
+	"github.com/wasilak/nim/cmd/middleware"
 )
 
-// Version is set at build time via -ldflags "-X github.com/wasilak/dotisan/cmd.Version=vX.Y.Z".
+// Version is set at build time via -ldflags "-X github.com/wasilak/nim/cmd.Version=vX.Y.Z".
 var Version = "dev"
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:     "dotisan",
+	Use:     "nim",
 	Version: Version,
 	Short: "Declarative dotfiles management CLI",
-	Long: `dotisan is a declarative dotfiles management CLI tool written in Go.
+	Long: `nim is a declarative dotfiles management CLI tool written in Go.
 
 It treats a local developer environment like Terraform treats cloud infrastructure:
 declare desired state in version-controlled config files, compute a diff against
 current state, and apply changes — including removals.
 
-Unlike chezmoi which applies changes forward but never cleans up, dotisan tracks
+Unlike chezmoi which applies changes forward but never cleans up, nim tracks
 managed resources explicitly and handles removals as first-class operations.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Welcome to dotisan!")
-		fmt.Println("Run 'dotisan --help' to see available commands.")
+		fmt.Println("Welcome to nim!")
+		fmt.Println("Run 'nim --help' to see available commands.")
 	},
 }
 

@@ -8,7 +8,7 @@ import (
 	"text/template"
 
 	"github.com/Masterminds/sprig/v3"
-	"github.com/wasilak/dotisan/pkg/config"
+	"github.com/wasilak/nim/pkg/config"
 	"gopkg.in/yaml.v3"
 )
 

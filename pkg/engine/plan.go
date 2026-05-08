@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/wasilak/dotisan/pkg/graph"
-	"github.com/wasilak/dotisan/pkg/planctx"
-	"github.com/wasilak/dotisan/pkg/provider"
-	"github.com/wasilak/dotisan/pkg/resource"
-	"github.com/wasilak/dotisan/pkg/state"
+	"github.com/wasilak/nim/pkg/graph"
+	"github.com/wasilak/nim/pkg/planctx"
+	"github.com/wasilak/nim/pkg/provider"
+	"github.com/wasilak/nim/pkg/resource"
+	"github.com/wasilak/nim/pkg/state"
 )
 
 // PlanResult contains the result of a plan operation.

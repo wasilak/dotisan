@@ -3,7 +3,7 @@ package graph
 import (
 	"fmt"
 
-	"github.com/wasilak/dotisan/pkg/resource"
+	"github.com/wasilak/nim/pkg/resource"
 )
 
 // Build constructs a DAG from a slice of resources.

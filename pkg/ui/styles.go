@@ -5,7 +5,7 @@
 // style package so there aren't duplicated definitions across packages.
 package ui
 
-import "github.com/wasilak/dotisan/pkg/style"
+import "github.com/wasilak/nim/pkg/style"
 
 var (
 	// Prefer canonical values from pkg/style when available.

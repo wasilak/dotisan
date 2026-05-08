@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/wasilak/dotisan/pkg/style"
+	"github.com/wasilak/nim/pkg/style"
 )
 
 // Unit test that captures stdout and runs runDoctor directly. This avoids
@@ -17,7 +17,7 @@ import (
 // sequences are emitted.
 func TestRunDoctorEmitsColoredCheckmark(t *testing.T) {
 	// isolate HOME
-	tmpHome, err := os.MkdirTemp("", "dotisan-test-home")
+	tmpHome, err := os.MkdirTemp("", "nim-test-home")
 	if err != nil {
 		t.Fatalf("mkdir temp home: %v", err)
 	}

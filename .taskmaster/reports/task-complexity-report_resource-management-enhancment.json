@@ -38,7 +38,7 @@
 			"taskTitle": "Integrate Homebrew Drift Detection into Reconcile",
 			"complexityScore": 7,
 			"recommendedSubtasks": 4,
-			"expansionPrompt": "Break down the integration into modifying `BrewProvider.Reconcile` to call `checkFormulaeStatus`, comparing the results with dotisan's state, generating `PlanWarning` for uninstalled packages, and developing thorough integration tests for drift scenarios.",
+			"expansionPrompt": "Break down the integration into modifying `BrewProvider.Reconcile` to call `checkFormulaeStatus`, comparing the results with nim's state, generating `PlanWarning` for uninstalled packages, and developing thorough integration tests for drift scenarios.",
 			"reasoning": "This task integrates two new components (Task 1 and Task 3) into a critical part of the application (`Reconcile` logic). It requires careful state comparison, accurate warning generation, and ensuring that only relevant packages are checked. The integration testing needs to cover various drift scenarios to ensure reliability."
 		},
 		{
@@ -86,7 +86,7 @@
 			"taskTitle": "Consolidate `eject` and `state remove` Commands",
 			"complexityScore": 4,
 			"recommendedSubtasks": 3,
-			"expansionPrompt": "Break down the task into deprecating `dotisan eject` with a warning, adding the `--force` flag to `dotisan state remove`, ensuring functional parity between the commands, and updating relevant documentation.",
+			"expansionPrompt": "Break down the task into deprecating `nim eject` with a warning, adding the `--force` flag to `nim state remove`, ensuring functional parity between the commands, and updating relevant documentation.",
 			"reasoning": "This task involves modifying CLI commands, adding a flag, and ensuring consistent behavior. While straightforward, it requires careful attention to user experience (deprecation message, `--force` behavior) and documentation updates. The functional changes are relatively contained."
 		}
 	]

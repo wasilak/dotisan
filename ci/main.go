@@ -14,7 +14,7 @@ import (
 
 const (
 	goImage    = "golang:1.26.2"
-	binaryName = "dotisan"
+	binaryName = "nim"
 )
 
 type target struct{ os, arch string }
@@ -62,8 +62,8 @@ func run(ctx context.Context, doVet, doTest, doBuild bool, version, outputDir st
 		From(goImage).
 		WithMountedDirectory("/src", src).
 		WithWorkdir("/src").
-		WithMountedCache("/go/pkg/mod", client.CacheVolume("dotisan-go-mod")).
-		WithMountedCache("/root/.cache/go-build", client.CacheVolume("dotisan-go-build"))
+		WithMountedCache("/go/pkg/mod", client.CacheVolume("nim-go-mod")).
+		WithMountedCache("/root/.cache/go-build", client.CacheVolume("nim-go-build"))
 
 	if doVet {
 		if err := vet(ctx, base); err != nil {
@@ -110,7 +110,7 @@ func build(ctx context.Context, base *dagger.Container, version, outputDir strin
 		return fmt.Errorf("mkdir %s: %w", outputDir, err)
 	}
 
-	ldflags := fmt.Sprintf("-X github.com/wasilak/dotisan/cmd.Version=%s -s -w", version)
+	ldflags := fmt.Sprintf("-X github.com/wasilak/nim/cmd.Version=%s -s -w", version)
 
 	type result struct {
 		name string

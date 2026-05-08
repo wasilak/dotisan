@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/wasilak/dotisan/cmd"
+	"github.com/wasilak/nim/cmd"
 )
 
 func main() {

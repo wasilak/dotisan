@@ -7,12 +7,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/wasilak/dotisan/pkg/config"
-	"github.com/wasilak/dotisan/pkg/provider"
-	"github.com/wasilak/dotisan/pkg/resource"
-	"github.com/wasilak/dotisan/pkg/state"
-	"github.com/wasilak/dotisan/pkg/style"
-	"github.com/wasilak/dotisan/pkg/ui"
+	"github.com/wasilak/nim/pkg/config"
+	"github.com/wasilak/nim/pkg/provider"
+	"github.com/wasilak/nim/pkg/resource"
+	"github.com/wasilak/nim/pkg/state"
+	"github.com/wasilak/nim/pkg/style"
+	"github.com/wasilak/nim/pkg/ui"
 
 	"github.com/spf13/cobra"
 )
@@ -40,7 +40,7 @@ func runDoctor(ctx context.Context) error {
 
 	// Header
 	headerBox := style.InfoBox.Render(
-		style.Header.Render("dotisan doctor") + "\n\n" +
+		style.Header.Render("nim doctor") + "\n\n" +
 			style.DimStyle.Render("Checking system prerequisites and configuration"),
 	)
 	fmt.Println(headerBox)
@@ -62,14 +62,14 @@ func runDoctor(ctx context.Context) error {
 
 	// 2. Check State Backend
 	fmt.Println("Checking state backend...")
-	dotisanDir := os.ExpandEnv("$HOME/.config/dotisan")
-	if err := os.MkdirAll(dotisanDir, 0755); err != nil {
-		fmt.Printf("  %s Cannot create dotisan directory: %s\n", style.IconError, err)
+	nimDir := os.ExpandEnv("$HOME/.config/nim")
+	if err := os.MkdirAll(nimDir, 0755); err != nil {
+		fmt.Printf("  %s Cannot create nim directory: %s\n", style.IconError, err)
 		hasErrors = true
-		issues = append(issues, fmt.Sprintf("Cannot create dotisan directory: %s", err))
+		issues = append(issues, fmt.Sprintf("Cannot create nim directory: %s", err))
 	} else {
 		// Try to load state to check connectivity
-		statePath := dotisanDir + "/state.json"
+		statePath := nimDir + "/state.json"
 		backend := state.NewLocalBackend(statePath)
 		_, err := backend.Load(ctx)
 		if err != nil {
@@ -90,8 +90,8 @@ func runDoctor(ctx context.Context) error {
 	// 3. Check Config Files
 	fmt.Println("Checking configuration files...")
 
-	// Check ~/.config/dotisan/config.yaml
-	configPath := os.ExpandEnv("$HOME/.config/dotisan/config.yaml")
+	// Check ~/.config/nim/config.yaml
+	configPath := os.ExpandEnv("$HOME/.config/nim/config.yaml")
 	_, err := os.Stat(configPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -114,8 +114,8 @@ func runDoctor(ctx context.Context) error {
 		}
 	}
 
-	// Check ~/.config/dotisan/values.yaml
-	valuesPath := os.ExpandEnv("$HOME/.config/dotisan/values.yaml")
+	// Check ~/.config/nim/values.yaml
+	valuesPath := os.ExpandEnv("$HOME/.config/nim/values.yaml")
 	_, err = os.Stat(valuesPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -137,21 +137,21 @@ func runDoctor(ctx context.Context) error {
 		}
 	}
 
-	// Check ~/.config/dotisan/ directory
-	configDir := os.ExpandEnv("$HOME/.config/dotisan")
+	// Check ~/.config/nim/ directory
+	configDir := os.ExpandEnv("$HOME/.config/nim")
 	_, err = os.Stat(configDir)
 	if err != nil {
 		if os.IsNotExist(err) {
-			fmt.Printf("  %s ~/.config/dotisan/ directory not found\n", style.IconError)
+			fmt.Printf("  %s ~/.config/nim/ directory not found\n", style.IconError)
 			hasErrors = true
-			issues = append(issues, "~/.config/dotisan/ directory not found - this is where your resource definitions should be stored")
+			issues = append(issues, "~/.config/nim/ directory not found - this is where your resource definitions should be stored")
 		} else {
-			fmt.Printf("  %s Cannot read ~/.config/dotisan/: %s\n", style.IconError, err)
+			fmt.Printf("  %s Cannot read ~/.config/nim/: %s\n", style.IconError, err)
 			hasErrors = true
-			issues = append(issues, fmt.Sprintf("Cannot read ~/.config/dotisan/: %s", err))
+			issues = append(issues, fmt.Sprintf("Cannot read ~/.config/nim/: %s", err))
 		}
 	} else {
-		fmt.Printf("  %s ~/.config/dotisan/ directory exists\n", style.StyledIconSuccess)
+		fmt.Printf("  %s ~/.config/nim/ directory exists\n", style.StyledIconSuccess)
 	}
 	fmt.Println()
 
@@ -190,7 +190,7 @@ func runDoctor(ctx context.Context) error {
 			fmt.Printf("    - %s\n", issue)
 		}
 		fmt.Println()
-		fmt.Println(style.Warning.Render("Some checks failed. Please fix the issues above before running 'dotisan apply'."))
+		fmt.Println(style.Warning.Render("Some checks failed. Please fix the issues above before running 'nim apply'."))
 		os.Exit(1)
 	} else if len(warnings) > 0 {
 		fmt.Printf("  %s Working, but %d warnings:\n", style.IconWarning, len(warnings))
@@ -198,11 +198,11 @@ func runDoctor(ctx context.Context) error {
 			fmt.Printf("    - %s\n", warning)
 		}
 		fmt.Println()
-		fmt.Println(style.Success.Render("dotisan is functional but some features may be limited."))
+		fmt.Println(style.Success.Render("nim is functional but some features may be limited."))
 	} else {
 		fmt.Printf("  %s All checks passed!\n", style.StyledIconSuccess)
 		fmt.Println()
-		fmt.Println(style.Success.Render("Your dotisan setup looks good. Ready to use 'dotisan plan' and 'dotisan apply'."))
+		fmt.Println(style.Success.Render("Your nim setup looks good. Ready to use 'nim plan' and 'nim apply'."))
 	}
 
 	return nil

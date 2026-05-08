@@ -1,5 +1,5 @@
-// Package config provides configuration loading and management for dotisan.
-// It handles loading of ~/.dotisan/config.yaml which contains tool-level configuration
+// Package config provides configuration loading and management for nim.
+// It handles loading of ~/.nim/config.yaml which contains tool-level configuration
 // such as state backend settings and dotfiles root path.
 package config
 
@@ -34,9 +34,9 @@ type UIConfig struct {
 	Output string `yaml:"output,omitempty"`
 }
 
-// Config holds the complete dotisan tool configuration from ~/.dotisan/config.yaml
+// Config holds the complete nim tool configuration from ~/.nim/config.yaml
 type Config struct {
-	// DotfilesRoot is the path to the dotfiles directory (default: ~/.config/dotisan)
+	// DotfilesRoot is the path to the dotfiles directory (default: ~/.config/nim)
 	DotfilesRoot string `yaml:"dotfiles_root"`
 
 	// State holds state backend configuration
@@ -53,15 +53,15 @@ type Config struct {
 func DefaultConfig() *Config {
 	homeDir, _ := os.UserHomeDir()
 	return &Config{
-		DotfilesRoot: filepath.Join(homeDir, ".config/dotisan"),
+		DotfilesRoot: filepath.Join(homeDir, ".config/nim"),
 		State: StateConfig{
 			Backend: "local",
-			Path:    filepath.Join(homeDir, ".config", "dotisan", "state.json"),
+			Path:    filepath.Join(homeDir, ".config", "nim", "state.json"),
 		},
 	}
 }
 
-// LoadConfig loads the dotisan configuration from the specified path.
+// LoadConfig loads the nim configuration from the specified path.
 // If the file doesn't exist, it returns a default configuration.
 func LoadConfig(path string) (*Config, error) {
 	// Start with defaults
@@ -91,18 +91,18 @@ func LoadConfig(path string) (*Config, error) {
 	return cfg, nil
 }
 
-// LoadConfigFromDefaultPath loads configuration from the default location (~/.dotisan/config.yaml).
+// LoadConfigFromDefaultPath loads configuration from the default location (~/.nim/config.yaml).
 func LoadConfigFromDefaultPath() (*Config, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get home directory: %w", err)
 	}
 
-	configPath := filepath.Join(homeDir, ".dotisan", "config.yaml")
+	configPath := filepath.Join(homeDir, ".nim", "config.yaml")
 	return LoadConfig(configPath)
 }
 
-// LoadValues loads values from a YAML file (like ~/.config/dotisan/values.yaml).
+// LoadValues loads values from a YAML file (like ~/.config/nim/values.yaml).
 // It returns the parsed values as a map[string]any.
 func LoadValues(path string) (map[string]any, error) {
 	// Check if file exists

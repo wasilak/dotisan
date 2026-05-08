@@ -3,7 +3,7 @@ package engine
 import (
 	"testing"
 
-	"github.com/wasilak/dotisan/pkg/resource"
+	"github.com/wasilak/nim/pkg/resource"
 )
 
 func TestParseTargets(t *testing.T) {

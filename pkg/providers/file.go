@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/wasilak/dotisan/pkg/planctx"
-	"github.com/wasilak/dotisan/pkg/provider"
-	"github.com/wasilak/dotisan/pkg/resource"
+	"github.com/wasilak/nim/pkg/planctx"
+	"github.com/wasilak/nim/pkg/provider"
+	"github.com/wasilak/nim/pkg/resource"
 )
 
 // FileProvider implements the Provider interface for ManagedFile
@@ -99,7 +99,7 @@ func (p *FileProvider) Reconcile(ctx context.Context,
 						ItemID:     it.Name,
 						Severity:   "warning",
 						Message:    fmt.Sprintf("Destination file already exists at %s", dest),
-						Suggestion: fmt.Sprintf("dotisan state import %s %s %s", group.Kind, group.Name, dest),
+						Suggestion: fmt.Sprintf("nim state import %s %s %s", group.Kind, group.Name, dest),
 					})
 				}
 			}

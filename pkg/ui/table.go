@@ -2,7 +2,7 @@ package ui
 
 import (
 	"github.com/aquasecurity/table"
-	"github.com/wasilak/dotisan/pkg/style"
+	"github.com/wasilak/nim/pkg/style"
 	"io"
 	"os"
 )

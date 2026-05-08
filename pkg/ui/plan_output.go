@@ -1,6 +1,6 @@
 package ui
 
-import "github.com/wasilak/dotisan/pkg/provider"
+import "github.com/wasilak/nim/pkg/provider"
 
 // PlanOutput is the top-level structure marshalled for --output json.
 type PlanOutput struct {

@@ -16,7 +16,7 @@ build:
 	cd ci && dagger run go run . --build --version=$(VERSION) --output=../$(DIST)
 
 zip: build
-	@cd $(DIST) && for f in dotisan-*; do \
+	@cd $(DIST) && for f in nim-*; do \
 		[ -f "$${f}.zip" ] && continue; \
 		chmod +x "$$f"; \
 		zip "$${f}.zip" "$$f"; \

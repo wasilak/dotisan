@@ -1,4 +1,4 @@
-// Package output defines output format types and utilities for dotisan commands.
+// Package output defines output format types and utilities for nim commands.
 package output
 
 // Format represents the output format type

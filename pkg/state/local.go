@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/wasilak/dotisan/pkg/provider"
+	"github.com/wasilak/nim/pkg/provider"
 )
 
 // LocalBackend implements StateBackend for local JSON file storage.
@@ -27,7 +27,7 @@ func NewLocalBackendWithDefaultPath() (*LocalBackend, error) {
 		return nil, fmt.Errorf("failed to get home directory: %w", err)
 	}
 
-	path := filepath.Join(homeDir, ".config", "dotisan", "state.json")
+	path := filepath.Join(homeDir, ".config", "nim", "state.json")
 	return NewLocalBackend(path), nil
 }
 

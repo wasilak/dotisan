@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/wasilak/dotisan/pkg/style"
+	"github.com/wasilak/nim/pkg/style"
 )
 
 func TestRunWithSpinner_FinalReflectsLastPublish(t *testing.T) {

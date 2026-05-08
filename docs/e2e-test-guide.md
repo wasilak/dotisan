@@ -1,10 +1,10 @@
-# E2E Testing Guide for dotisan
+# E2E Testing Guide for nim
 
-This document describes how to run comprehensive end-to-end tests for dotisan to verify all functionality works correctly.
+This document describes how to run comprehensive end-to-end tests for nim to verify all functionality works correctly.
 
 ## Why This Guide Exists
 
-dotisan manages critical system files (dotfiles, packages, directories). A bug in apply, drift detection, or state management could corrupt or delete user files. All changes should be tested against test data, never production files.
+nim manages critical system files (dotfiles, packages, directories). A bug in apply, drift detection, or state management could corrupt or delete user files. All changes should be tested against test data, never production files.
 
 ## Test Environment Setup
 
@@ -19,9 +19,9 @@ mkdir -p ~/dotfiles-test/resources/dotfiles/shell
 mkdir -p ~/dotfiles-test/resources/dotfiles/git
 ```
 
-### Configure dotisan to Use Test Directory
+### Configure nim to Use Test Directory
 
-Create `~/.dotisan/config.yaml` (or any config path dotisan reads):
+Create `~/.nim/config.yaml` (or any config path nim reads):
 
 ```yaml
 # Configure test environment
@@ -38,7 +38,7 @@ Place resource YAML files in `~/dotfiles-test/resources/` (or any subdirectory u
 ```yaml
 # ~/dotfiles-test/resources/shell/config.yaml
 ---
-apiVersion: github.com/wasilak/dotisan/v1
+apiVersion: github.com/wasilak/nim/v1
 kind: ManagedFile
 metadata:
   name: testrc
@@ -63,7 +63,7 @@ echo '# Test config' > ~/dotfiles-test/resources/dotfiles/shell/testrc.sh
 # Create resource definition
 cat > ~/dotfiles-test/resources/shell/config.yaml <<'EOF'
 ---
-apiVersion: github.com/wasilak/dotisan/v1
+apiVersion: github.com/wasilak/nim/v1
 kind: ManagedFile
 metadata:
   name: testrc
@@ -73,7 +73,7 @@ spec:
 EOF
 
 # Run apply
-./dotisan apply --confirm
+./nim apply --confirm
 # Expected: File created at ~/.testrc
 
 # Verify
@@ -84,7 +84,7 @@ cat state.json  # Should have dest_hash
 #### Test 2: In-Sync Check
 
 ```bash
-./dotisan plan
+./nim plan
 # Expected: "No changes. Your infrastructure matches the configuration."
 ```
 
@@ -94,14 +94,14 @@ cat state.json  # Should have dest_hash
 # Modify source file
 echo '# Modified content' > ~/dotfiles-test/resources/dotfiles/shell/testrc.sh
 
-./dotisan plan
+./nim plan
 # Expected: Shows "~1 to change" with diff
 ```
 
 #### Test 4: Apply Modification
 
 ```bash
-./dotisan apply --confirm
+./nim apply --confirm
 # Expected: File updated at destination
 ```
 
@@ -111,14 +111,14 @@ echo '# Modified content' > ~/dotfiles-test/resources/dotfiles/shell/testrc.sh
 # Manually modify destination (simulate external change)
 echo '# Manual drift' > ~/.testrc
 
-./dotisan plan
+./nim plan
 # Expected: Shows drift with diff
 ```
 
 #### Test 6: Apply Restores Drift
 
 ```bash
-./dotisan apply --confirm
+./nim apply --confirm
 # Expected: File restored to source content
 cat ~/.testrc  # Should show source content, not drift
 ```
@@ -129,7 +129,7 @@ cat ~/.testrc  # Should show source content, not drift
 # Remove resource definition
 rm ~/dotfiles-test/resources/shell/config.yaml
 
-./dotisan plan
+./nim plan
 # Expected: Shows "-1 to destroy"
 ```
 
@@ -143,7 +143,7 @@ Note: The `ManagedDirectory` resource kind has been removed. Use `ManagedFile` g
 # Create brew package definition
 cat > ~/dotfiles-test/resources/brew.yaml <<'EOF'
 ---
-apiVersion: github.com/wasilak/dotisan/v1
+apiVersion: github.com/wasilak/nim/v1
     kind: HomeBrewPackages
 metadata:
   name: test-packages
@@ -152,7 +152,7 @@ spec:
     - name: hello
 EOF
 
-./dotisan apply --confirm
+./nim apply --confirm
 # Expected: Package installed, in state
 ```
 
@@ -165,10 +165,10 @@ EOF
 echo '# Existing' > ~/.test-import
 
 # Import it into state (without applying any managed content)
-./dotisan state import ManagedFile/test-import ~/.test-import
+./nim state import ManagedFile/test-import ~/.test-import
 # After confirmation, file is tracked but not managed
 
-./dotisan state list
+./nim state list
 # Expected: Shows as "orphaned" (exists but not in config)
 ```
 
@@ -176,9 +176,9 @@ echo '# Existing' > ~/.test-import
 
 ```bash
 # Remove from state (without deleting file)
-./dotisan state remove ManagedFile/test-import
+./nim state remove ManagedFile/test-import
 
-./dotisan state list
+./nim state list
 # Expected: Resource removed from list
 # File ~/.test-import still exists on disk
 ```
@@ -186,11 +186,11 @@ echo '# Existing' > ~/.test-import
 ### Utility Commands
 
 ```bash
-./dotisan doctor
+./nim doctor
 # Expected: All checks pass
 
-./dotisan init
-# Creates default ~/.config/dotisan structure
+./nim init
+# Creates default ~/.config/nim structure
 ```
 
 ## Cleanup
@@ -202,7 +202,7 @@ After all tests, clean up test files:
 rm -rf ~/dotfiles-test
 
 # Remove test config
-rm ~/.dotisan/config.yaml
+rm ~/.nim/config.yaml
 
 # Remove any test destination files
 rm ~/.testrc ~/.test-import ~/.testdir 2>/dev/null
@@ -249,6 +249,6 @@ Ensure the fixes from commit `f42bd8d` are applied:
 
 If old resources appear in state list, check:
 1. Are you using the correct state path from config?
-2. Is there an old state file at `~/.config/dotisan/state.json`?
+2. Is there an old state file at `~/.config/nim/state.json`?
 
-Clean up old state: `rm ~/.config/dotisan/state.json`
+Clean up old state: `rm ~/.config/nim/state.json`

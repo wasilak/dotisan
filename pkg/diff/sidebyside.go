@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/mattn/go-runewidth"
-	"github.com/wasilak/dotisan/pkg/style"
+	"github.com/wasilak/nim/pkg/style"
 	// TODO: All color/styles migrated to palette/ANSI – no pterm
 )
 

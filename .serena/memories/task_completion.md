@@ -1,4 +1,4 @@
-# dotisan — Task Completion Checklist
+# nim — Task Completion Checklist
 
 ## Before Marking Task Complete
 
@@ -16,7 +16,7 @@
 - [ ] Mock external dependencies (exec, HTTP, file system)
 
 ### 3. Manual Verification
-- [ ] Build succeeds: `go build -o dotisan .`
+- [ ] Build succeeds: `go build -o nim .`
 - [ ] Basic functionality tested manually
 - [ ] Help text and CLI output verified
 
@@ -84,7 +84,7 @@ feat: implement BrewProvider Available() check
 1. **Run tests**: `go test ./...`
 2. **Format code**: `go fmt ./...`
 3. **Vet code**: `go vet ./...`
-4. **Build binary**: `go build -o dotisan .`
+4. **Build binary**: `go build -o nim .`
 5. **Update TaskMaster**: `task-master update-subtask --id=<id> --prompt="..."`
 6. **Mark done**: `task-master set-status --id=<id> --status=done`
 7. **Get next task**: `task-master next`

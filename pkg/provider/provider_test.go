@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/wasilak/dotisan/pkg/resource"
+	"github.com/wasilak/nim/pkg/resource"
 )
 
 // mockProvider is a test provider implementation.

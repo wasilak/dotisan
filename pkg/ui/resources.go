@@ -1,7 +1,7 @@
 package ui
 
 import (
-	"github.com/wasilak/dotisan/pkg/style"
+	"github.com/wasilak/nim/pkg/style"
 	"golang.org/x/term"
 	"os"
 	"strings"

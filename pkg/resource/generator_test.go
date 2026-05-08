@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/wasilak/dotisan/pkg/config"
+	"github.com/wasilak/nim/pkg/config"
 )
 
 func TestExpandTilde(t *testing.T) {
@@ -154,7 +154,7 @@ func TestExpandGenerator(t *testing.T) {
 	baseMF := func(gen *GeneratorSpec) *ManagedFile {
 		return &ManagedFile{
 			BaseResource: BaseResource{
-				APIVersion: "github.com/wasilak/dotisan/v1",
+				APIVersion: "github.com/wasilak/nim/v1",
 				Kind:       "ManagedFile",
 				Metadata:   Metadata{Name: "test"},
 			},

@@ -47,13 +47,13 @@ func TestMetadata_ResourceID(t *testing.T) {
 
 func TestBaseResource_Getters(t *testing.T) {
 	br := BaseResource{
-		APIVersion: "github.com/wasilak/dotisan/v1",
+		APIVersion: "github.com/wasilak/nim/v1",
 		Kind:       KindHomeBrewPackages,
 		Metadata:   Metadata{Name: "test", Namespace: "default"},
 	}
 
-	if got := br.GetAPIVersion(); got != "github.com/wasilak/dotisan/v1" {
-		t.Errorf("GetAPIVersion() = %q, want %q", got, "github.com/wasilak/dotisan/v1")
+	if got := br.GetAPIVersion(); got != "github.com/wasilak/nim/v1" {
+		t.Errorf("GetAPIVersion() = %q, want %q", got, "github.com/wasilak/nim/v1")
 	}
 
 	if got := br.GetKind(); got != KindHomeBrewPackages {
@@ -71,8 +71,8 @@ func TestIsSupportedAPIVersion(t *testing.T) {
 		version string
 		want    bool
 	}{
-		{"github.com/wasilak/dotisan/v1", true},
-		{"github.com/wasilak/dotisan/v2", false},
+		{"github.com/wasilak/nim/v1", true},
+		{"github.com/wasilak/nim/v2", false},
 		{"terraform/v1", false},
 		{"", false},
 	}
@@ -95,7 +95,7 @@ func TestValidateStruct(t *testing.T) {
 		{
 			name: "valid BaseResource",
 			struct_: BaseResource{
-				APIVersion: "github.com/wasilak/dotisan/v1",
+				APIVersion: "github.com/wasilak/nim/v1",
 				Kind:       KindHomeBrewPackages,
 				Metadata:   Metadata{Name: "test"},
 			},
@@ -112,7 +112,7 @@ func TestValidateStruct(t *testing.T) {
 		{
 			name: "missing kind",
 			struct_: BaseResource{
-				APIVersion: "github.com/wasilak/dotisan/v1",
+				APIVersion: "github.com/wasilak/nim/v1",
 				Metadata:   Metadata{Name: "test"},
 			},
 			wantErr: true,
@@ -120,7 +120,7 @@ func TestValidateStruct(t *testing.T) {
 		{
 			name: "missing metadata.name",
 			struct_: BaseResource{
-				APIVersion: "github.com/wasilak/dotisan/v1",
+				APIVersion: "github.com/wasilak/nim/v1",
 				Kind:       KindHomeBrewPackages,
 				Metadata:   Metadata{},
 			},

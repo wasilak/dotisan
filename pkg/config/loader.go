@@ -1,9 +1,9 @@
-// Package config provides configuration loading and management for dotisan.
+// Package config provides configuration loading and management for nim.
 //
 // This file provides a high-level loader that orchestrates the two-pass templating:
 // 1. Load config.yaml (no templating needed)
 // 2. Create TemplateContext with Env/OS
-// 3. Load and render ~/.config/dotisan/values.yaml
+// 3. Load and render ~/.config/nim/values.yaml
 // 4. Return fully prepared context ready for resource file rendering
 package config
 
@@ -16,10 +16,10 @@ import (
 // Loader orchestrates the loading of all configuration files and preparation
 // of the TemplateContext for resource rendering.
 type Loader struct {
-	// DotisanConfigPath is the path to ~/.dotisan/config.yaml
+	// DotisanConfigPath is the path to ~/.nim/config.yaml
 	DotisanConfigPath string
 
-	// DotfilesRoot is the path to the dotfiles directory (e.g., ~/.config/dotisan)
+	// DotfilesRoot is the path to the dotfiles directory (e.g., ~/.config/nim)
 	DotfilesRoot string
 }
 
@@ -31,26 +31,26 @@ func NewLoader() (*Loader, error) {
 	}
 
 	return &Loader{
-		DotisanConfigPath: filepath.Join(homeDir, ".dotisan", "config.yaml"),
-		DotfilesRoot:      filepath.Join(homeDir, ".config/dotisan"),
+		DotisanConfigPath: filepath.Join(homeDir, ".nim", "config.yaml"),
+		DotfilesRoot:      filepath.Join(homeDir, ".config/nim"),
 	}, nil
 }
 
 // NewLoaderWithPaths creates a new Loader with custom paths.
-func NewLoaderWithPaths(dotisanConfigPath, dotfilesRoot string) *Loader {
+func NewLoaderWithPaths(nimConfigPath, dotfilesRoot string) *Loader {
 	return &Loader{
-		DotisanConfigPath: dotisanConfigPath,
+		DotisanConfigPath: nimConfigPath,
 		DotfilesRoot:      dotfilesRoot,
 	}
 }
 
 // Load performs the complete configuration loading workflow:
-// 1. Loads ~/.dotisan/config.yaml
+// 1. Loads ~/.nim/config.yaml
 // 2. Creates TemplateContext with Env/OS
-// 3. Loads and renders ~/.config/dotisan/values.yaml
+// 3. Loads and renders ~/.config/nim/values.yaml
 // 4. Returns the prepared TemplateContext
 func (l *Loader) Load() (*Config, *TemplateContext, error) {
-	// Step 1: Load dotisan config
+	// Step 1: Load nim config
 	cfg, err := LoadConfig(l.DotisanConfigPath)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to load config: %w", err)

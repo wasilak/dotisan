@@ -6,10 +6,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/wasilak/dotisan/pkg/engine"
-	"github.com/wasilak/dotisan/pkg/output"
-	"github.com/wasilak/dotisan/pkg/style"
-	"github.com/wasilak/dotisan/pkg/ui"
+	"github.com/wasilak/nim/pkg/engine"
+	"github.com/wasilak/nim/pkg/output"
+	"github.com/wasilak/nim/pkg/style"
+	"github.com/wasilak/nim/pkg/ui"
 )
 
 type PlanApplyOptions struct {

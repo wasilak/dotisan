@@ -12,17 +12,17 @@ import (
     "os"
     "strings"
 
-    "github.com/wasilak/dotisan/pkg/ui"
+    "github.com/wasilak/nim/pkg/ui"
 
-    "github.com/wasilak/dotisan/pkg/config"
-    "github.com/wasilak/dotisan/pkg/diff"
-    "github.com/wasilak/dotisan/pkg/engine"
-    "github.com/wasilak/dotisan/pkg/output"
-    "github.com/wasilak/dotisan/pkg/provider"
-    "github.com/wasilak/dotisan/pkg/providers"
-    "github.com/wasilak/dotisan/pkg/resource"
-    "github.com/wasilak/dotisan/pkg/state"
-    "github.com/wasilak/dotisan/pkg/style"
+    "github.com/wasilak/nim/pkg/config"
+    "github.com/wasilak/nim/pkg/diff"
+    "github.com/wasilak/nim/pkg/engine"
+    "github.com/wasilak/nim/pkg/output"
+    "github.com/wasilak/nim/pkg/provider"
+    "github.com/wasilak/nim/pkg/providers"
+    "github.com/wasilak/nim/pkg/resource"
+    "github.com/wasilak/nim/pkg/state"
+    "github.com/wasilak/nim/pkg/style"
 
     "github.com/spf13/cobra"
 )
@@ -47,9 +47,9 @@ It is only needed when the logical state name differs from the actual resource
 on the system (e.g. a managed file whose path differs from its state name).
 
 Examples:
-  dotisan state import HomeBrewPackages/homebrew-packages[ripgrep]
-  dotisan state import HomeBrewPackages/homebrew-packages/fd[fd]
-  dotisan state import ManagedFile/dotfiles[zshrc] ~/.zshrc`,
+  nim state import HomeBrewPackages/homebrew-packages[ripgrep]
+  nim state import HomeBrewPackages/homebrew-packages/fd[fd]
+  nim state import ManagedFile/dotfiles[zshrc] ~/.zshrc`,
 	Args: cobra.RangeArgs(1, 2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		actual := ""
@@ -178,7 +178,7 @@ func runStateImport(ctx context.Context, id, actual string) error {
 	if cfgErr != nil && !errors.Is(cfgErr, fs.ErrNotExist) {
 		slog.Warn("failed to load config", "err", cfgErr)
 	}
-	statePath := os.ExpandEnv("$HOME/.config/dotisan/state.json")
+	statePath := os.ExpandEnv("$HOME/.config/nim/state.json")
 	if cfg != nil && cfg.State.Path != "" {
 		statePath = os.ExpandEnv(cfg.State.Path)
 	}
@@ -241,8 +241,8 @@ If destination item name is not provided, the source item name is used.
 The destination group must exist in the desired configuration.
 
 Examples:
-  dotisan state mv HomeBrewPackages/core-tools/ripgrep HomeBrewPackages/homebrew-packages/ripgrep
-  dotisan state mv HomeBrewPackages/core-tools/ripgrep HomeBrewPackages/homebrew-packages/`,
+  nim state mv HomeBrewPackages/core-tools/ripgrep HomeBrewPackages/homebrew-packages/ripgrep
+  nim state mv HomeBrewPackages/core-tools/ripgrep HomeBrewPackages/homebrew-packages/`,
 	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runStateMv(cmd.Context(), args[0], args[1])
@@ -295,8 +295,8 @@ var stateRemoveCmd = &cobra.Command{
 without affecting the actual system.
 
 Examples:
-  dotisan state remove HomeBrewPackages/homebrew-packages
-  dotisan state remove HomeBrewPackages/homebrew-packages/fd[fd]`,
+  nim state remove HomeBrewPackages/homebrew-packages
+  nim state remove HomeBrewPackages/homebrew-packages/fd[fd]`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		id := args[0]
@@ -348,7 +348,7 @@ func runStateRemoveByID(ctx context.Context, id string) error {
 	if cfgErr != nil && !errors.Is(cfgErr, fs.ErrNotExist) {
 		slog.Warn("failed to load config", "err", cfgErr)
 	}
-	statePath := os.ExpandEnv("$HOME/.config/dotisan/state.json")
+	statePath := os.ExpandEnv("$HOME/.config/nim/state.json")
 	if cfg != nil && cfg.State.Path != "" {
 		statePath = os.ExpandEnv(cfg.State.Path)
 	}
@@ -412,7 +412,7 @@ func runStateList(ctx context.Context) error {
 	if cfgErr != nil && !errors.Is(cfgErr, fs.ErrNotExist) {
 		slog.Warn("failed to load config", "err", cfgErr)
 	}
-	statePath := os.ExpandEnv("$HOME/.config/dotisan/state.json")
+	statePath := os.ExpandEnv("$HOME/.config/nim/state.json")
 	if cfg != nil && cfg.State.Path != "" {
 		statePath = os.ExpandEnv(cfg.State.Path)
 	}
@@ -428,7 +428,7 @@ func runStateList(ctx context.Context) error {
 	})
 	if loadErr != nil {
 		if os.IsNotExist(loadErr) {
-			fmt.Println("No state file found. Run 'dotisan apply' first.")
+			fmt.Println("No state file found. Run 'nim apply' first.")
 			return nil
 		}
 		return fmt.Errorf("cannot load state: %w", loadErr)

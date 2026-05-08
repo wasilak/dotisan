@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/briandowns/spinner"
-	"github.com/wasilak/dotisan/pkg/style"
+	"github.com/wasilak/nim/pkg/style"
 	"math/rand"
 	"os"
 	"strings"

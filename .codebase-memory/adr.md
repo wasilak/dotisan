@@ -1,13 +1,13 @@
-# Architecture Decision Record: dotisan
+# Architecture Decision Record: nim
 
 ## Project Overview
 
-**dotisan** is a declarative dotfiles and package manager CLI for macOS. It manages system configuration through YAML resource declarations, applying them idempotently (plan → apply → state). Think Terraform for your dotfiles and package installations.
+**nim** is a declarative dotfiles and package manager CLI for macOS. It manages system configuration through YAML resource declarations, applying them idempotently (plan → apply → state). Think Terraform for your dotfiles and package installations.
 
 **Author:** Piotr Boruc  
 **Stack:** Go 1.26, Cobra CLI, Charmbracelet ecosystem (lipgloss v2, bubbletea, bubbles, huh)  
 **Platform:** macOS only  
-**State backends:** Local JSON (`~/.config/dotisan/state.json`) or S3-compatible
+**State backends:** Local JSON (`~/.config/nim/state.json`) or S3-compatible
 
 ---
 
@@ -35,7 +35,7 @@ YAML Resources → Engine.Plan() → GroupPlan[] → Engine.ApplyWithProgress() 
 2. **Reconcile**: Each provider diffs desired state vs current system state
 3. **Plan**: Returns additions, removals, modifications, drifted items per provider
 4. **Apply**: Executes changes with live progress display; saves state on success
-5. **State**: JSON document tracks what dotisan manages (prevents orphaned resources)
+5. **State**: JSON document tracks what nim manages (prevents orphaned resources)
 
 ---
 
@@ -127,13 +127,13 @@ Kind-based dynamic dispatch in `pkg/resource/unmarshal.go`.
 
 ## Configuration
 
-**Config file:** `~/.config/dotisan/config.yaml`  
-**Resource files:** `~/.config/dotisan/resources/` (any YAML files in this dir)  
+**Config file:** `~/.config/nim/config.yaml`  
+**Resource files:** `~/.config/nim/resources/` (any YAML files in this dir)  
 **Template engine:** Two-pass Go templates with Sprig functions
 - Pass 1: Render `values.yaml` (provides `.Values`)
 - Pass 2: Render resource YAMLs with `.Values`, `.Env`, `.OS` context
 
-**State file:** `~/.config/dotisan/state.json` (local backend default)
+**State file:** `~/.config/nim/state.json` (local backend default)
 
 ---
 

@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/wasilak/dotisan/pkg/cmdutil"
-	"github.com/wasilak/dotisan/pkg/provider"
-	"github.com/wasilak/dotisan/pkg/resource"
+	"github.com/wasilak/nim/pkg/cmdutil"
+	"github.com/wasilak/nim/pkg/provider"
+	"github.com/wasilak/nim/pkg/resource"
 )
 
 // BrewProvider implements the Provider interface for Homebrew packages.
@@ -179,7 +179,7 @@ func (p *BrewProvider) Reconcile(ctx context.Context,
 					GroupID:    fmt.Sprintf("%s/%s", group.Kind, group.Name),
 					Severity:   "warning",
 					Message:    fmt.Sprintf("Items already installed but not tracked: %s", strings.Join(itemNames, ", ")),
-					Suggestion: fmt.Sprintf("dotisan state import %s/%s <item>", group.Kind, group.Name),
+					Suggestion: fmt.Sprintf("nim state import %s/%s <item>", group.Kind, group.Name),
 				})
 			}
 		} else {

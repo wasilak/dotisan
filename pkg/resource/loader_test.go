@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/wasilak/dotisan/pkg/config"
+	"github.com/wasilak/nim/pkg/config"
 )
 
 func TestNewLoader(t *testing.T) {
@@ -47,7 +47,7 @@ func TestLoader_LoadResources(t *testing.T) {
 		t.Fatalf("Failed to create brew dir: %v", err)
 	}
 
-	brewContent := "apiVersion: github.com/wasilak/dotisan/v1\nkind: HomeBrewPackages\nmetadata:\n  name: core-tools\nspec:\n  formulae:\n    - name: ripgrep\n    - name: fd\n"
+	brewContent := "apiVersion: github.com/wasilak/nim/v1\nkind: HomeBrewPackages\nmetadata:\n  name: core-tools\nspec:\n  formulae:\n    - name: ripgrep\n    - name: fd\n"
 	if err := os.WriteFile(filepath.Join(brewDir, "core.yaml"), []byte(brewContent), 0644); err != nil {
 		t.Fatalf("Failed to write brew resource: %v", err)
 	}
@@ -58,7 +58,7 @@ func TestLoader_LoadResources(t *testing.T) {
 		t.Fatalf("Failed to create files dir: %v", err)
 	}
 
-	fileContent := "apiVersion: github.com/wasilak/dotisan/v1\nkind: ManagedFile\nmetadata:\n  name: test-config\nspec:\n  source: templates/test.txt\n  destination: /tmp/test.txt\n  template: false\n"
+	fileContent := "apiVersion: github.com/wasilak/nim/v1\nkind: ManagedFile\nmetadata:\n  name: test-config\nspec:\n  source: templates/test.txt\n  destination: /tmp/test.txt\n  template: false\n"
 	if err := os.WriteFile(filepath.Join(filesDir, "test.yaml"), []byte(fileContent), 0644); err != nil {
 		t.Fatalf("Failed to write file resource: %v", err)
 	}
@@ -120,7 +120,7 @@ func TestLoader_LoadResources_InvalidResource(t *testing.T) {
 	}
 
 	// Create an invalid resource (unknown kind)
-	invalidContent := "apiVersion: github.com/wasilak/dotisan/v1\nkind: UnknownKind\nmetadata:\n  name: invalid\nspec: {}\n"
+	invalidContent := "apiVersion: github.com/wasilak/nim/v1\nkind: UnknownKind\nmetadata:\n  name: invalid\nspec: {}\n"
 	if err := os.WriteFile(filepath.Join(resourcesDir, "invalid.yaml"), []byte(invalidContent), 0644); err != nil {
 		t.Fatalf("Failed to write invalid resource: %v", err)
 	}
@@ -141,7 +141,7 @@ func TestLoader_LoadResources_WithGenerator(t *testing.T) {
 		t.Fatalf("setup: %v", err)
 	}
 
-	generatorYAML := `apiVersion: github.com/wasilak/dotisan/v1
+	generatorYAML := `apiVersion: github.com/wasilak/nim/v1
 kind: ManagedFile
 metadata:
   name: gen-skills
@@ -217,7 +217,7 @@ func TestLoader_LoadResources_GeneratorMapItems(t *testing.T) {
 		t.Fatalf("setup: %v", err)
 	}
 
-	generatorYAML := `apiVersion: github.com/wasilak/dotisan/v1
+	generatorYAML := `apiVersion: github.com/wasilak/nim/v1
 kind: ManagedFile
 metadata:
   name: gen-agents
@@ -264,7 +264,7 @@ func TestLoader_LoadResources_GeneratorEmptyList(t *testing.T) {
 		t.Fatalf("setup: %v", err)
 	}
 
-	generatorYAML := `apiVersion: github.com/wasilak/dotisan/v1
+	generatorYAML := `apiVersion: github.com/wasilak/nim/v1
 kind: ManagedFile
 metadata:
   name: gen-empty
@@ -302,7 +302,7 @@ func TestLoader_LoadResources_GeneratorInvalidSourceKey(t *testing.T) {
 		t.Fatalf("setup: %v", err)
 	}
 
-	generatorYAML := `apiVersion: github.com/wasilak/dotisan/v1
+	generatorYAML := `apiVersion: github.com/wasilak/nim/v1
 kind: ManagedFile
 metadata:
   name: gen-bad-key
