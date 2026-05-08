@@ -17,7 +17,7 @@ func TestStartWithContextCancellation(t *testing.T) {
 	// use a short-lived context
 	ctx, cancel := context.WithCancel(context.Background())
 
-	stop := s.StartWithContext(ctx, style.Info, "testing-cancel", "test cancelled")
+	stop, _ := s.StartWithContext(ctx, style.Info, "testing-cancel", "test cancelled")
 
 	// cancel the context and allow goroutine to run
 	cancel()

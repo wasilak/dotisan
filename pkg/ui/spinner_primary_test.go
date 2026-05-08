@@ -31,7 +31,7 @@ func TestNewPrimarySpinnerUsesHeader(t *testing.T) {
 
 	// Inject spinner that writes to our pipe
 	sp := NewPrimarySpinner("hello-main")
-	stop := sp.StartWithContext(context.Background(), style.Info, "hello-main", "cancelled")
+	stop, _ := sp.StartWithContext(context.Background(), style.Info, "hello-main", "cancelled")
 	// allow spinner to run briefly
 	time.Sleep(20 * time.Millisecond)
 	// Signal normal completion and emit final message so output is visible

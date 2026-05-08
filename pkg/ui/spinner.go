@@ -182,7 +182,13 @@ func (s *Spinner) FailWithStyle(st style.Style, msg string) {
 // StartWithContext starts the spinner and returns a function that cancels the
 // internal watcher. If ctx is cancelled, the spinner will be stopped and a
 // fail message displayed using the provided cancelMsg (styled with style.Error).
-func (s *Spinner) StartWithContext(ctx context.Context, st style.Style, msg string, cancelMsg string) func() {
+// StartWithContext starts the spinner and returns two functions:
+//   - stop: signals the goroutine to exit without printing a cancel message,
+//     then blocks until the goroutine has exited.
+//   - join: blocks until the goroutine has exited without signalling it to stop.
+//     Use join in the cancellation path so the goroutine is guaranteed to run
+//     its ctx.Done() branch and print the cancel message before the caller proceeds.
+func (s *Spinner) StartWithContext(ctx context.Context, st style.Style, msg string, cancelMsg string) (stop func(), join func()) {
 	// Ensure spinner writes to current stdout *if not already configured*.
 	// Tests may inject a custom writer via NewSpinnerFunc; don't overwrite
 	// it here if present.
@@ -191,34 +197,34 @@ func (s *Spinner) StartWithContext(ctx context.Context, st style.Style, msg stri
 	}
 	s.StartWithStyle(st, msg)
 	done := make(chan struct{})
+	watcherDone := make(chan struct{})
 	var once sync.Once
 
 	go func() {
+		defer close(watcherDone)
 		select {
 		case <-ctx.Done():
-			// ensure we only fail/close once
 			once.Do(func() {
 				m := cancelMsg
 				if m == "" {
 					m = "cancelled"
 				}
-				// Try to display the cancel message via the spinner helper which
-				// prints to the spinner's writer when available. Also write
-				// directly to os.Stdout to make tests deterministic in case the
-				// spinner's writer wasn't bound to the current stdout (racey
-				// test setups redirect os.Stdout).
 				s.FailWithStyle(style.Error, m)
 				close(done)
 			})
 		case <-done:
-			// normal stop
+			// stopped externally — no cancel message
 		}
 	}()
 
-	// return a stop function that's safe to call multiple times
-	return func() {
+	stop = func() {
 		once.Do(func() { close(done) })
+		<-watcherDone
 	}
+	join = func() {
+		<-watcherDone
+	}
+	return
 }
 
 // RunWithSpinner runs work(ctx, publish) while showing a context-aware spinner.
@@ -243,7 +249,7 @@ const (
 func RunWithSpinner(ctx context.Context, st style.Style, msg, cancelMsg string, work func(ctx context.Context, publish func(level MessageLevel, msg string)) error) error {
 	sp := NewSpinnerFunc()
 	// use Main color from palette for the spinner label if available
-	stop := sp.StartWithContext(ctx, st, msg, cancelMsg)
+	stop, join := sp.StartWithContext(ctx, st, msg, cancelMsg)
 
 	// messages channel used to send transient updates to the spinner. Buffer
 	// a few messages to avoid blocking producers briefly.
@@ -296,11 +302,11 @@ func RunWithSpinner(ctx context.Context, st style.Style, msg, cancelMsg string, 
 	close(msgs)
 	wg.Wait()
 
-	// If the context was cancelled, StartWithContext already printed the
-	// cancel message; avoid duplicating failure output.
+	// If the context was cancelled, wait for the watcher goroutine to finish
+	// printing the cancel message (join, not stop) so we don't race against it.
 	if workErr != nil {
 		if ctx.Err() == context.Canceled || errors.Is(workErr, context.Canceled) {
-			// nothing to do; spinner watcher already emitted cancel message
+			join() // guarantees cancel message is written before we proceed
 		} else {
 			// Prefer showing the last transient message as the failure line
 			lastMu.Lock()

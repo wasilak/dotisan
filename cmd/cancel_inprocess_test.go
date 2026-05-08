@@ -24,7 +24,7 @@ func TestCancelInProcess(t *testing.T) {
 		Short: "local test block command",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			sp := ui.NewSpinner()
-			stop := sp.StartWithContext(cmd.Context(), style.Info, "Running local test block...", "test cancelled")
+			stop, _ := sp.StartWithContext(cmd.Context(), style.Info, "Running local test block...", "test cancelled")
 			<-cmd.Context().Done()
 			// allow spinner goroutine to process
 			time.Sleep(20 * time.Millisecond)

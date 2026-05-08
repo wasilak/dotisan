@@ -21,7 +21,7 @@ var testBlockCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		sp := ui.NewSpinner()
 		// Use a descriptive cancel message so tests can assert on it.
-		stop := sp.StartWithContext(cmd.Context(), style.Info, "Running test block...", "test cancelled")
+		stop, _ := sp.StartWithContext(cmd.Context(), style.Info, "Running test block...", "test cancelled")
 
 		// Block until context cancelled (signal from test). Give the spinner a
 		// moment to start so output is deterministic.
