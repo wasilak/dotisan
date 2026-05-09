@@ -30,6 +30,27 @@ jobs:
           sha256=$(sha256sum nim.tar.gz | cut -d' ' -f1)
           echo "sha256=$sha256" >> "$GITHUB_OUTPUT"
 
+      - name: Install Dagger CLI (for verification)
+        run: |
+          curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=/usr/local/bin sh
+
+      - name: Verify build with Dagger
+        run: |
+          TAG="${{ steps.release.outputs.tag }}"
+          VERSION="${TAG#v}"
+          echo "Verifying build for ${VERSION} using Dagger"
+          export DAGGER_NO_NAG=1
+          # Run the project's CI/build pipeline to reproduce artifacts
+          cd ci
+          dagger run go run . --build --version="$VERSION" --output=../tmp/dist
+          cd ..
+          echo "Built artifacts:"
+          ls -la tmp/dist || true
+          # Smoke-test the linux amd64 binary if present
+          if [ -x tmp/dist/nim-linux-amd64 ]; then
+            tmp/dist/nim-linux-amd64 --version || true
+          fi
+
       - name: Update Formula file
         run: |
           # Replace url and sha256 lines in Formula/nim.rb
