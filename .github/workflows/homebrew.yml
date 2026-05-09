@@ -3,6 +3,10 @@ name: Update Homebrew Formula
 on:
   release:
     types: [published]
+  push:
+    # Also trigger when a tag is pushed (helps when a release wasn't created via GitHub UI)
+    tags:
+      - 'v*'
 
 permissions:
   contents: write
@@ -14,19 +18,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Get release tag
-        id: release
+      - name: Determine tag & tarball URL
+        id: tag
         run: |
-          TAG="${{ github.event.release.tag_name }}"
+          # Determine tag whether this workflow was triggered by a release or a tag push
+          if [ "${{ github.event_name }}" = "release" ]; then
+            TAG="${{ github.event.release.tag_name }}"
+          else
+            # For push tag events, the ref is refs/tags/<tag>
+            TAG="${GITHUB_REF#refs/tags/}"
+          fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          # tarball URL for GitHub archive
           TARURL="https://github.com/${{ github.repository }}/archive/refs/tags/${TAG}.tar.gz"
           echo "tarball_url=$TARURL" >> "$GITHUB_OUTPUT"
 
       - name: Download tarball and compute sha256
         id: hash
         run: |
-          curl -sL "${{ steps.release.outputs.tarball_url }}" -o nim.tar.gz
+          curl -sL "${{ steps.tag.outputs.tarball_url }}" -o nim.tar.gz
           sha256=$(sha256sum nim.tar.gz | cut -d' ' -f1)
           echo "sha256=$sha256" >> "$GITHUB_OUTPUT"
 
@@ -36,7 +45,7 @@ jobs:
 
       - name: Verify build with Dagger
         run: |
-          TAG="${{ steps.release.outputs.tag }}"
+          TAG="${{ steps.tag.outputs.tag }}"
           VERSION="${TAG#v}"
           echo "Verifying build for ${VERSION} using Dagger"
           export DAGGER_NO_NAG=1
