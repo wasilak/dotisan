@@ -1,0 +1,49 @@
+name: Update Homebrew Formula
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  update-formula:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get release tag
+        id: release
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          # tarball URL for GitHub archive
+          TARURL="https://github.com/${{ github.repository }}/archive/refs/tags/${TAG}.tar.gz"
+          echo "tarball_url=$TARURL" >> "$GITHUB_OUTPUT"
+
+      - name: Download tarball and compute sha256
+        id: hash
+        run: |
+          curl -sL "${{ steps.release.outputs.tarball_url }}" -o nim.tar.gz
+          sha256=$(sha256sum nim.tar.gz | cut -d' ' -f1)
+          echo "sha256=$sha256" >> "$GITHUB_OUTPUT"
+
+      - name: Update Formula file
+        run: |
+          # Replace url and sha256 lines in Formula/nim.rb
+          sed -E -i "s|^  url \\".*\\"$|  url \"${{ steps.release.outputs.tarball_url }}\"|" Formula/nim.rb
+          sed -E -i "s|^  sha256 \\".*\\"$|  sha256 \"${{ steps.hash.outputs.sha256 }}\"|" Formula/nim.rb
+          # Also update version placeholder if present by ensuring file contains the tag in url
+
+      - name: Commit and push
+        env:
+          GIT_COMMITTER_NAME: github-actions[bot]
+          GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
+        run: |
+          git config user.name "${GIT_COMMITTER_NAME}"
+          git config user.email "${GIT_COMMITTER_EMAIL}"
+          git add Formula/nim.rb
+          git commit -m "chore(homebrew): update formula for ${{ steps.release.outputs.tag }}"
+          git push
