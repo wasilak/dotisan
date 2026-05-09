@@ -17,6 +17,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Ensure we have the default branch checked out so commits succeed even when workflow
+          # is triggered by a tag/ref (actions/checkout defaults to detached HEAD for tags).
+          fetch-depth: 0
+          ref: main
 
       - name: Determine tag & tarball URL
         id: tag
@@ -38,6 +43,7 @@ jobs:
           curl -sL "${{ steps.tag.outputs.tarball_url }}" -o nim.tar.gz
           sha256=$(sha256sum nim.tar.gz | cut -d' ' -f1)
           echo "sha256=$sha256" >> "$GITHUB_OUTPUT"
+          rm -f nim.tar.gz
 
       - name: Install Dagger CLI (for verification)
         run: |
@@ -74,6 +80,11 @@ jobs:
         run: |
           git config user.name "${GIT_COMMITTER_NAME}"
           git config user.email "${GIT_COMMITTER_EMAIL}"
-          git add Formula/nim.rb
-          git commit -m "chore(homebrew): update formula for ${{ steps.release.outputs.tag }}"
-          git push
+          git add Formula/nim.rb || true
+          # Only commit if there are staged changes
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore(homebrew): update formula for ${{ steps.tag.outputs.tag }}"
+            git push origin HEAD:main
+          fi
