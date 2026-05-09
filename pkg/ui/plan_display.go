@@ -239,73 +239,73 @@ func DisplayPlanResult(result *engine.PlanResult, outputFormat output.Format, sh
 		}
 		fmt.Println()
 
-        // --- Unified (inline) diffs ---
-        if showDiff {
-            // Use the styled diff engine which can generate and format unified diffs
-            styled := diff.NewStyledEngine()
+		// --- Unified (inline) diffs ---
+		if showDiff {
+			// Use the styled diff engine which can generate and format unified diffs
+			styled := diff.NewStyledEngine()
 
-            for providerName, plan := range result.ProviderPlans {
-                // MODIFICATIONS
-                for _, mod := range plan.Modifications {
-                    for _, ch := range mod.Changes {
-                        if ch.OldContent != "" || ch.NewContent != "" {
-                            filePath := ch.ItemName
-                            if mod.Kind != "" && mod.Group != "" {
-                                filePath = fmt.Sprintf("%s/%s[%s]", mod.Kind, mod.Group, ch.ItemName)
-                            }
-                            printDiffHeader("update", filePath, providerName)
-                            diffText, err := styled.GenerateUnifiedDiff("before", "after", ensureTrailingNewline(ch.OldContent), ensureTrailingNewline(ch.NewContent))
-                            if err != nil {
-                                // Fallback to raw ch.Diff or simple content print
-                                if ch.Diff != "" {
-                                    fmt.Print(ch.Diff)
-                                } else {
-                                    fmt.Printf("- %s\n+ %s\n", ch.OldContent, ch.NewContent)
-                                }
-                                continue
-                            }
-                            fmt.Print(styled.FormatUnifiedDiff(diffText))
-                        } else if ch.Diff != "" {
-                            printDiffHeader("update", ch.ItemName, providerName)
-                            fmt.Print(ch.Diff)
-                        }
-                    }
-                }
+			for providerName, plan := range result.ProviderPlans {
+				// MODIFICATIONS
+				for _, mod := range plan.Modifications {
+					for _, ch := range mod.Changes {
+						if ch.OldContent != "" || ch.NewContent != "" {
+							filePath := ch.ItemName
+							if mod.Kind != "" && mod.Group != "" {
+								filePath = fmt.Sprintf("%s/%s[%s]", mod.Kind, mod.Group, ch.ItemName)
+							}
+							printDiffHeader("update", filePath, providerName)
+							diffText, err := styled.GenerateUnifiedDiff("before", "after", ensureTrailingNewline(ch.OldContent), ensureTrailingNewline(ch.NewContent))
+							if err != nil {
+								// Fallback to raw ch.Diff or simple content print
+								if ch.Diff != "" {
+									fmt.Print(ch.Diff)
+								} else {
+									fmt.Printf("- %s\n+ %s\n", ch.OldContent, ch.NewContent)
+								}
+								continue
+							}
+							fmt.Print(styled.FormatUnifiedDiff(diffText))
+						} else if ch.Diff != "" {
+							printDiffHeader("update", ch.ItemName, providerName)
+							fmt.Print(ch.Diff)
+						}
+					}
+				}
 
-                // ADDITIONS
-                for _, add := range plan.Additions {
-                    for _, item := range add.Items {
-                        if add.Contents != nil && add.Contents[item.Name] != "" {
-                            filePath := fmt.Sprintf("%s/%s[%s]", add.Kind, add.Group, item.Name)
-                            printDiffHeader("add", filePath, providerName)
-                            diffText, err := styled.GenerateUnifiedDiff("/dev/null", filePath, "", ensureTrailingNewline(add.Contents[item.Name]))
-                            if err != nil {
-                                fmt.Print(ensureTrailingNewline(add.Contents[item.Name]))
-                                continue
-                            }
-                            fmt.Print(styled.FormatUnifiedDiff(diffText))
-                        }
-                    }
-                }
+				// ADDITIONS
+				for _, add := range plan.Additions {
+					for _, item := range add.Items {
+						if add.Contents != nil && add.Contents[item.Name] != "" {
+							filePath := fmt.Sprintf("%s/%s[%s]", add.Kind, add.Group, item.Name)
+							printDiffHeader("add", filePath, providerName)
+							diffText, err := styled.GenerateUnifiedDiff("/dev/null", filePath, "", ensureTrailingNewline(add.Contents[item.Name]))
+							if err != nil {
+								fmt.Print(ensureTrailingNewline(add.Contents[item.Name]))
+								continue
+							}
+							fmt.Print(styled.FormatUnifiedDiff(diffText))
+						}
+					}
+				}
 
-                // REMOVALS
-                for _, rem := range plan.Removals {
-                    for _, item := range rem.Items {
-                        if rem.Contents != nil && rem.Contents[item.Name] != "" {
-                            filePath := fmt.Sprintf("%s/%s[%s]", rem.Kind, rem.Group, item.Name)
-                            printDiffHeader("remove", filePath, providerName)
-                            diffText, err := styled.GenerateUnifiedDiff(filePath, "/dev/null", ensureTrailingNewline(rem.Contents[item.Name]), "")
-                            if err != nil {
-                                fmt.Print(ensureTrailingNewline(rem.Contents[item.Name]))
-                                continue
-                            }
-                            fmt.Print(styled.FormatUnifiedDiff(diffText))
-                        }
-                    }
-                }
-            }
-            fmt.Println()
-        }
+				// REMOVALS
+				for _, rem := range plan.Removals {
+					for _, item := range rem.Items {
+						if rem.Contents != nil && rem.Contents[item.Name] != "" {
+							filePath := fmt.Sprintf("%s/%s[%s]", rem.Kind, rem.Group, item.Name)
+							printDiffHeader("remove", filePath, providerName)
+							diffText, err := styled.GenerateUnifiedDiff(filePath, "/dev/null", ensureTrailingNewline(rem.Contents[item.Name]), "")
+							if err != nil {
+								fmt.Print(ensureTrailingNewline(rem.Contents[item.Name]))
+								continue
+							}
+							fmt.Print(styled.FormatUnifiedDiff(diffText))
+						}
+					}
+				}
+			}
+			fmt.Println()
+		}
 
 		planParts := []string{
 			fmt.Sprintf("%s to add", style.TableStatusAdd.Render(fmt.Sprintf("%d", result.TotalAdditions))),

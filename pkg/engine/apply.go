@@ -283,11 +283,11 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 				}
 				checksum := ""
 				if dest := func() string {
-				if item.FileExtra != nil {
-					return item.FileExtra.Destination
-				}
-				return ""
-			}(); dest != "" {
+					if item.FileExtra != nil {
+						return item.FileExtra.Destination
+					}
+					return ""
+				}(); dest != "" {
 					if data, err := readFileMaybe(dest); err == nil {
 						h := sha256.Sum256(data)
 						checksum = hex.EncodeToString(h[:])

@@ -24,7 +24,7 @@ var Version = "dev"
 var rootCmd = &cobra.Command{
 	Use:     "nim",
 	Version: Version,
-	Short: "Declarative dotfiles management CLI",
+	Short:   "Declarative dotfiles management CLI",
 	Long: `nim is a declarative dotfiles management CLI tool written in Go.
 
 It treats a local developer environment like Terraform treats cloud infrastructure:

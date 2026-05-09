@@ -85,6 +85,57 @@ func (l *Loader) LoadResources() ([]Resource, error) {
 	return resources, nil
 }
 
+// LoadResourcesWithFiles behaves like LoadResources but returns a map of resource
+// name -> source file path and a slice of errors encountered while loading
+// individual files. It attempts to continue loading other files even if some
+// files fail to parse or validate.
+func (l *Loader) LoadResourcesWithFiles() ([]Resource, map[string]string, []error) {
+	var resources []Resource
+	fileFor := make(map[string]string)
+	var errs []error
+
+	resourcesRoot := filepath.Join(l.dotfilesPath, "resources")
+	if _, err := os.Stat(resourcesRoot); os.IsNotExist(err) {
+		return resources, fileFor, nil
+	} else if err != nil {
+		return nil, fileFor, []error{fmt.Errorf("failed to access resources directory: %w", err)}
+	}
+
+	_ = filepath.Walk(resourcesRoot, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			// record and continue
+			errs = append(errs, err)
+			return nil
+		}
+		if info.IsDir() {
+			return nil
+		}
+		if !isYAMLFile(path) {
+			return nil
+		}
+
+		// Skip values/config files
+		base := filepath.Base(path)
+		if base == "values.yaml" || base == "config.yaml" {
+			return nil
+		}
+
+		resource, err := l.loadResourceFile(path)
+		if err != nil {
+			// capture error (includes parse/validation errors) and continue
+			errs = append(errs, fmt.Errorf("%s: %w", path, err))
+			return nil
+		}
+		if resource != nil {
+			resources = append(resources, resource)
+			fileFor[resource.GetMetadata().Name] = path
+		}
+		return nil
+	})
+
+	return resources, fileFor, errs
+}
+
 // loadResourceFile loads a single YAML resource file.
 func (l *Loader) loadResourceFile(path string) (Resource, error) {
 	// Read file

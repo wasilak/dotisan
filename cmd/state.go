@@ -1,30 +1,30 @@
 package cmd
 
 import (
-    "context"
-    "crypto/sha256"
-    "encoding/hex"
-    "encoding/json"
-    "errors"
-    "fmt"
-    "io/fs"
-    "log/slog"
-    "os"
-    "strings"
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io/fs"
+	"log/slog"
+	"os"
+	"strings"
 
-    "github.com/wasilak/nim/pkg/ui"
+	"github.com/wasilak/nim/pkg/ui"
 
-    "github.com/wasilak/nim/pkg/config"
-    "github.com/wasilak/nim/pkg/diff"
-    "github.com/wasilak/nim/pkg/engine"
-    "github.com/wasilak/nim/pkg/output"
-    "github.com/wasilak/nim/pkg/provider"
-    "github.com/wasilak/nim/pkg/providers"
-    "github.com/wasilak/nim/pkg/resource"
-    "github.com/wasilak/nim/pkg/state"
-    "github.com/wasilak/nim/pkg/style"
+	"github.com/wasilak/nim/pkg/config"
+	"github.com/wasilak/nim/pkg/diff"
+	"github.com/wasilak/nim/pkg/engine"
+	"github.com/wasilak/nim/pkg/output"
+	"github.com/wasilak/nim/pkg/provider"
+	"github.com/wasilak/nim/pkg/providers"
+	"github.com/wasilak/nim/pkg/resource"
+	"github.com/wasilak/nim/pkg/state"
+	"github.com/wasilak/nim/pkg/style"
 
-    "github.com/spf13/cobra"
+	"github.com/spf13/cobra"
 )
 
 // stateCmd represents the state command
@@ -96,84 +96,84 @@ func runStateImport(ctx context.Context, id, actual string) error {
 	if ctx == nil {
 		return fmt.Errorf("internal: context is nil")
 	}
-    // For ManagedFile imports we bypass provider.Import and construct the
-    // discovered state directly. FileProvider.Import is not implemented and
-    // calling providers that return errors causes the spinner to render a
-    // transient "Failed" message before we fall back. Instead, validate the
-    // destination exists and compute its checksum here so the CLI reports a
-    // clear success without confusing spinner output.
-    var resourceState provider.ResourceState
-    if rid.Kind == resource.KindManagedFile {
-        // actualValue is the destination path for ManagedFile imports
-        if actualValue == "" {
-            return fmt.Errorf("no path provided for ManagedFile import")
-        }
-        st, statErr := os.Stat(actualValue)
-        if statErr != nil {
-            if os.IsNotExist(statErr) {
-                return fmt.Errorf("file does not exist: %s", actualValue)
-            }
-            return fmt.Errorf("cannot stat file %s: %w", actualValue, statErr)
-        }
-        if st.IsDir() {
-            return fmt.Errorf("path is a directory, expected file: %s", actualValue)
-        }
-        // compute checksum
-        data, readErr := os.ReadFile(actualValue)
-        if readErr != nil {
-            return fmt.Errorf("failed to read file %s: %w", actualValue, readErr)
-        }
-        h := sha256.Sum256(data)
-        checksum := hex.EncodeToString(h[:])
-
-        resourceState = provider.ResourceState{
-            Kind:  rid.Kind,
-            Group: rid.Group,
-            Items: []resource.ItemState{{Name: actualValue, Checksum: checksum, Status: "present"}},
-        }
-    } else {
-        // Use spinner while performing provider Import (may invoke external commands)
-        importErr := ui.RunWithSpinner(ctx, style.Info, "Discovering installed resources...", "import cancelled", func(ctx context.Context, publish func(ui.MessageLevel, string)) error {
-            var err error
-            // provider.Import may perform its own output; we do not publish per-item
-            // updates here, but publish is available if needed in the future.
-            resourceState, err = p.Import(ctx, rid.Group)
-            return err
-        })
-        // normalize err variable for fallback logic below
-        err = importErr
-        if err != nil {
-            // Fall back to minimal state with the requested item only
-            resourceState = provider.ResourceState{
-                Kind:  rid.Kind,
-                Group: rid.Group,
-                Items: []resource.ItemState{{Name: actualValue, Status: "present"}},
-            }
-        } else {
-		// Find the requested item in the discovered set and keep only that one.
-		// Import discovers the whole installed set; we must not write unrelated
-		// packages into state.
-		var foundItem *resource.ItemState
-		for i, it := range resourceState.Items {
-			if it.Name == actualValue {
-				foundItem = &resourceState.Items[i]
-				break
+	// For ManagedFile imports we bypass provider.Import and construct the
+	// discovered state directly. FileProvider.Import is not implemented and
+	// calling providers that return errors causes the spinner to render a
+	// transient "Failed" message before we fall back. Instead, validate the
+	// destination exists and compute its checksum here so the CLI reports a
+	// clear success without confusing spinner output.
+	var resourceState provider.ResourceState
+	if rid.Kind == resource.KindManagedFile {
+		// actualValue is the destination path for ManagedFile imports
+		if actualValue == "" {
+			return fmt.Errorf("no path provided for ManagedFile import")
+		}
+		st, statErr := os.Stat(actualValue)
+		if statErr != nil {
+			if os.IsNotExist(statErr) {
+				return fmt.Errorf("file does not exist: %s", actualValue)
 			}
+			return fmt.Errorf("cannot stat file %s: %w", actualValue, statErr)
 		}
-		if foundItem == nil {
-			resourceState.Items = []resource.ItemState{{Name: actualValue, Status: "present"}}
+		if st.IsDir() {
+			return fmt.Errorf("path is a directory, expected file: %s", actualValue)
+		}
+		// compute checksum
+		data, readErr := os.ReadFile(actualValue)
+		if readErr != nil {
+			return fmt.Errorf("failed to read file %s: %w", actualValue, readErr)
+		}
+		h := sha256.Sum256(data)
+		checksum := hex.EncodeToString(h[:])
+
+		resourceState = provider.ResourceState{
+			Kind:  rid.Kind,
+			Group: rid.Group,
+			Items: []resource.ItemState{{Name: actualValue, Checksum: checksum, Status: "present"}},
+		}
+	} else {
+		// Use spinner while performing provider Import (may invoke external commands)
+		importErr := ui.RunWithSpinner(ctx, style.Info, "Discovering installed resources...", "import cancelled", func(ctx context.Context, publish func(ui.MessageLevel, string)) error {
+			var err error
+			// provider.Import may perform its own output; we do not publish per-item
+			// updates here, but publish is available if needed in the future.
+			resourceState, err = p.Import(ctx, rid.Group)
+			return err
+		})
+		// normalize err variable for fallback logic below
+		err = importErr
+		if err != nil {
+			// Fall back to minimal state with the requested item only
+			resourceState = provider.ResourceState{
+				Kind:  rid.Kind,
+				Group: rid.Group,
+				Items: []resource.ItemState{{Name: actualValue, Status: "present"}},
+			}
 		} else {
-			resourceState.Items = []resource.ItemState{*foundItem}
+			// Find the requested item in the discovered set and keep only that one.
+			// Import discovers the whole installed set; we must not write unrelated
+			// packages into state.
+			var foundItem *resource.ItemState
+			for i, it := range resourceState.Items {
+				if it.Name == actualValue {
+					foundItem = &resourceState.Items[i]
+					break
+				}
+			}
+			if foundItem == nil {
+				resourceState.Items = []resource.ItemState{{Name: actualValue, Status: "present"}}
+			} else {
+				resourceState.Items = []resource.ItemState{*foundItem}
+			}
+
+			// Ensure kind/group are set consistently with the parsed ID
+			resourceState.Kind = rid.Kind
+			resourceState.Group = rid.Group
 		}
 
-        // Ensure kind/group are set consistently with the parsed ID
-        resourceState.Kind = rid.Kind
-        resourceState.Group = rid.Group
-    }
+	}
 
-    }
-
-    // Load current state
+	// Load current state
 	cfg, cfgErr := config.LoadConfigFromDefaultPath()
 	if cfgErr != nil && !errors.Is(cfgErr, fs.ErrNotExist) {
 		slog.Warn("failed to load config", "err", cfgErr)

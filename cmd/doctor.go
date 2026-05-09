@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/wasilak/nim/pkg/audit"
 	"github.com/wasilak/nim/pkg/config"
 	"github.com/wasilak/nim/pkg/provider"
 	"github.com/wasilak/nim/pkg/resource"
@@ -18,6 +19,8 @@ import (
 )
 
 var doctorValidateFlag bool
+var doctorOutputFlag string
+var doctorSeverityFlag string
 
 // doctorCmd represents the doctor command
 var doctorCmd = &cobra.Command{
@@ -159,25 +162,44 @@ func runDoctor(ctx context.Context) error {
 	if doctorValidateFlag {
 		// Use provided context so cancellation from signals propagates here
 		// Use the spinner for validation
-		var validationErrors []string
-		validationErr := ui.RunWithSpinner(ctx, style.Info, "Validating resource files...", "validation cancelled", func(ctx context.Context, publish func(ui.MessageLevel, string)) error {
-			// validateResources walks files and respects ctx; no per-file
-			// publish calls currently, but publish is available for future
-			// enhancements.
-			var innerErr error
-			validationErrors, innerErr = validateResources(ctx, configDir, valuesPath)
-			return innerErr
+		// Run enhanced audit using pkg/audit
+		auditor := audit.NewAuditor(configDir)
+		var auditRes *audit.AuditResult
+		var auditErr error
+		auditErr = ui.RunWithSpinner(ctx, style.Info, "Validating resource files...", "validation cancelled", func(ctx context.Context, publish func(ui.MessageLevel, string)) error {
+			var err error
+			auditRes, err = auditor.Run()
+			return err
 		})
-		if validationErr != nil {
-			fmt.Printf("  %s Resource validation failed: %v\n", style.IconError, validationErr)
-		} else if len(validationErrors) > 0 {
-			hasErrors = true
-			for _, v := range validationErrors {
-				fmt.Printf("  %s %s\n", style.IconError, v)
-				issues = append(issues, v)
-			}
+		if auditErr != nil {
+			fmt.Printf("  %s Resource audit failed: %v\n", style.IconError, auditErr)
 		} else {
-			fmt.Printf("  %s All resource files valid\n", style.StyledIconSuccess)
+			// Output according to doctorOutputFlag
+			min := audit.SeverityWarning
+			if doctorSeverityFlag == "error" {
+				min = audit.SeverityError
+			} else if doctorSeverityFlag == "info" {
+				min = audit.SeverityInfo
+			}
+			if doctorOutputFlag == "json" {
+				out, err := audit.ReportJSON(auditRes)
+				if err != nil {
+					fmt.Printf("  %s Failed to render audit JSON: %v\n", style.IconError, err)
+				} else {
+					fmt.Println(string(out))
+				}
+			} else {
+				txt := audit.ReportText(auditRes, min)
+				fmt.Println(txt)
+			}
+
+			if auditRes.Summary.Errors > 0 {
+				hasErrors = true
+				issues = append(issues, fmt.Sprintf("%d audit errors", auditRes.Summary.Errors))
+			}
+			if auditRes.Summary.Warnings > 0 {
+				warnings = append(warnings, fmt.Sprintf("%d audit warnings", auditRes.Summary.Warnings))
+			}
 		}
 		fmt.Println()
 	}
@@ -298,4 +320,6 @@ func validateResources(ctx context.Context, configDir, valuesPath string) ([]str
 func init() {
 	rootCmd.AddCommand(doctorCmd)
 	doctorCmd.Flags().BoolVar(&doctorValidateFlag, "validate", false, "Also validate all resource YAML files")
+	doctorCmd.Flags().StringVar(&doctorOutputFlag, "output", "text", "Output format: text or json")
+	doctorCmd.Flags().StringVar(&doctorSeverityFlag, "severity", "warning", "Minimum severity to report: error, warning, info")
 }

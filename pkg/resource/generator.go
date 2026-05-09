@@ -15,8 +15,8 @@ import (
 // generatorContext is the template data available when rendering generator templates.
 // Fields use PascalCase so they are accessible in templates as .Item, .Index, etc.
 type generatorContext struct {
-	Item   any
-	Index  int
+	Item  any
+	Index int
 	// map[string]any is intentional: Values comes from user-defined values.yaml, schema-less at compile time.
 	Values map[string]any
 	Env    map[string]string
