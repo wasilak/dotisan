@@ -79,8 +79,14 @@ func (p *AISkillProvider) applyGroupAddition(ctx context.Context, addition provi
 			args = append(args, "--all")
 		}
 		slog.Info("installing AI skill package", "source", item.Name)
-		if _, stderr, err := cmdutil.RunSimpleFn(ctx, "npx", args...); err != nil {
-			return fmt.Errorf("failed to install %s: %s: %w", item.Name, stderr, err)
+		stdout, stderr, err := cmdutil.RunSimpleFn(ctx, "npx", args...)
+		if err != nil {
+			cmd := "npx " + strings.Join(args, " ")
+			output := stderr
+			if output == "" {
+				output = stdout
+			}
+			return fmt.Errorf("failed to install %s: %s\n  command: %s", item.Name, output, cmd)
 		}
 	}
 	return nil
