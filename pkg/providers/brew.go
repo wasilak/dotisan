@@ -172,14 +172,19 @@ func (p *BrewProvider) Reconcile(ctx context.Context,
 
 				// Add warning about import
 				itemNames := make([]string, 0, len(toImport))
+				candidates := make([]provider.ImportCandidate, 0, len(toImport))
 				for _, item := range toImport {
 					itemNames = append(itemNames, item.Name)
+					candidates = append(candidates, provider.ImportCandidate{
+						ID: fmt.Sprintf("%s/%s[%s]", group.Kind, group.Name, item.Name),
+					})
 				}
 				plan.Warnings = append(plan.Warnings, provider.PlanWarning{
-					GroupID:    fmt.Sprintf("%s/%s", group.Kind, group.Name),
-					Severity:   "warning",
-					Message:    fmt.Sprintf("Items already installed but not tracked: %s", strings.Join(itemNames, ", ")),
-					Suggestion: fmt.Sprintf("nim state import %s/%s[<item>]", group.Kind, group.Name),
+					GroupID:     fmt.Sprintf("%s/%s", group.Kind, group.Name),
+					Severity:    "warning",
+					Message:     fmt.Sprintf("Items already installed but not tracked: %s", strings.Join(itemNames, ", ")),
+					Suggestion:  fmt.Sprintf("nim state import %s/%s[<item>]", group.Kind, group.Name),
+					ImportItems: candidates,
 				})
 			}
 		} else {

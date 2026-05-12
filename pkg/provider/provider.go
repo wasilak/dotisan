@@ -127,6 +127,16 @@ type GroupSkip struct {
 	Reason string
 }
 
+// ImportCandidate represents a single resource that can be auto-imported.
+type ImportCandidate struct {
+	// ID is the canonical resource identifier, e.g. "GoPackages/go-dev-tools[gopls]"
+	ID string
+
+	// ActualValue is the real system value when it differs from the item name,
+	// e.g. the destination path for ManagedFile imports.
+	ActualValue string
+}
+
 // PlanWarning represents a non-blocking advisory produced during reconcile.
 // It can point to a resource and optionally include a suggestion (copy-pasteable).
 type PlanWarning struct {
@@ -144,6 +154,10 @@ type PlanWarning struct {
 
 	// Suggestion is an optional copy-pasteable command or snippet
 	Suggestion string
+
+	// ImportItems lists structured candidates for "nim state import all".
+	// Populated when the warning describes resources that can be auto-imported.
+	ImportItems []ImportCandidate
 }
 
 // ResourceState represents the state of a resource group as tracked by nim.

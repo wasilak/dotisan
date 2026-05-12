@@ -60,6 +60,102 @@ Examples:
 	},
 }
 
+// stateImportAllCmd imports all untracked installed resources into state
+var stateImportAllCmd = &cobra.Command{
+	Use:          "all",
+	SilenceUsage: true,
+	Short:        "Import all untracked installed resources into state",
+	Long: `all discovers installed resources not yet tracked in state and imports them.
+
+Runs a plan to find resources already installed on the system but not tracked
+in the state file, then imports each one automatically.
+
+Examples:
+  nim state import all
+  nim state import all --confirm`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runStateImportAll(cmd.Context())
+	},
+}
+
+var stateImportAllConfirm bool
+
+func runStateImportAll(ctx context.Context) error {
+	eng, err := engine.NewEngine()
+	if err != nil {
+		return fmt.Errorf("failed to initialize: %w", err)
+	}
+
+	var result *engine.PlanResult
+	planErr := ui.RunWithSpinner(ctx, style.Info, "Discovering untracked resources...", "cancelled", func(ctx context.Context, publish func(ui.MessageLevel, string)) error {
+		var e error
+		result, e = eng.Plan(ctx, engine.PlanOptions{})
+		return e
+	})
+	if planErr != nil {
+		return fmt.Errorf("plan failed: %w", planErr)
+	}
+
+	// Collect all import candidates from plan warnings
+	var candidates []provider.ImportCandidate
+	for _, plan := range result.ProviderPlans {
+		for _, w := range plan.Warnings {
+			candidates = append(candidates, w.ImportItems...)
+		}
+	}
+
+	if len(candidates) == 0 {
+		fmt.Println(style.Iconf(style.StyledIconSuccess, style.Success, "No untracked installed resources found."))
+		return nil
+	}
+
+	// Show preview
+	fmt.Println(style.Header.Render("Resources to import"))
+	fmt.Println()
+	for _, c := range candidates {
+		fmt.Printf("  %s %s\n", style.Info.Render("→"), c.ID)
+	}
+	fmt.Println()
+
+	// Confirm unless --confirm flag is set
+	if !stateImportAllConfirm {
+		fmt.Print(style.PromptPrefix(fmt.Sprintf("Import %d resource(s)?", len(candidates))))
+		key, readErr := ui.ReadSingleKey()
+		if readErr != nil {
+			var resp string
+			_, scanErr := fmt.Scanln(&resp)
+			if scanErr != nil && scanErr.Error() != "unexpected newline" {
+				return fmt.Errorf("confirmation prompt error: %w", scanErr)
+			}
+			key = strings.ToLower(resp)
+		}
+		fmt.Println()
+		if key != "y" && key != "yes" {
+			fmt.Println("→ Import cancelled.")
+			return nil
+		}
+	}
+
+	// Import each candidate
+	var importErrors []string
+	for _, c := range candidates {
+		if err := runStateImport(ctx, c.ID, c.ActualValue); err != nil {
+			importErrors = append(importErrors, fmt.Sprintf("%s: %v", c.ID, err))
+		}
+	}
+
+	if len(importErrors) > 0 {
+		fmt.Println()
+		fmt.Println(style.Header.Render("Import errors"))
+		for _, e := range importErrors {
+			fmt.Printf("  %s %s\n", style.Error.Render(style.IconError), e)
+		}
+		return fmt.Errorf("%d import(s) failed", len(importErrors))
+	}
+
+	return nil
+}
+
 // parseID/parsing is handled centrally by pkg/resource.ParseResourceID
 
 func runStateImport(ctx context.Context, id, actual string) error {
@@ -525,6 +621,8 @@ func displayStateTable(currentState *state.State) error {
 func init() {
 	rootCmd.AddCommand(stateCmd)
 	stateCmd.AddCommand(stateImportCmd)
+	stateImportCmd.AddCommand(stateImportAllCmd)
+	stateImportAllCmd.Flags().BoolVar(&stateImportAllConfirm, "confirm", false, "Skip confirmation and import all without prompting")
 	stateCmd.AddCommand(stateMvCmd)
 	stateCmd.AddCommand(stateRemoveCmd)
 	stateCmd.AddCommand(stateListCmd)

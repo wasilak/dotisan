@@ -123,14 +123,19 @@ func BaseReconcile(
 					Kind: group.Kind, Group: group.Name, Items: toImport,
 				})
 				itemNames := make([]string, 0, len(toImport))
+				candidates := make([]ImportCandidate, 0, len(toImport))
 				for _, item := range toImport {
 					itemNames = append(itemNames, item.Name)
+					candidates = append(candidates, ImportCandidate{
+						ID: fmt.Sprintf("%s/%s[%s]", group.Kind, group.Name, item.Name),
+					})
 				}
 				plan.Warnings = append(plan.Warnings, PlanWarning{
-					GroupID:    fmt.Sprintf("%s/%s", group.Kind, group.Name),
-					Severity:   "warning",
-					Message:    fmt.Sprintf("Items already installed but not tracked: %s", strings.Join(itemNames, ", ")),
-					Suggestion: fmt.Sprintf("nim state import %s/%s[<item>]", group.Kind, group.Name),
+					GroupID:     fmt.Sprintf("%s/%s", group.Kind, group.Name),
+					Severity:    "warning",
+					Message:     fmt.Sprintf("Items already installed but not tracked: %s", strings.Join(itemNames, ", ")),
+					Suggestion:  fmt.Sprintf("nim state import %s/%s[<item>]", group.Kind, group.Name),
+					ImportItems: candidates,
 				})
 			}
 		} else {

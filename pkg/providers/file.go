@@ -100,6 +100,10 @@ func (p *FileProvider) Reconcile(ctx context.Context,
 						Severity:   "warning",
 						Message:    fmt.Sprintf("Destination file already exists at %s", dest),
 						Suggestion: fmt.Sprintf("nim state import %s/%s[%s] %s", group.Kind, group.Name, it.Name, dest),
+						ImportItems: []provider.ImportCandidate{{
+							ID:          fmt.Sprintf("%s/%s[%s]", group.Kind, group.Name, it.Name),
+							ActualValue: dest,
+						}},
 					})
 				}
 			}
