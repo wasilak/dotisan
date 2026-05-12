@@ -196,7 +196,7 @@ func DisplayPlanResult(result *engine.PlanResult, outputFormat output.Format, sh
 						Kind:        mod.Kind,
 						Region:      mod.Group,
 						Details:     ch.NewState.Version,
-						Explanation: "",
+						Explanation: ch.Diff,
 					})
 				}
 			}
@@ -248,11 +248,28 @@ func DisplayPlanResult(result *engine.PlanResult, outputFormat output.Format, sh
 				// MODIFICATIONS
 				for _, mod := range plan.Modifications {
 					for _, ch := range mod.Changes {
-						if ch.OldContent != "" || ch.NewContent != "" {
-							filePath := ch.ItemName
-							if mod.Kind != "" && mod.Group != "" {
-								filePath = fmt.Sprintf("%s/%s[%s]", mod.Kind, mod.Group, ch.ItemName)
+						filePath := ch.ItemName
+						if mod.Kind != "" && mod.Group != "" {
+							filePath = fmt.Sprintf("%s/%s[%s]", mod.Kind, mod.Group, ch.ItemName)
+						}
+
+						if ch.Diff == "mode changed" {
+							// Mode-only change: render annotation in header, no content diff needed.
+							oldMode, newMode := "", ""
+							if ch.OldState.FileExtra != nil {
+								oldMode = ch.OldState.FileExtra.Mode
 							}
+							if ch.NewState.FileExtra != nil {
+								newMode = ch.NewState.FileExtra.Mode
+							}
+							if oldMode == "" {
+								oldMode = "0644" // implicit default when no mode was previously set
+							}
+							modeAnnotation := style.DiffBadgeRemove.Render(oldMode) +
+								style.DiffProvider.Render(" → ") +
+								style.DiffBadgeAdd.Render(newMode)
+							printDiffHeader("update", filePath, providerName, modeAnnotation)
+						} else if ch.OldContent != "" || ch.NewContent != "" {
 							printDiffHeader("update", filePath, providerName)
 							diffText, err := styled.GenerateUnifiedDiff("before", "after", ensureTrailingNewline(ch.OldContent), ensureTrailingNewline(ch.NewContent))
 							if err != nil {
@@ -266,7 +283,7 @@ func DisplayPlanResult(result *engine.PlanResult, outputFormat output.Format, sh
 							}
 							fmt.Print(styled.FormatUnifiedDiff(diffText))
 						} else if ch.Diff != "" {
-							printDiffHeader("update", ch.ItemName, providerName)
+							printDiffHeader("update", filePath, providerName)
 							fmt.Print(ch.Diff)
 						}
 					}
@@ -322,8 +339,9 @@ func DisplayPlanResult(result *engine.PlanResult, outputFormat output.Format, sh
 }
 
 // printDiffHeader renders a visual divider and a colour-coded action label
-// with the file path before each diff block.
-func printDiffHeader(action, filePath, providerName string) {
+// with the file path before each diff block. An optional annotation (e.g. a
+// coloured permissions transition) is appended to the header line when provided.
+func printDiffHeader(action, filePath, providerName string, annotation ...string) {
 	// TODO: migrate to os terminal or use default width
 	width := 80
 	if width < 20 {
@@ -344,9 +362,14 @@ func printDiffHeader(action, filePath, providerName string) {
 	path := style.DiffPath.Render(filePath)
 	prov := style.DiffProvider.Render("(" + providerName + ")")
 
+	line := fmt.Sprintf("  %s  %s  %s", badge, path, prov)
+	if len(annotation) > 0 && annotation[0] != "" {
+		line += "   " + annotation[0]
+	}
+
 	fmt.Println()
 	fmt.Println(rule)
-	fmt.Printf("  %s  %s  %s\n", badge, path, prov)
+	fmt.Println(line)
 	fmt.Println(rule)
 	// (All pterm styles stubbed, now using color palette)
 }

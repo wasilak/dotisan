@@ -48,7 +48,7 @@ type ManagedFileSpec struct {
 	// Files is a list of files to manage (new list-based syntax).
 	// When populated, this takes precedence over the single-file fields above.
 	// Each entry represents one file to manage.
-	Files []FileSpec `yaml:"files,omitempty"`
+	Files []FileSpec `yaml:"files,omitempty" validate:"omitempty,dive"`
 
 	// Generator expands a values list into multiple files at load time.
 	// Mutually exclusive with Source, SourceFile, and Files.
@@ -99,7 +99,7 @@ type FileSpec struct {
 	Template bool `yaml:"template,omitempty"`
 
 	// Mode is the file permissions for this file
-	Mode string `yaml:"mode,omitempty"`
+	Mode string `yaml:"mode,omitempty" validate:"omitempty,file_mode"`
 
 	// DependsOn lists resource names this file depends on.
 	DependsOn []string `yaml:"dependsOn,omitempty"`

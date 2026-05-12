@@ -203,6 +203,22 @@ func TestManagedFile_Validate(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "invalid mode in FileSpec",
+			file: ManagedFile{
+				BaseResource: BaseResource{
+					APIVersion: "github.com/wasilak/nim/v1",
+					Kind:       "ManagedFile",
+					Metadata:   Metadata{Name: "bad-filespec-mode"},
+				},
+				Spec: ManagedFileSpec{
+					Files: []FileSpec{
+						{Source: "x", Destination: "~/x.txt", Mode: "abc"},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
 			name: "missing source",
 			file: ManagedFile{
 				BaseResource: BaseResource{

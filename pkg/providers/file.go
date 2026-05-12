@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/wasilak/nim/pkg/planctx"
@@ -303,6 +304,36 @@ func (p *FileProvider) compareGroupItems(
 		}
 
 		if inState {
+			// actualMode returns the on-disk mode string and whether it differs from desired.
+			actualMode := func() (string, bool) {
+				if fe == nil || fe.Mode == "" {
+					return "", false
+				}
+				info, err := os.Stat(p.resolveDest(fe.Destination))
+				if err != nil {
+					return "", false
+				}
+				perm := info.Mode().Perm()
+				changed := perm != parseMode(fe.Mode)
+				return fmt.Sprintf("%04o", perm), changed
+			}
+
+			// stateWithActualMode returns a copy of stateItem with FileExtra.Mode set to the
+			// real on-disk mode, so the display layer can show the full old→new transition.
+			// Creates a FileExtra if none exists (e.g. state predates FileExtra tracking).
+			stateWithActualMode := func(onDiskMode string) resource.ItemState {
+				s := stateItem
+				if onDiskMode != "" {
+					var extra resource.FileItemExtra
+					if s.FileExtra != nil {
+						extra = *s.FileExtra
+					}
+					extra.Mode = onDiskMode
+					s.FileExtra = &extra
+				}
+				return s
+			}
+
 			if desiredHash != "" {
 				if desiredHash != currentHash {
 					modifications = append(modifications, provider.ItemChange{
@@ -315,6 +346,18 @@ func (p *FileProvider) compareGroupItems(
 							FileExtra: desiredItem.FileExtra,
 						},
 						Diff: "content changed",
+					})
+				} else if onDisk, changed := actualMode(); changed {
+					modifications = append(modifications, provider.ItemChange{
+						ItemName: name,
+						OldState: stateWithActualMode(onDisk),
+						NewState: resource.ItemState{
+							Name:      name,
+							Checksum:  desiredHash,
+							Status:    "present",
+							FileExtra: desiredItem.FileExtra,
+						},
+						Diff: "mode changed",
 					})
 				} else {
 					inSync = append(inSync, stateItem)
@@ -332,6 +375,18 @@ func (p *FileProvider) compareGroupItems(
 							FileExtra: desiredItem.FileExtra,
 						},
 						Diff: "content changed",
+					})
+				} else if onDisk, changed := actualMode(); changed {
+					modifications = append(modifications, provider.ItemChange{
+						ItemName: name,
+						OldState: stateWithActualMode(onDisk),
+						NewState: resource.ItemState{
+							Name:      name,
+							Checksum:  currentHash,
+							Status:    "present",
+							FileExtra: desiredItem.FileExtra,
+						},
+						Diff: "mode changed",
 					})
 				} else {
 					inSync = append(inSync, stateItem)
@@ -408,15 +463,21 @@ func (p *FileProvider) applyGroupAddition(ctx context.Context, addition provider
 			return fmt.Errorf("failed to create parent directory for %s: %w", dest, err)
 		}
 
+		fileMode := parseMode(fe.Mode)
 		if fe.Source != "" && fe.Source != "(inline)" {
 			sourcePath := p.resolveSource(fe.Source)
-			if err := p.copyFile(sourcePath, dest); err != nil {
+			if err := p.copyFile(sourcePath, dest, fileMode); err != nil {
 				return fmt.Errorf("failed to copy %s to %s: %w", sourcePath, dest, err)
 			}
 		} else {
-			if err := os.WriteFile(dest, []byte(fe.Inline), 0644); err != nil {
+			if err := os.WriteFile(dest, []byte(fe.Inline), fileMode); err != nil {
 				return fmt.Errorf("failed to create %s: %w", dest, err)
 			}
+		}
+		// WriteFile only sets the mode at creation; chmod ensures the mode is
+		// applied even when overwriting an existing file with different permissions.
+		if err := os.Chmod(dest, fileMode); err != nil {
+			return fmt.Errorf("failed to set mode on %s: %w", dest, err)
 		}
 	}
 	return nil
@@ -456,13 +517,25 @@ func (p *FileProvider) applyGroupModification(ctx context.Context, modification 
 	})
 }
 
-// copyFile copies a file from src to dst
-func (p *FileProvider) copyFile(src, dst string) error {
+// parseMode converts a "0644"-style octal string to os.FileMode, defaulting to 0644.
+func parseMode(mode string) os.FileMode {
+	if mode == "" {
+		return 0644
+	}
+	v, err := strconv.ParseUint(mode, 8, 32)
+	if err != nil {
+		return 0644
+	}
+	return os.FileMode(v)
+}
+
+// copyFile copies a file from src to dst with the given permissions.
+func (p *FileProvider) copyFile(src, dst string, mode os.FileMode) error {
 	data, err := os.ReadFile(src)
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(dst, data, 0644)
+	return os.WriteFile(dst, data, mode)
 }
 
 // Import is intentionally not implemented for FileProvider. ImportItem support
