@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"runtime/debug"
 	"strings"
 	"syscall"
 
@@ -62,6 +63,14 @@ func Execute() {
 }
 
 func init() {
+	// Resolve version from build info when ldflags were not injected (e.g. go install).
+	if Version == "dev" {
+		if info, ok := debug.ReadBuildInfo(); ok && info.Main.Version != "" && info.Main.Version != "(devel)" {
+			Version = info.Main.Version
+		}
+	}
+	rootCmd.Version = Version
+
 	// Add persistent flag for log level which overrides config
 	rootCmd.PersistentFlags().String("log-level", "", "Log level (debug, info, warn, error)")
 
