@@ -134,10 +134,10 @@ func (p *GoProvider) applyGroupAddition(ctx context.Context, addition provider.G
 		module := item.Name
 		version := item.Version
 
-		// Build install path
-		installPath := module
-		if version != "" && version != "latest" {
-			installPath = fmt.Sprintf("%s@%s", module, version)
+		// Build install path — go install always requires a version suffix
+		installPath := fmt.Sprintf("%s@%s", module, version)
+		if version == "" || version == "latest" {
+			installPath = fmt.Sprintf("%s@latest", module)
 		}
 
 		if _, stderr, err := cmdutil.RunSimpleFn(ctx, goBin, "install", installPath); err != nil {
