@@ -22,7 +22,10 @@
       "Bash(echo \"---exit:$?\")",
       "Bash(brew *)",
       "Bash(python3 *)",
-      "Bash(echo \"exit:$?\")"
+      "Bash(echo \"exit:$?\")",
+      "Bash(git rebase *)",
+      "Bash(gh release *)",
+      "Bash(go list *)"
     ]
   }
 }
