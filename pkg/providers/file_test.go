@@ -42,9 +42,11 @@ func TestFileProvider_Apply_UsesMode(t *testing.T) {
 					Mode:        tc.mode,
 				},
 			}
-			err := p.applyGroupAddition(context.Background(), groupAdditionFrom(addition))
-			if err != nil {
-				t.Fatalf("applyGroupAddition: %v", err)
+			results := p.applyGroupAddition(context.Background(), groupAdditionFrom(addition))
+			for _, r := range results {
+				if r.Err != nil {
+					t.Fatalf("applyGroupAddition: %v", r.Err)
+				}
 			}
 
 			info, err := os.Stat(dest)
@@ -114,8 +116,10 @@ func TestFileProvider_Apply_FixesModeOnModification(t *testing.T) {
 			Mode:        "0755",
 		},
 	}
-	if err := p.applyGroupAddition(context.Background(), groupAdditionFrom(addition)); err != nil {
-		t.Fatalf("apply: %v", err)
+	for _, r := range p.applyGroupAddition(context.Background(), groupAdditionFrom(addition)) {
+		if r.Err != nil {
+			t.Fatalf("apply: %v", r.Err)
+		}
 	}
 	info, err := os.Stat(dest)
 	if err != nil {

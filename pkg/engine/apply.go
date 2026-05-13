@@ -97,8 +97,50 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 		return "", ""
 	}
 
+	// buildGroupPlan filters the provider plan to a single (kind, group) pair.
+	buildGroupPlan := func(plan provider.GroupPlan, kind, group string) provider.GroupPlan {
+		var out provider.GroupPlan
+		for _, a := range plan.Additions {
+			if a.Kind == kind && a.Group == group {
+				out.Additions = append(out.Additions, a)
+			}
+		}
+		for _, m := range plan.Modifications {
+			if m.Kind == kind && m.Group == group {
+				out.Modifications = append(out.Modifications, m)
+			}
+		}
+		for _, r := range plan.Removals {
+			if r.Kind == kind && r.Group == group {
+				out.Removals = append(out.Removals, r)
+			}
+		}
+		return out
+	}
+
+	// collectAllItemNames returns all item names from a group plan, for fatal-error reporting.
+	collectAllItemNames := func(gp provider.GroupPlan, kind, group string) []string {
+		var names []string
+		for _, a := range gp.Additions {
+			for _, it := range a.Items {
+				names = append(names, it.Name)
+			}
+		}
+		for _, m := range gp.Modifications {
+			for _, c := range m.Changes {
+				names = append(names, c.ItemName)
+			}
+		}
+		for _, r := range gp.Removals {
+			for _, it := range r.Items {
+				names = append(names, it.Name)
+			}
+		}
+		return names
+	}
+
 	// applyGroup executes all plan entries (adds, modifies, removes) for a single
-	// (kind, group) pair and returns whether all operations succeeded.
+	// (kind, group) pair in one provider call and returns whether all operations succeeded.
 	applyGroup := func(providerName, kind, group string) bool {
 		prov, exists := e.Providers[providerName]
 		plan := result.ProviderPlans[providerName]
@@ -115,74 +157,54 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 			return false
 		}
 
-		ok := true
-		for _, a := range plan.Additions {
-			if a.Kind != kind || a.Group != group {
-				continue
-			}
+		groupPlan := buildGroupPlan(plan, kind, group)
+
+		// Announce all items starting
+		for _, a := range groupPlan.Additions {
 			for _, it := range a.Items {
 				if opts.OnItemStart != nil {
 					opts.OnItemStart(kind, group, it.Name)
 				}
-				singlePlan := provider.GroupPlan{
-					Additions: []provider.GroupAddition{{Kind: kind, Group: group, Items: []resource.ResourceItem{it}}},
-				}
-				err := prov.Apply(ctx, singlePlan)
-				if opts.OnItemComplete != nil {
-					opts.OnItemComplete(kind, group, it.Name, err)
-				}
-				if err != nil {
-					failures = append(failures, failureEntry{Resource: fmt.Sprintf("%s/%s/%s", kind, group, it.Name), Err: fmt.Errorf("failed to add: %w", err)})
-					ok = false
-				} else {
-					succeededItems[fmt.Sprintf("%s/%s/%s", kind, group, it.Name)] = true
-				}
 			}
 		}
-		for _, m := range plan.Modifications {
-			if m.Kind != kind || m.Group != group {
-				continue
-			}
+		for _, m := range groupPlan.Modifications {
 			for _, c := range m.Changes {
 				if opts.OnItemStart != nil {
 					opts.OnItemStart(kind, group, c.ItemName)
 				}
-				singlePlan := provider.GroupPlan{
-					Modifications: []provider.GroupModification{{Kind: kind, Group: group, Changes: []provider.ItemChange{c}}},
-				}
-				err := prov.Apply(ctx, singlePlan)
-				if opts.OnItemComplete != nil {
-					opts.OnItemComplete(kind, group, c.ItemName, err)
-				}
-				if err != nil {
-					failures = append(failures, failureEntry{Resource: fmt.Sprintf("%s/%s/%s", kind, group, c.ItemName), Err: fmt.Errorf("failed to modify: %w", err)})
-					ok = false
-				} else {
-					succeededItems[fmt.Sprintf("%s/%s/%s", kind, group, c.ItemName)] = true
-				}
 			}
 		}
-		for _, r := range plan.Removals {
-			if r.Kind != kind || r.Group != group {
-				continue
-			}
+		for _, r := range groupPlan.Removals {
 			for _, it := range r.Items {
 				if opts.OnItemStart != nil {
 					opts.OnItemStart(kind, group, it.Name)
 				}
-				singlePlan := provider.GroupPlan{
-					Removals: []provider.GroupRemoval{{Kind: kind, Group: group, Items: []resource.ResourceItem{it}}},
-				}
-				err := prov.Apply(ctx, singlePlan)
+			}
+		}
+
+		itemResults, fatalErr := prov.Apply(ctx, groupPlan)
+
+		if fatalErr != nil {
+			allItems := collectAllItemNames(groupPlan, kind, group)
+			for _, name := range allItems {
 				if opts.OnItemComplete != nil {
-					opts.OnItemComplete(kind, group, it.Name, err)
+					opts.OnItemComplete(kind, group, name, fatalErr)
 				}
-				if err != nil {
-					failures = append(failures, failureEntry{Resource: fmt.Sprintf("%s/%s/%s", kind, group, it.Name), Err: fmt.Errorf("failed to remove: %w", err)})
-					ok = false
-				} else {
-					succeededItems[fmt.Sprintf("%s/%s/%s", kind, group, it.Name)] = true
-				}
+				failures = append(failures, failureEntry{Resource: fmt.Sprintf("%s/%s/%s", kind, group, name), Err: fatalErr})
+			}
+			return false
+		}
+
+		ok := true
+		for _, r := range itemResults {
+			if opts.OnItemComplete != nil {
+				opts.OnItemComplete(r.Kind, r.Group, r.Item, r.Err)
+			}
+			if r.Err != nil {
+				failures = append(failures, failureEntry{Resource: fmt.Sprintf("%s/%s/%s", r.Kind, r.Group, r.Item), Err: r.Err})
+				ok = false
+			} else {
+				succeededItems[fmt.Sprintf("%s/%s/%s", r.Kind, r.Group, r.Item)] = true
 			}
 		}
 		return ok
@@ -255,15 +277,6 @@ func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOption
 	}
 
 	// STEP 3: Update state with successful provider operations
-	existingState, err = e.StateBackend.Load(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to reload state after provider operations: %w", err)
-	}
-	stateToSave = existingState
-	if stateToSave.Resources == nil {
-		stateToSave = state.NewState()
-	}
-
 	for _, plan := range result.ProviderPlans {
 		// InSync groups always update state (they require no apply action).
 		for _, inSync := range plan.InSync {

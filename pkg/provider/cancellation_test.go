@@ -24,17 +24,13 @@ func (b *blockingProvider) Reconcile(ctx context.Context, desired []resource.Res
 	}
 }
 
-func (b *blockingProvider) Apply(ctx context.Context, plan GroupPlan) error {
+func (b *blockingProvider) Apply(ctx context.Context, plan GroupPlan) ([]ApplyItemResult, error) {
 	// Block until canceled and then return ctx.Err()
 	<-ctx.Done()
-	return ctx.Err()
+	return nil, ctx.Err()
 }
 
 func (b *blockingProvider) Import(ctx context.Context, group string) (ResourceState, error) {
-	return ResourceState{}, nil
-}
-
-func (b *blockingProvider) ImportItem(ctx context.Context, group string, item string) (ResourceState, error) {
 	return ResourceState{}, nil
 }
 
@@ -48,7 +44,7 @@ func TestBlockingProvider_ApplyCancellation(t *testing.T) {
 	}()
 
 	start := time.Now()
-	err := p.Apply(ctx, GroupPlan{})
+	_, err := p.Apply(ctx, GroupPlan{})
 	dur := time.Since(start)
 
 	if err == nil {

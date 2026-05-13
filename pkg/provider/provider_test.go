@@ -26,8 +26,8 @@ func (m *mockProvider) Reconcile(ctx context.Context, desired []resource.Resourc
 	return GroupPlan{}
 }
 
-func (m *mockProvider) Apply(ctx context.Context, plan GroupPlan) error {
-	return nil
+func (m *mockProvider) Apply(ctx context.Context, plan GroupPlan) ([]ApplyItemResult, error) {
+	return nil, nil
 }
 
 func (m *mockProvider) Import(ctx context.Context, group string) (ResourceState, error) {

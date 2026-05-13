@@ -52,24 +52,21 @@ func (p *AISkillProvider) getInstalledSources(_ context.Context) map[string]stri
 }
 
 // Apply executes the given GroupPlan.
-func (p *AISkillProvider) Apply(ctx context.Context, plan provider.GroupPlan) error {
+func (p *AISkillProvider) Apply(ctx context.Context, plan provider.GroupPlan) ([]provider.ApplyItemResult, error) {
+	var results []provider.ApplyItemResult
 	for _, addition := range plan.Additions {
-		if err := p.applyGroupAddition(ctx, addition); err != nil {
-			return fmt.Errorf("failed to add %s: %w", addition.Group, err)
-		}
+		results = append(results, p.applyGroupAddition(ctx, addition)...)
 	}
-
 	for _, removal := range plan.Removals {
-		if err := p.applyGroupRemoval(ctx, removal); err != nil {
-			return fmt.Errorf("failed to remove from %s: %w", removal.Group, err)
-		}
+		results = append(results, p.applyGroupRemoval(ctx, removal)...)
 	}
-
-	return nil
+	return results, nil
 }
 
-func (p *AISkillProvider) applyGroupAddition(ctx context.Context, addition provider.GroupAddition) error {
+func (p *AISkillProvider) applyGroupAddition(ctx context.Context, addition provider.GroupAddition) []provider.ApplyItemResult {
+	var results []provider.ApplyItemResult
 	for _, item := range addition.Items {
+		r := provider.ApplyItemResult{Kind: addition.Kind, Group: addition.Group, Item: item.Name, Op: "add"}
 		args := []string{"--yes", "skills", "add", item.Name, "--global", "--yes"}
 		if targets, ok := item.Metadata["targets"]; ok && targets != "" {
 			for _, t := range strings.Split(targets, ",") {
@@ -86,30 +83,37 @@ func (p *AISkillProvider) applyGroupAddition(ctx context.Context, addition provi
 			if output == "" {
 				output = stdout
 			}
-			return fmt.Errorf("failed to install %s: %s\n  command: %s", item.Name, output, cmd)
+			r.Err = fmt.Errorf("failed to install %s: %s\n  command: %s", item.Name, output, cmd)
 		}
+		results = append(results, r)
 	}
-	return nil
+	return results
 }
 
-func (p *AISkillProvider) applyGroupRemoval(ctx context.Context, removal provider.GroupRemoval) error {
+func (p *AISkillProvider) applyGroupRemoval(ctx context.Context, removal provider.GroupRemoval) []provider.ApplyItemResult {
+	var results []provider.ApplyItemResult
 	for _, item := range removal.Items {
+		r := provider.ApplyItemResult{Kind: removal.Kind, Group: removal.Group, Item: item.Name, Op: "remove"}
 		skillNames, err := p.listSkillNames(ctx, item.Name)
 		if err != nil {
-			return fmt.Errorf("failed to list skills for %s: %w", item.Name, err)
+			r.Err = fmt.Errorf("failed to list skills for %s: %w", item.Name, err)
+			results = append(results, r)
+			continue
 		}
 		if len(skillNames) == 0 {
 			slog.Warn("no skills found to remove", "source", item.Name)
+			results = append(results, r)
 			continue
 		}
 
 		slog.Info("removing AI skill package", "source", item.Name, "skills", strings.Join(skillNames, ", "))
 		args := []string{"--yes", "skills", "remove", "--global", "--yes", "--agent", "*", "--skill", strings.Join(skillNames, ",")}
 		if _, stderr, err := cmdutil.RunSimpleFn(ctx, "npx", args...); err != nil {
-			return fmt.Errorf("failed to remove skills from %s: %s: %w", item.Name, stderr, err)
+			r.Err = fmt.Errorf("failed to remove skills from %s: %s: %w", item.Name, stderr, err)
 		}
+		results = append(results, r)
 	}
-	return nil
+	return results
 }
 
 // listSkillNames queries the skills CLI for the skill names provided by a source repo

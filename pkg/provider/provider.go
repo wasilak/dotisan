@@ -173,6 +173,16 @@ type ResourceState struct {
 	Items []resource.ItemState `json:"items"`
 }
 
+// ApplyItemResult reports the outcome for a single item within an Apply call.
+// Per-item failures are reported here rather than as a fatal error return.
+type ApplyItemResult struct {
+	Kind  string
+	Group string
+	Item  string
+	Op    string // "add", "remove", "modify"
+	Err   error  // nil = success
+}
+
 // Provider is the interface implemented by all resource providers.
 // Each provider knows how to manage a specific type of resource.
 type Provider interface {
@@ -192,8 +202,10 @@ type Provider interface {
 	Reconcile(ctx context.Context, desired []resource.ResourceGroup[any], state []ResourceState) GroupPlan
 
 	// Apply executes the given plan, making actual changes to the system.
-	// Returns an error if any operation fails.
-	Apply(ctx context.Context, plan GroupPlan) error
+	// Returns per-item results so callers can track individual successes and
+	// failures. The error return is reserved for fatal infrastructure failures
+	// (e.g. the tool binary is missing); per-item failures go in ApplyItemResult.Err.
+	Apply(ctx context.Context, plan GroupPlan) ([]ApplyItemResult, error)
 
 	// Import discovers an existing resource on the system and returns its state.
 	// This is used by the `state import` command to bring unmanaged resources

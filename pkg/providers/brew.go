@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"sort"
 	"strings"
 	"time"
 
@@ -694,70 +695,113 @@ func (p *BrewProvider) brewInfoBatch(ctx context.Context, names []string, flag s
 }
 
 // Apply executes the given GroupPlan
-func (p *BrewProvider) Apply(ctx context.Context, plan provider.GroupPlan) error {
-	// Process additions
+func (p *BrewProvider) Apply(ctx context.Context, plan provider.GroupPlan) ([]provider.ApplyItemResult, error) {
+	// Taps must be processed before formulae and casks so that tap-qualified
+	// formulae (e.g. user/tap/formula) can be installed in the same apply run.
+	sort.SliceStable(plan.Additions, func(i, j int) bool {
+		return plan.Additions[i].Kind == resource.KindHomeBrewTaps &&
+			plan.Additions[j].Kind != resource.KindHomeBrewTaps
+	})
+
+	var results []provider.ApplyItemResult
+
 	for _, addition := range plan.Additions {
-		if err := p.applyGroupAddition(ctx, addition); err != nil {
-			return fmt.Errorf("failed to add to %s: %w", addition.Group, err)
-		}
+		results = append(results, p.applyGroupAddition(ctx, addition)...)
 	}
-
-	// Process removals
 	for _, removal := range plan.Removals {
-		if err := p.applyGroupRemoval(ctx, removal); err != nil {
-			return fmt.Errorf("failed to remove from %s: %w", removal.Group, err)
-		}
+		results = append(results, p.applyGroupRemoval(ctx, removal)...)
 	}
-
-	// Process modifications
 	for _, modification := range plan.Modifications {
-		if err := p.applyGroupModification(ctx, modification); err != nil {
-			return fmt.Errorf("failed to modify %s: %w", modification.Group, err)
-		}
+		results = append(results, p.applyGroupModification(ctx, modification)...)
 	}
 
-	return nil
+	return results, nil
 }
 
 // applyGroupAddition installs items in a group
-func (p *BrewProvider) applyGroupAddition(ctx context.Context, addition provider.GroupAddition) error {
-	// For casks, build the installed set once upfront so we can skip already-present casks.
-	// `brew install --cask` loads API metadata (triggering a Homebrew Ruby bug on some casks),
-	// so we skip it when the cask is already installed and just let state saving handle it.
-	var installedCasks map[string]bool
-	if addition.Kind == resource.KindHomeBrewCasks {
-		installedCasks = p.listInstalledCasks(ctx)
-	}
-
-	for _, item := range addition.Items {
-		name := item.Name
-		isCask := addition.Kind == resource.KindHomeBrewCasks
-
-		// Handle taps
-		if addition.Kind == resource.KindHomeBrewTaps {
-			// item.Name may be "tap/name" or "tap/name https://url" (space-separated).
-			// brew tap accepts both forms: `brew tap <name>` and `brew tap <name> <url>`.
-			tapArgs := append([]string{"tap"}, strings.Fields(name)...)
-			if _, stderr, err := cmdutil.RunSimpleFn(ctx, "brew", tapArgs...); err != nil {
-				return fmt.Errorf("failed to tap %s: %s: %w", name, stderr, err)
+func (p *BrewProvider) applyGroupAddition(ctx context.Context, addition provider.GroupAddition) []provider.ApplyItemResult {
+	switch addition.Kind {
+	case resource.KindHomeBrewTaps:
+		// brew tap accepts one tap at a time; no batching possible.
+		// item.Name may be "tap/name" or "tap/name https://url" (space-separated).
+		// Stop on first tap failure — subsequent tap-qualified formulae would fail anyway.
+		var results []provider.ApplyItemResult
+		for _, item := range addition.Items {
+			tapArgs := append([]string{"tap"}, strings.Fields(item.Name)...)
+			_, stderr, err := cmdutil.RunSimpleFn(ctx, "brew", tapArgs...)
+			r := provider.ApplyItemResult{Kind: addition.Kind, Group: addition.Group, Item: item.Name, Op: "add"}
+			if err != nil {
+				r.Err = fmt.Errorf("failed to tap %s: %s: %w", item.Name, stderr, err)
+				results = append(results, r)
+				// Mark remaining items as failed too
+				for _, remaining := range addition.Items[len(results):] {
+					results = append(results, provider.ApplyItemResult{
+						Kind: addition.Kind, Group: addition.Group, Item: remaining.Name, Op: "add",
+						Err: fmt.Errorf("skipped: previous tap failed"),
+					})
+				}
+				return results
 			}
-			continue
+			results = append(results, r)
 		}
+		return results
 
-		if isCask {
-			if installedCasks[strings.ToLower(name)] {
-				continue // already installed; skip reinstall, state save handles it
-			}
-			if _, stderr, err := cmdutil.RunSimpleFn(ctx, "brew", "install", "--cask", name); err != nil {
-				return fmt.Errorf("failed to install cask %s: %s: %w", name, stderr, err)
-			}
-		} else {
-			if _, stderr, err := cmdutil.RunSimpleFn(ctx, "brew", "install", name); err != nil {
-				return fmt.Errorf("failed to install %s: %s: %w", name, stderr, err)
+	case resource.KindHomeBrewCasks:
+		// Skip casks that are already installed to avoid Homebrew API metadata bugs.
+		installedCasks := p.listInstalledCasks(ctx)
+		names := make([]string, 0, len(addition.Items))
+		for _, item := range addition.Items {
+			if !installedCasks[strings.ToLower(item.Name)] {
+				names = append(names, item.Name)
 			}
 		}
+		failed := batchWithFallback(names, func(ns []string) error {
+			args := append([]string{"install", "--cask"}, ns...)
+			_, stderr, err := cmdutil.RunSimpleFn(ctx, "brew", args...)
+			if err != nil {
+				if len(ns) == 1 {
+					return fmt.Errorf("failed to install cask %s: %s: %w", ns[0], stderr, err)
+				}
+				return err
+			}
+			return nil
+		})
+		var results []provider.ApplyItemResult
+		for _, item := range addition.Items {
+			r := provider.ApplyItemResult{Kind: addition.Kind, Group: addition.Group, Item: item.Name, Op: "add"}
+			if err, bad := failed[item.Name]; bad {
+				r.Err = err
+			}
+			results = append(results, r)
+		}
+		return results
+
+	default: // KindHomeBrewPackages
+		names := make([]string, 0, len(addition.Items))
+		for _, item := range addition.Items {
+			names = append(names, item.Name)
+		}
+		failed := batchWithFallback(names, func(ns []string) error {
+			args := append([]string{"install"}, ns...)
+			_, stderr, err := cmdutil.RunSimpleFn(ctx, "brew", args...)
+			if err != nil {
+				if len(ns) == 1 {
+					return fmt.Errorf("failed to install %s: %s: %w", ns[0], stderr, err)
+				}
+				return err
+			}
+			return nil
+		})
+		var results []provider.ApplyItemResult
+		for _, item := range addition.Items {
+			r := provider.ApplyItemResult{Kind: addition.Kind, Group: addition.Group, Item: item.Name, Op: "add"}
+			if err, bad := failed[item.Name]; bad {
+				r.Err = err
+			}
+			results = append(results, r)
+		}
+		return results
 	}
-	return nil
 }
 
 // listInstalledCasks returns a lowercase-keyed set of installed cask tokens via `brew list --cask`.
@@ -796,72 +840,112 @@ func (p *BrewProvider) listInstalledTaps(ctx context.Context) []string {
 }
 
 // applyGroupRemoval uninstalls items from a group
-func (p *BrewProvider) applyGroupRemoval(ctx context.Context, removal provider.GroupRemoval) error {
-	for _, item := range removal.Items {
-		name := item.Name
-		isCask := removal.Kind == resource.KindHomeBrewCasks
-		if removal.Kind == resource.KindHomeBrewTaps {
-			// Untap
-			if _, stderr, err := cmdutil.RunSimpleFn(ctx, "brew", "untap", name); err != nil {
+func (p *BrewProvider) applyGroupRemoval(ctx context.Context, removal provider.GroupRemoval) []provider.ApplyItemResult {
+	switch removal.Kind {
+	case resource.KindHomeBrewTaps:
+		// brew untap accepts one tap at a time; no batching possible.
+		var results []provider.ApplyItemResult
+		for _, item := range removal.Items {
+			r := provider.ApplyItemResult{Kind: removal.Kind, Group: removal.Group, Item: item.Name, Op: "remove"}
+			_, stderr, err := cmdutil.RunSimpleFn(ctx, "brew", "untap", item.Name)
+			if err != nil {
 				if strings.Contains(stderr, "No such tap") {
-					// Already untapped, continue
-					slog.Warn("tap not present; skipping untap", "tap", name)
-					continue
+					slog.Warn("tap not present; skipping untap", "tap", item.Name)
+				} else {
+					r.Err = fmt.Errorf("failed to untap %s: %s: %w", item.Name, stderr, err)
 				}
-				return fmt.Errorf("failed to untap %s: %s: %w", name, stderr, err)
 			}
-			continue
+			results = append(results, r)
 		}
-		if isCask {
-			_, stderr, err := cmdutil.RunSimpleFn(ctx, "brew", "uninstall", "--cask", name)
+		return results
+
+	case resource.KindHomeBrewCasks:
+		names := make([]string, 0, len(removal.Items))
+		for _, item := range removal.Items {
+			names = append(names, item.Name)
+		}
+		failed := batchWithFallback(names, func(ns []string) error {
+			args := append([]string{"uninstall", "--cask"}, ns...)
+			_, stderr, err := cmdutil.RunSimpleFn(ctx, "brew", args...)
 			if err != nil {
-				// If the formula/cask is not present on this system, treat as no-op
-				if strings.Contains(stderr, "No available formula or cask with the name") || strings.Contains(stderr, "is not installed") {
-					// Already absent, log and continue
-					slog.Warn("package not installed; skipping uninstall", "package", name)
-					continue
-				}
-				// If Homebrew refuses due to dependencies, surface helpful message
-				if strings.Contains(stderr, "Refusing to uninstall") {
-					return fmt.Errorf("failed to uninstall %s: %s", name, stderr)
-				}
-				return fmt.Errorf("failed to uninstall cask %s: %s: %w", name, stderr, err)
-			}
-		} else {
-			_, stderr, err := cmdutil.RunSimpleFn(ctx, "brew", "uninstall", name)
-			if err != nil {
-				// If the formula is not present on this system, treat as no-op
-				if strings.Contains(stderr, "No available formula or cask with the name") || strings.Contains(stderr, "is not installed") {
-					slog.Warn("package not installed; skipping uninstall", "package", name)
-					continue
-				}
-				// If Homebrew refuses due to dependencies, surface helpful message
-				if strings.Contains(stderr, "Refusing to uninstall") {
-					// Attempt to list installed dependents to give the user more context
-					depsOut, _, _ := cmdutil.RunSimpleFn(ctx, "brew", "uses", "--installed", name)
-					hint := strings.TrimSpace(depsOut)
-					if hint != "" {
-						stderr = stderr + "\nInstalled dependents:\n" + hint
+				if len(ns) == 1 {
+					name := ns[0]
+					if strings.Contains(stderr, "No available formula or cask with the name") || strings.Contains(stderr, "is not installed") {
+						slog.Warn("cask not installed; skipping uninstall", "cask", name)
+						return nil
 					}
-					return fmt.Errorf("failed to uninstall %s: %s", name, stderr)
+					if strings.Contains(stderr, "Refusing to uninstall") {
+						return fmt.Errorf("failed to uninstall cask %s: %s", name, stderr)
+					}
+					return fmt.Errorf("failed to uninstall cask %s: %s: %w", name, stderr, err)
 				}
-				return fmt.Errorf("failed to uninstall %s: %s: %w", name, stderr, err)
+				return err
 			}
+			return nil
+		})
+		var results []provider.ApplyItemResult
+		for _, item := range removal.Items {
+			r := provider.ApplyItemResult{Kind: removal.Kind, Group: removal.Group, Item: item.Name, Op: "remove"}
+			if err, bad := failed[item.Name]; bad {
+				r.Err = err
+			}
+			results = append(results, r)
 		}
+		return results
+
+	default: // KindHomeBrewPackages
+		names := make([]string, 0, len(removal.Items))
+		for _, item := range removal.Items {
+			names = append(names, item.Name)
+		}
+		failed := batchWithFallback(names, func(ns []string) error {
+			args := append([]string{"uninstall"}, ns...)
+			_, stderr, err := cmdutil.RunSimpleFn(ctx, "brew", args...)
+			if err != nil {
+				if len(ns) == 1 {
+					name := ns[0]
+					if strings.Contains(stderr, "No available formula or cask with the name") || strings.Contains(stderr, "is not installed") {
+						slog.Warn("package not installed; skipping uninstall", "package", name)
+						return nil
+					}
+					if strings.Contains(stderr, "Refusing to uninstall") {
+						depsOut, _, _ := cmdutil.RunSimpleFn(ctx, "brew", "uses", "--installed", name)
+						hint := strings.TrimSpace(depsOut)
+						if hint != "" {
+							stderr = stderr + "\nInstalled dependents:\n" + hint
+						}
+						return fmt.Errorf("failed to uninstall %s: %s", name, stderr)
+					}
+					return fmt.Errorf("failed to uninstall %s: %s: %w", name, stderr, err)
+				}
+				return err
+			}
+			return nil
+		})
+		var results []provider.ApplyItemResult
+		for _, item := range removal.Items {
+			r := provider.ApplyItemResult{Kind: removal.Kind, Group: removal.Group, Item: item.Name, Op: "remove"}
+			if err, bad := failed[item.Name]; bad {
+				r.Err = err
+			}
+			results = append(results, r)
+		}
+		return results
 	}
-	return nil
 }
 
 // applyGroupModification updates items in a group
-func (p *BrewProvider) applyGroupModification(ctx context.Context, modification provider.GroupModification) error {
+func (p *BrewProvider) applyGroupModification(ctx context.Context, modification provider.GroupModification) []provider.ApplyItemResult {
+	var results []provider.ApplyItemResult
 	for _, change := range modification.Changes {
-		// For now, reinstall to update version
 		name := change.ItemName
+		r := provider.ApplyItemResult{Kind: modification.Kind, Group: modification.Group, Item: name, Op: "modify"}
 		if _, stderr, err := cmdutil.RunSimpleFn(ctx, "brew", "reinstall", name); err != nil {
-			return fmt.Errorf("failed to update %s: %s: %w", name, stderr, err)
+			r.Err = fmt.Errorf("failed to update %s: %s: %w", name, stderr, err)
 		}
+		results = append(results, r)
 	}
-	return nil
+	return results
 }
 
 // Import performs discovery for the requested group. Historically provider-level

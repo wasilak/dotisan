@@ -69,65 +69,99 @@ func (p *NpmProvider) getInstalledPackages(ctx context.Context) map[string]strin
 }
 
 // Apply executes the given GroupPlan
-func (p *NpmProvider) Apply(ctx context.Context, plan provider.GroupPlan) error {
+func (p *NpmProvider) Apply(ctx context.Context, plan provider.GroupPlan) ([]provider.ApplyItemResult, error) {
+	var results []provider.ApplyItemResult
 	for _, addition := range plan.Additions {
-		if err := p.applyGroupAddition(ctx, addition); err != nil {
-			return fmt.Errorf("failed to add to %s: %w", addition.Group, err)
-		}
+		results = append(results, p.applyGroupAddition(ctx, addition)...)
 	}
-
 	for _, removal := range plan.Removals {
-		if err := p.applyGroupRemoval(ctx, removal); err != nil {
-			return fmt.Errorf("failed to remove from %s: %w", removal.Group, err)
-		}
+		results = append(results, p.applyGroupRemoval(ctx, removal)...)
 	}
-
 	for _, modification := range plan.Modifications {
-		if err := p.applyGroupModification(ctx, modification); err != nil {
-			return fmt.Errorf("failed to modify %s: %w", modification.Group, err)
-		}
+		results = append(results, p.applyGroupModification(ctx, modification)...)
 	}
-
-	return nil
+	return results, nil
 }
 
-func (p *NpmProvider) applyGroupAddition(ctx context.Context, addition provider.GroupAddition) error {
+func (p *NpmProvider) applyGroupAddition(ctx context.Context, addition provider.GroupAddition) []provider.ApplyItemResult {
+	pkgs := make([]string, 0, len(addition.Items))
+	// Map pkg string back to item name for result construction
+	pkgToName := make(map[string]string, len(addition.Items))
 	for _, item := range addition.Items {
 		pkg := item.Name
 		if item.Version != "" {
 			pkg = fmt.Sprintf("%s@%s", item.Name, item.Version)
 		}
-		if _, stderr, err := cmdutil.RunSimpleFn(ctx, "npm", "install", "-g", pkg); err != nil {
-			return fmt.Errorf("failed to install %s: %s: %w", item.Name, stderr, err)
-		}
+		pkgs = append(pkgs, pkg)
+		pkgToName[pkg] = item.Name
 	}
-	return nil
+	failed := batchWithFallback(pkgs, func(ns []string) error {
+		args := append([]string{"install", "-g"}, ns...)
+		_, stderr, err := cmdutil.RunSimpleFn(ctx, "npm", args...)
+		if err != nil {
+			if len(ns) == 1 {
+				return fmt.Errorf("failed to install %s: %s: %w", ns[0], stderr, err)
+			}
+			return err
+		}
+		return nil
+	})
+	var results []provider.ApplyItemResult
+	for i, item := range addition.Items {
+		r := provider.ApplyItemResult{Kind: addition.Kind, Group: addition.Group, Item: item.Name, Op: "add"}
+		if err, bad := failed[pkgs[i]]; bad {
+			r.Err = err
+		}
+		results = append(results, r)
+	}
+	return results
 }
 
-func (p *NpmProvider) applyGroupRemoval(ctx context.Context, removal provider.GroupRemoval) error {
+func (p *NpmProvider) applyGroupRemoval(ctx context.Context, removal provider.GroupRemoval) []provider.ApplyItemResult {
+	names := make([]string, 0, len(removal.Items))
 	for _, item := range removal.Items {
-		if _, stderr, err := cmdutil.RunSimpleFn(ctx, "npm", "uninstall", "-g", item.Name); err != nil {
-			return fmt.Errorf("failed to uninstall %s: %s: %w", item.Name, stderr, err)
-		}
+		names = append(names, item.Name)
 	}
-	return nil
+	failed := batchWithFallback(names, func(ns []string) error {
+		args := append([]string{"uninstall", "-g"}, ns...)
+		_, stderr, err := cmdutil.RunSimpleFn(ctx, "npm", args...)
+		if err != nil {
+			if len(ns) == 1 {
+				return fmt.Errorf("failed to uninstall %s: %s: %w", ns[0], stderr, err)
+			}
+			return err
+		}
+		return nil
+	})
+	var results []provider.ApplyItemResult
+	for _, item := range removal.Items {
+		r := provider.ApplyItemResult{Kind: removal.Kind, Group: removal.Group, Item: item.Name, Op: "remove"}
+		if err, bad := failed[item.Name]; bad {
+			r.Err = err
+		}
+		results = append(results, r)
+	}
+	return results
 }
 
-func (p *NpmProvider) applyGroupModification(ctx context.Context, modification provider.GroupModification) error {
-	return p.applyGroupAddition(ctx, provider.GroupAddition{
+func (p *NpmProvider) applyGroupModification(ctx context.Context, modification provider.GroupModification) []provider.ApplyItemResult {
+	items := make([]resource.ResourceItem, 0, len(modification.Changes))
+	for _, change := range modification.Changes {
+		items = append(items, resource.ResourceItem{
+			Name:    change.ItemName,
+			Version: change.NewState.Version,
+		})
+	}
+	results := p.applyGroupAddition(ctx, provider.GroupAddition{
 		Kind:  modification.Kind,
 		Group: modification.Group,
-		Items: func() []resource.ResourceItem {
-			var items []resource.ResourceItem
-			for _, change := range modification.Changes {
-				items = append(items, resource.ResourceItem{
-					Name:    change.ItemName,
-					Version: change.NewState.Version,
-				})
-			}
-			return items
-		}(),
+		Items: items,
 	})
+	// Correct the Op field
+	for i := range results {
+		results[i].Op = "modify"
+	}
+	return results
 }
 
 // Import not supported for npm provider

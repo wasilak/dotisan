@@ -33,8 +33,14 @@ func TestApply_Removal_NotInstalled_NoError(t *testing.T) {
 		}},
 	}
 
-	if err := p.Apply(context.Background(), plan); err != nil {
-		t.Fatalf("Apply should not error when package not installed; err=%v", err)
+	results, err := p.Apply(context.Background(), plan)
+	if err != nil {
+		t.Fatalf("Apply fatal error should be nil; err=%v", err)
+	}
+	for _, r := range results {
+		if r.Err != nil {
+			t.Fatalf("Apply should not report item error when package not installed; item=%s err=%v", r.Item, r.Err)
+		}
 	}
 }
 
@@ -65,13 +71,22 @@ func TestApply_Removal_RefuseShowsDependents(t *testing.T) {
 		}},
 	}
 
-	err := p.Apply(context.Background(), plan)
-	if err == nil {
-		t.Fatalf("Apply should return error when uninstall is refused")
+	results, err := p.Apply(context.Background(), plan)
+	if err != nil {
+		t.Fatalf("Apply fatal error should be nil; err=%v", err)
 	}
-	// Error message should contain Installed dependents hint
-	if !strings.Contains(err.Error(), "Installed dependents") && !strings.Contains(err.Error(), "Installed dependents") {
-		t.Fatalf("Expected error message to include dependents hint; got: %v", err)
+	// The per-item error should contain the dependents hint
+	var itemErr error
+	for _, r := range results {
+		if r.Err != nil {
+			itemErr = r.Err
+		}
+	}
+	if itemErr == nil {
+		t.Fatalf("Apply should report item error when uninstall is refused")
+	}
+	if !strings.Contains(itemErr.Error(), "Installed dependents") {
+		t.Fatalf("Expected error message to include dependents hint; got: %v", itemErr)
 	}
 }
 
@@ -96,8 +111,18 @@ func TestApply_Addition_InstallFails_ReturnsError(t *testing.T) {
 		}},
 	}
 
-	if err := p.Apply(context.Background(), plan); err == nil {
-		t.Fatalf("Apply should return error when install fails")
+	results, err := p.Apply(context.Background(), plan)
+	if err != nil {
+		t.Fatalf("Apply fatal error should be nil; err=%v", err)
+	}
+	var itemErr error
+	for _, r := range results {
+		if r.Err != nil {
+			itemErr = r.Err
+		}
+	}
+	if itemErr == nil {
+		t.Fatalf("Apply should report item error when install fails")
 	}
 }
 
@@ -122,7 +147,13 @@ func TestApply_Untap_NoSuchTap_NoError(t *testing.T) {
 		}},
 	}
 
-	if err := p.Apply(context.Background(), plan); err != nil {
-		t.Fatalf("Apply should not error when untap reports No such tap; err=%v", err)
+	results, err := p.Apply(context.Background(), plan)
+	if err != nil {
+		t.Fatalf("Apply fatal error should be nil; err=%v", err)
+	}
+	for _, r := range results {
+		if r.Err != nil {
+			t.Fatalf("Apply should not report item error when untap reports No such tap; item=%s err=%v", r.Item, r.Err)
+		}
 	}
 }

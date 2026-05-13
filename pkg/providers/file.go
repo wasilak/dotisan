@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/wasilak/nim/pkg/planctx"
 	"github.com/wasilak/nim/pkg/provider"
@@ -426,95 +427,107 @@ func (p *FileProvider) hashFile(path string) string {
 }
 
 // Apply executes the given GroupPlan
-func (p *FileProvider) Apply(ctx context.Context, plan provider.GroupPlan) error {
+func (p *FileProvider) Apply(ctx context.Context, plan provider.GroupPlan) ([]provider.ApplyItemResult, error) {
+	var results []provider.ApplyItemResult
 	for _, addition := range plan.Additions {
-		if err := p.applyGroupAddition(ctx, addition); err != nil {
-			return fmt.Errorf("failed to add %s: %w", addition.Group, err)
-		}
+		results = append(results, p.applyGroupAddition(ctx, addition)...)
 	}
-
 	for _, removal := range plan.Removals {
-		if err := p.applyGroupRemoval(ctx, removal); err != nil {
-			return fmt.Errorf("failed to remove %s: %w", removal.Group, err)
-		}
+		results = append(results, p.applyGroupRemoval(ctx, removal)...)
 	}
-
 	for _, modification := range plan.Modifications {
-		if err := p.applyGroupModification(ctx, modification); err != nil {
-			return fmt.Errorf("failed to modify %s: %w", modification.Group, err)
-		}
+		results = append(results, p.applyGroupModification(ctx, modification)...)
 	}
-
-	return nil
+	return results, nil
 }
 
-// applyGroupAddition handles file/directory creation
-func (p *FileProvider) applyGroupAddition(ctx context.Context, addition provider.GroupAddition) error {
-	for _, item := range addition.Items {
+// applyGroupAddition handles file/directory creation.
+// Items are applied concurrently (bounded to 8) — each writes to a distinct
+// destination path so there are no ordering constraints or conflicts.
+func (p *FileProvider) applyGroupAddition(_ context.Context, addition provider.GroupAddition) []provider.ApplyItemResult {
+	results := make([]provider.ApplyItemResult, len(addition.Items))
+	sem := make(chan struct{}, 8)
+	var wg sync.WaitGroup
+	for i, item := range addition.Items {
 		fe := item.FileExtra
+		results[i] = provider.ApplyItemResult{Kind: addition.Kind, Group: addition.Group, Item: item.Name, Op: "add"}
 		if fe == nil || fe.Destination == "" {
 			continue
 		}
-
-		dest := p.resolveDest(fe.Destination)
-		// Ensure parent directory exists
-		parent := filepath.Dir(dest)
-		if err := os.MkdirAll(parent, 0755); err != nil {
-			return fmt.Errorf("failed to create parent directory for %s: %w", dest, err)
-		}
-
-		fileMode := parseMode(fe.Mode)
-		if fe.Source != "" && fe.Source != "(inline)" {
-			sourcePath := p.resolveSource(fe.Source)
-			if err := p.copyFile(sourcePath, dest, fileMode); err != nil {
-				return fmt.Errorf("failed to copy %s to %s: %w", sourcePath, dest, err)
+		wg.Go(func() {
+			sem <- struct{}{}
+			defer func() { <-sem }()
+			dest := p.resolveDest(fe.Destination)
+			var err error
+			if mkErr := os.MkdirAll(filepath.Dir(dest), 0755); mkErr != nil {
+				err = fmt.Errorf("failed to create parent directory for %s: %w", dest, mkErr)
+			} else {
+				fileMode := parseMode(fe.Mode)
+				if fe.Source != "" && fe.Source != "(inline)" {
+					if cpErr := p.copyFile(p.resolveSource(fe.Source), dest, fileMode); cpErr != nil {
+						err = fmt.Errorf("failed to copy %s to %s: %w", fe.Source, dest, cpErr)
+					}
+				} else {
+					if wErr := os.WriteFile(dest, []byte(fe.Inline), fileMode); wErr != nil {
+						err = fmt.Errorf("failed to create %s: %w", dest, wErr)
+					}
+				}
+				if err == nil {
+					// WriteFile only sets the mode at creation; chmod ensures the mode is
+					// applied even when overwriting an existing file with different permissions.
+					if chErr := os.Chmod(dest, fileMode); chErr != nil {
+						err = fmt.Errorf("failed to set mode on %s: %w", dest, chErr)
+					}
+				}
 			}
-		} else {
-			if err := os.WriteFile(dest, []byte(fe.Inline), fileMode); err != nil {
-				return fmt.Errorf("failed to create %s: %w", dest, err)
-			}
-		}
-		// WriteFile only sets the mode at creation; chmod ensures the mode is
-		// applied even when overwriting an existing file with different permissions.
-		if err := os.Chmod(dest, fileMode); err != nil {
-			return fmt.Errorf("failed to set mode on %s: %w", dest, err)
-		}
+			results[i].Err = err
+		})
 	}
-	return nil
+	wg.Wait()
+	return results
 }
 
-// applyGroupRemoval handles file/directory removal
-func (p *FileProvider) applyGroupRemoval(ctx context.Context, removal provider.GroupRemoval) error {
-	for _, item := range removal.Items {
+// applyGroupRemoval handles file/directory removal in parallel.
+func (p *FileProvider) applyGroupRemoval(_ context.Context, removal provider.GroupRemoval) []provider.ApplyItemResult {
+	results := make([]provider.ApplyItemResult, len(removal.Items))
+	sem := make(chan struct{}, 8)
+	var wg sync.WaitGroup
+	for i, item := range removal.Items {
 		dest := item.Name
 		if item.FileExtra != nil && item.FileExtra.Destination != "" {
 			dest = p.resolveDest(item.FileExtra.Destination)
 		}
-
-		if err := os.RemoveAll(dest); err != nil {
-			return fmt.Errorf("failed to remove %s: %w", dest, err)
-		}
+		results[i] = provider.ApplyItemResult{Kind: removal.Kind, Group: removal.Group, Item: item.Name, Op: "remove"}
+		wg.Go(func() {
+			sem <- struct{}{}
+			defer func() { <-sem }()
+			if err := os.RemoveAll(dest); err != nil {
+				results[i].Err = fmt.Errorf("failed to remove %s: %w", dest, err)
+			}
+		})
 	}
-	return nil
+	wg.Wait()
+	return results
 }
 
-// applyGroupModification handles file/directory updates
-func (p *FileProvider) applyGroupModification(ctx context.Context, modification provider.GroupModification) error {
-	// Re-apply the file
-	return p.applyGroupAddition(ctx, provider.GroupAddition{
+// applyGroupModification handles file/directory updates.
+func (p *FileProvider) applyGroupModification(ctx context.Context, modification provider.GroupModification) []provider.ApplyItemResult {
+	items := make([]resource.ResourceItem, 0, len(modification.Changes))
+	for _, change := range modification.Changes {
+		items = append(items, resource.ResourceItem{
+			Name:      change.ItemName,
+			FileExtra: change.NewState.FileExtra,
+		})
+	}
+	results := p.applyGroupAddition(ctx, provider.GroupAddition{
 		Kind:  modification.Kind,
 		Group: modification.Group,
-		Items: func() []resource.ResourceItem {
-			var items []resource.ResourceItem
-			for _, change := range modification.Changes {
-				items = append(items, resource.ResourceItem{
-					Name:      change.ItemName,
-					FileExtra: change.NewState.FileExtra,
-				})
-			}
-			return items
-		}(),
+		Items: items,
 	})
+	for i := range results {
+		results[i].Op = "modify"
+	}
+	return results
 }
 
 // parseMode converts a "0644"-style octal string to os.FileMode, defaulting to 0644.

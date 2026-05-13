@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/wasilak/nim/pkg/cmdutil"
 	"github.com/wasilak/nim/pkg/provider"
@@ -101,55 +102,48 @@ func (p *GoProvider) getInstalledPackages(ctx context.Context) map[string]string
 }
 
 // Apply executes the given GroupPlan
-func (p *GoProvider) Apply(ctx context.Context, plan provider.GroupPlan) error {
+func (p *GoProvider) Apply(ctx context.Context, plan provider.GroupPlan) ([]provider.ApplyItemResult, error) {
+	var results []provider.ApplyItemResult
 	for _, addition := range plan.Additions {
-		if err := p.applyGroupAddition(ctx, addition); err != nil {
-			return fmt.Errorf("failed to add to %s: %w", addition.Group, err)
-		}
+		results = append(results, p.applyGroupAddition(ctx, addition)...)
 	}
-
 	for _, removal := range plan.Removals {
-		if err := p.applyGroupRemoval(ctx, removal); err != nil {
-			return fmt.Errorf("failed to remove from %s: %w", removal.Group, err)
-		}
+		results = append(results, p.applyGroupRemoval(ctx, removal)...)
 	}
-
 	for _, modification := range plan.Modifications {
-		if err := p.applyGroupModification(ctx, modification); err != nil {
-			return fmt.Errorf("failed to modify %s: %w", modification.Group, err)
-		}
+		results = append(results, p.applyGroupModification(ctx, modification)...)
 	}
-
-	return nil
+	return results, nil
 }
 
-// applyGroupAddition installs Go packages
-func (p *GoProvider) applyGroupAddition(ctx context.Context, addition provider.GroupAddition) error {
+// applyGroupAddition installs Go packages in parallel.
+// The Go module cache is safe for concurrent invocations of the go command.
+func (p *GoProvider) applyGroupAddition(ctx context.Context, addition provider.GroupAddition) []provider.ApplyItemResult {
 	goBin := p.goBin
 	if goBin == "" {
 		goBin = "go"
 	}
-
-	for _, item := range addition.Items {
-		module := item.Name
-		version := item.Version
-
-		// Build install path — go install always requires a version suffix
-		installPath := fmt.Sprintf("%s@%s", module, version)
-		if version == "" || version == "latest" {
-			installPath = fmt.Sprintf("%s@latest", module)
+	results := make([]provider.ApplyItemResult, len(addition.Items))
+	var wg sync.WaitGroup
+	for i, item := range addition.Items {
+		installPath := fmt.Sprintf("%s@%s", item.Name, item.Version)
+		if item.Version == "" || item.Version == "latest" {
+			installPath = fmt.Sprintf("%s@latest", item.Name)
 		}
-
-		if _, stderr, err := cmdutil.RunSimpleFn(ctx, goBin, "install", installPath); err != nil {
-			return fmt.Errorf("failed to install %s: %s: %w", module, stderr, err)
-		}
+		wg.Go(func() {
+			var err error
+			if _, stderr, e := cmdutil.RunSimpleFn(ctx, goBin, "install", installPath); e != nil {
+				err = fmt.Errorf("failed to install %s: %s: %w", item.Name, stderr, e)
+			}
+			results[i] = provider.ApplyItemResult{Kind: addition.Kind, Group: addition.Group, Item: item.Name, Op: "add", Err: err}
+		})
 	}
-	return nil
+	wg.Wait()
+	return results
 }
 
-// applyGroupRemoval removes Go binaries
-func (p *GoProvider) applyGroupRemoval(ctx context.Context, removal provider.GroupRemoval) error {
-	// Get GOBIN
+// applyGroupRemoval removes Go binaries in parallel.
+func (p *GoProvider) applyGroupRemoval(ctx context.Context, removal provider.GroupRemoval) []provider.ApplyItemResult {
 	goBin := p.goBin
 	if goBin == "" {
 		goBin = "go"
@@ -157,48 +151,65 @@ func (p *GoProvider) applyGroupRemoval(ctx context.Context, removal provider.Gro
 
 	stdout, _, err := cmdutil.RunSimpleFn(ctx, goBin, "env", "GOBIN")
 	if err != nil {
-		return fmt.Errorf("failed to get GOBIN: %w", err)
+		// Fatal: can't determine where binaries live — fail all items
+		results := make([]provider.ApplyItemResult, len(removal.Items))
+		fatalErr := fmt.Errorf("failed to get GOBIN: %w", err)
+		for i, item := range removal.Items {
+			results[i] = provider.ApplyItemResult{Kind: removal.Kind, Group: removal.Group, Item: item.Name, Op: "remove", Err: fatalErr}
+		}
+		return results
 	}
 
 	goBinPath := strings.TrimSpace(stdout)
 	if goBinPath == "" {
 		stdout, _, err = cmdutil.RunSimpleFn(ctx, goBin, "env", "GOPATH")
 		if err != nil {
-			return fmt.Errorf("failed to get GOPATH: %w", err)
+			results := make([]provider.ApplyItemResult, len(removal.Items))
+			fatalErr := fmt.Errorf("failed to get GOPATH: %w", err)
+			for i, item := range removal.Items {
+				results[i] = provider.ApplyItemResult{Kind: removal.Kind, Group: removal.Group, Item: item.Name, Op: "remove", Err: fatalErr}
+			}
+			return results
 		}
 		goBinPath = filepath.Join(strings.TrimSpace(stdout), "bin")
 	}
 
-	for _, item := range removal.Items {
-		// Extract binary name
+	results := make([]provider.ApplyItemResult, len(removal.Items))
+	var wg sync.WaitGroup
+	for i, item := range removal.Items {
 		parts := strings.Split(item.Name, "/")
 		binaryName := parts[len(parts)-1]
-
 		binaryPath := filepath.Join(goBinPath, binaryName)
-		if err := os.Remove(binaryPath); err != nil {
-			return fmt.Errorf("failed to remove %s: %w", binaryName, err)
-		}
+		wg.Go(func() {
+			var err error
+			if e := os.Remove(binaryPath); e != nil {
+				err = fmt.Errorf("failed to remove %s: %w", binaryName, e)
+			}
+			results[i] = provider.ApplyItemResult{Kind: removal.Kind, Group: removal.Group, Item: item.Name, Op: "remove", Err: err}
+		})
 	}
-	return nil
+	wg.Wait()
+	return results
 }
 
-// applyGroupModification updates Go packages (reinstall)
-func (p *GoProvider) applyGroupModification(ctx context.Context, modification provider.GroupModification) error {
-	// Reinstall with new version
-	return p.applyGroupAddition(ctx, provider.GroupAddition{
+// applyGroupModification updates Go packages (reinstall with new version).
+func (p *GoProvider) applyGroupModification(ctx context.Context, modification provider.GroupModification) []provider.ApplyItemResult {
+	items := make([]resource.ResourceItem, 0, len(modification.Changes))
+	for _, change := range modification.Changes {
+		items = append(items, resource.ResourceItem{
+			Name:    change.ItemName,
+			Version: change.NewState.Version,
+		})
+	}
+	results := p.applyGroupAddition(ctx, provider.GroupAddition{
 		Kind:  modification.Kind,
 		Group: modification.Group,
-		Items: func() []resource.ResourceItem {
-			var items []resource.ResourceItem
-			for _, change := range modification.Changes {
-				items = append(items, resource.ResourceItem{
-					Name:    change.ItemName,
-					Version: change.NewState.Version,
-				})
-			}
-			return items
-		}(),
+		Items: items,
 	})
+	for i := range results {
+		results[i].Op = "modify"
+	}
+	return results
 }
 
 // Import not supported for GoProvider

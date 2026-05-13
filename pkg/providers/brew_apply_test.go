@@ -42,7 +42,7 @@ func TestApply_Additions_InvokesBrewCommands(t *testing.T) {
 		},
 	}
 
-	if err := p.Apply(context.Background(), plan); err != nil {
+	if _, err := p.Apply(context.Background(), plan); err != nil {
 		t.Fatalf("Apply failed: %v", err)
 	}
 
@@ -97,7 +97,7 @@ func TestApply_Removals_InvokesBrewCommands(t *testing.T) {
 		},
 	}
 
-	if err := p.Apply(context.Background(), plan); err != nil {
+	if _, err := p.Apply(context.Background(), plan); err != nil {
 		t.Fatalf("Apply failed: %v", err)
 	}
 

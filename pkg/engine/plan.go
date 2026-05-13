@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/wasilak/nim/pkg/graph"
 	"github.com/wasilak/nim/pkg/planctx"
@@ -153,6 +154,12 @@ func (e *Engine) Plan(ctx context.Context, opts PlanOptions) (*PlanResult, error
 		}
 	}
 
+	// Filter resource groups to only targeted ones before reconciliation so
+	// providers don't run expensive operations (e.g. brew info) for every group.
+	if len(targetMatches) > 0 {
+		resourceGroups = filterResourceGroupsByTargets(resourceGroups, targetMatches)
+	}
+
 	// Group resources by provider
 	groupsByProvider := e.groupResourcesByProvider(resourceGroups)
 
@@ -169,52 +176,45 @@ func (e *Engine) Plan(ctx context.Context, opts PlanOptions) (*PlanResult, error
 		result.UnmatchedTargets = unmatched
 	}
 
+	var (
+		mu sync.Mutex
+		wg sync.WaitGroup
+	)
+	ctxWithDiff := context.WithValue(ctx, planctx.PlanShowDiffKey, opts.ShowDiff)
 	for providerName, prov := range e.Providers {
 		providerGroups := groupsByProvider[providerName]
 		if len(providerGroups) == 0 {
 			continue
 		}
-
-		// Filter state for this provider
 		providerState := e.filterStateForProvider(currentState.Resources, providerName)
 
-		// Inject ShowDiff flag into context
-		ctxWithDiff := ctx
-		if opts.ShowDiff {
-			ctxWithDiff = context.WithValue(ctx, planctx.PlanShowDiffKey, true)
-		} else {
-			ctxWithDiff = context.WithValue(ctx, planctx.PlanShowDiffKey, false)
-		}
-
-		// Reconcile (pass ctx so providers can perform cancellable operations)
-		plan := prov.Reconcile(ctxWithDiff, providerGroups, providerState)
-
-		// If targets provided, further filter plan items to item-level targets
-		if len(targetMatches) > 0 {
-			plan = filterPlanByTargets(plan, targetMatches)
-		}
-		providerPlans[providerName] = plan
-
-		// Update counts - sum individual items within each plan group
-		for _, add := range plan.Additions {
-			result.TotalAdditions += len(add.Items)
-		}
-		for _, mod := range plan.Modifications {
-			result.TotalModifications += len(mod.Changes)
-		}
-		for _, rem := range plan.Removals {
-			result.TotalRemovals += len(rem.Items)
-		}
-		for _, cleanup := range plan.Cleanup {
-			result.TotalCleanup += len(cleanup.Items)
-		}
-		for _, sync := range plan.InSync {
-			result.TotalInSync += len(sync.Items)
-		}
-		for range plan.Drifted {
-			result.TotalDrifted++
-		}
+		wg.Go(func() {
+			plan := prov.Reconcile(ctxWithDiff, providerGroups, providerState)
+			if len(targetMatches) > 0 {
+				plan = filterPlanByTargets(plan, targetMatches)
+			}
+			mu.Lock()
+			providerPlans[providerName] = plan
+			for _, add := range plan.Additions {
+				result.TotalAdditions += len(add.Items)
+			}
+			for _, mod := range plan.Modifications {
+				result.TotalModifications += len(mod.Changes)
+			}
+			for _, rem := range plan.Removals {
+				result.TotalRemovals += len(rem.Items)
+			}
+			for _, cleanup := range plan.Cleanup {
+				result.TotalCleanup += len(cleanup.Items)
+			}
+			for _, s := range plan.InSync {
+				result.TotalInSync += len(s.Items)
+			}
+			result.TotalDrifted += len(plan.Drifted)
+			mu.Unlock()
+		})
 	}
+	wg.Wait()
 
 	result.HasChanges = result.TotalAdditions > 0 || result.TotalModifications > 0 ||
 		result.TotalRemovals > 0 || result.TotalCleanup > 0 || result.TotalDrifted > 0

@@ -72,7 +72,7 @@ func TestCargoProvider_Apply(t *testing.T) {
 	p := NewCargoProvider()
 
 	plan := provider.GroupPlan{}
-	err := p.Apply(context.Background(), plan)
+	_, err := p.Apply(context.Background(), plan)
 
 	if err != nil {
 		t.Errorf("Apply() with empty plan error: %v", err)

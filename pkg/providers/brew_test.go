@@ -102,7 +102,7 @@ func TestBrewProvider_Apply(t *testing.T) {
 
 	// Apply empty plan
 	plan := provider.GroupPlan{}
-	err := p.Apply(context.Background(), plan)
+	_, err := p.Apply(context.Background(), plan)
 
 	// Should not error with empty plan
 	if err != nil {

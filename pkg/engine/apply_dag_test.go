@@ -32,15 +32,20 @@ func (f *fakeProvider) Reconcile(_ context.Context, _ []resource.ResourceGroup[a
 	return provider.GroupPlan{}
 }
 
-func (f *fakeProvider) Apply(_ context.Context, plan provider.GroupPlan) error {
+func (f *fakeProvider) Apply(_ context.Context, plan provider.GroupPlan) ([]provider.ApplyItemResult, error) {
+	var results []provider.ApplyItemResult
 	for _, a := range plan.Additions {
 		key := fmt.Sprintf("%s/%s", a.Kind, a.Group)
 		f.applyOrder = append(f.applyOrder, key)
-		if f.failGroups[key] {
-			return errors.New("injected failure")
+		for _, it := range a.Items {
+			r := provider.ApplyItemResult{Kind: a.Kind, Group: a.Group, Item: it.Name, Op: "add"}
+			if f.failGroups[key] {
+				r.Err = errors.New("injected failure")
+			}
+			results = append(results, r)
 		}
 	}
-	return nil
+	return results, nil
 }
 
 // buildTestPlanResult constructs a PlanResult with a DAG for two resources where
