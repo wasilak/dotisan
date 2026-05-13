@@ -494,6 +494,56 @@ func (p *BrewProvider) compareGroupItems(
 	return
 }
 
+// InstalledForKind implements provider.CoverageProvider.
+func (p *BrewProvider) InstalledForKind(ctx context.Context, kind string) (map[string]string, error) {
+	if ctx == nil {
+		return nil, nil
+	}
+	switch kind {
+	case resource.KindHomeBrewPackages:
+		packages := make(map[string]string)
+		stdout, _, err := cmdutil.RunSimpleFn(ctx, "brew", "list", "--formula", "--versions")
+		if err != nil {
+			return nil, err
+		}
+		for _, line := range strings.Split(stdout, "\n") {
+			parts := strings.Fields(line)
+			if len(parts) >= 2 {
+				packages[parts[0]] = parts[1]
+			}
+		}
+		return packages, nil
+	case resource.KindHomeBrewCasks:
+		packages := make(map[string]string)
+		stdout, _, err := cmdutil.RunSimpleFn(ctx, "brew", "list", "--cask")
+		if err != nil {
+			return nil, err
+		}
+		for _, line := range strings.Split(stdout, "\n") {
+			name := strings.TrimSpace(line)
+			if name != "" {
+				packages[name] = ""
+			}
+		}
+		return packages, nil
+	case resource.KindHomeBrewTaps:
+		packages := make(map[string]string)
+		stdout, _, err := cmdutil.RunSimpleFn(ctx, "brew", "tap")
+		if err != nil {
+			return nil, err
+		}
+		for _, line := range strings.Split(stdout, "\n") {
+			name := strings.TrimSpace(line)
+			if name != "" {
+				packages[name] = ""
+			}
+		}
+		return packages, nil
+	default:
+		return nil, nil
+	}
+}
+
 // getInstalledPackages retrieves currently installed Homebrew packages
 func (p *BrewProvider) getInstalledPackages(ctx context.Context) (map[string]string, error) {
 	if ctx == nil {

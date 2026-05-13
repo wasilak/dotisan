@@ -101,6 +101,14 @@ func (p *GoProvider) getInstalledPackages(ctx context.Context) map[string]string
 	return installed
 }
 
+// InstalledForKind implements provider.CoverageProvider.
+func (p *GoProvider) InstalledForKind(ctx context.Context, kind string) (map[string]string, error) {
+	if ctx == nil || kind != resource.KindGoPackages {
+		return nil, nil
+	}
+	return p.getInstalledPackages(ctx), nil
+}
+
 // Apply executes the given GroupPlan
 func (p *GoProvider) Apply(ctx context.Context, plan provider.GroupPlan) ([]provider.ApplyItemResult, error) {
 	var results []provider.ApplyItemResult

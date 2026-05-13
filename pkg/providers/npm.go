@@ -68,6 +68,14 @@ func (p *NpmProvider) getInstalledPackages(ctx context.Context) map[string]strin
 	return installed
 }
 
+// InstalledForKind implements provider.CoverageProvider.
+func (p *NpmProvider) InstalledForKind(ctx context.Context, kind string) (map[string]string, error) {
+	if ctx == nil || kind != resource.KindNpmPackages {
+		return nil, nil
+	}
+	return p.getInstalledPackages(ctx), nil
+}
+
 // Apply executes the given GroupPlan
 func (p *NpmProvider) Apply(ctx context.Context, plan provider.GroupPlan) ([]provider.ApplyItemResult, error) {
 	var results []provider.ApplyItemResult

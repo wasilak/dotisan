@@ -214,3 +214,12 @@ type Provider interface {
 	// longer supported; providers should expose only Reconcile/Apply.
 	Import(ctx context.Context, group string) (ResourceState, error)
 }
+
+// CoverageProvider is an optional interface for providers that can enumerate
+// all items currently installed on the system for a given resource kind.
+// Used by 'nim stats --all' to compute nim coverage per kind.
+type CoverageProvider interface {
+	// InstalledForKind returns the full set of installed items for the given kind.
+	// Returns nil, nil when the kind is not handled by this provider.
+	InstalledForKind(ctx context.Context, kind string) (map[string]string, error)
+}
