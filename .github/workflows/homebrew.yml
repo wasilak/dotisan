@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           # Ensure we have the default branch checked out so commits succeed even when workflow
           # is triggered by a tag/ref (actions/checkout defaults to detached HEAD for tags).
