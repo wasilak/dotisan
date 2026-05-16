@@ -12,12 +12,15 @@ func filterResourceGroupsByTargets(groups []resource.ResourceGroup[any], targets
 	var out []resource.ResourceGroup[any]
 	for _, g := range groups {
 		matched := false
-		// Check kind/group/item match for group-level and item-level targeting
 		for _, t := range targets {
-			// Manually check kind/group first (case-insensitive) so we can
-			// handle item-specific targets which require passing the item name
-			// into Matches. Using Matches with an empty item would fail when
-			// the target specified an item.
+			// Regex targets: include all groups so that filterPlanByTargets can
+			// perform item-level matching against the full identifier.
+			if t.IsRegex() {
+				matched = true
+				break
+			}
+
+			// Literal targets: check kind/group first, then items if needed.
 			if t.Kind != "" && !strings.EqualFold(t.Kind, g.Kind) {
 				continue
 			}
@@ -26,12 +29,10 @@ func filterResourceGroupsByTargets(groups []resource.ResourceGroup[any], targets
 			}
 
 			if t.Item == "" {
-				// target is kind or kind/group -> keep full group
 				matched = true
 				break
 			}
 
-			// target specifies an item; check if the item exists in group
 			for _, it := range g.Items {
 				if t.Matches(g.Kind, g.Name, it.Name) {
 					matched = true
@@ -60,22 +61,11 @@ func matchesKind(targetKind, resourceKind string) bool {
 
 // filterPlanByTargets trims a provider.GroupPlan to include only items that match targets.
 func filterPlanByTargets(plan provider.GroupPlan, targets []TargetMatch) provider.GroupPlan {
-	// Helper to check if a kind/group/item is targeted
 	isTargeted := func(kind, group, item string) bool {
 		for _, t := range targets {
-			// match kind (normalize aliases)
-			if t.Kind != "" {
-				if !strings.EqualFold(t.Kind, kind) {
-					continue
-				}
+			if t.Matches(kind, group, item) {
+				return true
 			}
-			if t.Group != "" && !strings.EqualFold(t.Group, group) {
-				continue
-			}
-			if t.Item != "" && !strings.EqualFold(t.Item, item) {
-				continue
-			}
-			return true
 		}
 		return false
 	}

@@ -8,7 +8,10 @@ import (
 
 func TestParseTargets(t *testing.T) {
 	inputs := []string{resource.KindHomeBrewPackages, resource.KindHomeBrewPackages + "/core-tools", resource.KindHomeBrewPackages + "/core-tools/ripgrep"}
-	parsed := ParseTargets(inputs)
+	parsed, err := ParseTargets(inputs)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	if len(parsed) != 3 {
 		t.Fatalf("expected 3 parsed targets, got %d", len(parsed))
 	}
@@ -25,7 +28,10 @@ func TestParseTargets(t *testing.T) {
 
 func TestParseTargets_BracketedFormat(t *testing.T) {
 	inputs := []string{resource.KindHomeBrewPackages, resource.KindHomeBrewPackages + "/homebrew-packages", resource.KindHomeBrewPackages + "/homebrew-packages[eza]"}
-	parsed := ParseTargets(inputs)
+	parsed, err := ParseTargets(inputs)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	if len(parsed) != 3 {
 		t.Fatalf("expected 3 parsed targets, got %d", len(parsed))
 	}
@@ -47,5 +53,44 @@ func TestTargetMatch_Matches(t *testing.T) {
 	}
 	if tm.Matches(resource.KindHomeBrewPackages, "other", "ripgrep") {
 		t.Fatalf("expected group mismatch to be false")
+	}
+}
+
+func TestParseTargets_Regex(t *testing.T) {
+	parsed, err := ParseTargets([]string{"/rip.*/", "/ManagedFile/", "/invalid[/"})
+	if err == nil {
+		t.Fatal("expected error for invalid regex")
+	}
+	_ = parsed
+
+	parsed, err = ParseTargets([]string{"/rip.*/", "/ManagedFile/"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(parsed) != 2 {
+		t.Fatalf("expected 2 targets, got %d", len(parsed))
+	}
+	if !parsed[0].IsRegex() || !parsed[1].IsRegex() {
+		t.Fatal("expected both targets to be regex")
+	}
+
+	// /rip.*/ matches item-level identifier
+	if !parsed[0].Matches(resource.KindHomeBrewPackages, "core-tools", "ripgrep") {
+		t.Fatal("regex /rip.*/ should match ripgrep item")
+	}
+	if parsed[0].Matches(resource.KindHomeBrewPackages, "core-tools", "neovim") {
+		t.Fatal("regex /rip.*/ should not match neovim")
+	}
+	// case-insensitive
+	if !parsed[0].Matches(resource.KindHomeBrewPackages, "core-tools", "Ripgrep") {
+		t.Fatal("regex match should be case-insensitive")
+	}
+
+	// /ManagedFile/ matches kind-level
+	if !parsed[1].Matches("ManagedFile", "dotfiles", "") {
+		t.Fatal("regex /ManagedFile/ should match ManagedFile kind")
+	}
+	if parsed[1].Matches(resource.KindHomeBrewPackages, "core-tools", "") {
+		t.Fatal("regex /ManagedFile/ should not match HomeBrewPackages")
 	}
 }

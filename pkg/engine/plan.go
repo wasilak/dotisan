@@ -73,13 +73,24 @@ func (e *Engine) Plan(ctx context.Context, opts PlanOptions) (*PlanResult, error
 	var targetMatches []TargetMatch
 	var unmatched []string
 	if len(opts.Targets) > 0 {
-		targetMatches = ParseTargets(opts.Targets)
+		var parseErr error
+		targetMatches, parseErr = ParseTargets(opts.Targets)
+		if parseErr != nil {
+			return nil, parseErr
+		}
 
 		// For each parsed target, check if it matches any desired group/item.
 		// If it doesn't but exists in state, add a synthetic empty desired group
 		// so providers will produce plans for removals, and mark as matched.
 		for i, raw := range opts.Targets {
 			t := targetMatches[i]
+
+			// Regex targets: skip unmatched detection (we can't know statically
+			// which resources will match; filterPlanByTargets handles it).
+			if t.IsRegex() {
+				continue
+			}
+
 			found := false
 
 			// Check desired groups
@@ -90,7 +101,7 @@ func (e *Engine) Plan(ctx context.Context, opts PlanOptions) (*PlanResult, error
 						break
 					}
 					for _, it := range g.Items {
-						if strings.EqualFold(it.Name, t.Item) {
+						if t.Matches(g.Kind, g.Name, it.Name) {
 							found = true
 							break
 						}
@@ -107,21 +118,15 @@ func (e *Engine) Plan(ctx context.Context, opts PlanOptions) (*PlanResult, error
 
 			// Check state resources
 			for _, s := range currentState.Resources {
-				if t.Kind != "" && !strings.EqualFold(t.Kind, s.Kind) {
-					continue
-				}
-				if t.Group != "" && !strings.EqualFold(t.Group, s.Group) {
-					continue
-				}
-
-				if t.Item == "" {
-					// match at group level
-					found = true
-				} else {
-					for _, it := range s.Items {
-						if strings.EqualFold(it.Name, t.Item) {
-							found = true
-							break
+				if t.Matches(s.Kind, s.Group, "") {
+					if t.Item == "" {
+						found = true
+					} else {
+						for _, it := range s.Items {
+							if t.Matches(s.Kind, s.Group, it.Name) {
+								found = true
+								break
+							}
 						}
 					}
 				}
