@@ -22,6 +22,7 @@ $ nim apply --confirm
 | Forward sync | ✅ | ✅ |
 | **Clean removals** | ❌ | ✅ |
 | **Package management** | ❌ | ✅ |
+| **Namespace support** | ❌ | ✅ |
 | Drift detection | ❌ | ✅ |
 | State tracking | ❌ | ✅ |
 
@@ -195,6 +196,78 @@ Note: The previous `ManagedDirectory` resource kind has been removed. Use `Manag
 
 ---
 
+## Namespaces 🏷️
+
+Nim supports **namespaces** for managing different sets of resources on different machines (e.g., work vs. personal laptops).
+
+### Declaring Namespaces
+
+Add `metadata.namespace` to any resource:
+
+```yaml
+apiVersion: github.com/wasilak/nim/v1
+kind: HomeBrewPackages
+metadata:
+  name: work-tools
+  namespace: work           # Exact match
+spec:
+  formulae:
+    - name: docker
+    - name: kubectl
+---
+apiVersion: github.com/wasilak/nim/v1
+kind: HomeBrewPackages
+metadata:
+  name: personal-apps
+  namespace: /personal.*/   # Regex match (matches "personal", "personal-laptop", etc.)
+spec:
+  formulae:
+    - name: spotify
+    - name: discord
+```
+
+Resources without a namespace implicitly belong to the `"default"` namespace.
+
+### Using Namespaces
+
+Set the active namespace via environment variable or CLI flag:
+
+```bash
+# Via environment variable
+export NIM_NAMESPACE=work
+nim plan
+
+# Via CLI flag (takes precedence)
+nim plan --namespace work
+nim apply --namespace work --confirm
+
+# Regex in namespace field supports multi-membership
+# namespace: "/(work|personal)/"  # Matches either
+```
+
+Only resources matching the active namespace are included in plan/apply.
+
+### Namespace Templating
+
+Access the active namespace in templates via `{{ .Namespace }}`:
+
+```yaml
+apiVersion: github.com/wasilak/nim/v1
+kind: ManagedFile
+metadata:
+  name: gitconfig-{{ .Namespace }}
+spec:
+  destination: ~/.gitconfig.{{ .Namespace }}
+  content: |
+    [user]
+        name = {{ .Values.name }}
+        {{ if eq .Namespace "work" }}email = work@company.com{{ end }}
+        {{ if eq .Namespace "personal" }}email = personal@example.com{{ end }}
+  template: true
+```
+
+---
+
 ## Supported Resources
 
 | Kind | Description | Provider |
@@ -225,6 +298,7 @@ nim doctor            # Check system prerequisites
 nim plan                    # Show what would change
 nim plan --diff             # Show inline file diffs
 nim plan --target KIND/name # Limit to a specific resource
+nim plan --target /pattern/ # Target with regex (e.g., /Brew.*/)
 nim apply                   # Dry-run (default)
 nim apply --confirm         # Actually apply changes
 nim apply --diff            # Show diffs during apply
@@ -285,6 +359,7 @@ Available context:
 - `{{ .OS.Hostname }}` - System hostname
 - `{{ .OS.Arch }}` - Architecture (amd64, arm64, etc.)
 - `{{ .OS.GOOS }}` - Operating system (darwin, linux, etc.)
+- `{{ .Namespace }}` - Active namespace (from `--namespace` or `NIM_NAMESPACE`)
 
 ---
 
@@ -423,6 +498,7 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guid
 
 ### Roadmap
 
+- [x] **Namespace support** — Apply different resource sets per machine (v1.0 ✅)
 - [ ] Windows support (PowerShell provider)
 - [ ] Linux package managers (apt, dnf, pacman)
 - [ ] Secrets management (1Password, Bitwarden)
