@@ -199,3 +199,142 @@ func TestCompileNamespace(t *testing.T) {
 		})
 	}
 }
+
+func TestMatchesNamespace(t *testing.T) {
+	tests := []struct {
+		name       string
+		namespace  string
+		activeNS   string
+		wantMatch  bool
+	}{
+		// Branch 1: regex match (namespaceRe != nil)
+		{
+			name:       "regex /work.*/ matches work-laptop",
+			namespace:  "/work.*/",
+			activeNS:   "work-laptop",
+			wantMatch:  true,
+		},
+		{
+			name:       "regex /work.*/ does not match personal",
+			namespace:  "/work.*/",
+			activeNS:   "personal",
+			wantMatch:  false,
+		},
+		{
+			name:       "regex /(work|personal)/ matches work",
+			namespace:  "/(work|personal)/",
+			activeNS:   "work",
+			wantMatch:  true,
+		},
+		{
+			name:       "regex /(work|personal)/ matches personal",
+			namespace:  "/(work|personal)/",
+			activeNS:   "personal",
+			wantMatch:  true,
+		},
+		{
+			name:       "regex /(work|personal)/ does not match other",
+			namespace:  "/(work|personal)/",
+			activeNS:   "other",
+			wantMatch:  false,
+		},
+		{
+			name:       "regex is case-insensitive with (?i) prefix",
+			namespace:  "/work.*/",
+			activeNS:   "WORK-LAPTOP",
+			wantMatch:  true,
+		},
+		// Branch 2: implicit default (namespaceRe == nil, Namespace == "")
+		{
+			name:       "empty namespace matches default",
+			namespace:  "",
+			activeNS:   "default",
+			wantMatch:  true,
+		},
+		{
+			name:       "empty namespace does not match work",
+			namespace:  "",
+			activeNS:   "work",
+			wantMatch:  false,
+		},
+		// Branch 3: exact match (namespaceRe == nil, Namespace != "")
+		{
+			name:       "explicit work matches work",
+			namespace:  "work",
+			activeNS:   "work",
+			wantMatch:  true,
+		},
+		{
+			name:       "explicit work does not match personal",
+			namespace:  "work",
+			activeNS:   "personal",
+			wantMatch:  false,
+		},
+		{
+			name:       "explicit default matches default",
+			namespace:  "default",
+			activeNS:   "default",
+			wantMatch:  true,
+		},
+		{
+			name:       "explicit default does not match work",
+			namespace:  "default",
+			activeNS:   "work",
+			wantMatch:  false,
+		},
+		// Edge cases
+		{
+			name:       "regex // (empty pattern) matches anything",
+			namespace:  "//",
+			activeNS:   "anything",
+			wantMatch:  true,
+		},
+		{
+			name:       "regex /work/ matches work (substring match)",
+			namespace:  "/work/",
+			activeNS:   "work",
+			wantMatch:  true,
+		},
+		{
+			name:       "regex /work/ matches work-laptop (substring)",
+			namespace:  "/work/",
+			activeNS:   "work-laptop",
+			wantMatch:  true,
+		},
+		{
+			name:       "regex /^work$/ matches work exactly (anchored)",
+			namespace:  "/^work$/",
+			activeNS:   "work",
+			wantMatch:  true,
+		},
+		{
+			name:       "regex /^work$/ does not match work-laptop (anchored)",
+			namespace:  "/^work$/",
+			activeNS:   "work-laptop",
+			wantMatch:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create metadata and compile namespace (replicating real parse-time flow)
+			m := &Metadata{Name: "test", Namespace: tt.namespace}
+			if err := m.CompileNamespace(); err != nil {
+				t.Fatalf("CompileNamespace() failed: %v", err)
+			}
+
+			// Create BaseResource with the compiled metadata
+			br := BaseResource{
+				APIVersion: "github.com/wasilak/nim/v1",
+				Kind:       KindHomeBrewPackages,
+				Metadata:   *m,
+			}
+
+			// Test MatchesNamespace
+			got := br.MatchesNamespace(tt.activeNS)
+			if got != tt.wantMatch {
+				t.Errorf("MatchesNamespace(%q) = %v, want %v", tt.activeNS, got, tt.wantMatch)
+			}
+		})
+	}
+}

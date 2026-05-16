@@ -63,6 +63,11 @@ type Resource interface {
 	// CompileNamespace compiles the namespace regex if it uses /pattern/ syntax.
 	// Must be called after YAML unmarshal.
 	CompileNamespace() error
+
+	// MatchesNamespace reports whether this resource matches the given active namespace.
+	// Implements three-branch logic: regex match (if /pattern/), implicit default
+	// (if empty), or exact string match.
+	MatchesNamespace(activeNS string) bool
 }
 
 // Metadata contains common metadata for all resources.
@@ -141,6 +146,21 @@ func (r BaseResource) GetMetadata() Metadata {
 // CompileNamespace delegates to the embedded Metadata's CompileNamespace.
 func (r *BaseResource) CompileNamespace() error {
 	return r.Metadata.CompileNamespace()
+}
+
+// MatchesNamespace reports whether this resource should be included when the
+// active namespace is activeNS. Three-branch logic per D-07:
+//   1. If namespaceRe != nil: return namespaceRe.MatchString(activeNS) (regex match)
+//   2. Else if Namespace == "": return activeNS == "default" (implicit default)
+//   3. Else: return Namespace == activeNS (exact match)
+func (r BaseResource) MatchesNamespace(activeNS string) bool {
+	if r.Metadata.namespaceRe != nil {
+		return r.Metadata.namespaceRe.MatchString(activeNS)
+	}
+	if r.Metadata.Namespace == "" {
+		return activeNS == "default"
+	}
+	return r.Metadata.Namespace == activeNS
 }
 
 // validate is a shared validator instance.
