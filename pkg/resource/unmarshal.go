@@ -54,6 +54,11 @@ func UnmarshalYAML(data []byte) (Resource, error) {
 		return nil, fmt.Errorf("failed to unmarshal %s resource: %w", typeInfo.Kind, err)
 	}
 
+	// Compile namespace regex if the namespace uses /pattern/ syntax
+	if err := resource.CompileNamespace(); err != nil {
+		return nil, fmt.Errorf("failed to compile namespace for %s resource: %w", typeInfo.Kind, err)
+	}
+
 	return resource, nil
 }
 
