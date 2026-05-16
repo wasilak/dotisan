@@ -3,14 +3,16 @@ package cmd
 import (
 	"context"
 	"github.com/spf13/cobra"
+	"github.com/wasilak/nim/pkg/config"
 	"github.com/wasilak/nim/pkg/output"
 )
 
 var (
-	confirmFlag      bool
-	applyOutputFlag  string
-	applyTargetFlags []string
-	applyDiffFlag    bool
+	confirmFlag         bool
+	applyOutputFlag     string
+	applyTargetFlags    []string
+	applyDiffFlag       bool
+	applyNamespaceFlag  string
 )
 
 // applyCmd represents the apply command
@@ -32,6 +34,7 @@ func runApply(ctx context.Context) error {
 		OutputFormat: string(outputFormat),
 		Targets:      applyTargetFlags,
 		ShowDiff:     applyDiffFlag,
+		Namespace:    config.GetActiveNamespace(applyNamespaceFlag),
 	})
 }
 
@@ -41,4 +44,5 @@ func init() {
 	applyCmd.Flags().StringVarP(&applyOutputFlag, "output", "o", "", "Output format (plain, tree, json)")
 	applyCmd.Flags().StringArrayVarP(&applyTargetFlags, "target", "t", nil, "Target specific resources (format: Kind, Kind/Group, or Kind/Group/Item)")
 	applyCmd.Flags().BoolVarP(&applyDiffFlag, "diff", "d", false, "Show contextual diffs for file/package changes (unified view)")
+	applyCmd.Flags().StringVarP(&applyNamespaceFlag, "namespace", "n", "", "Active namespace for this invocation (overrides NIM_NAMESPACE env var)")
 }

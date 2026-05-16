@@ -17,7 +17,8 @@ type PlanApplyOptions struct {
 	Confirm      bool
 	OutputFormat string
 	Targets      []string
-	ShowDiff     bool // If true, print contextual (syntax) diffs in output
+	ShowDiff     bool   // If true, print contextual (syntax) diffs in output
+	Namespace    string // Namespace is the active namespace for this invocation (resolved by config.GetActiveNamespace).
 }
 
 func runPlanApply(ctx context.Context, opts PlanApplyOptions) error {
