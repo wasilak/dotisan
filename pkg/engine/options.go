@@ -8,8 +8,9 @@ import (
 
 // PlanOptions contains options for the Plan operation.
 type PlanOptions struct {
-	Targets  []string
-	ShowDiff bool // Show file/package diffs (unified, syntax-highlighted)
+	Targets   []string
+	ShowDiff  bool   // Show file/package diffs (unified, syntax-highlighted)
+	Namespace string // Active namespace for filtering resources (empty = "default")
 }
 
 // TargetMatch represents a parsed target expression. A field may be a

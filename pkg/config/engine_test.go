@@ -169,3 +169,80 @@ func TestLoadAndRenderValues_InvalidYAML(t *testing.T) {
 		t.Error("LoadAndRenderValues() should return error for invalid YAML")
 	}
 }
+
+func TestRenderTemplate_Namespace(t *testing.T) {
+	tests := []struct {
+		name      string
+		namespace string
+		template  string
+		expected  string
+	}{
+		{
+			name:      "simple namespace",
+			namespace: "work",
+			template:  "namespace: {{ .Namespace }}",
+			expected:  "namespace: work",
+		},
+		{
+			name:      "conditional include",
+			namespace: "work",
+			template:  "{{ if eq .Namespace \"work\" }}work-laptop{{ end }}",
+			expected:  "work-laptop",
+		},
+		{
+			name:      "conditional exclude",
+			namespace: "personal",
+			template:  "{{ if eq .Namespace \"work\" }}work-laptop{{ end }}",
+			expected:  "",
+		},
+		{
+			name:      "empty namespace",
+			namespace: "",
+			template:  "namespace: '{{ .Namespace }}'",
+			expected:  "namespace: ''",
+		},
+		{
+			name:      "namespace with default function",
+			namespace: "",
+			template:  "{{ default \"default\" .Namespace }}",
+			expected:  "default",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := NewTemplateContext()
+			ctx.Namespace = tt.namespace
+			engine := NewTemplateEngine(ctx)
+
+			result, err := engine.RenderTemplate("test", tt.template)
+			if err != nil {
+				t.Fatalf("RenderTemplate() failed: %v", err)
+			}
+
+			if result != tt.expected {
+				t.Errorf("RenderTemplate() = %q, want %q", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestRenderTemplateWithVars_NamespacePropagation(t *testing.T) {
+	ctx := NewTemplateContext()
+	ctx.Namespace = "work"
+	engine := NewTemplateEngine(ctx)
+
+	// Test that Namespace is propagated to templateContextWithVars
+	template := "ns: {{ .Namespace }}, var: {{ .Vars.test }}"
+	vars := map[string]any{"test": "value"}
+
+	result, err := engine.RenderTemplateWithVars("test", template, vars)
+	if err != nil {
+		t.Fatalf("RenderTemplateWithVars() failed: %v", err)
+	}
+
+	expected := "ns: work, var: value"
+	if result != expected {
+		t.Errorf("RenderTemplateWithVars() = %q, want %q", result, expected)
+	}
+}

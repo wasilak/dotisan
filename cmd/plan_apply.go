@@ -30,13 +30,16 @@ func runPlanApply(ctx context.Context, opts PlanApplyOptions) error {
 		return fmt.Errorf("failed to initialize: %w", err)
 	}
 
+	// Inject active namespace into template context for rendering
+	eng.TemplateContext.Namespace = opts.Namespace
+
 	// Run plan (show spinner while planning)
 	var result *engine.PlanResult
 	var planErr error
 	// Run plan with spinner (captures result and error)
 	planErr = ui.RunWithSpinner(ctx, style.Info, "Planning...", "planning cancelled", func(ctx context.Context, publish func(ui.MessageLevel, string)) error {
 		var err error
-		result, err = eng.Plan(ctx, engine.PlanOptions{Targets: opts.Targets, ShowDiff: opts.ShowDiff})
+		result, err = eng.Plan(ctx, engine.PlanOptions{Targets: opts.Targets, ShowDiff: opts.ShowDiff, Namespace: opts.Namespace})
 		return err
 	})
 	if planErr != nil {

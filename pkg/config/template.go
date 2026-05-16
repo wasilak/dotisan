@@ -29,6 +29,10 @@ type TemplateContext struct {
 
 	// OS holds operating system information
 	OS OSInfo `yaml:"os"`
+
+	// Namespace is the active namespace for this invocation (e.g., "work", "personal").
+	// Available in templates as {{ .Namespace }} for conditional content.
+	Namespace string `yaml:"namespace"`
 }
 
 // NewTemplateContext creates a new TemplateContext with Env and OS pre-populated.

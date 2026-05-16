@@ -4,6 +4,7 @@ package engine
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 	"sync"
 
@@ -52,6 +53,26 @@ func (e *Engine) Plan(ctx context.Context, opts PlanOptions) (*PlanResult, error
 	if err != nil {
 		return nil, fmt.Errorf("failed to load resources: %w", err)
 	}
+
+	// Filter resources by namespace BEFORE building DAG
+	activeNS := opts.Namespace
+	if activeNS == "" {
+		activeNS = "default"
+	}
+	var filtered []resource.Resource
+	for _, res := range resources {
+		if res.MatchesNamespace(activeNS) {
+			filtered = append(filtered, res)
+		}
+	}
+	if len(filtered) != len(resources) {
+		slog.Debug("filtered resources by namespace",
+			"activeNamespace", activeNS,
+			"total", len(resources),
+			"included", len(filtered),
+			"excluded", len(resources)-len(filtered))
+	}
+	resources = filtered
 
 	// Convert resources to groups
 	resourceGroups := e.resourcesToGroups(resources)

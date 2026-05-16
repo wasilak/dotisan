@@ -17,6 +17,9 @@ import (
 )
 
 // Apply executes the planned changes.
+// Note: The plan result only contains resources matching the active namespace,
+// as filtering happens during the Plan phase. Non-matching resources are
+// not removed from state — they are simply excluded from this operation.
 func (e *Engine) Apply(ctx context.Context, result *PlanResult, opts ApplyOptions) error {
 	if !result.HasChanges {
 		return nil

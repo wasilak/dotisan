@@ -53,10 +53,11 @@ func (e *TemplateEngine) RenderTemplate(name, content string) (string, error) {
 // templateContextWithVars extends TemplateContext with manifest-level variables
 // accessible as .Vars.* in templates. Used only during per-file rendering.
 type templateContextWithVars struct {
-	Values map[string]any
-	Env    map[string]string
-	OS     OSInfo
-	Vars   map[string]any
+	Values    map[string]any
+	Env       map[string]string
+	OS        OSInfo
+	Namespace string
+	Vars      map[string]any
 }
 
 // RenderTemplateWithVars renders a template with the engine's context extended by
@@ -64,10 +65,11 @@ type templateContextWithVars struct {
 // defines vars: to override or augment the global template context.
 func (e *TemplateEngine) RenderTemplateWithVars(name, content string, vars map[string]any) (string, error) {
 	ctx := templateContextWithVars{
-		Values: e.ctx.Values,
-		Env:    e.ctx.Env,
-		OS:     e.ctx.OS,
-		Vars:   vars,
+		Values:    e.ctx.Values,
+		Env:       e.ctx.Env,
+		OS:        e.ctx.OS,
+		Namespace: e.ctx.Namespace,
+		Vars:      vars,
 	}
 
 	tmpl, err := template.New(name).
