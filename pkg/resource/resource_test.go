@@ -137,3 +137,65 @@ func TestValidateStruct(t *testing.T) {
 		})
 	}
 }
+
+func TestCompileNamespace(t *testing.T) {
+	tests := []struct {
+		name      string
+		namespace string
+		wantErr   bool
+		errMsg    string
+	}{
+		{
+			name:      "bare string returns nil error and nil namespaceRe",
+			namespace: "work",
+			wantErr:   false,
+		},
+		{
+			name:      "empty string returns nil error",
+			namespace: "",
+			wantErr:   false,
+		},
+		{
+			name:      "pattern compiles successfully",
+			namespace: "/work.*/",
+			wantErr:   false,
+		},
+		{
+			name:      "single char pattern is valid",
+			namespace: "/w/",
+			wantErr:   false,
+		},
+		{
+			name:      "alternation pattern compiles",
+			namespace: "/(work|personal)/",
+			wantErr:   false,
+		},
+		{
+			name:      "invalid regex returns error",
+			namespace: "/invalid[/",
+			wantErr:   true,
+			errMsg:    `parsing namespace "/invalid[/"`,
+		},
+		{
+			name:      "just slashes is empty pattern - valid",
+			namespace: "//",
+			wantErr:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &Metadata{Name: "test", Namespace: tt.namespace}
+			err := m.CompileNamespace()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CompileNamespace() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if err != nil && tt.errMsg != "" {
+				if err.Error()[:len(tt.errMsg)] != tt.errMsg {
+					t.Errorf("CompileNamespace() error message = %q, want prefix %q", err.Error(), tt.errMsg)
+				}
+			}
+		})
+	}
+}

@@ -456,13 +456,13 @@ func TestValidateDependsOn_AllResourceTypes(t *testing.T) {
 	br := BaseResource{APIVersion: "github.com/wasilak/nim/v1", Kind: "K", Metadata: meta}
 
 	resources := []Resource{
-		HomeBrewPackages{BaseResource: br, Spec: HomeBrewPackagesSpec{}},
-		HomeBrewCasks{BaseResource: br, Spec: HomeBrewCasksSpec{}},
-		HomeBrewTaps{BaseResource: br, Spec: HomeBrewTapsSpec{}},
-		NpmPackages{BaseResource: br, Spec: NpmPackagesSpec{Packages: []Package{{Name: "x"}}}},
-		GoPackages{BaseResource: br, Spec: GoPackagesSpec{Packages: []GoPackage{{Module: "x"}}}},
-		CargoPackages{BaseResource: br, Spec: CargoPackagesSpec{Packages: []Package{{Name: "x"}}}},
-		ManagedFile{BaseResource: br, Spec: ManagedFileSpec{Source: "s", Destination: "/d"}},
+		&HomeBrewPackages{BaseResource: br, Spec: HomeBrewPackagesSpec{}},
+		&HomeBrewCasks{BaseResource: br, Spec: HomeBrewCasksSpec{}},
+		&HomeBrewTaps{BaseResource: br, Spec: HomeBrewTapsSpec{}},
+		&NpmPackages{BaseResource: br, Spec: NpmPackagesSpec{Packages: []Package{{Name: "x"}}}},
+		&GoPackages{BaseResource: br, Spec: GoPackagesSpec{Packages: []GoPackage{{Module: "x"}}}},
+		&CargoPackages{BaseResource: br, Spec: CargoPackagesSpec{Packages: []Package{{Name: "x"}}}},
+		&ManagedFile{BaseResource: br, Spec: ManagedFileSpec{Source: "s", Destination: "/d"}},
 	}
 
 	for _, r := range resources {

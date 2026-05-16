@@ -44,10 +44,10 @@ func validateFileMode(fl validator.FieldLevel) bool {
 // Resource is the interface implemented by all resource types.
 // It provides common access to resource metadata and validation.
 type Resource interface {
-	// GetAPIVersion returns the API version (e.g., "github.com/wasilak/nim/v1")
+	// GetAPIVersion returns the API version (e.g. "github.com/wasilak/nim/v1")
 	GetAPIVersion() string
 
-	// GetKind returns the resource kind (e.g., "HomeBrewPackages")
+	// GetKind returns the resource kind (e.g. "HomeBrewPackages")
 	GetKind() string
 
 	// GetMetadata returns the resource metadata
@@ -59,6 +59,10 @@ type Resource interface {
 	// ToGroup converts this resource to a ResourceGroup representation
 	// This extracts items from the spec and creates the 3-level hierarchy
 	ToGroup() ResourceGroup[any]
+
+	// CompileNamespace compiles the namespace regex if it uses /pattern/ syntax.
+	// Must be called after YAML unmarshal.
+	CompileNamespace() error
 }
 
 // Metadata contains common metadata for all resources.
@@ -77,6 +81,10 @@ type Metadata struct {
 
 	// DependsOn lists resource names (namespace/name or name) this resource depends on.
 	DependsOn []string `yaml:"dependsOn,omitempty"`
+
+	// namespaceRe is the compiled regex for /pattern/ namespace values.
+	// It is nil for bare strings or when Namespace is empty.
+	namespaceRe *regexp.Regexp
 }
 
 // GetNamespace returns the namespace or "default" if not set.
@@ -85,6 +93,21 @@ func (m Metadata) GetNamespace() string {
 		return "default"
 	}
 	return m.Namespace
+}
+
+// CompileNamespace compiles the Namespace field into namespaceRe if it uses
+// /pattern/ syntax. Must be called after YAML unmarshal. Returns an error
+// for invalid regex patterns (fail-fast at parse time).
+func (m *Metadata) CompileNamespace() error {
+	if len(m.Namespace) >= 2 && m.Namespace[0] == '/' && m.Namespace[len(m.Namespace)-1] == '/' {
+		pattern := m.Namespace[1 : len(m.Namespace)-1]
+		re, err := regexp.Compile("(?i)" + pattern)
+		if err != nil {
+			return fmt.Errorf("parsing namespace %q: %w", m.Namespace, err)
+		}
+		m.namespaceRe = re
+	}
+	return nil
 }
 
 // ResourceID returns a unique identifier for the resource (namespace/name).
@@ -113,6 +136,11 @@ func (r BaseResource) GetKind() string {
 // GetMetadata implements Resource.GetMetadata.
 func (r BaseResource) GetMetadata() Metadata {
 	return r.Metadata
+}
+
+// CompileNamespace delegates to the embedded Metadata's CompileNamespace.
+func (r *BaseResource) CompileNamespace() error {
+	return r.Metadata.CompileNamespace()
 }
 
 // validate is a shared validator instance.
