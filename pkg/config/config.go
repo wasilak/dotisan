@@ -102,6 +102,19 @@ func LoadConfigFromDefaultPath() (*Config, error) {
 	return LoadConfig(configPath)
 }
 
+// GetActiveNamespace resolves the active namespace from the CLI flag value,
+// the NIM_NAMESPACE environment variable, or "default" (in that precedence order).
+// flagValue is the value of the --namespace flag; pass an empty string if the flag was not provided.
+func GetActiveNamespace(flagValue string) string {
+	if flagValue != "" {
+		return flagValue
+	}
+	if env := os.Getenv("NIM_NAMESPACE"); env != "" {
+		return env
+	}
+	return "default"
+}
+
 // LoadValues loads values from a YAML file (like ~/.config/nim/values.yaml).
 // It returns the parsed values as a map[string]any.
 func LoadValues(path string) (map[string]any, error) {

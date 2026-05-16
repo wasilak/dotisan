@@ -108,3 +108,73 @@ dotfiles_root: [invalid: yaml: content
 		t.Error("LoadConfig() should return error for invalid YAML")
 	}
 }
+
+func TestGetActiveNamespace(t *testing.T) {
+	tests := []struct {
+		name        string
+		flagValue   string
+		envValue    string
+		envSet      bool
+		want        string
+		description string
+	}{
+		{
+			name:        "flag_value_wins",
+			flagValue:   "staging",
+			envValue:    "work",
+			envSet:      true,
+			want:        "staging",
+			description: "flagValue takes precedence over NIM_NAMESPACE",
+		},
+		{
+			name:        "env_var_used_when_flag_empty",
+			flagValue:   "",
+			envValue:    "work",
+			envSet:      true,
+			want:        "work",
+			description: "NIM_NAMESPACE is used when flag not provided",
+		},
+		{
+			name:        "default_when_nothing_set",
+			flagValue:   "",
+			envValue:    "",
+			envSet:      false,
+			want:        "default",
+			description: "fallback to 'default' when no flag and no env var",
+		},
+		{
+			name:        "default_when_env_empty",
+			flagValue:   "",
+			envValue:    "",
+			envSet:      true,
+			want:        "default",
+			description: "empty NIM_NAMESPACE is treated as unset",
+		},
+		{
+			name:        "flag_wins_over_different_env",
+			flagValue:   "work",
+			envValue:    "personal",
+			envSet:      true,
+			want:        "work",
+			description: "flag still wins even when env has different value",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Set or unset NIM_NAMESPACE using t.Setenv for proper cleanup
+			if tt.envSet {
+				t.Setenv("NIM_NAMESPACE", tt.envValue)
+			} else {
+				// Ensure env var is unset
+				os.Unsetenv("NIM_NAMESPACE")
+			}
+
+			got := GetActiveNamespace(tt.flagValue)
+			if got != tt.want {
+				t.Errorf("GetActiveNamespace(%q) with NIM_NAMESPACE=%q = %q, want %q (%s)",
+					tt.flagValue, tt.envValue, got, tt.want, tt.description)
+			}
+		})
+	}
+}
