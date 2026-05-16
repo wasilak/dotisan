@@ -25,7 +25,10 @@
       "Bash(echo \"exit:$?\")",
       "Bash(git rebase *)",
       "Bash(gh release *)",
-      "Bash(go list *)"
+      "Bash(go list *)",
+      "Skill(gsd-plan-phase)",
+      "Bash(gsd-sdk query *)",
+      "Bash(gsd-sdk help *)"
     ]
   }
 }

@@ -31,3 +31,9 @@ ci/ci
 
 # Taskmaster state (machine-specific) - keep out of git
 .taskmaster/state.json
+
+# GSD planning docs (local-only)
+.planning/*.md
+.planning/config.json
+.planning/research/
+.planning/phases/
