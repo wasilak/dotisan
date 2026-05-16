@@ -302,6 +302,16 @@ func RunWithSpinner(ctx context.Context, st style.Style, msg, cancelMsg string, 
 	close(msgs)
 	wg.Wait()
 
+	// If work finished without error but ctx was cancelled (e.g. ctrl+c arrived
+	// just as Plan completed), treat it as cancellation. Without this check,
+	// callers would proceed to display results even though the user interrupted.
+	if workErr == nil && ctx.Err() != nil {
+		join() // wait for watcher to print the cancel message
+		sp.Stop()
+		stop()
+		return ctx.Err()
+	}
+
 	// If the context was cancelled, wait for the watcher goroutine to finish
 	// printing the cancel message (join, not stop) so we don't race against it.
 	if workErr != nil {
