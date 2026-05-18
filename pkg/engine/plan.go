@@ -202,6 +202,15 @@ func (e *Engine) Plan(ctx context.Context, opts PlanOptions) (*PlanResult, error
 		result.UnmatchedTargets = unmatched
 	}
 
+	// When a specific namespace is active, restrict state to only groups present
+	// in the desired resource set. This prevents cross-namespace removals: resources
+	// from other namespaces are in state but not in desire, so without this scoping
+	// the provider would plan to remove them.
+	scopedState := currentState.Resources
+	if activeNS != "default" {
+		scopedState = scopeStateToDesiredGroups(currentState.Resources, resourceGroups)
+	}
+
 	var (
 		mu sync.Mutex
 		wg sync.WaitGroup
@@ -212,7 +221,7 @@ func (e *Engine) Plan(ctx context.Context, opts PlanOptions) (*PlanResult, error
 		if len(providerGroups) == 0 {
 			continue
 		}
-		providerState := e.filterStateForProvider(currentState.Resources, providerName)
+		providerState := e.filterStateForProvider(scopedState, providerName)
 
 		wg.Go(func() {
 			plan := prov.Reconcile(ctxWithDiff, providerGroups, providerState)
@@ -275,6 +284,25 @@ func (e *Engine) groupResourcesByProvider(groups []resource.ResourceGroup[any]) 
 	}
 
 	return grouped
+}
+
+// scopeStateToDesiredGroups returns only the state entries whose {Kind, Group}
+// pair appears in the desired resource groups. Used during namespace-scoped runs
+// to prevent cross-namespace removals: state entries for resources outside the
+// active namespace are ignored rather than treated as "desired removed".
+func scopeStateToDesiredGroups(state []provider.ResourceState, desired []resource.ResourceGroup[any]) []provider.ResourceState {
+	type key struct{ kind, group string }
+	desiredKeys := make(map[key]bool, len(desired))
+	for _, g := range desired {
+		desiredKeys[key{g.Kind, g.Name}] = true
+	}
+	var out []provider.ResourceState
+	for _, s := range state {
+		if desiredKeys[key{s.Kind, s.Group}] {
+			out = append(out, s)
+		}
+	}
+	return out
 }
 
 // filterStateForProvider filters state entries for a specific provider.
